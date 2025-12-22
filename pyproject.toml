@@ -1,0 +1,216 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pypaginator"
+version = "0.1.0"
+description = "Advanced pagination, filtering, and search toolkit for Python with SQLAlchemy support"
+authors = [
+    { name = "Your Name", email = "your.email@example.com" },
+]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+keywords = [
+    "pagination",
+    "filtering",
+    "search",
+    "sqlalchemy",
+    "async",
+    "cursor",
+    "keyset",
+    "jsonlogic",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Database",
+    "Typing :: Typed",
+]
+
+# Core dependencies (minimal for in-memory pagination)
+dependencies = []
+
+[project.optional-dependencies]
+# SQLAlchemy support (async and sync)
+sqlalchemy = [
+    "sqlalchemy>=2.0.0",
+    "sqlakeyset>=2.0.0",
+]
+
+# Text search with fuzzy matching
+search = [
+    "rapidfuzz>=3.0.0",
+    "pyparsing>=3.0.0",
+]
+
+# Advanced filtering with JSON Logic and JMESPath
+filters = [
+    "json-logic-qubit>=0.9.0",
+    "jmespath>=1.0.0",
+]
+
+# Text normalization and processing
+text = [
+    "text-unidecode>=1.3",
+]
+
+# All features (sans auto-dépendance récursive)
+all = [
+    "sqlalchemy>=2.0.0",
+    "sqlakeyset>=2.0.0",
+    "rapidfuzz>=3.0.0",
+    "pyparsing>=3.0.0",
+    "json-logic-qubit>=0.9.0",
+    "jmespath>=1.0.0",
+    "text-unidecode>=1.3",
+]
+
+# Development dependencies
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "mypy>=1.5.0",
+    "ruff>=0.1.0",
+    "black>=23.0.0",
+    "radon>=6.0.0",
+    "vulture>=2.0.0",
+]
+
+# Documentation
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.0.0",
+    "mkdocstrings[python]>=0.24.0",
+]
+
+# FastAPI integration
+fastapi = [
+    "fastapi>=0.100.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/pypaginator"
+Documentation = "https://pypaginator.readthedocs.io"
+Repository = "https://github.com/yourusername/pypaginator"
+Issues = "https://github.com/yourusername/pypaginator/issues"
+Changelog = "https://github.com/yourusername/pypaginator/blob/main/CHANGELOG.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pypaginator"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/docs",
+    "/examples",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py311", "py312"]
+include = '\.pyi?$'
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "RUF", # ruff-specific rules
+    "S",   # bandit (security)
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]     # Allow unused imports in __init__.py
+"tests/**/*.py" = ["S101"]      # Allow assert in tests
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+
+[[tool.mypy.overrides]]
+module = [
+    "json_logic.*",
+    "jmespath.*",
+    "text_unidecode.*",
+    "rapidfuzz.*",
+    "sqlakeyset.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=pypaginator",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "sqlalchemy: Tests requiring SQLAlchemy",
+    "search: Tests requiring search features",
+    "filters: Tests requiring filter features",
+]
+
+[tool.coverage.run]
+source = ["src/pypaginator"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
