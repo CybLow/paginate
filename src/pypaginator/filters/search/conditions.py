@@ -82,19 +82,13 @@ class SqlConditionBuilder:
         )
         return self.build_from_context(context, mode=mode)
 
-    def build_from_context(
-        self, context: ConditionContext, *, mode: SearchMode
-    ) -> list[SqlClause]:
+    def build_from_context(self, context: ConditionContext, *, mode: SearchMode) -> list[SqlClause]:
         """Build SQL clauses from an existing :class:`ConditionContext`."""
         return _combine(self._gather(context), mode)
 
     def _gather(self, context: ConditionContext) -> list[SqlClause]:
         """Gather raw clauses from all registered strategies."""
-        return list(
-            chain.from_iterable(
-                strategy.collect(context) for strategy in self._strategies
-            )
-        )
+        return list(chain.from_iterable(strategy.collect(context) for strategy in self._strategies))
 
     @staticmethod
     def context(
@@ -106,9 +100,7 @@ class SqlConditionBuilder:
         id_token_regex: re.Pattern[str],
     ) -> ConditionContext:
         """Create a :class:`ConditionContext` from inputs."""
-        return ConditionContext(
-            model_class, fields, tokens, prefix, id_fields, id_token_regex
-        )
+        return ConditionContext(model_class, fields, tokens, prefix, id_fields, id_token_regex)
 
 
 def _combine(expressions: list[SqlClause], mode: SearchMode) -> list[SqlClause]:

@@ -89,9 +89,7 @@ def phrase_clause_factory(normalizer: SqlTextNormalizer) -> ClauseBuilder:
     return builder
 
 
-def term_clause_factory(
-    normalizer: SqlTextNormalizer, ignored: set[str]
-) -> ClauseBuilder:
+def term_clause_factory(normalizer: SqlTextNormalizer, ignored: set[str]) -> ClauseBuilder:
     """Create a clause builder for term matching with ignored tokens.
 
     Args:
@@ -110,9 +108,7 @@ def term_clause_factory(
     return builder
 
 
-def column_attributes(
-    model_class: type, fields: Sequence[str]
-) -> tuple[SqlStringExpression, ...]:
+def column_attributes(model_class: type, fields: Sequence[str]) -> tuple[SqlStringExpression, ...]:
     """Return typed column expressions for the provided field names.
 
     Args:
@@ -123,15 +119,11 @@ def column_attributes(
         Tuple of column expressions.
     """
     return tuple(
-        col
-        for field in fields
-        if (col := _column_expression(model_class, field)) is not None
+        col for field in fields if (col := _column_expression(model_class, field)) is not None
     )
 
 
-def match_columns(
-    columns: Sequence[SqlStringExpression], tokens: set[str]
-) -> SqlClause | None:
+def match_columns(columns: Sequence[SqlStringExpression], tokens: set[str]) -> SqlClause | None:
     """Build a clause matching any of the provided tokens across columns.
 
     Args:
@@ -169,9 +161,7 @@ def like_for_fields(
     Returns:
         List with a single OR-ed LIKE clause.
     """
-    exprs = tuple(
-        normalize_fields(normalizer, model_class, fields, token, prefix=prefix)
-    )
+    exprs = tuple(normalize_fields(normalizer, model_class, fields, token, prefix=prefix))
     return [sa_or_(*exprs)] if exprs else []  # type: ignore[arg-type]
 
 

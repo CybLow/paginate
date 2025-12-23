@@ -46,9 +46,7 @@ class TextFactory:
         needle = self._normalize_argument(argument, normalizer)
         return self._predicate(normalizer, needle)
 
-    def _normalize_argument(
-        self, argument: object, normalizer: FilterTextNormalizer
-    ) -> str:
+    def _normalize_argument(self, argument: object, normalizer: FilterTextNormalizer) -> str:
         """Normalize and validate the comparison needle argument.
 
         Args:
@@ -68,9 +66,7 @@ class TextFactory:
             raise self._null_error()
         return needle
 
-    def _predicate(
-        self, normalizer: FilterTextNormalizer, needle: str
-    ) -> FilterPredicate[object]:
+    def _predicate(self, normalizer: FilterTextNormalizer, needle: str) -> FilterPredicate[object]:
         """Return a predicate applying the configured matcher to candidates.
 
         Args:

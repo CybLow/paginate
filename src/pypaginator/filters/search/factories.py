@@ -15,9 +15,7 @@ if TYPE_CHECKING:
     import re
 
 
-def create_sql_search_service(
-    *, id_pattern: re.Pattern[str] | None = None
-) -> SqlSearchService:
+def create_sql_search_service(*, id_pattern: re.Pattern[str] | None = None) -> SqlSearchService:
     """Create a SQL-backed search service.
 
     Args:

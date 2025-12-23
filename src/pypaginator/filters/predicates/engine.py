@@ -55,9 +55,7 @@ class FilterEngine(Generic[ItemT]):
         self._registry = registry or OperatorRegistry.default()
         self._builder = JsonLogicPredicateBuilder(self._registry)
 
-    def apply(
-        self, items: Sequence[ItemT], filters: Mapping[str, object]
-    ) -> list[ItemT]:
+    def apply(self, items: Sequence[ItemT], filters: Mapping[str, object]) -> list[ItemT]:
         """Filter items using a mapping of path -> filter spec.
 
         Args:
@@ -67,11 +65,7 @@ class FilterEngine(Generic[ItemT]):
         Returns:
             List of items matching all filter criteria.
         """
-        compiled = [
-            self._compile(path, spec)
-            for path, spec in filters.items()
-            if spec is not None
-        ]
+        compiled = [self._compile(path, spec) for path, spec in filters.items() if spec is not None]
         return [item for item in items if self._matches(item, compiled)]
 
     def _compile(self, path: str, spec: object) -> CompiledFilter[ItemT]:

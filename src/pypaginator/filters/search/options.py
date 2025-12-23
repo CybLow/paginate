@@ -92,9 +92,7 @@ class SearchOptionSet:
         prefix = _coerce_bool_option(options.get("prefix"))
         id_fields = _coerce_field_option(options.get("id_fields"))
         pattern = _coerce_pattern_option(options.get("id_token_regex"), default_pattern)
-        return cls(
-            mode=mode, prefix=prefix, id_fields=id_fields, id_token_regex=pattern
-        )
+        return cls(mode=mode, prefix=prefix, id_fields=id_fields, id_token_regex=pattern)
 
 
 def resolve_options(
@@ -267,9 +265,7 @@ def _iter_string_values(values: Sequence[object]) -> list[str]:
     return fields
 
 
-def _coerce_pattern_option(
-    value: object | None, default: re.Pattern[str]
-) -> re.Pattern[str]:
+def _coerce_pattern_option(value: object | None, default: re.Pattern[str]) -> re.Pattern[str]:
     """Coerce id_token_regex option to compiled pattern.
 
     Args:

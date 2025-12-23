@@ -46,9 +46,7 @@ class OperatorRegistry(Generic[CandidateT_inv]):
         """Initialize an empty operator registry."""
         self._factories: dict[str, OperatorFactory[CandidateT_inv]] = {}
 
-    def register(
-        self, names: Sequence[str], factory: OperatorFactory[CandidateT_inv]
-    ) -> None:
+    def register(self, names: Sequence[str], factory: OperatorFactory[CandidateT_inv]) -> None:
         """Register a factory for a list of operator names.
 
         Args:

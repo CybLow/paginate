@@ -60,9 +60,7 @@ def _format_tokens(tokens: Sequence[int | str]) -> str:
     Returns:
         A jmespath expression string.
     """
-    fragments = [
-        _token_fragment(token, first=index == 0) for index, token in enumerate(tokens)
-    ]
+    fragments = [_token_fragment(token, first=index == 0) for index, token in enumerate(tokens)]
     expression = "".join(fragments)
     return expression or "@"
 
@@ -134,9 +132,7 @@ def _from_sequence(value: object) -> list[object] | None:
     Returns:
         List representation or None if not a sequence.
     """
-    if isinstance(value, Sequence) and not isinstance(
-        value, str | bytes | bytearray | memoryview
-    ):
+    if isinstance(value, Sequence) and not isinstance(value, str | bytes | bytearray | memoryview):
         return [_to_data(item) for item in value]
     return None
 
@@ -152,9 +148,7 @@ def _from_object(value: object) -> object:
     """
     if hasattr(value, "__dict__"):
         return {
-            name: _to_data(item)
-            for name, item in vars(value).items()
-            if not name.startswith("_")
+            name: _to_data(item) for name, item in vars(value).items() if not name.startswith("_")
         }
     return value
 

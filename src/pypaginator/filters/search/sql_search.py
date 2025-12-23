@@ -81,9 +81,7 @@ class SqlSearchService:
         Returns:
             Parsed QueryTokens instance.
         """
-        return self._parser.parse(
-            term, self._normalizer.normalize_text, raw_transform=str.strip
-        )
+        return self._parser.parse(term, self._normalizer.normalize_text, raw_transform=str.strip)
 
     @staticmethod
     def has_criteria(fields: Sequence[str], tokens: QueryTokens) -> bool:
@@ -117,9 +115,7 @@ class SqlSearchService:
             A list of SQLAlchemy boolean expressions ready to combine.
         """
         resolved = resolve_options(options, default_pattern=self._id_pattern)
-        context = self._context_from_term(
-            model_class, search_fields, search_term, resolved
-        )
+        context = self._context_from_term(model_class, search_fields, search_term, resolved)
         if context is None:
             return []
         return self._builder.build_from_context(context, mode=resolved.mode)

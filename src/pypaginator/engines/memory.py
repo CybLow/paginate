@@ -30,9 +30,7 @@ T = TypeVar("T")
 """Generic type variable for item types in memory pagination."""
 
 
-def filter_iter(
-    items: Iterable[T], predicate: Callable[[T], bool] | None
-) -> Iterator[T]:
+def filter_iter(items: Iterable[T], predicate: Callable[[T], bool] | None) -> Iterator[T]:
     """Yield items that satisfy an optional predicate.
 
     Args:

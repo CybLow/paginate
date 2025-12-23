@@ -134,9 +134,7 @@ def _null_reference_error(operator: str) -> FilterValidationError:
     )
 
 
-COMPARATORS: dict[
-    str, Callable[[SupportsTotalOrdering, SupportsTotalOrdering], bool]
-] = {
+COMPARATORS: dict[str, Callable[[SupportsTotalOrdering, SupportsTotalOrdering], bool]] = {
     "gt": gt,
     "gte": ge,
     "lt": lt,

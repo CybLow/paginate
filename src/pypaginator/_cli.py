@@ -39,10 +39,7 @@ _COLORS = {
 def _supports_color() -> bool:
     """Check if the terminal supports ANSI colors."""
     if sys.platform == "win32":
-        return (
-            "ANSICON" in __import__("os").environ
-            or "WT_SESSION" in __import__("os").environ
-        )
+        return "ANSICON" in __import__("os").environ or "WT_SESSION" in __import__("os").environ
     return hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
 
 
@@ -98,9 +95,7 @@ def _run(
         )
     except FileNotFoundError as e:
         _print_error(f"Command not found: {args[0]}")
-        _print_error(
-            "Make sure you have installed dev dependencies: uv sync --group dev"
-        )
+        _print_error("Make sure you have installed dev dependencies: uv sync --group dev")
         raise SystemExit(1) from e
     except subprocess.CalledProcessError:
         if check:
@@ -344,9 +339,7 @@ def _show_help() -> NoReturn:
     uv sync --group docs         Include docs dependencies
     uv build                     Build package
     uv publish                   Publish to PyPI
-""".format(
-        **_COLORS, header=_COLORS["bold"] + _COLORS["cyan"]
-    )
+""".format(**_COLORS, header=_COLORS["bold"] + _COLORS["cyan"])
 
     print(help_text)
     raise SystemExit(0)
@@ -386,9 +379,7 @@ def main() -> NoReturn:
 
     if command not in _COMMANDS:
         _print_error(f"Unknown command: {command}")
-        print(
-            f"Run '{_colorize('uv run pypaginator --help', 'cyan')}' for available commands."
-        )
+        print(f"Run '{_colorize('uv run pypaginator --help', 'cyan')}' for available commands.")
         raise SystemExit(1)
 
     exit_code = _COMMANDS[command](extra_args)  # type: ignore[operator]

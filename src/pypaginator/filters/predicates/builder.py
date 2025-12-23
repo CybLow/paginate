@@ -146,9 +146,7 @@ class JsonLogicPredicateBuilder:
         rule, predicates = self._compile(spec)
         return _make_jsonlogic_predicate(rule, predicates)
 
-    def _compile(
-        self, spec: object
-    ) -> tuple[object, dict[str, FilterPredicate[object]]]:
+    def _compile(self, spec: object) -> tuple[object, dict[str, FilterPredicate[object]]]:
         """Return the JSON-logic rule and internal predicates mapping.
 
         Args:

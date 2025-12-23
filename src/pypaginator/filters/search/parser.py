@@ -162,9 +162,7 @@ class TokenParser:
             return (), ()
         return self._tokenize_with_grammar(query)
 
-    def _tokenize_with_grammar(
-        self, query: str
-    ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    def _tokenize_with_grammar(self, query: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
         """Run the pyparsing grammar and group tokens by kind.
 
         Args:
@@ -189,9 +187,7 @@ class TokenParser:
         return cls._GRAMMAR
 
     @staticmethod
-    def _normalize(
-        values: Sequence[str], normalizer: Callable[[str], str]
-    ) -> Iterable[str]:
+    def _normalize(values: Sequence[str], normalizer: Callable[[str], str]) -> Iterable[str]:
         """Normalize and filter out empty values.
 
         Args:

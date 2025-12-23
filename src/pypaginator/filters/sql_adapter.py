@@ -40,15 +40,11 @@ class SqlFilterAdapter:
                 return column <= value
             case "in":
                 return (
-                    column.in_(value)
-                    if isinstance(value, (list, tuple, set))
-                    else column == value
+                    column.in_(value) if isinstance(value, (list, tuple, set)) else column == value
                 )
             case "not_in":
                 return (
-                    ~column.in_(value)
-                    if isinstance(value, (list, tuple, set))
-                    else column != value
+                    ~column.in_(value) if isinstance(value, (list, tuple, set)) else column != value
                 )
             case "like":
                 return column.like(str(value))

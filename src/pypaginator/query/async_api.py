@@ -136,9 +136,7 @@ async def _collect(
     return builder(snapshot)
 
 
-def _make_execution(
-    params: PageParams, options: CollectOptions
-) -> Execution[PageParams]:
+def _make_execution(params: PageParams, options: CollectOptions) -> Execution[PageParams]:
     """Create an execution plan for snapshot gathering.
 
     Args:

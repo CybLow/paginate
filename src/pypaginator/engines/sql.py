@@ -87,9 +87,7 @@ class SqlPaginator(Generic[ItemT]):
         Returns:
             Tuple of (total_count, effective_params).
         """
-        total = await self._count_total(
-            query, context.count_query, unique=context.unique
-        )
+        total = await self._count_total(query, context.count_query, unique=context.unique)
         effective = self._clamp_params(context.params, total)
         return total, effective
 

@@ -4,22 +4,34 @@ from __future__ import annotations
 
 import unicodedata
 from dataclasses import dataclass
-from importlib import import_module
-from typing import TYPE_CHECKING, Final, Literal, cast
+from typing import TYPE_CHECKING, Literal
 
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-_UNIDECODE_MODULE = import_module("text_unidecode")
-UNIDECODE: Final[Callable[[str], str]] = cast(
-    "Callable[[str], str]", _UNIDECODE_MODULE.unidecode
-)
-"""Concrete reference to the unidecode function from text_unidecode library."""
-
 NormalizationForm = Literal["NFC", "NFD", "NFKC", "NFKD"]
 """Literal type for Unicode normalization forms."""
+
+
+def _get_unidecode() -> Callable[[str], str]:
+    """Lazily import unidecode function from text_unidecode library.
+
+    Returns:
+        The unidecode function.
+
+    Raises:
+        ImportError: If text_unidecode is not installed.
+    """
+    try:
+        from text_unidecode import unidecode
+    except ImportError as e:
+        raise ImportError(
+            "text_unidecode is required for text normalization. "
+            "Install with: pip install pypaginator[text]"
+        ) from e
+    return unidecode
 
 
 def normalize_utf8(
@@ -55,7 +67,7 @@ def transliterate_ascii(value: str) -> str:
     Returns:
         ASCII-only transliteration of value.
     """
-    return UNIDECODE(value)
+    return _get_unidecode()(value)
 
 
 @dataclass(frozen=True)
@@ -93,7 +105,6 @@ def create_search_normalizer() -> Utf8Normalizer:
 
 
 __all__ = [
-    "UNIDECODE",
     "NormalizationForm",
     "Utf8Normalizer",
     "create_search_normalizer",

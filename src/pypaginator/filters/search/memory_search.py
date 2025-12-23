@@ -192,8 +192,7 @@ def match_flags(
         Tuple of boolean flags, one per token.
     """
     return tuple(
-        _any_field_matches(normalizer, item, field_accessors, token, options)
-        for token in tokens
+        _any_field_matches(normalizer, item, field_accessors, token, options) for token in tokens
     )
 
 
