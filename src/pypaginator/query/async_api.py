@@ -14,6 +14,7 @@ from .execution.async_executor import (
     gather_snapshot,
 )
 
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -193,9 +194,7 @@ async def paginate_entities(
 
     Example:
         >>> items, total = await paginate_entities(
-        ...     session,
-        ...     select(User),
-        ...     PageParams(page=1, limit=20)
+        ...     session, select(User), PageParams(page=1, limit=20)
         ... )
     """
     options = _make_options(kwargs, True)
@@ -221,9 +220,7 @@ async def paginate_entities_to_page(
 
     Example:
         >>> page = await paginate_entities_to_page(
-        ...     session,
-        ...     select(User),
-        ...     PageParams(page=1, limit=20)
+        ...     session, select(User), PageParams(page=1, limit=20)
         ... )
     """
     options = _make_options(kwargs, True)
@@ -249,9 +246,7 @@ async def paginate_rows(
 
     Example:
         >>> rows, total = await paginate_rows(
-        ...     session,
-        ...     select(User.id, User.name),
-        ...     PageParams(page=1, limit=20)
+        ...     session, select(User.id, User.name), PageParams(page=1, limit=20)
         ... )
     """
     options = _make_options(kwargs, False)
@@ -277,9 +272,7 @@ async def paginate_rows_to_page(
 
     Example:
         >>> page = await paginate_rows_to_page(
-        ...     session,
-        ...     select(User.id, User.name),
-        ...     PageParams(page=1, limit=20)
+        ...     session, select(User.id, User.name), PageParams(page=1, limit=20)
         ... )
     """
     options = _make_options(kwargs, False)

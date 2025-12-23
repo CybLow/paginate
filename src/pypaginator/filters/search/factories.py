@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
-import re
+from typing import TYPE_CHECKING
 
 from ...text.api import MemoryTextNormalizer, SqlTextNormalizer
 from .conditions import SqlConditionBuilder
 from .memory_search import MemorySearchEngine, MemorySearchService
 from .parser import TokenParser
 from .sql_search import SqlSearchService
+
+
+if TYPE_CHECKING:
+    import re
 
 
 def create_sql_search_service(
@@ -58,7 +62,7 @@ def create_search_services(
 
 
 __all__ = [
-    "create_sql_search_service",
     "create_memory_search_service",
     "create_search_services",
+    "create_sql_search_service",
 ]

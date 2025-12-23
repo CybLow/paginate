@@ -15,17 +15,10 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Generic, TypeGuard, TypeVar, cast
 
-try:
-    from sqlakeyset import Page as KeysetPage
-    from sqlakeyset import Paging, unserialize_bookmark
-    _HAS_KEYSET = True
-except ImportError:
-    _HAS_KEYSET = False
-    KeysetPage = None  # type: ignore
-    Paging = None  # type: ignore
-    unserialize_bookmark = None  # type: ignore
+from sqlakeyset import Page as KeysetPage, Paging, unserialize_bookmark
 
 from pypaginator.exceptions import PaginationConfigurationError
+
 
 if TYPE_CHECKING:
     from .pages import KeysetPageParams, PageParams
@@ -206,11 +199,11 @@ def _is_sequence(row: object) -> TypeGuard[Sequence[object]]:
 
 
 __all__ = [
-    "PaginationSnapshot",
-    "KeysetPaginationSnapshot",
     "BookmarkPayload",
+    "KeysetPaginationSnapshot",
+    "PaginationSnapshot",
+    "coerce_bookmark",
     "extract_keyset_markers",
     "markers_from_paging",
-    "coerce_bookmark",
     "materialize_keyset_page",
 ]

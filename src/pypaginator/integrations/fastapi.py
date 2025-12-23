@@ -6,7 +6,8 @@ Install with: pip install pypaginator[fastapi]
 
 from __future__ import annotations
 
-from typing import Generic, Sequence, TypeVar
+from typing import TYPE_CHECKING, Generic, TypeVar
+
 
 try:
     from fastapi import Query
@@ -18,6 +19,11 @@ except ImportError as e:
     ) from e
 
 from ..core.pages import Page, PageParams
+
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
 
 T = TypeVar("T")
 
@@ -80,4 +86,3 @@ __all__ = [
     "PagedResponse",
     "get_pagination_params",
 ]
-

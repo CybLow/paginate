@@ -1,17 +1,19 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.28.0"]
 build-backend = "hatchling.build"
 
+# ==========================
+# PROJECT METADATA (PEP 621)
+# ==========================
 [project]
 name = "pypaginator"
 version = "0.1.0"
 description = "Advanced pagination, filtering, and search toolkit for Python with SQLAlchemy support"
-authors = [
-    { name = "Your Name", email = "your.email@example.com" },
-]
-readme = "README.md"
+readme = { file = "README.md", content-type = "text/markdown" }
 license = { text = "MIT" }
 requires-python = ">=3.11"
+authors = [{ name = "CybLow", email = "cyber_lolow@protonmail.com" }]
+maintainers = [{ name = "CybLow", email = "cyber_lolow@protonmail.com" }]
 keywords = [
     "pagination",
     "filtering",
@@ -21,6 +23,9 @@ keywords = [
     "cursor",
     "keyset",
     "jsonlogic",
+    "orm",
+    "database",
+    "fastapi",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -30,80 +35,122 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Database",
+    "Topic :: Database :: Front-Ends",
+    "Framework :: FastAPI",
     "Typing :: Typed",
+    "Environment :: Web Environment",
 ]
 
-# Core dependencies (minimal for in-memory pagination)
+# Core package has no runtime dependencies
 dependencies = []
 
+# ==========================
+# OPTIONAL DEPENDENCIES (extras)
+# ==========================
 [project.optional-dependencies]
-# SQLAlchemy support (async and sync)
+# Individual features
 sqlalchemy = [
-    "sqlalchemy>=2.0.0",
-    "sqlakeyset>=2.0.0",
+    "SQLAlchemy>=2.0.45",
+    "sqlakeyset>=2.0.1762907931",
 ]
-
-# Text search with fuzzy matching
 search = [
-    "rapidfuzz>=3.0.0",
-    "pyparsing>=3.0.0",
+    "rapidfuzz>=3.14.3",
+    "pyparsing>=3.3.1",
 ]
-
-# Advanced filtering with JSON Logic and JMESPath
 filters = [
-    "json-logic-qubit>=0.9.0",
-    "jmespath>=1.0.0",
+    "json-logic-qubit>=0.9.1",
+    "jmespath>=1.0.1",
 ]
-
-# Text normalization and processing
 text = [
     "text-unidecode>=1.3",
 ]
+fastapi = [
+    "fastapi>=0.127.0",
+]
 
-# All features (sans auto-dépendance récursive)
+# Combo extras (using self-references for DRY)
 all = [
-    "sqlalchemy>=2.0.0",
-    "sqlakeyset>=2.0.0",
-    "rapidfuzz>=3.0.0",
-    "pyparsing>=3.0.0",
-    "json-logic-qubit>=0.9.0",
-    "jmespath>=1.0.0",
-    "text-unidecode>=1.3",
+    "pypaginator[sqlalchemy,search,filters,text,fastapi]",
 ]
 
-# Development dependencies
+# ==========================
+# CONSOLE SCRIPTS (uv run <cmd>)
+# ==========================
+[project.scripts]
+pypaginator = "pypaginator._cli:main"
+
+# ==========================
+# PROJECT URLS
+# ==========================
+[project.urls]
+Homepage = "https://github.com/CybLow/pypaginator"
+Documentation = "https://pypaginator.readthedocs.io"
+Repository = "https://github.com/CybLow/pypaginator"
+Issues = "https://github.com/CybLow/pypaginator/issues"
+Changelog = "https://github.com/CybLow/pypaginator/blob/main/CHANGELOG.md"
+
+# ==========================
+# DEPENDENCY GROUPS (PEP 735 - dev only)
+# ==========================
+[dependency-groups]
+# All dev dependencies
 dev = [
-    "pytest>=7.0.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-cov>=4.0.0",
-    "mypy>=1.5.0",
-    "ruff>=0.1.0",
-    "black>=23.0.0",
-    "radon>=6.0.0",
-    "vulture>=2.0.0",
+    { include-group = "test" },
+    { include-group = "lint" },
+    { include-group = "type" },
+    { include-group = "security" },
+    { include-group = "build" },
 ]
-
+# Testing
+test = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "pytest-xdist>=3.6.1",
+    "coverage[toml]>=7.6.0",
+    "aiosqlite>=0.20.0",
+]
+# Linting & Formatting
+lint = [
+    "ruff>=0.8.0",
+    "pre-commit>=4.0.0",
+]
+# Type Checking
+type = [
+    "mypy>=1.13.0",
+]
+# Security Scanning
+security = [
+    "bandit[toml]>=1.8.0",
+]
+# Building & Publishing
+build = [
+    "build>=1.2.2",
+    "twine>=6.0.1",
+]
 # Documentation
 docs = [
-    "mkdocs>=1.5.0",
-    "mkdocs-material>=9.0.0",
-    "mkdocstrings[python]>=0.24.0",
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.1",
+    "mkdocstrings[python]>=0.27.0",
 ]
 
-# FastAPI integration
-fastapi = [
-    "fastapi>=0.100.0",
-]
+# ==========================
+# UV CONFIGURATION
+# ==========================
+[tool.uv]
+package = true
+default-groups = ["dev"]
 
-[project.urls]
-Homepage = "https://github.com/yourusername/pypaginator"
-Documentation = "https://pypaginator.readthedocs.io"
-Repository = "https://github.com/yourusername/pypaginator"
-Issues = "https://github.com/yourusername/pypaginator/issues"
-Changelog = "https://github.com/yourusername/pypaginator/blob/main/CHANGELOG.md"
+# Cache optimization
+cache-keys = [{ file = "pyproject.toml" }, { file = "uv.lock" }]
 
+# ==========================
+# HATCH BUILD CONFIGURATION
+# ==========================
 [tool.hatch.build.targets.wheel]
 packages = ["src/pypaginator"]
 
@@ -116,39 +163,81 @@ include = [
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
+    "py.typed",
 ]
 
-[tool.black]
-line-length = 100
-target-version = ["py311", "py312"]
-include = '\.pyi?$'
-
+# ==========================
+# RUFF CONFIGURATION
+# ==========================
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+src = ["src", "tests"]
+extend-exclude = ["*.pyi"]
 
 [tool.ruff.lint]
 select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
-    "N",   # pep8-naming
-    "UP",  # pyupgrade
-    "B",   # flake8-bugbear
-    "C4",  # flake8-comprehensions
-    "SIM", # flake8-simplify
-    "RUF", # ruff-specific rules
-    "S",   # bandit (security)
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "SIM",   # flake8-simplify
+    "RUF",   # ruff-specific rules
+    "S",     # bandit (security)
+    "A",     # flake8-builtins
+    "DTZ",   # flake8-datetimez
+    "RET",   # flake8-return
+    "ARG",   # flake8-unused-arguments
+    "ERA",   # eradicate (commented code)
+    "PL",    # pylint
+    "TRY",   # tryceratops
+    "PERF",  # performance lints
+    "ASYNC", # async lints
+    "LOG",   # logging best practices
 ]
 ignore = [
-    "E501",  # line too long (handled by black)
+    "E501",    # line too long (handled by formatter)
+    "TRY003",  # raise vanilla exception messages
+    "PLR0913", # too many arguments (pragmatic for pagination config)
+    "PLR2004", # magic value comparison (common in pagination)
+    "PLR0911", # too many return statements (acceptable for SQL adapters)
+    "PLR0912", # too many branches (acceptable for SQL adapters)
+    "PLC0105", # TypeVar naming convention (ResultT, ItemT are valid)
+    "PLC0415", # import not at top-level (intentional for optional deps)
+    "N818",    # exception name should end with Error (Exception suffix is valid)
+    "RET505",  # unnecessary else after return
+    "RET504",  # unnecessary assignment before return
+    "SIM108",  # use ternary operator (readability preference)
+    "ARG002",  # unused method argument (common in base classes)
+    "S105",    # hardcoded password (false positive on token constants)
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"**/__init__.py" = ["F401"]     # Allow unused imports in __init__.py
-"tests/**/*.py" = ["S101"]      # Allow assert in tests
+"**/__init__.py" = ["F401", "F403", "ARG001"]
+"tests/**/*.py" = ["S101", "ARG001", "PLR2004", "C901"]
+"examples/**/*.py" = ["S101", "T201"]
+"src/pypaginator/_cli.py" = ["T201", "S603", "S607"]
 
+[tool.ruff.lint.isort]
+force-single-line = false
+lines-after-imports = 2
+known-first-party = ["pypaginator"]
+combine-as-imports = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+
+# ==========================
+# MYPY CONFIGURATION
+# ==========================
 [tool.mypy]
 python_version = "3.11"
 strict = true
@@ -161,10 +250,15 @@ no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
+show_error_codes = true
+show_column_numbers = true
+pretty = true
+exclude = ["build", "dist", ".venv"]
 
 [[tool.mypy.overrides]]
 module = [
     "json_logic.*",
+    "json_logic_qubit.*",
     "jmespath.*",
     "text_unidecode.*",
     "rapidfuzz.*",
@@ -172,45 +266,81 @@ module = [
 ]
 ignore_missing_imports = true
 
+# ==========================
+# PYTEST CONFIGURATION
+# ==========================
 [tool.pytest.ini_options]
-minversion = "7.0"
+minversion = "8.0"
 testpaths = ["tests"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 addopts = [
     "-ra",
     "--strict-markers",
     "--strict-config",
-    "--cov=pypaginator",
-    "--cov-report=term-missing:skip-covered",
-    "--cov-report=html",
-    "--cov-report=xml",
+    "--tb=short",
+    "-q",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
 ]
 markers = [
-    "unit: Unit tests",
-    "integration: Integration tests",
+    "unit: Unit tests (fast, no external deps)",
+    "integration: Integration tests (may use database)",
     "sqlalchemy: Tests requiring SQLAlchemy",
     "search: Tests requiring search features",
     "filters: Tests requiring filter features",
+    "slow: Slow running tests",
 ]
 
+# ==========================
+# COVERAGE CONFIGURATION
+# ==========================
 [tool.coverage.run]
 source = ["src/pypaginator"]
 branch = true
+parallel = true
 omit = [
+    "*/__pycache__/*",
     "*/tests/*",
     "*/migrations/*",
+    "*/_cli.py",
 ]
+
+[tool.coverage.paths]
+source = ["src/pypaginator", "*/site-packages/pypaginator"]
 
 [tool.coverage.report]
 precision = 2
 show_missing = true
 skip_covered = false
+fail_under = 80
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
+    "def __str__",
     "raise AssertionError",
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
     "@abstractmethod",
+    "@overload",
+    "\\.\\.\\.",
 ]
+
+[tool.coverage.html]
+directory = "htmlcov"
+title = "PyPaginator Coverage Report"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+# ==========================
+# BANDIT CONFIGURATION
+# ==========================
+[tool.bandit]
+targets = ["src"]
+exclude_dirs = ["tests", "docs", "examples"]
+skips = ["B101"]  # Skip assert_used (used in tests)

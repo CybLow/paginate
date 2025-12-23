@@ -16,10 +16,11 @@ from .collations import (
 )
 from .types import CountStatement, SelectStatement
 
+
 __all__ = [
     "CollationPlan",
-    "ensure_database_collations",
-    "recommend_collation_plan",
     "CountStatement",
     "SelectStatement",
+    "ensure_database_collations",
+    "recommend_collation_plan",
 ]

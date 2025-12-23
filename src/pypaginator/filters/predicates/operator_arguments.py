@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 from typing import TypeGuard
 
-from ....exceptions import FilterValidationError
+from pypaginator.exceptions import FilterValidationError
 
 
 def ensure_collection(argument: object, operator: str) -> Sequence[object]:
@@ -127,4 +127,3 @@ def _materialize_collection(argument: object) -> Sequence[object]:
 
 
 __all__ = ["ensure_collection", "ensure_pair"]
-

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Generic, SupportsInt, TypeVar
 
 from pypaginator.exceptions import PaginationConfigurationError
 
+
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
@@ -187,4 +188,4 @@ def _coerce_updates(update: Mapping[str, UpdateValue]) -> dict[str, int]:
     return coerced
 
 
-__all__ = ["PageParams", "Page", "KeysetPageParams"]
+__all__ = ["KeysetPageParams", "Page", "PageParams"]

@@ -2,13 +2,13 @@
 
 **Advanced pagination, filtering, and search toolkit for Python**
 
-[![PyPI version](https://badge.fury.io/py/pypaginator.svg)](https://badge.fury.io/py/pypaginator)
+[![CI](https://github.com/CybLow/pypaginator/actions/workflows/ci.yml/badge.svg)](https://github.com/CybLow/pypaginator/actions/workflows/ci.yml)
+[![PyPI version](https://img.shields.io/pypi/v/pypaginator.svg)](https://pypi.org/project/pypaginator/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/pypaginator.svg)](https://pypi.org/project/pypaginator/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://github.com/yourusername/pypaginator/workflows/tests/badge.svg)](https://github.com/yourusername/pypaginator/actions)
-[![Coverage](https://codecov.io/gh/yourusername/pypaginator/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/pypaginator)
-[![mypy](https://img.shields.io/badge/mypy-strict-blue.svg)](http://mypy-lang.org/)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![codecov](https://codecov.io/gh/CybLow/pypaginator/branch/main/graph/badge.svg)](https://codecov.io/gh/CybLow/pypaginator)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 
 PyPaginator is a modern, framework-agnostic pagination library that provides powerful features for paginating, filtering, and searching data. It works seamlessly with SQLAlchemy (async/sync), in-memory collections, and can be extended to support other ORMs.
 
@@ -282,45 +282,46 @@ pypaginator/
 
 ## 🧪 Development
 
+### Prerequisites
+
+- Python 3.11+
+- [UV](https://docs.astral.sh/uv/) - Fast Python package manager
+
 ### Setup
 
 ```bash
-git clone https://github.com/yourusername/pypaginator.git
+git clone https://github.com/CybLow/pypaginator.git
 cd pypaginator
-python -m venv venv
-source venv/bin/activate  # or `venv\Scripts\activate` on Windows
-pip install -e ".[dev,all]"
+uv sync  # Installs all dependencies
 ```
 
 ### Running Tests
 
 ```bash
 # Run all tests
-pytest
+uv run pypaginator test
 
 # Run with coverage
-pytest --cov=pypaginator --cov-report=html
+uv run pypaginator test-cov
 
 # Run specific test categories
-pytest -m unit
-pytest -m integration
-pytest -m sqlalchemy
+uv run pytest -m unit
+uv run pytest -m integration
 ```
 
 ### Code Quality
 
 ```bash
-# Type checking
-mypy src/pypaginator
+# Quick quality check (format, lint, test)
+uv run pypaginator qa
 
-# Linting
-ruff check src/pypaginator
+# All checks including type checking
+uv run pypaginator qas
 
-# Formatting
-black src/pypaginator tests
-
-# Complexity analysis
-radon cc -s -n B src/pypaginator
+# Individual checks
+uv run pypaginator lint      # Linting
+uv run pypaginator format    # Formatting
+uv run pypaginator typecheck # Type checking
 ```
 
 ## 🤝 Contributing

@@ -6,12 +6,17 @@ integrate pagination into API endpoints.
 
 from __future__ import annotations
 
-from typing import Generic, TypeVar, Sequence
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 from fastapi import Query
 from pydantic import BaseModel, Field
 
 from .core.pages import Page, PageParams
+
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
 
 T = TypeVar("T")
 
@@ -51,4 +56,3 @@ def get_pagination_params(
         def endpoint(params: PageParams = Depends(get_pagination_params)): ...
     """
     return PageParams(page=page, limit=limit)
-

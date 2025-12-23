@@ -11,19 +11,20 @@ from .range import RangeFactory
 from .simple import EmptyFactory, MembershipFactory, NullityFactory
 from .text import TextFactory
 
+
 if TYPE_CHECKING:  # pragma: no cover - import cycle guard
     from ..registry import OperatorRegistry
 
 __all__ = [
-    "EqualityFactory",
-    "OrderingFactory",
-    "MembershipFactory",
-    "RangeFactory",
-    "TextFactory",
-    "LikeFactory",
-    "RegexFactory",
-    "NullityFactory",
     "EmptyFactory",
+    "EqualityFactory",
+    "LikeFactory",
+    "MembershipFactory",
+    "NullityFactory",
+    "OrderingFactory",
+    "RangeFactory",
+    "RegexFactory",
+    "TextFactory",
     "register_default_operators",
 ]
 
@@ -87,6 +88,7 @@ def _register_ranges(registry: OperatorRegistry[object]) -> None:
 
 _TextMatcher = Callable[[str, str], bool]
 
+
 def _contains(hay: str, ndl: str) -> bool:
     """Check if needle is contained in haystack.
 
@@ -98,6 +100,7 @@ def _contains(hay: str, ndl: str) -> bool:
         True if needle is in haystack.
     """
     return ndl in hay
+
 
 def _startswith(hay: str, ndl: str) -> bool:
     """Check if haystack starts with needle.
@@ -111,6 +114,7 @@ def _startswith(hay: str, ndl: str) -> bool:
     """
     return hay.startswith(ndl)
 
+
 def _endswith(hay: str, ndl: str) -> bool:
     """Check if haystack ends with needle.
 
@@ -122,6 +126,7 @@ def _endswith(hay: str, ndl: str) -> bool:
         True if haystack ends with needle.
     """
     return hay.endswith(ndl)
+
 
 _TEXT_OPERATORS: Final[tuple[tuple[list[str], str, _TextMatcher, bool], ...]] = (
     (["contains"], "contains", _contains, True),

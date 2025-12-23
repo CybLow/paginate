@@ -11,12 +11,8 @@ Note: Keyset pagination is handled directly by SqlPaginator.
 from __future__ import annotations
 
 from .memory import MemoryPaginator, filter_iter
-try:
-    from .sql import SqlPaginator
-    _HAS_SQL = True
-except ImportError:
-    _HAS_SQL = False
-    SqlPaginator = None  # type: ignore, get_pagination_strategy
+from .sql import SqlPaginator
+
 
 __all__ = [
     "MemoryPaginator",
@@ -24,6 +20,3 @@ __all__ = [
     "filter_iter",
     "get_pagination_strategy",
 ]
-
-if _HAS_SQL:
-    __all__ += ["SqlPaginator"]

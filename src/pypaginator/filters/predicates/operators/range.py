@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, cast
 
 from ..operator_arguments import ensure_pair
 
+
 if TYPE_CHECKING:
     from ....types import SupportsTotalOrdering
     from ..registry import FilterPredicate

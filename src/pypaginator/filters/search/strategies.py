@@ -14,6 +14,7 @@ from .helpers import (
     term_clause_factory,
 )
 
+
 if TYPE_CHECKING:  # pragma: no cover - typing only
     import re
     from collections.abc import Sequence

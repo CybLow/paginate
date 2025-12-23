@@ -1,0 +1,1 @@
+"""PyPaginator test suite."""

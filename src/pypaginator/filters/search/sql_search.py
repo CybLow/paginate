@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Unpack
 from .conditions import ConditionContext, SqlConditionBuilder
 from .options import ContextOptions, ResolvedOptions, SearchOptions, resolve_options
 
+
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from collections.abc import Sequence
 
@@ -168,7 +169,7 @@ class SqlSearchService:
         return self._build_context(model_class, fields, tokens, options=options.context)
 
 
-__all__ = ["SqlSearchService", "SqlConditionBuilder"]
+__all__ = ["SqlConditionBuilder", "SqlSearchService"]
 
 
 if TYPE_CHECKING:  # pragma: no cover - static analyzers only

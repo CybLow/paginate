@@ -1,87 +1,109 @@
-.PHONY: help install install-dev test lint format typecheck clean build publish-test publish docs
+# Makefile for pypaginator
+# Uses UV for dependency management and tooling
+
+.PHONY: help sync lock upgrade test test-quick test-unit test-integration lint lint-fix format typecheck qa qas clean build publish-test publish docs
+
+# Default target
+.DEFAULT_GOAL := help
 
 help:  ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-install:  ## Install package in production mode
-	pip install -e .
+# =============================================================================
+# DEPENDENCY MANAGEMENT
+# =============================================================================
 
-install-dev:  ## Install package with development dependencies
-	pip install -e ".[dev,all]"
+sync:  ## Install/sync all dependencies
+	uv sync
 
-test:  ## Run tests with coverage
-	pytest --cov=pypaginator --cov-report=term-missing --cov-report=html
+sync-all:  ## Install with all optional features
+	uv sync --all-extras
 
-test-quick:  ## Run tests without coverage
-	pytest -v
+lock:  ## Update the lock file
+	uv lock
 
-test-unit:  ## Run only unit tests
-	pytest -m unit
+upgrade:  ## Upgrade all dependencies
+	uv lock --upgrade
+	uv sync
 
-test-integration:  ## Run only integration tests
-	pytest -m integration
+# =============================================================================
+# CODE QUALITY
+# =============================================================================
 
 lint:  ## Run linting checks
-	ruff check src/pypaginator
+	uv run ruff check src tests
 
-lint-fix:  ## Run linting and fix auto-fixable issues
-	ruff check --fix src/pypaginator
+lint-fix:  ## Run linting and auto-fix issues
+	uv run ruff check --fix src tests
 
-format:  ## Format code with black
-	black src/pypaginator tests examples
+format:  ## Format code with ruff
+	uv run ruff format src tests
 
 format-check:  ## Check code formatting
-	black --check src/pypaginator tests examples
+	uv run ruff format --check src tests
 
-typecheck:  ## Run type checking
-	mypy src/pypaginator
+typecheck:  ## Run type checking with mypy
+	uv run mypy src
 
-complexity:  ## Check code complexity
-	radon cc -s -n B src/pypaginator
+qa:  ## Run essential quality checks (format, lint, test)
+	uv run pypaginator qa
 
-quality:  ## Run all quality checks
-	@echo "Running type check..."
-	@mypy src/pypaginator
-	@echo "\nRunning linter..."
-	@ruff check src/pypaginator
-	@echo "\nChecking format..."
-	@black --check src/pypaginator tests
-	@echo "\nChecking complexity..."
-	@radon cc -s -n B src/pypaginator
-	@echo "\n✓ All quality checks passed!"
+qas:  ## Run all quality checks including mypy
+	uv run pypaginator qas
 
-clean:  ## Clean build artifacts
-	rm -rf build/
-	rm -rf dist/
-	rm -rf *.egg-info
-	rm -rf .pytest_cache
-	rm -rf .mypy_cache
-	rm -rf .ruff_cache
-	rm -rf htmlcov
-	rm -rf .coverage
-	find . -type d -name __pycache__ -exec rm -rf {} +
-	find . -type f -name "*.pyc" -delete
+# =============================================================================
+# TESTING
+# =============================================================================
+
+test:  ## Run tests
+	uv run pytest
+
+test-cov:  ## Run tests with coverage
+	uv run pytest --cov=pypaginator --cov-report=term-missing --cov-report=html --cov-report=xml
+
+test-quick:  ## Run tests without coverage (fast)
+	uv run pytest -x -q
+
+test-unit:  ## Run only unit tests
+	uv run pytest -m unit
+
+test-integration:  ## Run only integration tests
+	uv run pytest -m integration
+
+# =============================================================================
+# BUILD & PUBLISH
+# =============================================================================
 
 build:  ## Build package distribution
-	python -m build
+	uv build
 
 publish-test:  ## Publish to Test PyPI
-	python -m build
-	twine upload --repository testpypi dist/*
+	uv build
+	uv publish --index testpypi
 
 publish:  ## Publish to PyPI
-	python -m build
-	twine upload dist/*
+	uv build
+	uv publish
 
-docs:  ## Generate documentation
-	cd docs && make html
+clean:  ## Clean build artifacts and caches
+	uv run pypaginator clean
 
-example-basic:  ## Run basic example
-	python examples/basic_example.py
+# =============================================================================
+# DOCUMENTATION
+# =============================================================================
 
-example-sqlalchemy:  ## Run SQLAlchemy example
-	python examples/sqlalchemy_example.py
+docs:  ## Build documentation
+	uv run --group docs mkdocs build
 
-example-fastapi:  ## Run FastAPI example
-	python examples/fastapi_example.py
+docs-serve:  ## Serve documentation locally
+	uv run --group docs mkdocs serve
 
+# =============================================================================
+# DEVELOPMENT UTILITIES
+# =============================================================================
+
+pre-commit-install:  ## Install pre-commit hooks
+	uv run pre-commit install
+
+pre-commit:  ## Run pre-commit on all files
+	uv run pre-commit run --all-files

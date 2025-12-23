@@ -9,6 +9,7 @@ from .builder import JsonLogicPredicateBuilder
 from .field_accessor import FieldAccessor
 from .registry import OperatorRegistry
 
+
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
@@ -133,4 +134,4 @@ def filter_items(
     return engine.apply(items, filters)
 
 
-__all__ = ["FilterEngine", "filter_items", "CompiledFilter"]
+__all__ = ["CompiledFilter", "FilterEngine", "filter_items"]

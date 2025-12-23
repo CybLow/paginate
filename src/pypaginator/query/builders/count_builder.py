@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, TypeVar
 
 from sqlalchemy import func, select
 
+
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
     from sqlalchemy.sql import Select
@@ -31,10 +32,7 @@ def strip_ordering(query: Select[RowT]) -> Select[RowT]:
 
 
 def build_count_statement(
-    query: SelectStatement,
-    explicit: CountStatement | None,
-    *,
-    unique: bool
+    query: SelectStatement, explicit: CountStatement | None, *, unique: bool
 ) -> CountStatement:
     """Build the statement used to compute the total number of rows.
 

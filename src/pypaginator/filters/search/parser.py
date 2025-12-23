@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, ClassVar, Final
 
 import pyparsing as _pyparsing
 
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
 
@@ -250,4 +251,4 @@ class TokenParser:
         return tuple(self._normalize_raw(values, raw_transform))
 
 
-__all__ = ["TokenParser", "QueryTokens"]
+__all__ = ["QueryTokens", "TokenParser"]

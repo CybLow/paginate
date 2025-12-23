@@ -7,8 +7,10 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import TypedDict
 
-from ....exceptions import SearchQueryError
+from pypaginator.exceptions import SearchQueryError
+
 from .conditions import SearchMode
+
 
 DEFAULT_SEARCH_MODE: SearchMode = SearchMode.AND
 """Default search mode used when none is specified."""
@@ -168,7 +170,6 @@ def _parse_string_mode(value: str) -> SearchMode:
         raise SearchQueryError(
             "Unsupported search mode",
             details={"mode": value},
-            original_error=error,
         ) from error
 
 
@@ -292,10 +293,10 @@ def _coerce_pattern_option(
 
 
 __all__ = [
+    "DEFAULT_SEARCH_MODE",
     "ContextOptions",
     "ResolvedOptions",
-    "SearchOptions",
     "SearchOptionSet",
+    "SearchOptions",
     "resolve_options",
-    "DEFAULT_SEARCH_MODE",
 ]

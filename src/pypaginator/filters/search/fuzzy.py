@@ -71,4 +71,4 @@ def text_match(token: str, text: str, prefix: bool) -> bool:
     return text.startswith(token) if prefix else token in text
 
 
-__all__ = ["fuzzy_match", "partial_ratio", "is_near_match", "text_match"]
+__all__ = ["fuzzy_match", "is_near_match", "partial_ratio", "text_match"]

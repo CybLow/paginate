@@ -8,12 +8,13 @@ from typing import TYPE_CHECKING
 
 from ..operator_arguments import ensure_collection
 
+
 if TYPE_CHECKING:
     from ..registry import FilterPredicate
 
 
-
 # Membership Operators
+
 
 @dataclass(frozen=True)
 class MembershipFactory:
@@ -45,8 +46,8 @@ class MembershipFactory:
         return _predicate
 
 
-
 # Nullity Operators
+
 
 @dataclass(frozen=True)
 class NullityFactory:
@@ -54,9 +55,7 @@ class NullityFactory:
 
     expect_null: bool
 
-    def __call__(
-        self, argument: object
-    ) -> FilterPredicate[object]:  # noqa: ARG002 - signature contract
+    def __call__(self, argument: object) -> FilterPredicate[object]:
         """Return a predicate checking nullness according to configuration.
 
         Args:
@@ -75,8 +74,8 @@ class NullityFactory:
         return _predicate
 
 
-
 # Emptiness Operators
+
 
 def _emptiness(candidate: object) -> bool | None:
     """Return True for empty containers, False for non-empty, None otherwise.
@@ -100,9 +99,7 @@ class EmptyFactory:
 
     expect_empty: bool
 
-    def __call__(
-        self, argument: object
-    ) -> FilterPredicate[object]:  # noqa: ARG002 - signature contract
+    def __call__(self, argument: object) -> FilterPredicate[object]:
         """Return a predicate testing emptiness according to configuration.
 
         Args:
@@ -111,6 +108,7 @@ class EmptyFactory:
         Returns:
             A predicate testing container emptiness.
         """
+
         def _predicate(candidate: object) -> bool:
             state = _emptiness(candidate)
             if state is None:
@@ -120,4 +118,4 @@ class EmptyFactory:
         return _predicate
 
 
-__all__ = ["MembershipFactory", "NullityFactory", "EmptyFactory"]
+__all__ = ["EmptyFactory", "MembershipFactory", "NullityFactory"]

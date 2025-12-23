@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import asc, desc, nulls_first, nulls_last
 
+
 if TYPE_CHECKING:
     from typing import Any
 
@@ -53,4 +54,3 @@ class SqlSortAdapter:
 
 
 __all__ = ["SqlSortAdapter"]
-

@@ -28,24 +28,24 @@ from .utf8 import (
     transliterate_ascii,
 )
 
+
 __all__ = [
-    # UTF-8 primitives
-    "Utf8Normalizer",
-    "normalize_utf8",
-    "transliterate_ascii",
-    "create_search_normalizer",
     "UNIDECODE",
-    "NormalizationForm",
-    # Pipelines
-    "TextPipeline",
-    "Utf8TextPipeline",
-    "SqlTextNormalizer",
-    "MemoryTextNormalizer",
     # Pattern utilities
     "FilterTextNormalizer",
-    "sql_like_to_regex",
+    "MemoryTextNormalizer",
+    "NormalizationForm",
+    "SqlTextNormalizer",
+    # Pipelines
+    "TextPipeline",
+    # UTF-8 primitives
+    "Utf8Normalizer",
+    "Utf8TextPipeline",
     "build_like_regex",
     "compile_regex",
+    "create_search_normalizer",
     "normalise_regex_argument",
+    "normalize_utf8",
+    "sql_like_to_regex",
+    "transliterate_ascii",
 ]
-

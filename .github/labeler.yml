@@ -1,0 +1,47 @@
+# PR Labeler configuration
+# Automatically labels PRs based on files changed
+
+# Documentation
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '*.md'
+          - 'docs/**'
+          - 'examples/**'
+
+# Source code
+source:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/**'
+
+# Tests
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**'
+
+# CI/CD
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/**'
+          - 'Makefile'
+
+# Dependencies
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pyproject.toml'
+          - 'uv.lock'
+          - '.pre-commit-config.yaml'
+
+# Configuration
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pyproject.toml'
+          - '.editorconfig'
+          - '.gitignore'
+          - '.pre-commit-config.yaml'
+

@@ -51,12 +51,16 @@ from .core import KeysetPageParams, Page, PageParams
 # Exceptions
 from .exceptions import (
     FilterException,
+    FilterValidationError,
     PaginationConfigurationError,
     PaginatorException,
     SearchException,
+    SearchNormalizationError,
+    SearchQueryError,
     SortException,
     ValidationException,
 )
+
 
 # Main query functions (with optional SQLAlchemy support)
 try:
@@ -72,37 +76,36 @@ except ImportError:
     _HAS_SQLALCHEMY = False
 
     # Provide stubs that raise helpful errors
-    def _sqlalchemy_required(*args, **kwargs):  # type: ignore
+    def _sqlalchemy_required(*args: object, **kwargs: object) -> object:
         raise ImportError(
             "SQLAlchemy features require installation: pip install pypaginator[sqlalchemy]"
         )
 
-    paginate_entities = _sqlalchemy_required  # type: ignore
-    paginate_entities_to_page = _sqlalchemy_required  # type: ignore
-    paginate_rows = _sqlalchemy_required  # type: ignore
-    paginate_rows_to_page = _sqlalchemy_required  # type: ignore
+    paginate_entities = _sqlalchemy_required  # type: ignore[assignment]
+    paginate_entities_to_page = _sqlalchemy_required  # type: ignore[assignment]
+    paginate_rows = _sqlalchemy_required  # type: ignore[assignment]
+    paginate_rows_to_page = _sqlalchemy_required  # type: ignore[assignment]
 
 
 __version__ = "0.1.0"
 
 __all__ = [
+    "FilterException",
+    "KeysetPageParams",
     # Core types
     "Page",
     "PageParams",
-    "KeysetPageParams",
-    # Main functions (SQLAlchemy)
-    "paginate_entities",
-    "paginate_entities_to_page",
-    "paginate_rows",
-    "paginate_rows_to_page",
+    "PaginationConfigurationError",
     # Exceptions
     "PaginatorException",
-    "PaginationConfigurationError",
-    "FilterException",
     "SearchException",
     "SortException",
     "ValidationException",
     # Version
     "__version__",
+    # Main functions (SQLAlchemy)
+    "paginate_entities",
+    "paginate_entities_to_page",
+    "paginate_rows",
+    "paginate_rows_to_page",
 ]
-

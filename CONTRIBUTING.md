@@ -2,6 +2,18 @@
 
 Thank you for your interest in contributing to PyPaginator! We welcome contributions from the community.
 
+## Prerequisites
+
+- **Python 3.11+**
+- **[UV](https://docs.astral.sh/uv/)** - Fast Python package manager
+
+```bash
+# Install UV (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh  # macOS/Linux
+# or
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
+```
+
 ## Development Setup
 
 1. **Fork and clone the repository**
@@ -10,53 +22,46 @@ Thank you for your interest in contributing to PyPaginator! We welcome contribut
    cd pypaginator
    ```
 
-2. **Create a virtual environment**
+2. **Install dependencies with UV**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   uv sync
    ```
 
-3. **Install development dependencies**
+3. **Install pre-commit hooks** (optional but recommended)
    ```bash
-   pip install -e ".[dev,all]"
+   uv run pre-commit install
    ```
 
 ## Code Quality Standards
 
 All contributions must pass the following quality gates:
 
-### 1. Type Checking (mypy)
+### Quick Quality Check
 ```bash
-mypy src/pypaginator
-```
-- Must pass with `--strict` mode
-- 100% type coverage required
+# Run essential checks (format, lint, test)
+uv run pypaginator qa
 
-### 2. Linting (ruff)
-```bash
-ruff check src/pypaginator
+# Or with make
+make qa
 ```
-- Zero linting issues allowed
 
-### 3. Code Formatting (black)
-```bash
-black src/pypaginator tests
-```
-- All code must be formatted with Black
+### Individual Checks
 
-### 4. Tests (pytest)
-```bash
-pytest --cov=pypaginator --cov-report=term-missing
-```
-- All tests must pass
-- Minimum 90% code coverage
-- New features must include tests
+| Check | Command | Alias |
+|-------|---------|-------|
+| Linting | `uv run pypaginator lint` | `uv run ruff check src tests` |
+| Formatting | `uv run pypaginator format` | `uv run ruff format src tests` |
+| Type Checking | `uv run pypaginator typecheck` | `uv run mypy src` |
+| Tests | `uv run pypaginator test` | `uv run pytest` |
+| All Checks | `uv run pypaginator qas` | Includes mypy |
 
-### 5. Complexity (radon)
-```bash
-radon cc -s -n B src/pypaginator
-```
-- All functions must have cyclomatic complexity ≤ 8 (grade A or B)
+### Requirements
+
+- ✅ Zero linting errors
+- ✅ All tests pass
+- ✅ Code is properly formatted
+- ✅ New features include tests
+- ✅ Type hints for all public APIs
 
 ## Development Workflow
 
@@ -70,156 +75,85 @@ radon cc -s -n B src/pypaginator
    - Follow existing code style and patterns
    - Keep functions small and focused
 
-3. **Add tests**
-   - Write unit tests for new functionality
-   - Ensure tests are isolated and repeatable
-   - Use appropriate pytest markers (`@pytest.mark.unit`, etc.)
-
-4. **Run quality checks**
+3. **Run quality checks**
    ```bash
-   # Run all checks
-   mypy src/pypaginator
-   ruff check src/pypaginator
-   black src/pypaginator tests
-   pytest
-   radon cc -s -n B src/pypaginator
+   uv run pypaginator qa
    ```
 
-5. **Commit your changes**
+4. **Commit your changes**
    ```bash
    git add .
-   git commit -m "Add feature: description of your feature"
+   git commit -m "feat: description of your feature"
    ```
-   - Use clear, descriptive commit messages
-   - Follow conventional commits format if possible
 
-6. **Push and create a Pull Request**
+5. **Push and create a Pull Request**
    ```bash
    git push origin feature/your-feature-name
    ```
 
-## Pull Request Guidelines
+## Commit Message Convention
 
-- **Title**: Clear and descriptive
-- **Description**: Explain what changes you made and why
-- **Tests**: Include test results showing all checks pass
-- **Documentation**: Update README or docs if needed
-- **Breaking Changes**: Clearly mark any breaking changes
+We follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+- `feat:` New feature
+- `fix:` Bug fix
+- `docs:` Documentation only
+- `style:` Code style (formatting)
+- `refactor:` Code refactor (no feature/fix)
+- `test:` Adding/updating tests
+- `chore:` Maintenance tasks
+
+## Pull Request Guidelines
 
 ### PR Checklist
 
 - [ ] Code follows project style guidelines
-- [ ] All tests pass (`pytest`)
-- [ ] Type checking passes (`mypy --strict`)
-- [ ] Linting passes (`ruff check`)
-- [ ] Code is formatted (`black`)
-- [ ] Complexity is low (`radon cc`)
+- [ ] Quality checks pass (`uv run pypaginator qa`)
 - [ ] New code has tests
-- [ ] Documentation is updated
+- [ ] Documentation is updated (if needed)
 - [ ] CHANGELOG.md is updated
 
-## Code Style Guidelines
+### Review Process
 
-### Naming Conventions
-- **Functions/Variables**: `snake_case`
-- **Classes**: `PascalCase`
-- **Constants**: `UPPER_SNAKE_CASE`
-- **Private members**: Prefix with `_`
-
-### Type Hints
-- Always use type hints for function signatures
-- Use `from __future__ import annotations` for forward references
-- Prefer `collections.abc` types over built-in generics
-
-### Documentation
-- Use docstrings for all public functions and classes
-- Follow Google docstring style
-- Include examples for complex functionality
-
-### Error Handling
-- Use custom exceptions from `pypaginator.exceptions`
-- Provide clear error messages
-- Don't catch exceptions silently
-
-### File Organization
-- Keep files under 200 lines when possible
-- One class per file for large classes
-- Group related functions together
+1. CI will automatically run all quality checks
+2. A maintainer will review your PR
+3. Address any feedback
+4. Once approved, your PR will be merged
 
 ## Testing Guidelines
 
 ### Test Structure
 ```python
-def test_feature_name():
+def test_feature_name() -> None:
     """Test description following Arrange-Act-Assert pattern."""
     # Arrange
     setup = create_test_data()
-    
+
     # Act
     result = function_under_test(setup)
-    
+
     # Assert
     assert result == expected
 ```
 
 ### Test Markers
-- `@pytest.mark.unit`: Unit tests
+- `@pytest.mark.unit`: Fast unit tests
 - `@pytest.mark.integration`: Integration tests
 - `@pytest.mark.sqlalchemy`: Tests requiring SQLAlchemy
 - `@pytest.mark.search`: Tests requiring search features
 - `@pytest.mark.filters`: Tests requiring filter features
 
-### Fixtures
-- Use fixtures for common test data
-- Keep fixtures focused and reusable
-- Document fixture purpose
+## Code Style
 
-## Adding New Features
+### Type Hints
+- Always use type hints for function signatures
+- Use `from __future__ import annotations`
+- Prefer `collections.abc` types over built-in generics
 
-### 1. Core Types
-- Immutable dataclasses with `@dataclass(frozen=True)`
-- Protocol definitions in `types.py`
-- Concrete implementations in appropriate modules
-
-### 2. Engines
-- Inherit from base protocols
-- Keep engine logic focused
-- Support both sync and async where applicable
-
-### 3. Filters/Search
-- Add operators to appropriate operator modules
-- Register in `operators/__init__.py`
-- Include comprehensive tests
-
-### 4. Integrations
-- Keep framework-specific code in `integrations/`
-- Make dependencies optional
-- Provide helpful error messages when dependencies missing
-
-## Documentation
-
-### API Documentation
-- Update docstrings for any changed functions
-- Include examples in docstrings
-- Keep documentation current with code
-
-### User Documentation
-- Update README.md for user-facing changes
-- Add examples to `examples/` directory
-- Update `docs/` for major features
-
-### Architecture Documentation
-- Update architecture docs for structural changes
-- Document design decisions
-- Keep architecture diagrams current
-
-## Release Process
-
-1. Update version in `pyproject.toml`
-2. Update `CHANGELOG.md` with changes
-3. Create a git tag: `git tag v0.x.x`
-4. Push tag: `git push origin v0.x.x`
-5. GitHub Actions will automatically publish to PyPI
+### Documentation
+- Use docstrings for all public functions/classes
+- Follow Google docstring style
+- Include examples for complex functionality
 
 ## Getting Help
 
@@ -234,4 +168,3 @@ Be respectful and inclusive. We follow the [Contributor Covenant Code of Conduct
 ---
 
 Thank you for contributing to PyPaginator! 🚀
-

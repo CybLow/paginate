@@ -5,16 +5,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 from pypaginator.exceptions import PaginationConfigurationError
+
 from ..core.context import PaginationContext, clamp_page_params
 from ..core.pages import PageParams
 from ..core.snapshots import (
     KeysetPaginationSnapshot,
     PaginationSnapshot,
-    extract_keyset_markers,
     markers_from_paging,
     materialize_keyset_page,
 )
 from ..query.builders.count_builder import build_count_statement, fetch_count
+
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from collections.abc import Awaitable, Callable
@@ -128,9 +129,7 @@ class SqlPaginator(Generic[ItemT]):
         return self._materialize(result, scalars=scalars, unique=unique)  # type: ignore[arg-type]
 
     @staticmethod
-    def _apply_limits(
-        query: SelectStatement, params: PageParams
-    ) -> SelectStatement:
+    def _apply_limits(query: SelectStatement, params: PageParams) -> SelectStatement:
         """Apply offset/limit to the base statement from parameters.
 
         Args:
@@ -160,7 +159,7 @@ class SqlPaginator(Generic[ItemT]):
         result: ResultSequence[ItemT],  # type: ignore[type-var]
         *,
         unique: bool,
-    ) -> ResultSequence[ItemT]:
+    ) -> ResultSequence[ItemT]:  # type: ignore[type-var]
         """Optionally remove duplicates prior to materialization.
 
         Args:
@@ -174,7 +173,7 @@ class SqlPaginator(Generic[ItemT]):
 
     def _materialize(
         self,
-        result: Result[ItemT],
+        result: Result[ItemT],  # type: ignore[type-var]
         *,
         scalars: bool,
         unique: bool,
@@ -215,7 +214,7 @@ class SqlPaginator(Generic[ItemT]):
 
     # fmt: off
     async def paginate_keyset(self, query: SelectStatement, params: KeysetPageParams, *, unique: bool, scalars: bool = True) -> KeysetPaginationSnapshot[ItemT]:
-# fmt: on
+    # fmt: on
         """Paginate a statement using the keyset strategy.
 
         Args:
@@ -234,9 +233,9 @@ class SqlPaginator(Generic[ItemT]):
         markers = markers_from_paging(page.paging)  # type: ignore[attr-defined]
         return KeysetPaginationSnapshot(items, params, *markers)
 
-# fmt: off
+    # fmt: off
     async def _paginate_offset(self, query: SelectStatement, context: PaginationContext[ParamsT], *, scalars: bool) -> PaginationSnapshot[ItemT, ParamsT]:
-# fmt: on
+    # fmt: on
         """Internal offset-based pagination pipeline.
 
         Args:
@@ -287,9 +286,8 @@ _STRATEGIES: dict[str, Callable[..., Awaitable[object]]] = {
 
 
 __all__ = [
-    "SqlPaginator",
-    "PaginationSnapshot",
     "KeysetPaginationSnapshot",
+    "PaginationSnapshot",
+    "SqlPaginator",
     "get_pagination_strategy",
-    "extract_keyset_markers",
 ]

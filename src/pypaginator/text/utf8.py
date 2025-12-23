@@ -5,11 +5,16 @@ from __future__ import annotations
 import unicodedata
 from dataclasses import dataclass
 from importlib import import_module
-from typing import Callable, Final, Literal, cast
+from typing import TYPE_CHECKING, Final, Literal, cast
+
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 
 _UNIDECODE_MODULE = import_module("text_unidecode")
 UNIDECODE: Final[Callable[[str], str]] = cast(
-    "Callable[[str], str]", getattr(_UNIDECODE_MODULE, "unidecode")
+    "Callable[[str], str]", _UNIDECODE_MODULE.unidecode
 )
 """Concrete reference to the unidecode function from text_unidecode library."""
 
@@ -88,10 +93,10 @@ def create_search_normalizer() -> Utf8Normalizer:
 
 
 __all__ = [
-    "Utf8Normalizer",
-    "normalize_utf8",
-    "transliterate_ascii",
-    "create_search_normalizer",
     "UNIDECODE",
     "NormalizationForm",
+    "Utf8Normalizer",
+    "create_search_normalizer",
+    "normalize_utf8",
+    "transliterate_ascii",
 ]

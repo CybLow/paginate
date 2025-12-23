@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Protocol
 
 from sqlalchemy import text
 
+
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -136,4 +137,3 @@ def _log_notes(notes: tuple[str, ...]) -> None:
 
 
 __all__ = ["CollationPlan", "ensure_database_collations", "recommend_collation_plan"]
-

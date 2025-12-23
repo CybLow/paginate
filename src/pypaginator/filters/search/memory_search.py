@@ -2,19 +2,22 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
-from typing import TYPE_CHECKING, Callable, TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
-from ....exceptions import SearchQueryError
-from ...text.api import MemoryTextNormalizer
+from pypaginator.exceptions import SearchQueryError
+
 from ..predicates.field_accessor import FieldAccessor
 from .conditions import SearchMode
 from .fuzzy import fuzzy_match, text_match
 
+
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
 
+    from ...text.api import MemoryTextNormalizer
     from .parser import QueryTokens, TokenParser
 
 T = TypeVar("T")
@@ -210,6 +213,7 @@ def accessors(fields: Sequence[str]) -> tuple[FieldAccessor, ...]:
 # Options Section
 # ============================================================================
 
+
 @dataclass(frozen=True)
 class MemorySearchOptions:
     """Value object bridging service configuration and match options."""
@@ -234,6 +238,7 @@ class MemorySearchOptions:
 # ============================================================================
 # Engine Classes
 # ============================================================================
+
 
 class MemorySearchEngine:
     """Filter Python objects using SQL-compatible normalisation rules.
@@ -446,8 +451,8 @@ class MemorySearchService:
 
 
 __all__ = [
-    "MemorySearchEngine",
-    "MemorySearchService",
     "DEFAULT_FUZZY_THRESHOLD",
     "DEFAULT_SEARCH_MODE",
+    "MemorySearchEngine",
+    "MemorySearchService",
 ]

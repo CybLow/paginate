@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, TypeGuard
 
 from .jsonlogic_evaluator import evaluate_json_logic_rule
 
+
 if TYPE_CHECKING:
     from .registry import FilterPredicate, OperatorRegistry
 
@@ -173,6 +174,7 @@ def _make_jsonlogic_predicate(
     Returns:
         A predicate function accepting a candidate value.
     """
+
     def _predicate(candidate: object) -> bool:
         values = {key: predicate(candidate) for key, predicate in predicates.items()}
         context = {"value": candidate, "predicates": values}

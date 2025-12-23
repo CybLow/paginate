@@ -1,4 +1,5 @@
 """Helper primitives shared by SQL search strategies."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
@@ -6,6 +7,7 @@ from typing import TYPE_CHECKING, Protocol
 from sqlalchemy import or_ as sa_or_
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ColumnElement
+
 
 if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Iterable, Iterator, Sequence
@@ -79,9 +81,11 @@ def phrase_clause_factory(normalizer: SqlTextNormalizer) -> ClauseBuilder:
     Returns:
         A ClauseBuilder function for phrases.
     """
+
     # Wrapper explicite plutôt que functools.partial
     def builder(term: str, context: ConditionContext) -> SqlClause | None:
         return _text_clause(normalizer, term, context, prefix=False)
+
     return builder
 
 
@@ -97,10 +101,12 @@ def term_clause_factory(
     Returns:
         A ClauseBuilder function for terms.
     """
+
     def builder(term: str, context: ConditionContext) -> SqlClause | None:
         if term.lower() in ignored:
             return None
         return _text_clause(normalizer, term, context, prefix=context.prefix)
+
     return builder
 
 
@@ -294,8 +300,8 @@ def _column_expression(model_class: type, field: str) -> SqlStringExpression | N
 
 __all__ = [
     "ClauseBuilder",
-    "collect_clauses",
     "clause_sequences",
+    "collect_clauses",
     "column_attributes",
     "like_for_fields",
     "match_columns",
@@ -304,4 +310,3 @@ __all__ = [
     "phrase_clause_factory",
     "term_clause_factory",
 ]
-

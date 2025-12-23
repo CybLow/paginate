@@ -8,7 +8,9 @@ from typing import TYPE_CHECKING, Protocol
 from sqlalchemy.sql import func
 
 from pypaginator.exceptions import SearchNormalizationError
+
 from .utf8 import Utf8Normalizer, create_search_normalizer, transliterate_ascii
+
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -138,8 +140,8 @@ class MemoryTextNormalizer:
 
 
 __all__ = [
+    "MemoryTextNormalizer",
+    "SqlTextNormalizer",
     "TextPipeline",
     "Utf8TextPipeline",
-    "SqlTextNormalizer",
-    "MemoryTextNormalizer",
 ]

@@ -12,7 +12,8 @@ from dataclasses import dataclass
 from functools import reduce
 from typing import TYPE_CHECKING, Any, TypeGuard, cast
 
-import json_logic  # type: ignore[import-untyped]
+import json_logic
+
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -163,4 +164,4 @@ def evaluate_json_logic_rule(rule: object, data: JsonLogicData) -> object:
     return _adapter.evaluate(rule, data)
 
 
-__all__ = ["evaluate_json_logic_rule", "JsonLogicAdapter"]
+__all__ = ["JsonLogicAdapter", "evaluate_json_logic_rule"]

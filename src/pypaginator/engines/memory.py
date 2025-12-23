@@ -25,6 +25,7 @@ from typing import Generic, TypeVar
 
 from ..core import Page, PageParams, clamp_page_params
 
+
 T = TypeVar("T")
 """Generic type variable for item types in memory pagination."""
 
@@ -123,9 +124,7 @@ class MemoryPaginator(Generic[T]):
             return self._paginate_sequence(items, params)
         return self._paginate_stream(items, params, predicate)
 
-    def _paginate_sequence(
-        self, items: Sequence[T], params: PageParams
-    ) -> Page[T]:
+    def _paginate_sequence(self, items: Sequence[T], params: PageParams) -> Page[T]:
         """Paginate a sequence using efficient slicing.
 
         Args:
@@ -177,9 +176,7 @@ class MemoryPaginator(Generic[T]):
         window, total = collect_window(items, bounds)
         return Page.create(window, total, params)
 
-    def _paginate_clamped(
-        self, items: Iterator[T], params: PageParams
-    ) -> Page[T]:
+    def _paginate_clamped(self, items: Iterator[T], params: PageParams) -> Page[T]:
         """Paginate with clamping enabled.
 
         Args:
@@ -197,8 +194,8 @@ class MemoryPaginator(Generic[T]):
 
 __all__ = [
     "MemoryPaginator",
-    "filter_iter",
-    "compute_bounds",
-    "collect_window",
     "SliceBounds",
+    "collect_window",
+    "compute_bounds",
+    "filter_iter",
 ]

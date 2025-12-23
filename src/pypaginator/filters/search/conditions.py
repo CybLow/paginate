@@ -5,7 +5,8 @@ from __future__ import annotations
 from itertools import chain
 from typing import TYPE_CHECKING
 
-from ....exceptions import SearchQueryError
+from pypaginator.exceptions import SearchQueryError
+
 from .strategies import (
     ConditionContext,
     ConditionStrategy,
@@ -13,6 +14,7 @@ from .strategies import (
     PhraseConditionStrategy,
     TermConditionStrategy,
 )
+
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     import re
@@ -29,6 +31,7 @@ from enum import Enum
 
 class SearchMode(Enum):
     """Aggregation mode for search conditions."""
+
     AND = "and"
     OR = "or"
     FUZZY = "fuzzy"
@@ -136,11 +139,11 @@ def _combine(expressions: list[SqlClause], mode: SearchMode) -> list[SqlClause]:
 
 
 __all__ = [
-    "SearchMode",
     "ConditionContext",
     "ConditionStrategy",
     "IdConditionStrategy",
     "PhraseConditionStrategy",
+    "SearchMode",
     "SqlConditionBuilder",
     "TermConditionStrategy",
 ]

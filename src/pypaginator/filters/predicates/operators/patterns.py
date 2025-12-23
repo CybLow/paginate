@@ -6,13 +6,15 @@ import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from .....exceptions import FilterValidationError
+from pypaginator.exceptions import FilterValidationError
+
 from ....text.api import (
     FilterTextNormalizer,
     build_like_regex,
     compile_regex,
     normalise_regex_argument,
 )
+
 
 if TYPE_CHECKING:
     from ..registry import FilterPredicate
@@ -65,6 +67,7 @@ class LikeFactory:
         Returns:
             A predicate function for LIKE matching.
         """
+
         def _apply(candidate: object) -> bool:
             text = normalizer(candidate)
             return bool(text and regex.fullmatch(text))
@@ -119,6 +122,7 @@ class RegexFactory:
         Returns:
             A predicate function for regex matching.
         """
+
         def _apply(candidate: object) -> bool:
             text = normalizer(candidate)
             return bool(text and compiled.search(text))

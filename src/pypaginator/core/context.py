@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Generic, TypeVar
 
 from .pages import PageParams
 
+
 if TYPE_CHECKING:
     from ..database.types import CountStatement
 
@@ -43,14 +44,12 @@ def clamp_page_params(total: int, params: ParamsT) -> ParamsT:
     """
     limit = max(1, params.limit)
     if total <= 0:
-        clamped = params.model_copy(update={"page": 1, "limit": limit})
-        return clamped  # type: ignore[return-value]
+        return params.model_copy(update={"page": 1, "limit": limit})  # type: ignore[return-value]
     pages = max(1, (total + limit - 1) // limit)
     safe_page = min(max(params.page, 1), pages)
     if safe_page == params.page and limit == params.limit:
         return params
-    clamped = params.model_copy(update={"page": safe_page, "limit": limit})
-    return clamped  # type: ignore[return-value]
+    return params.model_copy(update={"page": safe_page, "limit": limit})  # type: ignore[return-value]
 
 
 __all__ = ["PaginationContext", "clamp_page_params"]

@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import and_, or_
 
+
 if TYPE_CHECKING:
     from sqlalchemy.orm import InstrumentedAttribute
     from sqlalchemy.sql.elements import ColumnElement
@@ -38,9 +39,17 @@ class SqlFilterAdapter:
             case "lte" | "less_than_or_equal":
                 return column <= value
             case "in":
-                return column.in_(value) if isinstance(value, (list, tuple, set)) else column == value
+                return (
+                    column.in_(value)
+                    if isinstance(value, (list, tuple, set))
+                    else column == value
+                )
             case "not_in":
-                return ~column.in_(value) if isinstance(value, (list, tuple, set)) else column != value
+                return (
+                    ~column.in_(value)
+                    if isinstance(value, (list, tuple, set))
+                    else column != value
+                )
             case "like":
                 return column.like(str(value))
             case "ilike":
@@ -64,12 +73,11 @@ class SqlFilterAdapter:
         """Combine multiple conditions with AND or OR logic."""
         if not conditions:
             raise ValueError("Cannot combine empty list of conditions")
-        
+
         if len(conditions) == 1:
             return conditions[0]
-        
+
         return and_(*conditions) if logic == "and" else or_(*conditions)
 
 
 __all__ = ["SqlFilterAdapter"]
-

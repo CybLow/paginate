@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 
 from pypaginator.exceptions import FilterValidationError
+
 from .pipelines import MemoryTextNormalizer
 
 
@@ -158,8 +159,8 @@ def _ensure_string(value: object) -> str:
 
 __all__ = [
     "FilterTextNormalizer",
-    "sql_like_to_regex",
     "build_like_regex",
     "compile_regex",
     "normalise_regex_argument",
+    "sql_like_to_regex",
 ]

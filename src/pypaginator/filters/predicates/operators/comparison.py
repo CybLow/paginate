@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from operator import eq, ge, gt, le, lt, ne
 from typing import TYPE_CHECKING, cast
 
-from .....exceptions import FilterValidationError
+from pypaginator.exceptions import FilterValidationError
+
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -143,4 +144,4 @@ COMPARATORS: dict[
 }
 
 
-__all__ = ["EqualityFactory", "OrderingFactory", "COMPARATORS"]
+__all__ = ["COMPARATORS", "EqualityFactory", "OrderingFactory"]

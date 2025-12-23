@@ -5,7 +5,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Generic, TypeVar, cast
 
-from ....exceptions import FilterValidationError
+from pypaginator.exceptions import FilterValidationError
+
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -93,5 +94,4 @@ class OperatorRegistry(Generic[CandidateT_inv]):
         return registry
 
 
-__all__ = ["OperatorRegistry", "FilterPredicate", "OperatorFactory"]
-
+__all__ = ["FilterPredicate", "OperatorFactory", "OperatorRegistry"]

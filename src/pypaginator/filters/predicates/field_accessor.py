@@ -5,10 +5,11 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, is_dataclass
-from typing import TypeAlias, cast
+from typing import TypeAlias
 
 import jmespath
 from jmespath.parser import ParsedResult
+
 
 # Concrete alias for jmespath vendor type - exposed at runtime
 CompiledExpression: TypeAlias = ParsedResult
@@ -75,8 +76,7 @@ def _compile_expression(tokens: Sequence[int | str]) -> CompiledExpression:
     Returns:
         A compiled jmespath expression.
     """
-    compiled = jmespath.compile(_format_tokens(tokens))
-    return compiled
+    return jmespath.compile(_format_tokens(tokens))
 
 
 def _is_scalar(value: object) -> bool:
@@ -212,4 +212,4 @@ class FieldAccessor:
         return self.expression.search(_to_data(obj))
 
 
-__all__ = ["FieldAccessor", "CompiledExpression"]
+__all__ = ["CompiledExpression", "FieldAccessor"]

@@ -1,0 +1,82 @@
+# Dependabot configuration
+# Auto-updates Python dependencies and GitHub Actions
+
+version: 2
+
+registries:
+  pypi:
+    type: python-index
+    url: https://pypi.org/simple
+    replaces-base: true
+
+updates:
+  # ==========================================================================
+  # PYTHON DEPENDENCIES (uv/pip ecosystem)
+  # ==========================================================================
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    registries:
+      - pypi
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "python"
+    reviewers:
+      - "CybLow"
+    groups:
+      # Group all development dependencies
+      dev-dependencies:
+        patterns:
+          - "pytest*"
+          - "ruff"
+          - "mypy"
+          - "pre-commit"
+          - "coverage*"
+          - "twine"
+          - "build"
+          - "mkdocs*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Runtime dependencies separately
+      runtime:
+        patterns:
+          - "SQLAlchemy"
+          - "fastapi"
+          - "rapidfuzz"
+          - "jmespath"
+          - "pyparsing"
+    open-pull-requests-limit: 10
+    ignore:
+      # Skip major versions that might break API
+      - dependency-name: "SQLAlchemy"
+        update-types: ["version-update:semver-major"]
+
+  # ==========================================================================
+  # GITHUB ACTIONS
+  # ==========================================================================
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "ci"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 5

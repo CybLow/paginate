@@ -10,8 +10,8 @@ from __future__ import annotations
 from typing import TypeAlias, TypeVar
 
 from sqlalchemy import Select
-from sqlalchemy.engine import Result as SAResult
-from sqlalchemy.engine import ScalarResult as SAScalarResult
+from sqlalchemy.engine import Result as SAResult, ScalarResult as SAScalarResult
+
 
 RowT = TypeVar("RowT", covariant=True)
 """Covariant type variable for row tuple types."""
@@ -39,9 +39,9 @@ ResultSequence: TypeAlias = Result[ItemT] | ScalarResult[ItemT]
 
 
 __all__ = [
-    "Result",
-    "ScalarResult",
-    "ResultSequence",
-    "SelectStatement",
     "CountStatement",
+    "Result",
+    "ResultSequence",
+    "ScalarResult",
+    "SelectStatement",
 ]

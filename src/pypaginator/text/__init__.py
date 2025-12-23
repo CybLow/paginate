@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from .api import MemoryTextNormalizer, SqlTextNormalizer
 
+
 __all__ = [
     "MemoryTextNormalizer",
     "SqlTextNormalizer",

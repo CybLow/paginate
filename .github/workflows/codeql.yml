@@ -1,0 +1,43 @@
+# =============================================================================
+# CodeQL Security Analysis
+# =============================================================================
+
+name: CodeQL
+
+on:
+  push:
+    branches: [main, develop]
+    paths: ['src/**', '.github/workflows/codeql.yml']
+
+  pull_request:
+    branches: [main, develop]
+    paths: ['src/**']
+
+  schedule:
+    - cron: '0 6 * * 1'  # Monday 6 AM UTC
+
+permissions:
+  security-events: write
+  contents: read
+  actions: read
+
+jobs:
+  analyze:
+    name: 🔒 Analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔧 Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          queries: security-extended,security-and-quality
+
+      - name: 🔍 Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:python

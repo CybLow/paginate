@@ -13,6 +13,7 @@ from numbers import Number
 from operator import attrgetter
 from typing import TYPE_CHECKING, Generic, Literal, TypeVar
 
+
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -209,8 +210,8 @@ def sort_items(items: list[T], sort_field: str, *, reverse: bool, nulls_position
 
 
 __all__ = [
-    "SortEngine",  # ← Mis à jour
     "Nulls",
+    "SortEngine",  # ← Mis à jour
     "create_sort_service",
     "sort_items",
 ]

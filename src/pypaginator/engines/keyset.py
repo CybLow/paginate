@@ -13,6 +13,7 @@ from sqlakeyset.asyncio import select_page as sqlakeyset_select_page
 
 from ..core.snapshots import coerce_bookmark
 
+
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -48,8 +49,7 @@ async def select_keyset_page(
     """
     kwargs = _keyset_kwargs(params, unique)
     select_page: SelectPageCallable = sqlakeyset_select_page
-    page = await select_page(session, query, **kwargs)
-    return page
+    return await select_page(session, query, **kwargs)
 
 
 def _keyset_kwargs(params: KeysetPageParams, unique: bool) -> dict[str, object]:

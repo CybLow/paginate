@@ -46,25 +46,26 @@ from .search import (
     create_sql_search_service,
 )
 
+
 __all__ = [
-    # Predicates - Filtrage par prédicats JSON Logic
-    "FilterEngine",
-    "filter_items",
+    "DEFAULT_SEARCH_MODE",
     "CompiledFilter",
     "FieldAccessor",
-    "JsonLogicPredicateBuilder",
-    "OperatorRegistry",
+    # Predicates - Filtrage par prédicats JSON Logic
+    "FilterEngine",
     "FilterPredicate",
-    "OperatorFactory",
-    # Search - Recherche textuelle
-    "TokenParser",
-    "QueryTokens",
-    "SqlSearchService",
+    "JsonLogicPredicateBuilder",
     "MemorySearchEngine",
     "MemorySearchService",
+    "OperatorFactory",
+    "OperatorRegistry",
+    "QueryTokens",
     "SearchMode",
-    "DEFAULT_SEARCH_MODE",
+    "SqlSearchService",
+    # Search - Recherche textuelle
+    "TokenParser",
+    "create_memory_search_service",
     # Factories
     "create_sql_search_service",
-    "create_memory_search_service",
+    "filter_items",
 ]

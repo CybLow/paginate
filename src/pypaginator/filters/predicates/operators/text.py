@@ -5,8 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from .....exceptions import FilterValidationError
+from pypaginator.exceptions import FilterValidationError
+
 from ....text.api import FilterTextNormalizer
+
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -78,6 +80,7 @@ class TextFactory:
         Returns:
             A predicate function for text matching.
         """
+
         def _apply(candidate: object) -> bool:
             haystack = normalizer(candidate)
             return bool(haystack and self.matcher(haystack, needle))
