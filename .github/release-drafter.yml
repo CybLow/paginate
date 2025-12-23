@@ -61,30 +61,6 @@ version-resolver:
       - 'dependencies'
   default: patch
 
-autolabeler:
-  - label: 'documentation'
-    files:
-      - '*.md'
-      - 'docs/**/*'
-  - label: 'ci'
-    files:
-      - '.github/**/*'
-  - label: 'dependencies'
-    files:
-      - 'pyproject.toml'
-      - 'uv.lock'
-  - label: 'test'
-    files:
-      - 'tests/**/*'
-  - label: 'feature'
-    branch:
-      - '/feature\/.+/'
-  - label: 'fix'
-    branch:
-      - '/fix\/.+/'
-      - '/bugfix\/.+/'
-      - '/hotfix\/.+/'
-
 exclude-labels:
   - 'skip-changelog'
   - 'no-changelog'
