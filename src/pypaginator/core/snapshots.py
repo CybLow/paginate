@@ -13,14 +13,14 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Generic, TypeGuard, TypeVar, cast
-
-from sqlakeyset import Page as KeysetPage, Paging, unserialize_bookmark
+from typing import TYPE_CHECKING, Any, Generic, TypeGuard, TypeVar, cast
 
 from pypaginator.exceptions import PaginationConfigurationError
 
 
 if TYPE_CHECKING:
+    from sqlakeyset import Page as KeysetPage, Paging
+
     from .pages import KeysetPageParams, PageParams
 
 ItemT = TypeVar("ItemT")
@@ -34,6 +34,25 @@ KeysetItemT = TypeVar("KeysetItemT", covariant=True)
 
 BookmarkPayload = tuple[object, ...]
 """Type alias for bookmark payloads."""
+
+
+def _get_sqlakeyset() -> Any:
+    """Lazily import sqlakeyset module.
+
+    Returns:
+        The sqlakeyset module.
+
+    Raises:
+        ImportError: If sqlakeyset is not installed.
+    """
+    try:
+        import sqlakeyset
+    except ImportError as e:
+        raise ImportError(
+            "sqlakeyset is required for keyset pagination. "
+            "Install with: pip install pypaginator[sqlalchemy]"
+        ) from e
+    return sqlakeyset
 
 
 @dataclass(frozen=True)
@@ -120,7 +139,8 @@ def coerce_bookmark(value: str | None) -> BookmarkPayload | None:
     """
     if value is None:
         return None
-    marker = unserialize_bookmark(value)
+    sqlakeyset = _get_sqlakeyset()
+    marker = sqlakeyset.unserialize_bookmark(value)
     payload = getattr(marker, "place", None)
     if not isinstance(payload, tuple):
         raise PaginationConfigurationError(
