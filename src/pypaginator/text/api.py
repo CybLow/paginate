@@ -20,7 +20,6 @@ from .pipelines import (
     Utf8TextPipeline,
 )
 from .utf8 import (
-    UNIDECODE,
     NormalizationForm,
     Utf8Normalizer,
     create_search_normalizer,
@@ -30,7 +29,6 @@ from .utf8 import (
 
 
 __all__ = [
-    "UNIDECODE",
     # Pattern utilities
     "FilterTextNormalizer",
     "MemoryTextNormalizer",

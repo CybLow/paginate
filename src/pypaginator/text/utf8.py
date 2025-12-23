@@ -31,7 +31,7 @@ def _get_unidecode() -> Callable[[str], str]:
             "text_unidecode is required for text normalization. "
             "Install with: pip install pypaginator[text]"
         ) from e
-    return unidecode
+    return unidecode  # type: ignore[no-any-return]
 
 
 def normalize_utf8(
