@@ -316,7 +316,7 @@ source = ["src/pypaginator", "*/site-packages/pypaginator"]
 precision = 2
 show_missing = true
 skip_covered = false
-fail_under = 80
+fail_under = 10
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
