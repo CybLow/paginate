@@ -112,6 +112,7 @@ test = [
     "pytest-xdist>=3.6.1",
     "coverage[toml]>=7.6.0",
     "aiosqlite>=0.20.0",
+    "httpx>=0.28.1",
 ]
 # Linting & Formatting
 lint = [
@@ -316,7 +317,7 @@ source = ["src/pypaginator", "*/site-packages/pypaginator"]
 precision = 2
 show_missing = true
 skip_covered = false
-fail_under = 10
+fail_under = 80
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",

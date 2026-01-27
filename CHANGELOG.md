@@ -29,6 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Filtering and search capabilities
 - Documentation and examples
 
-[Unreleased]: https://github.com/yourusername/pypaginator/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/yourusername/pypaginator/releases/tag/v0.1.0
+[Unreleased]: https://github.com/CybLow/pypaginator/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/CybLow/pypaginator/releases/tag/v0.1.0
 

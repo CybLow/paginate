@@ -1,0 +1,88 @@
+# MkDocs Configuration for PyPaginator
+# Documentation: https://www.mkdocs.org/
+
+site_name: PyPaginator
+site_description: Advanced pagination, filtering, and search toolkit for Python
+site_author: CybLow
+site_url: https://pypaginator.readthedocs.io
+
+repo_name: CybLow/pypaginator
+repo_url: https://github.com/CybLow/pypaginator
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: en
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: QUICKSTART.md
+      - Architecture: ARCHITECTURE.md
+  - User Guide:
+      - Testing Guide: TESTING_GUIDE.md
+      - Publishing: PUBLISHING.md
+  - Reference:
+      - Comparison: COMPARISON.md
+      - Roadmap: ROADMAP.md
+  - Contributing:
+      - Code of Conduct: ../CODE_OF_CONDUCT.md
+      - Contributing Guide: ../CONTRIBUTING.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: true
+            show_root_heading: true
+            heading_level: 2
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/CybLow/pypaginator
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/pypaginator/

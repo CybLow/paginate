@@ -6,12 +6,12 @@ Install with: pip install pypaginator[fastapi]
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 
 try:
     from fastapi import Query
-    from pydantic import BaseModel, Field
+    from pydantic import BaseModel, ConfigDict, Field
 except ImportError as e:
     raise ImportError(
         "FastAPI integration requires fastapi and pydantic. "
@@ -38,7 +38,9 @@ class PagedResponse(BaseModel, Generic[T]):
         async def get_items(): ...
     """
 
-    items: Sequence[T] = Field(description="List of items in the current page")
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    items: Any = Field(description="List of items in the current page")
     total: int = Field(description="Total number of items across all pages")
     page: int = Field(description="Current page number")
     limit: int = Field(description="Number of items per page")
