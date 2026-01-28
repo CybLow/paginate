@@ -48,13 +48,21 @@ nav:
       - Architecture: ARCHITECTURE.md
   - User Guide:
       - Testing Guide: TESTING_GUIDE.md
+      - Tests Overview: README_TESTS.md
       - Publishing: PUBLISHING.md
   - Reference:
       - Comparison: COMPARISON.md
       - Roadmap: ROADMAP.md
+      - Audit: AUDIT.md
+  - Test Coverage:
+      - Coverage Analysis: TEST_COVERAGE_ANALYSIS.md
+      - Coverage Results: TEST_COVERAGE_RESULTS.md
+      - Phase 2: TEST_COVERAGE_PHASE2.md
+      - Phase 2 Final: TEST_COVERAGE_PHASE2_FINAL.md
+      - Final Report: TEST_COVERAGE_FINAL.md
   - Contributing:
-      - Code of Conduct: ../CODE_OF_CONDUCT.md
-      - Contributing Guide: ../CONTRIBUTING.md
+      - Code of Conduct: CODE_OF_CONDUCT.md
+      - Contributing Guide: CONTRIBUTING.md
 
 plugins:
   - search

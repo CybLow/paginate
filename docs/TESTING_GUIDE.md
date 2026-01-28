@@ -5,12 +5,12 @@ Ce guide explique comment exécuter, écrire et contribuer aux tests de pypagina
 ## 📋 Table des Matières
 
 - [Installation](#installation)
-- [Exécution des Tests](#exécution-des-tests)
+- [Exécution des Tests](#execution-des-tests)
 - [Couverture des Tests](#couverture-des-tests)
 - [Structure des Tests](#structure-des-tests)
-- [Écrire de Nouveaux Tests](#écrire-de-nouveaux-tests)
+- [Écrire de Nouveaux Tests](#ecrire-de-nouveaux-tests)
 - [Bonnes Pratiques](#bonnes-pratiques)
-- [Dépannage](#dépannage)
+- [Dépannage](#depannage)
 
 ## 🛠️ Installation
 
