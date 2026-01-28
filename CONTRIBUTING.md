@@ -18,7 +18,7 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
 
 1. **Fork and clone the repository**
    ```bash
-   git clone https://github.com/yourusername/pypaginator.git
+   git clone https://github.com/CybLow/pypaginator.git
    cd pypaginator
    ```
 
