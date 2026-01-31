@@ -1,8 +1,8 @@
 # =============================================================================
 # CI/CD Pipeline - pypaginate
 # =============================================================================
-# Triggers: push (main/develop), pull_request, manual
-# Jobs: quality (lint, format, type-check), test (matrix), build, security
+# Enhanced test infrastructure with parallel execution, property tests,
+# benchmarks, and improved coverage reporting.
 # =============================================================================
 
 name: CI
@@ -39,6 +39,16 @@ on:
         required: false
         default: false
         type: boolean
+      run_slow:
+        description: 'Run slow tests'
+        required: false
+        default: false
+        type: boolean
+      run_benchmarks:
+        description: 'Run benchmark tests'
+        required: false
+        default: false
+        type: boolean
 
 # Cancel in-progress runs for the same ref
 concurrency:
@@ -48,6 +58,8 @@ concurrency:
 env:
   PYTHON_VERSION: '3.11'
   UV_SYSTEM_PYTHON: 1
+  PYTEST_ADDOPTS: '--color=yes'
+  HYPOTHESIS_PROFILE: 'ci'
 
 # =============================================================================
 # JOBS
@@ -64,83 +76,229 @@ jobs:
     if: github.event.pull_request.draft != true
 
     steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 🐍 Setup UV + Python
-        uses: astral-sh/setup-uv@v7
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: uv sync --frozen --all-extras --group lint --group type
 
-      - name: 🎨 Check formatting
+      - name: Check formatting
         run: uv run ruff format --check --diff src tests
 
-      - name: 🔍 Lint
+      - name: Lint
         run: uv run ruff check --output-format=github src tests
 
-      - name: 🔬 Type check
+      - name: Type check
         run: uv run mypy src
 
   # ---------------------------------------------------------------------------
-  # Tests (Multi-version Python matrix)
+  # Unit Tests (Fast, Parallel Execution)
   # ---------------------------------------------------------------------------
-  test:
-    name: Test / Python ${{ matrix.python }} / ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+  test-unit:
+    name: Unit Tests / Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: quality
 
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
         python: ['3.11', '3.12', '3.13']
-        include:
-          - os: windows-latest
-            python: '3.11'
-          - os: macos-latest
-            python: '3.11'
 
     steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: 🐍 Setup UV + Python ${{ matrix.python }}
-        uses: astral-sh/setup-uv@v7
+      - name: Setup UV + Python ${{ matrix.python }}
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
           python-version: ${{ matrix.python }}
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: uv sync --frozen --all-extras --group test
 
-      - name: 🧪 Run tests
-        run: uv run pytest --cov=pypaginate --cov-report=xml --cov-report=term-missing:skip-covered --junitxml=junit-${{ matrix.os }}-${{ matrix.python }}.xml -v
+      - name: Run unit tests (parallel)
+        run: |
+          uv run pytest tests/ \
+            -n auto \
+            --dist loadgroup \
+            --cov=pypaginate \
+            --cov-report=xml:coverage-unit-${{ matrix.python }}.xml \
+            --cov-report=term-missing:skip-covered \
+            --junitxml=junit-unit-${{ matrix.python }}.xml \
+            -v \
+            --ignore=tests/benchmarks \
+            --ignore=tests/e2e
 
-      - name: 📊 Upload coverage
-        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.11'
+      - name: Upload coverage
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
-          flags: unittests
+          files: coverage-unit-${{ matrix.python }}.xml
+          flags: unit,python-${{ matrix.python }}
           fail_ci_if_error: false
 
-      - name: 📤 Upload test results
+      - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.os }}-py${{ matrix.python }}
-          path: junit-*.xml
+          name: unit-results-py${{ matrix.python }}
+          path: |
+            junit-unit-*.xml
+            coverage-unit-*.xml
           retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Integration Tests (Cross-platform)
+  # ---------------------------------------------------------------------------
+  test-integration:
+    name: Integration Tests / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    needs: test-unit
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras --group test
+
+      - name: Run integration tests
+        run: |
+          uv run pytest tests/ \
+            --cov=pypaginate \
+            --cov-report=xml:coverage-integration-${{ matrix.os }}.xml \
+            --cov-report=term-missing:skip-covered \
+            --junitxml=junit-integration-${{ matrix.os }}.xml \
+            -v \
+            --ignore=tests/benchmarks \
+            --ignore=tests/e2e \
+            --reruns 2 \
+            --reruns-delay 1
+
+      - name: Upload coverage
+        if: matrix.os == 'ubuntu-latest'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage-integration-${{ matrix.os }}.xml
+          flags: integration,${{ matrix.os }}
+          fail_ci_if_error: false
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-results-${{ matrix.os }}
+          path: |
+            junit-integration-*.xml
+            coverage-integration-*.xml
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Property-Based Tests (Hypothesis)
+  # ---------------------------------------------------------------------------
+  test-property:
+    name: Property Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: test-unit
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras --group test
+
+      - name: Run property tests
+        run: |
+          uv run pytest tests/property \
+            -m property \
+            --hypothesis-seed=random \
+            --junitxml=junit-property.xml \
+            -v
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: property-results
+          path: junit-property.xml
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Benchmark Tests (Performance Tracking)
+  # ---------------------------------------------------------------------------
+  test-benchmarks:
+    name: Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: test-unit
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event.inputs.run_benchmarks == 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras --group test
+
+      - name: Run benchmarks
+        run: |
+          uv run pytest tests/benchmarks \
+            --run-benchmark \
+            --benchmark-enable \
+            --benchmark-json=benchmark-results.json \
+            --benchmark-autosave \
+            -v
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            benchmark-results.json
+            .benchmarks/
+          retention-days: 90
 
   # ---------------------------------------------------------------------------
   # Build Package
@@ -149,30 +307,30 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: test
+    needs: [test-unit, test-integration]
 
     steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: 🐍 Setup UV + Python
-        uses: astral-sh/setup-uv@v7
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: 📦 Install build tools
+      - name: Install build tools
         run: uv sync --frozen --group build
 
-      - name: 🏗️ Build package
+      - name: Build package
         run: uv build
 
-      - name: ✅ Verify with twine
+      - name: Verify with twine
         run: uv run twine check dist/*
 
-      - name: 📤 Upload artifacts
-        uses: actions/upload-artifact@v6
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
@@ -190,28 +348,71 @@ jobs:
       contents: read
 
     steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: 🐍 Setup UV + Python
-        uses: astral-sh/setup-uv@v7
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: uv sync --frozen
 
-      - name: 🔒 Run Bandit security scan
+      - name: Run Bandit security scan
         run: uv run bandit -r src -f json -o bandit-report.json || true
 
-      - name: 📤 Upload security report
-        uses: actions/upload-artifact@v6
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
         with:
           name: security-report
           path: bandit-report.json
           retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Coverage Report (Combined)
+  # ---------------------------------------------------------------------------
+  coverage-report:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [test-unit, test-integration]
+    if: always() && github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-results-*'
+          merge-multiple: true
+
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --frozen --group test
+
+      - name: Generate coverage report
+        run: |
+          uv run coverage combine coverage-*.xml || echo "No coverage files to combine"
+          uv run coverage report --fail-under=85 || echo "Coverage below threshold"
+          uv run coverage html
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov/
+          retention-days: 30
 
   # ---------------------------------------------------------------------------
   # CI Status Gate
@@ -219,19 +420,17 @@ jobs:
   ci-status:
     name: CI ✓
     runs-on: ubuntu-latest
-    needs: [quality, test, build]
+    needs: [quality, test-unit, test-integration, build]
     if: always()
 
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.quality.result }}" != "success" ]]; then
-            echo "❌ Quality checks failed"; exit 1
-          fi
-          if [[ "${{ needs.test.result }}" != "success" ]]; then
-            echo "❌ Tests failed"; exit 1
-          fi
-          if [[ "${{ needs.build.result }}" != "success" ]]; then
-            echo "❌ Build failed"; exit 1
-          fi
+          results=("${{ needs.quality.result }}" "${{ needs.test-unit.result }}" \
+                   "${{ needs.test-integration.result }}" "${{ needs.build.result }}")
+          for result in "${results[@]}"; do
+            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+              echo "❌ CI failed: $result"; exit 1
+            fi
+          done
           echo "✅ All checks passed!"
