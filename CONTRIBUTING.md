@@ -65,8 +65,39 @@ make qa
 
 ## Development Workflow
 
-1. **Create a feature branch**
+### Branch Naming Convention
+
+We use a structured branching model. Always create branches from `develop`:
+
+| Branch Pattern | Purpose | Example |
+|----------------|---------|---------|
+| `main` | Production-ready code | - |
+| `develop` | Integration branch | - |
+| `release/v*` | Release candidates | `release/v1.2.0` |
+| `feature/*` | New features | `feature/add-keyset-pagination` |
+| `fix/*` | Bug fixes | `fix/memory-leak-in-paginator` |
+| `hotfix/*` | Urgent production fixes | `hotfix/critical-security-issue` |
+| `refactor/*` | Code improvements | `refactor/simplify-engine` |
+| `docs/*` | Documentation only | `docs/update-api-reference` |
+| `test/*` | Test improvements | `test/add-edge-cases` |
+| `chore/*` | Maintenance tasks | `chore/update-dependencies` |
+
+### CI Pipeline Tiers
+
+The CI pipeline runs different test suites based on branch type:
+
+| Tier | Branches | Tests Run |
+|------|----------|-----------|
+| **Tier 1** (Fast) | `feature/*`, `fix/*`, `refactor/*`, etc. | Quality + Unit Tests |
+| **Tier 2** (Standard) | `develop`, Pull Requests | + Integration + Property Tests + Build |
+| **Tier 3** (Full) | `main`, `release/*` | + Benchmarks |
+
+### Workflow Steps
+
+1. **Create a feature branch from develop**
    ```bash
+   git checkout develop
+   git pull origin develop
    git checkout -b feature/your-feature-name
    ```
 
@@ -86,10 +117,14 @@ make qa
    git commit -m "feat: description of your feature"
    ```
 
-5. **Push and create a Pull Request**
+5. **Push and create a Pull Request to develop**
    ```bash
    git push origin feature/your-feature-name
    ```
+
+6. **After PR approval and merge to develop**
+   - Create a release branch when ready: `release/v1.2.0`
+   - Merge to `main` for production release
 
 ## Commit Message Convention
 

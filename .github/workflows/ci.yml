@@ -1,8 +1,24 @@
 # =============================================================================
 # CI/CD Pipeline - pypaginate
 # =============================================================================
-# Enhanced test infrastructure with parallel execution, property tests,
-# benchmarks, and improved coverage reporting.
+# Tiered test infrastructure based on branch type:
+#
+# Branch Naming Convention:
+#   - main              : Production-ready code, triggers release
+#   - develop           : Integration branch for features
+#   - release/v*        : Release candidates (e.g., release/v1.2.0)
+#   - feature/*         : New features (e.g., feature/add-keyset-pagination)
+#   - fix/*             : Bug fixes (e.g., fix/memory-leak-in-paginator)
+#   - hotfix/*          : Urgent production fixes (e.g., hotfix/critical-bug)
+#   - refactor/*        : Code improvements (e.g., refactor/simplify-engine)
+#   - docs/*            : Documentation only (e.g., docs/update-readme)
+#   - test/*            : Test improvements (e.g., test/add-edge-cases)
+#   - chore/*           : Maintenance tasks (e.g., chore/update-deps)
+#
+# Pipeline Tiers:
+#   Tier 1 (Fast)     : quality + unit tests         → feature/*, fix/*, etc.
+#   Tier 2 (Standard) : + integration + property     → develop, PRs
+#   Tier 3 (Full)     : + benchmarks + build         → release/*, main
 # =============================================================================
 
 name: CI
@@ -12,9 +28,14 @@ on:
     branches:
       - main
       - develop
-      - 'release/*'
+      - 'release/v*'
       - 'feature/*'
       - 'fix/*'
+      - 'hotfix/*'
+      - 'refactor/*'
+      - 'docs/*'
+      - 'test/*'
+      - 'chore/*'
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -39,8 +60,8 @@ on:
         required: false
         default: false
         type: boolean
-      run_slow:
-        description: 'Run slow tests'
+      run_all_tests:
+        description: 'Run full test suite (all tiers)'
         required: false
         default: false
         type: boolean
@@ -67,12 +88,99 @@ env:
 jobs:
 
   # ---------------------------------------------------------------------------
-  # Quality Checks (Lint + Format + Type Check)
+  # Determine Pipeline Tier
+  # ---------------------------------------------------------------------------
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    outputs:
+      tier: ${{ steps.tier.outputs.tier }}
+      run_integration: ${{ steps.tier.outputs.run_integration }}
+      run_property: ${{ steps.tier.outputs.run_property }}
+      run_benchmarks: ${{ steps.tier.outputs.run_benchmarks }}
+      run_build: ${{ steps.tier.outputs.run_build }}
+    steps:
+      - name: Determine pipeline tier
+        id: tier
+        run: |
+          REF="${{ github.ref }}"
+          EVENT="${{ github.event_name }}"
+          RUN_ALL="${{ github.event.inputs.run_all_tests }}"
+          RUN_BENCH="${{ github.event.inputs.run_benchmarks }}"
+
+          # Default: Tier 1 (fast feedback)
+          TIER=1
+          RUN_INTEGRATION=false
+          RUN_PROPERTY=false
+          RUN_BENCHMARKS=false
+          RUN_BUILD=false
+
+          # Manual override: run all tests
+          if [[ "$RUN_ALL" == "true" ]]; then
+            TIER=3
+            RUN_INTEGRATION=true
+            RUN_PROPERTY=true
+            RUN_BENCHMARKS=true
+            RUN_BUILD=true
+          # Pull requests: Tier 2 (standard validation)
+          elif [[ "$EVENT" == "pull_request" ]]; then
+            TIER=2
+            RUN_INTEGRATION=true
+            RUN_PROPERTY=true
+            RUN_BUILD=true
+          # Main branch: Tier 3 (full pipeline)
+          elif [[ "$REF" == "refs/heads/main" ]]; then
+            TIER=3
+            RUN_INTEGRATION=true
+            RUN_PROPERTY=true
+            RUN_BENCHMARKS=true
+            RUN_BUILD=true
+          # Release branches: Tier 3 (full pipeline)
+          elif [[ "$REF" == refs/heads/release/* ]]; then
+            TIER=3
+            RUN_INTEGRATION=true
+            RUN_PROPERTY=true
+            RUN_BENCHMARKS=true
+            RUN_BUILD=true
+          # Develop branch: Tier 2 (standard)
+          elif [[ "$REF" == "refs/heads/develop" ]]; then
+            TIER=2
+            RUN_INTEGRATION=true
+            RUN_PROPERTY=true
+            RUN_BUILD=true
+          # Feature/fix/other branches: Tier 1 (fast)
+          else
+            TIER=1
+          fi
+
+          # Manual benchmark override
+          if [[ "$RUN_BENCH" == "true" ]]; then
+            RUN_BENCHMARKS=true
+          fi
+
+          echo "tier=$TIER" >> $GITHUB_OUTPUT
+          echo "run_integration=$RUN_INTEGRATION" >> $GITHUB_OUTPUT
+          echo "run_property=$RUN_PROPERTY" >> $GITHUB_OUTPUT
+          echo "run_benchmarks=$RUN_BENCHMARKS" >> $GITHUB_OUTPUT
+          echo "run_build=$RUN_BUILD" >> $GITHUB_OUTPUT
+
+          echo "📊 Pipeline Configuration:"
+          echo "   Tier: $TIER"
+          echo "   Branch: $REF"
+          echo "   Event: $EVENT"
+          echo "   Integration: $RUN_INTEGRATION"
+          echo "   Property: $RUN_PROPERTY"
+          echo "   Benchmarks: $RUN_BENCHMARKS"
+          echo "   Build: $RUN_BUILD"
+
+  # ---------------------------------------------------------------------------
+  # Quality Checks (Lint + Format + Type Check) - ALL TIERS
   # ---------------------------------------------------------------------------
   quality:
     name: Quality
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: setup
     if: github.event.pull_request.draft != true
 
     steps:
@@ -101,13 +209,13 @@ jobs:
         run: uv run mypy src
 
   # ---------------------------------------------------------------------------
-  # Unit Tests (Fast, Parallel Execution)
+  # Unit Tests (Fast, Parallel) - ALL TIERS
   # ---------------------------------------------------------------------------
   test-unit:
     name: Unit Tests / Python ${{ matrix.python }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: quality
+    needs: [setup, quality]
 
     strategy:
       fail-fast: false
@@ -129,6 +237,7 @@ jobs:
         run: uv sync --frozen --all-extras --group test
 
       - name: Run unit tests (parallel)
+        shell: bash
         run: |
           uv run pytest tests/ \
             -n auto \
@@ -161,13 +270,14 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------------
-  # Integration Tests (Cross-platform)
+  # Integration Tests (Cross-platform) - TIER 2+
   # ---------------------------------------------------------------------------
   test-integration:
     name: Integration Tests / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
-    needs: test-unit
+    needs: [setup, test-unit]
+    if: needs.setup.outputs.run_integration == 'true'
 
     strategy:
       fail-fast: false
@@ -211,13 +321,14 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------------
-  # Property-Based Tests (Hypothesis)
+  # Property-Based Tests (Hypothesis) - TIER 2+
   # ---------------------------------------------------------------------------
   test-property:
     name: Property Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: test-unit
+    needs: [setup, test-unit]
+    if: needs.setup.outputs.run_property == 'true'
 
     steps:
       - name: Checkout
@@ -234,6 +345,7 @@ jobs:
         run: uv sync --frozen --all-extras --group test
 
       - name: Run property tests
+        shell: bash
         run: |
           uv run pytest tests/property \
             -m property \
@@ -251,14 +363,14 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------------
-  # Benchmark Tests (Performance Tracking)
+  # Benchmark Tests (Performance Tracking) - TIER 3 or manual
   # ---------------------------------------------------------------------------
   test-benchmarks:
     name: Benchmarks
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: test-unit
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event.inputs.run_benchmarks == 'true'
+    needs: [setup, test-unit]
+    if: needs.setup.outputs.run_benchmarks == 'true'
 
     steps:
       - name: Checkout
@@ -275,6 +387,7 @@ jobs:
         run: uv sync --frozen --all-extras --group test
 
       - name: Run benchmarks
+        shell: bash
         run: |
           uv run pytest tests/benchmarks \
             --run-benchmark \
@@ -293,13 +406,14 @@ jobs:
           retention-days: 90
 
   # ---------------------------------------------------------------------------
-  # Build Package
+  # Build Package - TIER 2+
   # ---------------------------------------------------------------------------
   build:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [test-unit, test-integration]
+    needs: [setup, test-unit]
+    if: needs.setup.outputs.run_build == 'true'
 
     steps:
       - name: Checkout
@@ -329,12 +443,13 @@ jobs:
           retention-days: 30
 
   # ---------------------------------------------------------------------------
-  # Security Scan
+  # Security Scan - ALL TIERS
   # ---------------------------------------------------------------------------
   security:
     name: Security
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: setup
     permissions:
       security-events: write
       contents: read
@@ -364,14 +479,14 @@ jobs:
           retention-days: 7
 
   # ---------------------------------------------------------------------------
-  # Coverage Report (Combined)
+  # Coverage Report (Combined) - PRs only
   # ---------------------------------------------------------------------------
   coverage-report:
     name: Coverage Report
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [test-unit, test-integration]
-    if: always() && github.event_name == 'pull_request'
+    needs: [setup, test-unit, test-integration]
+    if: always() && github.event_name == 'pull_request' && needs.setup.outputs.run_integration == 'true'
 
     steps:
       - name: Checkout
@@ -412,17 +527,38 @@ jobs:
   ci-status:
     name: CI ✓
     runs-on: ubuntu-latest
-    needs: [quality, test-unit, test-integration, build]
+    needs: [setup, quality, test-unit, test-integration, build]
     if: always()
 
     steps:
       - name: Check results
+        shell: bash
         run: |
-          results=("${{ needs.quality.result }}" "${{ needs.test-unit.result }}" \
-                   "${{ needs.test-integration.result }}" "${{ needs.build.result }}")
-          for result in "${results[@]}"; do
-            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
-              echo "❌ CI failed: $result"; exit 1
+          echo "📋 Job Results:"
+          echo "   Setup: ${{ needs.setup.result }}"
+          echo "   Quality: ${{ needs.quality.result }}"
+          echo "   Unit Tests: ${{ needs.test-unit.result }}"
+          echo "   Integration: ${{ needs.test-integration.result }}"
+          echo "   Build: ${{ needs.build.result }}"
+
+          # Required jobs
+          REQUIRED=("${{ needs.quality.result }}" "${{ needs.test-unit.result }}")
+
+          # Optional jobs (may be skipped based on tier)
+          OPTIONAL=("${{ needs.test-integration.result }}" "${{ needs.build.result }}")
+
+          for result in "${REQUIRED[@]}"; do
+            if [[ "$result" != "success" ]]; then
+              echo "❌ Required job failed: $result"
+              exit 1
             fi
           done
+
+          for result in "${OPTIONAL[@]}"; do
+            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+              echo "❌ Optional job failed: $result"
+              exit 1
+            fi
+          done
+
           echo "✅ All checks passed!"
