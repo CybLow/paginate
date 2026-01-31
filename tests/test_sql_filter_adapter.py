@@ -55,9 +55,12 @@ def session(engine):
     session.add_all(products)
     session.commit()
 
-    yield session
-
-    session.close()
+    try:
+        yield session
+    finally:
+        session.rollback()
+        session.close()
+        engine.dispose()
 
 
 class TestSqlFilterAdapterBuildCondition:

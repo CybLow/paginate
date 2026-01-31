@@ -113,6 +113,7 @@ test = [
     "coverage[toml]>=7.6.0",
     "aiosqlite>=0.20.0",
     "httpx>=0.28.1",
+    "greenlet>=3.0.0",  # Required for SQLAlchemy async on all platforms
 ]
 # Linting & Formatting
 lint = [
@@ -304,6 +305,9 @@ filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
+    # SQLAlchemy async resource cleanup warnings on Windows
+    "ignore::pytest.PytestUnraisableExceptionWarning",
+    "ignore::ResourceWarning",
 ]
 markers = [
     "unit: Unit tests (fast, no external deps)",
