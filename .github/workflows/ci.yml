@@ -123,13 +123,7 @@ jobs:
         run: uv sync --frozen --all-extras --group test
 
       - name: 🧪 Run tests
-        run: |
-          uv run pytest \
-            --cov=pypaginate \
-            --cov-report=xml \
-            --cov-report=term-missing:skip-covered \
-            --junitxml=junit-${{ matrix.os }}-${{ matrix.python }}.xml \
-            -v
+        run: uv run pytest --cov=pypaginate --cov-report=xml --cov-report=term-missing:skip-covered --junitxml=junit-${{ matrix.os }}-${{ matrix.python }}.xml -v
 
       - name: 📊 Upload coverage
         if: matrix.os == 'ubuntu-latest' && matrix.python == '3.11'
