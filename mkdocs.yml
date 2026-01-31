@@ -193,4 +193,4 @@ extra_css:
   - stylesheets/extra.css
 
 watch:
-  - src/pypaginator
+  - src/pypaginate
