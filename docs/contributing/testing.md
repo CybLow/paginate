@@ -56,21 +56,21 @@ uv run pytest -q
 
 ```bash
 # Terminal report
-uv run pytest --cov=pypaginator --cov-report=term-missing
+uv run pytest --cov=pypaginate --cov-report=term-missing
 
 # HTML report (recommended)
-uv run pytest --cov=pypaginator --cov-report=html
+uv run pytest --cov=pypaginate --cov-report=html
 # Open htmlcov/index.html in browser
 
 # Fail if below threshold
-uv run pytest --cov=pypaginator --cov-fail-under=80
+uv run pytest --cov=pypaginate --cov-fail-under=80
 ```
 
 ### Coverage for Specific Module
 
 ```bash
 uv run pytest tests/test_filters.py \
-    --cov=pypaginator.filters \
+    --cov=pypaginate.filters \
     --cov-report=term-missing
 ```
 
@@ -105,7 +105,7 @@ tests/
 from __future__ import annotations
 
 import pytest
-from pypaginator.module import ClassToTest
+from pypaginate.module import ClassToTest
 
 
 class TestClassName:

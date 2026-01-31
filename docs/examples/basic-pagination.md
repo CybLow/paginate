@@ -12,8 +12,8 @@ from sqlalchemy import Column, DateTime, Integer, String, select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-from pypaginator.core import Page, PageParams
-from pypaginator.query import paginate_entities_to_page
+from pypaginate.core import Page, PageParams
+from pypaginate.query import paginate_entities_to_page
 
 
 # Database setup
@@ -169,7 +169,7 @@ Returns a `Page` object with:
 ### Return Tuple Instead of Page
 
 ```python
-from pypaginator.query import paginate_entities
+from pypaginate.query import paginate_entities
 
 items, total = await paginate_entities(session, stmt, params)
 ```
@@ -177,7 +177,7 @@ items, total = await paginate_entities(session, stmt, params)
 ### Paginate Raw Rows
 
 ```python
-from pypaginator.query import paginate_rows_to_page
+from pypaginate.query import paginate_rows_to_page
 
 stmt = select(User.id, User.name)  # Select specific columns
 page = await paginate_rows_to_page(session, stmt, params)

@@ -6,7 +6,7 @@ The engines module provides pagination implementations for different data source
 
 The main SQL pagination engine for SQLAlchemy queries.
 
-::: pypaginator.engines.sql.SqlPaginator
+::: pypaginate.engines.sql.SqlPaginator
     options:
       show_source: true
       members:
@@ -18,13 +18,13 @@ The main SQL pagination engine for SQLAlchemy queries.
 
 In-memory pagination for Python collections.
 
-::: pypaginator.engines.memory.MemoryPaginator
+::: pypaginate.engines.memory.MemoryPaginator
     options:
       show_source: true
 
 ## Keyset Pagination
 
-::: pypaginator.engines.keyset
+::: pypaginate.engines.keyset
     options:
       show_source: true
       members:
@@ -32,7 +32,7 @@ In-memory pagination for Python collections.
 
 ## Strategy Selection
 
-::: pypaginator.engines.sql.get_pagination_strategy
+::: pypaginate.engines.sql.get_pagination_strategy
     options:
       show_source: true
 
@@ -40,19 +40,19 @@ In-memory pagination for Python collections.
 
 High-level async pagination functions.
 
-::: pypaginator.query.async_api.paginate_entities
+::: pypaginate.query.async_api.paginate_entities
     options:
       show_source: true
 
-::: pypaginator.query.async_api.paginate_entities_to_page
+::: pypaginate.query.async_api.paginate_entities_to_page
     options:
       show_source: true
 
-::: pypaginator.query.async_api.paginate_rows
+::: pypaginate.query.async_api.paginate_rows
     options:
       show_source: true
 
-::: pypaginator.query.async_api.paginate_rows_to_page
+::: pypaginate.query.async_api.paginate_rows_to_page
     options:
       show_source: true
 
@@ -63,9 +63,9 @@ High-level async pagination functions.
 ```python
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from pypaginator.engines.sql import SqlPaginator
-from pypaginator.core import PageParams
-from pypaginator.core.context import PaginationContext
+from pypaginate.engines.sql import SqlPaginator
+from pypaginate.core import PageParams
+from pypaginate.core.context import PaginationContext
 
 async def paginate_users(session: AsyncSession):
     paginator = SqlPaginator(session, clamp=True)
@@ -85,8 +85,8 @@ async def paginate_users(session: AsyncSession):
 ### Using Query API (Recommended)
 
 ```python
-from pypaginator.query import paginate_entities_to_page
-from pypaginator.core import PageParams
+from pypaginate.query import paginate_entities_to_page
+from pypaginate.core import PageParams
 
 async def list_users(session: AsyncSession):
     stmt = select(User).order_by(User.created_at.desc())
@@ -99,8 +99,8 @@ async def list_users(session: AsyncSession):
 ### Keyset Pagination
 
 ```python
-from pypaginator.engines.sql import SqlPaginator
-from pypaginator.core import KeysetPageParams
+from pypaginate.engines.sql import SqlPaginator
+from pypaginate.core import KeysetPageParams
 
 async def keyset_paginate(session: AsyncSession):
     paginator = SqlPaginator(session, clamp=False)
@@ -120,8 +120,8 @@ async def keyset_paginate(session: AsyncSession):
 ### In-Memory Pagination
 
 ```python
-from pypaginator.engines.memory import MemoryPaginator
-from pypaginator.core import PageParams
+from pypaginate.engines.memory import MemoryPaginator
+from pypaginate.core import PageParams
 
 def paginate_list(items: list, page: int, limit: int):
     paginator = MemoryPaginator()

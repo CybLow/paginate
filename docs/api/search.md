@@ -6,7 +6,7 @@ The search module provides text search capabilities including fuzzy matching and
 
 SQL-based search service for database queries.
 
-::: pypaginator.filters.search.sql_search.SqlSearchService
+::: pypaginate.filters.search.sql_search.SqlSearchService
     options:
       show_source: true
 
@@ -14,7 +14,7 @@ SQL-based search service for database queries.
 
 In-memory search for Python collections.
 
-::: pypaginator.filters.search.memory_search
+::: pypaginate.filters.search.memory_search
     options:
       show_source: true
 
@@ -22,37 +22,37 @@ In-memory search for Python collections.
 
 Configuration options for search behavior.
 
-::: pypaginator.filters.search.options.SearchOptions
+::: pypaginate.filters.search.options.SearchOptions
     options:
       show_source: true
 
 ## Fuzzy Matching
 
-::: pypaginator.filters.search.fuzzy
+::: pypaginate.filters.search.fuzzy
     options:
       show_source: true
 
 ## Search Strategies
 
-::: pypaginator.filters.search.strategies
+::: pypaginate.filters.search.strategies
     options:
       show_source: true
 
 ## Search Conditions
 
-::: pypaginator.filters.search.conditions
+::: pypaginate.filters.search.conditions
     options:
       show_source: true
 
 ## Search Parser
 
-::: pypaginator.filters.search.parser
+::: pypaginate.filters.search.parser
     options:
       show_source: true
 
 ## Search Factories
 
-::: pypaginator.filters.search.factories
+::: pypaginate.filters.search.factories
     options:
       show_source: true
 
@@ -61,7 +61,7 @@ Configuration options for search behavior.
 ### Basic SQL Search
 
 ```python
-from pypaginator.filters.search import SqlSearchService, SearchOptions
+from pypaginate.filters.search import SqlSearchService, SearchOptions
 
 # Create search service
 search_service = SqlSearchService(
@@ -77,7 +77,7 @@ stmt = search_service.apply_search(stmt, "john doe")
 ### Fuzzy Search
 
 ```python
-from pypaginator.filters.search import SqlSearchService, SearchOptions
+from pypaginate.filters.search import SqlSearchService, SearchOptions
 
 search_service = SqlSearchService(
     model=Product,
@@ -125,7 +125,7 @@ stmt = search_service.apply_search(stmt, "jose")
 ### In-Memory Search
 
 ```python
-from pypaginator.filters.search import MemorySearchService, SearchOptions
+from pypaginate.filters.search import MemorySearchService, SearchOptions
 
 search_service = MemorySearchService(
     search_fields=["name", "description"],

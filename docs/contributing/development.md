@@ -75,7 +75,7 @@ uv run pypaginate qa
 ```
 pypaginate/
 ├── src/
-│   └── pypaginator/       # Main package
+│   └── pypaginate/       # Main package
 │       ├── core/          # Core types
 │       ├── engines/       # Pagination engines
 │       ├── filters/       # Filtering system
@@ -193,10 +193,10 @@ uv run pytest -m integration
 
 ```bash
 # Terminal report
-uv run pytest --cov=pypaginator --cov-report=term-missing
+uv run pytest --cov=pypaginate --cov-report=term-missing
 
 # HTML report
-uv run pytest --cov=pypaginator --cov-report=html
+uv run pytest --cov=pypaginate --cov-report=html
 # Open htmlcov/index.html
 ```
 

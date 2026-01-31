@@ -135,8 +135,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Local
-from pypaginator.core import Page, PageParams
-from pypaginator.exceptions import PaginationError
+from pypaginate.core import Page, PageParams
+from pypaginate.exceptions import PaginationError
 
 
 if TYPE_CHECKING:

@@ -1,7 +1,7 @@
 """Generate API reference pages automatically from source code docstrings.
 
 This script is executed by mkdocs-gen-files during the build process.
-It scans the src/pypaginator directory and creates markdown files for each module.
+It scans the src/pypaginate directory and creates markdown files for each module.
 """
 
 from pathlib import Path
@@ -11,57 +11,57 @@ import mkdocs_gen_files
 nav = mkdocs_gen_files.Nav()
 
 # Root path for source code
-src_path = Path("src/pypaginator")
+src_path = Path("src/pypaginate")
 
 # Modules to document (in order)
 MODULES = [
     # Core
-    ("pypaginator", "Core package exports"),
-    ("pypaginator.core", "Core types and data structures"),
-    ("pypaginator.core.pages", "Page and PageParams classes"),
-    ("pypaginator.core.context", "Pagination context"),
-    ("pypaginator.core.snapshots", "Pagination snapshots"),
+    ("pypaginate", "Core package exports"),
+    ("pypaginate.core", "Core types and data structures"),
+    ("pypaginate.core.pages", "Page and PageParams classes"),
+    ("pypaginate.core.context", "Pagination context"),
+    ("pypaginate.core.snapshots", "Pagination snapshots"),
     # Engines
-    ("pypaginator.engines", "Pagination engines"),
-    ("pypaginator.engines.memory", "In-memory pagination"),
-    ("pypaginator.engines.sql", "SQL/SQLAlchemy pagination"),
-    ("pypaginator.engines.keyset", "Cursor-based pagination"),
+    ("pypaginate.engines", "Pagination engines"),
+    ("pypaginate.engines.memory", "In-memory pagination"),
+    ("pypaginate.engines.sql", "SQL/SQLAlchemy pagination"),
+    ("pypaginate.engines.keyset", "Cursor-based pagination"),
     # Query
-    ("pypaginator.query", "Query execution"),
-    ("pypaginator.query.async_api", "Async pagination functions"),
+    ("pypaginate.query", "Query execution"),
+    ("pypaginate.query.async_api", "Async pagination functions"),
     # Filters
-    ("pypaginator.filters", "Filtering system"),
-    ("pypaginator.filters.predicates", "Predicate-based filtering"),
-    ("pypaginator.filters.predicates.engine", "Filter engine"),
-    ("pypaginator.filters.predicates.builder", "Filter builder"),
-    ("pypaginator.filters.predicates.operators", "Filter operators"),
-    ("pypaginator.filters.sql_adapter", "SQL filter adapter"),
+    ("pypaginate.filters", "Filtering system"),
+    ("pypaginate.filters.predicates", "Predicate-based filtering"),
+    ("pypaginate.filters.predicates.engine", "Filter engine"),
+    ("pypaginate.filters.predicates.builder", "Filter builder"),
+    ("pypaginate.filters.predicates.operators", "Filter operators"),
+    ("pypaginate.filters.sql_adapter", "SQL filter adapter"),
     # Search
-    ("pypaginator.filters.search", "Search functionality"),
-    ("pypaginator.filters.search.memory_search", "In-memory search"),
-    ("pypaginator.filters.search.sql_search", "SQL search"),
-    ("pypaginator.filters.search.options", "Search options"),
-    ("pypaginator.filters.search.fuzzy", "Fuzzy matching"),
+    ("pypaginate.filters.search", "Search functionality"),
+    ("pypaginate.filters.search.memory_search", "In-memory search"),
+    ("pypaginate.filters.search.sql_search", "SQL search"),
+    ("pypaginate.filters.search.options", "Search options"),
+    ("pypaginate.filters.search.fuzzy", "Fuzzy matching"),
     # Sorting
-    ("pypaginator.sorting", "Sorting utilities"),
-    ("pypaginator.sorting.engine", "Sort engine"),
-    ("pypaginator.sorting.sql_adapter", "SQL sort adapter"),
+    ("pypaginate.sorting", "Sorting utilities"),
+    ("pypaginate.sorting.engine", "Sort engine"),
+    ("pypaginate.sorting.sql_adapter", "SQL sort adapter"),
     # Text
-    ("pypaginator.text", "Text processing"),
-    ("pypaginator.text.pipelines", "Text pipelines"),
-    ("pypaginator.text.patterns", "Text patterns"),
-    ("pypaginator.text.utf8", "UTF-8 utilities"),
+    ("pypaginate.text", "Text processing"),
+    ("pypaginate.text.pipelines", "Text pipelines"),
+    ("pypaginate.text.patterns", "Text patterns"),
+    ("pypaginate.text.utf8", "UTF-8 utilities"),
     # Database
-    ("pypaginator.database", "Database utilities"),
-    ("pypaginator.database.collations", "Database collations"),
-    ("pypaginator.database.types", "Database types"),
+    ("pypaginate.database", "Database utilities"),
+    ("pypaginate.database.collations", "Database collations"),
+    ("pypaginate.database.types", "Database types"),
     # Integrations
-    ("pypaginator.integrations", "Framework integrations"),
-    ("pypaginator.integrations.fastapi", "FastAPI integration"),
+    ("pypaginate.integrations", "Framework integrations"),
+    ("pypaginate.integrations.fastapi", "FastAPI integration"),
     # Other
-    ("pypaginator.types", "Type definitions"),
-    ("pypaginator.exceptions", "Exception classes"),
-    ("pypaginator.dependencies", "Dependency injection"),
+    ("pypaginate.types", "Type definitions"),
+    ("pypaginate.exceptions", "Exception classes"),
+    ("pypaginate.dependencies", "Dependency injection"),
 ]
 
 # Generate a page for each module

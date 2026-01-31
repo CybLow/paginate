@@ -9,7 +9,7 @@ This guide covers single-field sorting for both in-memory collections and SQL qu
 The simplest way to sort a collection is using the `sort_items` function:
 
 ```python
-from pypaginator.sorting import sort_items
+from pypaginate.sorting import sort_items
 
 @dataclass
 class Product:
@@ -50,7 +50,7 @@ sorted_products = sort_items(
 For repeated sorting operations, you can use the `SortEngine` class:
 
 ```python
-from pypaginator.sorting import SortEngine
+from pypaginate.sorting import SortEngine
 
 engine = SortEngine()
 
@@ -77,7 +77,7 @@ sorted_b = engine.sort(
 Use `create_sort_service` for dependency injection scenarios:
 
 ```python
-from pypaginator.sorting import create_sort_service
+from pypaginate.sorting import create_sort_service
 
 # Create a sort service instance
 sort_service = create_sort_service()
@@ -154,7 +154,7 @@ Use `SqlSortAdapter` to build SQLAlchemy ORDER BY expressions:
 
 ```python
 from sqlalchemy import select
-from pypaginator.sorting import SqlSortAdapter
+from pypaginate.sorting import SqlSortAdapter
 
 # Ascending order
 order_expr = SqlSortAdapter.build_order_expression(

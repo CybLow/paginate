@@ -19,8 +19,8 @@ This section provides comprehensive API documentation for all pypaginate modules
 ### Pagination
 
 ```python
-from pypaginator.core import Page, PageParams
-from pypaginator.query import paginate_entities_to_page
+from pypaginate.core import Page, PageParams
+from pypaginate.query import paginate_entities_to_page
 
 # Create pagination parameters
 params = PageParams(page=1, limit=20)
@@ -32,7 +32,7 @@ page = await paginate_entities_to_page(session, stmt, params)
 ### Filtering
 
 ```python
-from pypaginator.filters.predicates import FilterEngine
+from pypaginate.filters.predicates import FilterEngine
 
 engine = FilterEngine()
 filters = {"age": {"gte": 18}, "status": {"eq": "active"}}
@@ -42,7 +42,7 @@ conditions = engine.build_conditions(User, filters)
 ### Search
 
 ```python
-from pypaginator.filters.search import SqlSearchService, SearchOptions
+from pypaginate.filters.search import SqlSearchService, SearchOptions
 
 search = SqlSearchService(
     model=User,
@@ -55,7 +55,7 @@ stmt = search.apply_search(stmt, "john")
 ### Sorting
 
 ```python
-from pypaginator.sorting import SortEngine, SqlSortAdapter
+from pypaginate.sorting import SortEngine, SqlSortAdapter
 
 # In-memory sorting
 sorted_items = SortEngine.sort(items, "name", reverse=False, ...)
@@ -70,10 +70,10 @@ order_expr = SqlSortAdapter.build_order_expression(User.name, descending=True)
 
 ```python
 # Core types
-from pypaginator.core import Page, PageParams, KeysetPageParams
+from pypaginate.core import Page, PageParams, KeysetPageParams
 
 # Query API (most common)
-from pypaginator.query import (
+from pypaginate.query import (
     paginate_entities,
     paginate_entities_to_page,
     paginate_rows,
@@ -81,20 +81,20 @@ from pypaginator.query import (
 )
 
 # FastAPI integration
-from pypaginator.integrations.fastapi import (
+from pypaginate.integrations.fastapi import (
     get_pagination_params,
     PagedResponse,
 )
 
 # Sorting
-from pypaginator.sorting import SortEngine, SqlSortAdapter, sort_items
+from pypaginate.sorting import SortEngine, SqlSortAdapter, sort_items
 
 # Filtering
-from pypaginator.filters.predicates import FilterEngine
-from pypaginator.filters.search import SqlSearchService, SearchOptions
+from pypaginate.filters.predicates import FilterEngine
+from pypaginate.filters.search import SqlSearchService, SearchOptions
 
 # Exceptions
-from pypaginator.exceptions import (
+from pypaginate.exceptions import (
     PaginationError,
     PaginationConfigurationError,
     InvalidPageError,
@@ -105,10 +105,10 @@ from pypaginator.exceptions import (
 
 ```python
 # Access all public APIs
-import pypaginator
+import pypaginate
 
 # Or specific submodules
-from pypaginator import core, query, sorting, filters
+from pypaginate import core, query, sorting, filters
 ```
 
 ## Type Annotations
@@ -116,14 +116,14 @@ from pypaginator import core, query, sorting, filters
 pypaginate is fully typed and compatible with `mypy --strict`. Key type exports:
 
 ```python
-from pypaginator.types import (
+from pypaginate.types import (
     # Type variables
     T,
     ItemT,
     ParamsT,
 )
 
-from pypaginator.core import (
+from pypaginate.core import (
     Page,       # Generic[T]
     PageParams, # Dataclass
 )

@@ -80,7 +80,7 @@ stmt = stmt.order_by(*ordering.to_sql_order_by(User))
 #### 1. Alternative Page Formats
 
 ```python
-from pypaginator.core import LimitOffsetPage, CursorPage, PageWithLinks
+from pypaginate.core import LimitOffsetPage, CursorPage, PageWithLinks
 
 # Limit/Offset style
 page: LimitOffsetPage[User]  # items, total, limit, offset
@@ -95,7 +95,7 @@ page: PageWithLinks[User]  # items, total, links
 #### 2. PageParams Factory
 
 ```python
-from pypaginator.core import PageParamsFactory
+from pypaginate.core import PageParamsFactory
 
 # Custom parameter names
 get_params = PageParamsFactory(
@@ -108,7 +108,7 @@ get_params = PageParamsFactory(
 #### 3. Link Generator
 
 ```python
-from pypaginator.core import LinkGenerator
+from pypaginate.core import LinkGenerator
 
 generator = LinkGenerator(base_url='/api/users')
 links = generator.generate(page=2, limit=20, total=100)

@@ -6,7 +6,7 @@ The sorting module provides sorting capabilities for both in-memory collections 
 
 Generic sorting engine for in-memory collections.
 
-::: pypaginator.sorting.engine.SortEngine
+::: pypaginate.sorting.engine.SortEngine
     options:
       show_source: true
       members:
@@ -16,7 +16,7 @@ Generic sorting engine for in-memory collections.
 
 SQL adapter for building SQLAlchemy ORDER BY expressions.
 
-::: pypaginator.sorting.sql_adapter.SqlSortAdapter
+::: pypaginate.sorting.sql_adapter.SqlSortAdapter
     options:
       show_source: true
       members:
@@ -24,17 +24,17 @@ SQL adapter for building SQLAlchemy ORDER BY expressions.
 
 ## Helper Functions
 
-::: pypaginator.sorting.engine.sort_items
+::: pypaginate.sorting.engine.sort_items
     options:
       show_source: true
 
-::: pypaginator.sorting.engine.create_sort_service
+::: pypaginate.sorting.engine.create_sort_service
     options:
       show_source: true
 
 ## Types
 
-::: pypaginator.sorting.engine.Nulls
+::: pypaginate.sorting.engine.Nulls
     options:
       show_source: false
 
@@ -43,7 +43,7 @@ SQL adapter for building SQLAlchemy ORDER BY expressions.
 ### In-Memory Sorting
 
 ```python
-from pypaginator.sorting import SortEngine, sort_items
+from pypaginate.sorting import SortEngine, sort_items
 
 # Using sort_items helper
 sorted_users = sort_items(
@@ -69,7 +69,7 @@ sorted_users = engine.sort(
 
 ```python
 from sqlalchemy import select
-from pypaginator.sorting import SqlSortAdapter
+from pypaginate.sorting import SqlSortAdapter
 
 # Simple ascending sort
 order_expr = SqlSortAdapter.build_order_expression(

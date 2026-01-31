@@ -17,9 +17,9 @@ from fastapi import Depends, FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from pypaginator.integrations.fastapi import get_pagination_params, PagedResponse
-from pypaginator.core import PageParams
-from pypaginator.query import paginate_entities_to_page
+from pypaginate.integrations.fastapi import get_pagination_params, PagedResponse
+from pypaginate.core import PageParams
+from pypaginate.query import paginate_entities_to_page
 
 app = FastAPI()
 
@@ -40,8 +40,8 @@ async def list_users(
 The `get_pagination_params` function is a FastAPI dependency that extracts pagination parameters from query strings:
 
 ```python
-from pypaginator.integrations.fastapi import get_pagination_params
-from pypaginator.core import PageParams
+from pypaginate.integrations.fastapi import get_pagination_params
+from pypaginate.core import PageParams
 
 @app.get("/items")
 async def list_items(
@@ -74,7 +74,7 @@ Create custom pagination dependencies with different defaults or constraints:
 
 ```python
 from fastapi import Query
-from pypaginator.core import PageParams
+from pypaginate.core import PageParams
 
 def get_custom_pagination(
     page: int = Query(1, ge=1, description="Page number"),
@@ -96,7 +96,7 @@ Use different query parameter names:
 
 ```python
 from fastapi import Query
-from pypaginator.core import PageParams
+from pypaginate.core import PageParams
 
 def get_aliased_pagination(
     offset: int = Query(0, ge=0, alias="skip"),
@@ -121,7 +121,7 @@ async def get_data(
 `PagedResponse` is a Pydantic model that wraps pagination results for proper OpenAPI schema generation:
 
 ```python
-from pypaginator.integrations.fastapi import PagedResponse
+from pypaginate.integrations.fastapi import PagedResponse
 from pydantic import BaseModel
 
 class UserSchema(BaseModel):
@@ -205,9 +205,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-from pypaginator.integrations.fastapi import get_pagination_params, PagedResponse
-from pypaginator.core import PageParams
-from pypaginator.query import paginate_entities_to_page
+from pypaginate.integrations.fastapi import get_pagination_params, PagedResponse
+from pypaginate.core import PageParams
+from pypaginate.query import paginate_entities_to_page
 
 # Database setup
 DATABASE_URL = "postgresql+asyncpg://user:pass@localhost/db"
@@ -271,8 +271,8 @@ async def get_user(
 Combine pagination with filtering and sorting:
 
 ```python
-from pypaginator.sorting import SqlSortAdapter
-from pypaginator.filters.predicates import FilterEngine
+from pypaginate.sorting import SqlSortAdapter
+from pypaginate.filters.predicates import FilterEngine
 
 @app.get("/products", response_model=PagedResponse[ProductSchema])
 async def list_products(
@@ -315,7 +315,7 @@ async def list_products(
 Handle pagination-related errors gracefully:
 
 ```python
-from pypaginator.exceptions import PaginationConfigurationError
+from pypaginate.exceptions import PaginationConfigurationError
 
 @app.exception_handler(PaginationConfigurationError)
 async def pagination_error_handler(request, exc):

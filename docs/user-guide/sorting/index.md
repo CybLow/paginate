@@ -22,7 +22,7 @@ The sorting module consists of two main components:
 ### In-Memory Sorting
 
 ```python
-from pypaginator.sorting import SortEngine, sort_items
+from pypaginate.sorting import SortEngine, sort_items
 
 # Define some data
 users = [
@@ -46,7 +46,7 @@ sorted_users = sort_items(
 
 ```python
 from sqlalchemy import select
-from pypaginator.sorting import SqlSortAdapter
+from pypaginate.sorting import SqlSortAdapter
 
 # Build ORDER BY expression
 order_expr = SqlSortAdapter.build_order_expression(

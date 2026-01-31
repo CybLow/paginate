@@ -14,7 +14,7 @@ The `SqlSortAdapter` is designed for building individual ORDER BY expressions th
 
 ```python
 from sqlalchemy import select
-from pypaginator.sorting import SqlSortAdapter
+from pypaginate.sorting import SqlSortAdapter
 
 # Sort by department (ASC), then by salary (DESC)
 stmt = select(Employee).order_by(
@@ -54,7 +54,7 @@ stmt = select(Employee).order_by(
 Build sort expressions dynamically from user input:
 
 ```python
-from pypaginator.sorting import SqlSortAdapter
+from pypaginate.sorting import SqlSortAdapter
 
 def build_order_by(sort_specs: list[dict]) -> list:
     """
@@ -98,7 +98,7 @@ For in-memory sorting with multiple columns, use the tie-breaker mechanism or ch
 The `tie_breaker_field` parameter handles the most common case of secondary sorting:
 
 ```python
-from pypaginator.sorting import sort_items
+from pypaginate.sorting import sort_items
 
 # Sort by department, then by name within each department
 sorted_employees = sort_items(
@@ -115,7 +115,7 @@ sorted_employees = sort_items(
 For more than two sort fields, chain multiple sorts (starting with the least significant):
 
 ```python
-from pypaginator.sorting import sort_items
+from pypaginate.sorting import sort_items
 
 # Sort by: 1) department, 2) role, 3) name
 # Apply in reverse order of significance
@@ -153,7 +153,7 @@ result = sort_items(
 Create a helper function for complex in-memory multi-column sorting:
 
 ```python
-from pypaginator.sorting import sort_items
+from pypaginate.sorting import sort_items
 from typing import TypeVar
 
 T = TypeVar("T")
@@ -208,7 +208,7 @@ Parse multi-column sort parameters from URL:
 
 ```python
 from fastapi import FastAPI, Query
-from pypaginator.sorting import SqlSortAdapter
+from pypaginate.sorting import SqlSortAdapter
 
 app = FastAPI()
 

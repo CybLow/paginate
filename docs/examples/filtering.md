@@ -12,9 +12,9 @@ from sqlalchemy import Column, DateTime, Float, Integer, String, select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-from pypaginator.core import PageParams
-from pypaginator.query import paginate_entities_to_page
-from pypaginator.filters.predicates import FilterEngine
+from pypaginate.core import PageParams
+from pypaginate.query import paginate_entities_to_page
+from pypaginate.filters.predicates import FilterEngine
 
 
 # Database setup

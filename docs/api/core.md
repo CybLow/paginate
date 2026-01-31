@@ -4,7 +4,7 @@ The core module provides the fundamental types for pagination: `Page`, `PagePara
 
 ## Page
 
-::: pypaginator.core.pages.Page
+::: pypaginate.core.pages.Page
     options:
       show_source: true
       members:
@@ -19,7 +19,7 @@ The core module provides the fundamental types for pagination: `Page`, `PagePara
 
 ## PageParams
 
-::: pypaginator.core.pages.PageParams
+::: pypaginate.core.pages.PageParams
     options:
       show_source: true
       members:
@@ -29,27 +29,27 @@ The core module provides the fundamental types for pagination: `Page`, `PagePara
 
 ## KeysetPageParams
 
-::: pypaginator.core.pages.KeysetPageParams
+::: pypaginate.core.pages.KeysetPageParams
     options:
       show_source: true
 
 ## Pagination Context
 
-::: pypaginator.core.context.PaginationContext
+::: pypaginate.core.context.PaginationContext
     options:
       show_source: true
 
-::: pypaginator.core.context.clamp_page_params
+::: pypaginate.core.context.clamp_page_params
     options:
       show_source: true
 
 ## Snapshots
 
-::: pypaginator.core.snapshots.PaginationSnapshot
+::: pypaginate.core.snapshots.PaginationSnapshot
     options:
       show_source: true
 
-::: pypaginator.core.snapshots.KeysetPaginationSnapshot
+::: pypaginate.core.snapshots.KeysetPaginationSnapshot
     options:
       show_source: true
 
@@ -58,7 +58,7 @@ The core module provides the fundamental types for pagination: `Page`, `PagePara
 ### Creating a Page
 
 ```python
-from pypaginator.core import Page, PageParams
+from pypaginate.core import Page, PageParams
 
 # Create page from data
 items = [user1, user2, user3]
@@ -79,7 +79,7 @@ print(page.has_previous) # False
 ### Working with PageParams
 
 ```python
-from pypaginator.core import PageParams
+from pypaginate.core import PageParams
 
 params = PageParams(page=3, limit=25)
 
@@ -91,7 +91,7 @@ print(params.offset)  # 50 (computed: (page-1) * limit)
 ### Using Pagination Context
 
 ```python
-from pypaginator.core.context import PaginationContext, clamp_page_params
+from pypaginate.core.context import PaginationContext, clamp_page_params
 
 # Create context for pagination execution
 context = PaginationContext(

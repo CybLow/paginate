@@ -22,8 +22,8 @@ The most common pattern is paginating ORM entities:
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pypaginator.query import paginate_entities, paginate_entities_to_page
-from pypaginator.core import PageParams
+from pypaginate.query import paginate_entities, paginate_entities_to_page
+from pypaginate.core import PageParams
 
 async def list_users(session: AsyncSession) -> list[User]:
     stmt = select(User).order_by(User.created_at.desc())
@@ -47,7 +47,7 @@ async def list_users_page(session: AsyncSession) -> Page[User]:
 For raw column selections:
 
 ```python
-from pypaginator.query import paginate_rows, paginate_rows_to_page
+from pypaginate.query import paginate_rows, paginate_rows_to_page
 
 async def list_user_summaries(session: AsyncSession):
     stmt = select(User.id, User.name, User.email).order_by(User.id)
@@ -185,8 +185,8 @@ page = await paginate_entities_to_page(
 For more control, use `SqlPaginator` directly:
 
 ```python
-from pypaginator.engines.sql import SqlPaginator
-from pypaginator.core.context import PaginationContext
+from pypaginate.engines.sql import SqlPaginator
+from pypaginate.core.context import PaginationContext
 
 async def advanced_pagination(session: AsyncSession):
     # Create paginator
@@ -211,8 +211,8 @@ async def advanced_pagination(session: AsyncSession):
 For large datasets, use keyset (cursor) pagination:
 
 ```python
-from pypaginator.core import KeysetPageParams
-from pypaginator.engines.sql import SqlPaginator
+from pypaginate.core import KeysetPageParams
+from pypaginate.engines.sql import SqlPaginator
 
 async def keyset_pagination(session: AsyncSession):
     paginator = SqlPaginator(session, clamp=False)
@@ -244,7 +244,7 @@ async def keyset_pagination(session: AsyncSession):
 ### With Filtering
 
 ```python
-from pypaginator.filters.predicates import FilterEngine
+from pypaginate.filters.predicates import FilterEngine
 
 async def filtered_pagination(
     session: AsyncSession,
@@ -269,7 +269,7 @@ async def filtered_pagination(
 ### With Sorting
 
 ```python
-from pypaginator.sorting import SqlSortAdapter
+from pypaginate.sorting import SqlSortAdapter
 
 async def sorted_pagination(
     session: AsyncSession,
@@ -295,7 +295,7 @@ async def sorted_pagination(
 ### With Search
 
 ```python
-from pypaginator.filters.search import SqlSearchService, SearchOptions
+from pypaginate.filters.search import SqlSearchService, SearchOptions
 
 async def search_pagination(
     session: AsyncSession,
@@ -399,7 +399,7 @@ stmt = select(User).options(
 ## Error Handling
 
 ```python
-from pypaginator.exceptions import (
+from pypaginate.exceptions import (
     PaginationConfigurationError,
     InvalidPageError,
 )

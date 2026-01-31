@@ -21,8 +21,8 @@ The FastAPI integration provides:
 
 ```python
 from fastapi import Depends, FastAPI
-from pypaginator.integrations.fastapi import get_pagination_params, PagedResponse
-from pypaginator.core import PageParams
+from pypaginate.integrations.fastapi import get_pagination_params, PagedResponse
+from pypaginate.core import PageParams
 
 app = FastAPI()
 
@@ -44,8 +44,8 @@ The SQLAlchemy integration provides:
 
 ```python
 from sqlalchemy import select
-from pypaginator.query import paginate_entities_to_page
-from pypaginator.core import PageParams
+from pypaginate.query import paginate_entities_to_page
+from pypaginate.core import PageParams
 
 async def get_users(session: AsyncSession) -> Page[User]:
     stmt = select(User).order_by(User.created_at.desc())

@@ -6,13 +6,13 @@ The filters module provides query filtering capabilities including predicates, J
 
 Main filtering engine for building query conditions.
 
-::: pypaginator.filters.predicates.engine.FilterEngine
+::: pypaginate.filters.predicates.engine.FilterEngine
     options:
       show_source: true
 
 ## Predicate Builder
 
-::: pypaginator.filters.predicates.builder
+::: pypaginate.filters.predicates.builder
     options:
       show_source: true
 
@@ -20,49 +20,49 @@ Main filtering engine for building query conditions.
 
 ### Comparison Operators
 
-::: pypaginator.filters.predicates.operators.comparison
+::: pypaginate.filters.predicates.operators.comparison
     options:
       show_source: true
 
 ### Text Operators
 
-::: pypaginator.filters.predicates.operators.text
+::: pypaginate.filters.predicates.operators.text
     options:
       show_source: true
 
 ### Range Operators
 
-::: pypaginator.filters.predicates.operators.range
+::: pypaginate.filters.predicates.operators.range
     options:
       show_source: true
 
 ### Pattern Operators
 
-::: pypaginator.filters.predicates.operators.patterns
+::: pypaginate.filters.predicates.operators.patterns
     options:
       show_source: true
 
 ## JSON Logic Evaluator
 
-::: pypaginator.filters.predicates.jsonlogic_evaluator
+::: pypaginate.filters.predicates.jsonlogic_evaluator
     options:
       show_source: true
 
 ## Field Accessor
 
-::: pypaginator.filters.predicates.field_accessor
+::: pypaginate.filters.predicates.field_accessor
     options:
       show_source: true
 
 ## Operator Registry
 
-::: pypaginator.filters.predicates.registry
+::: pypaginate.filters.predicates.registry
     options:
       show_source: true
 
 ## SQL Filter Adapter
 
-::: pypaginator.filters.sql_adapter
+::: pypaginate.filters.sql_adapter
     options:
       show_source: true
 
@@ -71,7 +71,7 @@ Main filtering engine for building query conditions.
 ### Basic Filtering
 
 ```python
-from pypaginator.filters.predicates import FilterEngine
+from pypaginate.filters.predicates import FilterEngine
 
 engine = FilterEngine()
 
@@ -99,7 +99,7 @@ stmt = select(User).where(*conditions)
 ### JSON Logic Filters
 
 ```python
-from pypaginator.filters.predicates import FilterEngine
+from pypaginate.filters.predicates import FilterEngine
 
 engine = FilterEngine()
 

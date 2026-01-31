@@ -4,43 +4,43 @@ The exceptions module provides error classes for pagination-related errors.
 
 ## Base Exception
 
-::: pypaginator.exceptions.PaginationError
+::: pypaginate.exceptions.PaginationError
     options:
       show_source: true
 
 ## Configuration Errors
 
-::: pypaginator.exceptions.PaginationConfigurationError
+::: pypaginate.exceptions.PaginationConfigurationError
     options:
       show_source: true
 
 ## Validation Errors
 
-::: pypaginator.exceptions.InvalidPageError
+::: pypaginate.exceptions.InvalidPageError
     options:
       show_source: true
 
-::: pypaginator.exceptions.InvalidLimitError
+::: pypaginate.exceptions.InvalidLimitError
     options:
       show_source: true
 
 ## Filter Errors
 
-::: pypaginator.exceptions.FilterError
+::: pypaginate.exceptions.FilterError
     options:
       show_source: true
 
-::: pypaginator.exceptions.InvalidOperatorError
+::: pypaginate.exceptions.InvalidOperatorError
     options:
       show_source: true
 
-::: pypaginator.exceptions.InvalidFieldError
+::: pypaginate.exceptions.InvalidFieldError
     options:
       show_source: true
 
 ## Search Errors
 
-::: pypaginator.exceptions.SearchError
+::: pypaginate.exceptions.SearchError
     options:
       show_source: true
 
@@ -49,7 +49,7 @@ The exceptions module provides error classes for pagination-related errors.
 ### Catching Pagination Errors
 
 ```python
-from pypaginator.exceptions import (
+from pypaginate.exceptions import (
     PaginationError,
     PaginationConfigurationError,
     InvalidPageError,
@@ -73,7 +73,7 @@ except PaginationError as e:
 ```python
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from pypaginator.exceptions import (
+from pypaginate.exceptions import (
     PaginationError,
     InvalidPageError,
     InvalidLimitError,
@@ -115,7 +115,7 @@ async def pagination_error_handler(request: Request, exc: PaginationError):
 ### Filter Error Handling
 
 ```python
-from pypaginator.exceptions import (
+from pypaginate.exceptions import (
     FilterError,
     InvalidOperatorError,
     InvalidFieldError,
@@ -134,7 +134,7 @@ except FilterError as e:
 ### Custom Exception Details
 
 ```python
-from pypaginator.exceptions import PaginationConfigurationError
+from pypaginate.exceptions import PaginationConfigurationError
 
 # Exceptions may include additional details
 try:

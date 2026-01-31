@@ -30,8 +30,8 @@ from sqlalchemy import Column, DateTime, Integer, String, select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-from pypaginator.core import KeysetPageParams
-from pypaginator.engines.sql import SqlPaginator
+from pypaginate.core import KeysetPageParams
+from pypaginate.engines.sql import SqlPaginator
 
 
 # Database setup
@@ -213,7 +213,7 @@ Back to page 2: Event(id=11, name=Event 10) to Event(id=20, name=Event 19)
 ### KeysetPageParams
 
 ```python
-from pypaginator.core import KeysetPageParams
+from pypaginate.core import KeysetPageParams
 
 # First page (no cursor)
 params = KeysetPageParams(limit=20)
@@ -242,8 +242,8 @@ has_more = snapshot.next_marker is not None
 
 ```python
 from fastapi import FastAPI, Query
-from pypaginator.core import KeysetPageParams
-from pypaginator.engines.sql import SqlPaginator
+from pypaginate.core import KeysetPageParams
+from pypaginate.engines.sql import SqlPaginator
 
 app = FastAPI()
 

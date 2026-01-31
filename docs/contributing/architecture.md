@@ -5,7 +5,7 @@ pypaginate is organized into distinct layers with clear responsibilities and min
 ## Directory Structure
 
 ```
-pypaginator/
+pypaginate/
 ├── core/              # Core data types and protocols
 ├── engines/           # Pagination strategy implementations
 ├── query/             # Query construction and execution
@@ -36,12 +36,12 @@ Features are organized with optional dependencies:
 
 ```python
 # Core (no dependencies)
-from pypaginator.core import PageParams, Page
-from pypaginator.engines import MemoryPaginator
+from pypaginate.core import PageParams, Page
+from pypaginate.engines import MemoryPaginator
 
 # SQLAlchemy support (optional)
 pip install pypaginate[sqlalchemy]
-from pypaginator.query import paginate_entities
+from pypaginate.query import paginate_entities
 
 # All features
 pip install pypaginate[all]
@@ -82,7 +82,7 @@ This allows custom implementations without inheritance.
 
 ```
 ┌────────────────────────────────────────┐
-│  Public API (pypaginator.__init__)     │
+│  Public API (pypaginate.__init__)     │
 │  - Page, PageParams, paginate_*        │
 └─────────────────┬──────────────────────┘
                   │
@@ -202,7 +202,7 @@ count_stmt = builder.build(original_stmt)
 Framework integrations adapt pypaginate to specific APIs:
 
 ```python
-from pypaginator.integrations.fastapi import (
+from pypaginate.integrations.fastapi import (
     PagedResponse,
     get_pagination_params
 )

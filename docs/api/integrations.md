@@ -8,7 +8,7 @@ The integrations module provides framework-specific utilities for FastAPI and ot
 
 Pydantic model for paginated API responses.
 
-::: pypaginator.integrations.fastapi.PagedResponse
+::: pypaginate.integrations.fastapi.PagedResponse
     options:
       show_source: true
       members:
@@ -22,7 +22,7 @@ Pydantic model for paginated API responses.
 
 FastAPI dependency for extracting pagination parameters.
 
-::: pypaginator.integrations.fastapi.get_pagination_params
+::: pypaginate.integrations.fastapi.get_pagination_params
     options:
       show_source: true
 
@@ -32,9 +32,9 @@ FastAPI dependency for extracting pagination parameters.
 
 ```python
 from fastapi import Depends, FastAPI
-from pypaginator.integrations.fastapi import get_pagination_params, PagedResponse
-from pypaginator.core import PageParams
-from pypaginator.query import paginate_entities_to_page
+from pypaginate.integrations.fastapi import get_pagination_params, PagedResponse
+from pypaginate.core import PageParams
+from pypaginate.query import paginate_entities_to_page
 
 app = FastAPI()
 
@@ -52,7 +52,7 @@ async def list_users(
 
 ```python
 from fastapi import Query
-from pypaginator.core import PageParams
+from pypaginate.core import PageParams
 
 def get_custom_pagination(
     page: int = Query(1, ge=1, description="Page number"),
@@ -81,8 +81,8 @@ The `PagedResponse` model includes:
 ### Converting from Page
 
 ```python
-from pypaginator.integrations.fastapi import PagedResponse
-from pypaginator.core import Page
+from pypaginate.integrations.fastapi import PagedResponse
+from pypaginate.core import Page
 
 # From a Page object
 page: Page[User] = await paginate_entities_to_page(session, stmt, params)
@@ -100,8 +100,8 @@ response = PagedResponse.from_page(page)
 ### With Search and Filtering
 
 ```python
-from pypaginator.filters.search import SqlSearchService
-from pypaginator.sorting import SqlSortAdapter
+from pypaginate.filters.search import SqlSearchService
+from pypaginate.sorting import SqlSortAdapter
 
 @app.get("/products", response_model=PagedResponse[ProductSchema])
 async def list_products(
