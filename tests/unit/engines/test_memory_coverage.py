@@ -56,6 +56,7 @@ class TestFilterIter:
 
     def test_filter_iter_with_generator(self) -> None:
         """Should work with generators."""
+
         def gen():
             yield from range(10)
 
@@ -184,6 +185,7 @@ class TestMemoryPaginatorClamp:
     def test_paginate_stream_with_clamp(self) -> None:
         """Should clamp page for stream pagination."""
         paginator: MemoryPaginator[int] = MemoryPaginator(clamp=True)
+
         # Use a generator to force stream pagination
         def gen():
             yield from range(100)
@@ -199,9 +201,11 @@ class TestMemoryPaginatorClamp:
         paginator: MemoryPaginator[int] = MemoryPaginator(clamp=False)
         items = list(range(100))
         params = PageParams(page=1, limit=10)
-        predicate = lambda x: x % 2 == 0
 
-        result = paginator.paginate(items, params, predicate)
+        def is_even(x: int) -> bool:
+            return x % 2 == 0
+
+        result = paginator.paginate(items, params, is_even)
 
         assert len(result.items) == 10
         assert all(x % 2 == 0 for x in result.items)
@@ -212,9 +216,11 @@ class TestMemoryPaginatorClamp:
         paginator: MemoryPaginator[int] = MemoryPaginator(clamp=True)
         items = list(range(100))
         params = PageParams(page=10, limit=10)  # Beyond filtered count
-        predicate = lambda x: x < 30  # Only 30 items pass
 
-        result = paginator.paginate(items, params, predicate)
+        def less_than_30(x: int) -> bool:
+            return x < 30
+
+        result = paginator.paginate(items, params, less_than_30)
 
         # Should clamp to valid page
         assert result.total == 30

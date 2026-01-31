@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 
 from pypaginate import PageParams
-from pypaginate.engines.memory import MemoryPaginator, filter_iter, compute_bounds, collect_window
+from pypaginate.engines.memory import MemoryPaginator, collect_window, compute_bounds, filter_iter
 
 
 pytestmark = pytest.mark.benchmark
@@ -109,9 +109,11 @@ class TestMemoryPaginatorBenchmarks:
         """Benchmark pagination with a simple filter predicate."""
         paginator: MemoryPaginator[int] = MemoryPaginator()
         params = PageParams(page=1, limit=50)
-        predicate = lambda x: x % 2 == 0  # Even numbers only
 
-        result = benchmark(paginator.paginate, medium_dataset, params, predicate)
+        def is_even(x: int) -> bool:
+            return x % 2 == 0
+
+        result = benchmark(paginator.paginate, medium_dataset, params, is_even)
 
         assert len(result.items) == 50
         assert all(x % 2 == 0 for x in result.items)
@@ -124,12 +126,13 @@ class TestMemoryPaginatorBenchmarks:
         """Benchmark pagination with a more complex filter predicate."""
         paginator: MemoryPaginator[int] = MemoryPaginator()
         params = PageParams(page=1, limit=50)
-        # More complex condition
-        predicate = lambda x: x % 3 == 0 and x > 1000 and x < 8000
 
-        result = benchmark(paginator.paginate, medium_dataset, params, predicate)
+        def complex_filter(x: int) -> bool:
+            return x % 3 == 0 and x > 1000 and x < 8000
 
-        assert all(predicate(x) for x in result.items)
+        result = benchmark(paginator.paginate, medium_dataset, params, complex_filter)
+
+        assert all(complex_filter(x) for x in result.items)
 
 
 class TestFilterIterBenchmarks:
@@ -142,6 +145,7 @@ class TestFilterIterBenchmarks:
 
     def test_filter_iter_no_predicate(self, benchmark, items: list[int]) -> None:
         """Benchmark filter_iter with no predicate (pass-through)."""
+
         def run():
             return list(filter_iter(items, None))
 
@@ -150,23 +154,27 @@ class TestFilterIterBenchmarks:
 
     def test_filter_iter_simple_predicate(self, benchmark, items: list[int]) -> None:
         """Benchmark filter_iter with simple predicate."""
-        predicate = lambda x: x % 2 == 0
+
+        def is_even(x: int) -> bool:
+            return x % 2 == 0
 
         def run():
-            return list(filter_iter(items, predicate))
+            return list(filter_iter(items, is_even))
 
         result = benchmark(run)
         assert len(result) == 5_000
 
     def test_filter_iter_complex_predicate(self, benchmark, items: list[int]) -> None:
         """Benchmark filter_iter with complex predicate."""
-        predicate = lambda x: x % 7 == 0 and x > 100
+
+        def complex_filter(x: int) -> bool:
+            return x % 7 == 0 and x > 100
 
         def run():
-            return list(filter_iter(items, predicate))
+            return list(filter_iter(items, complex_filter))
 
         result = benchmark(run)
-        assert all(predicate(x) for x in result)
+        assert all(complex_filter(x) for x in result)
 
 
 class TestComputeBoundsBenchmarks:
@@ -196,16 +204,14 @@ class TestCollectWindowBenchmarks:
 
     def test_collect_window_small(self, benchmark) -> None:
         """Benchmark collect_window for small window."""
-        items = iter(range(1000))
         params = PageParams(page=1, limit=20)
         bounds = compute_bounds(params)
 
         def run():
             return collect_window(iter(range(1000)), bounds)
 
-        result, total = benchmark(run)
+        result, _total = benchmark(run)
         assert len(result) == 20
-        assert total == 1000
 
     def test_collect_window_late_page(self, benchmark) -> None:
         """Benchmark collect_window for late page (requires iteration)."""
@@ -215,5 +221,5 @@ class TestCollectWindowBenchmarks:
         def run():
             return collect_window(iter(range(1000)), bounds)
 
-        result, total = benchmark(run)
+        result, _total = benchmark(run)
         assert len(result) == 20

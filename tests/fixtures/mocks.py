@@ -68,11 +68,11 @@ class MockResult(Generic[T]):
     items: list[T] = field(default_factory=list)
     count: int = 0
 
-    def scalars(self) -> "MockResult[T]":
+    def scalars(self) -> MockResult[T]:
         """Return self for chaining."""
         return self
 
-    def unique(self) -> "MockResult[T]":
+    def unique(self) -> MockResult[T]:
         """Return self for chaining."""
         return self
 
@@ -138,8 +138,10 @@ def create_mock_predicate(return_value: bool) -> Callable[[Any], bool]:
     Returns:
         A predicate function.
     """
+
     def predicate(item: Any) -> bool:
         return return_value
+
     return predicate
 
 

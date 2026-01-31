@@ -41,7 +41,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
 
     # Relationships
-    orders: Mapped[list["Order"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    orders: Mapped[list[Order]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"User(id={self.id}, name={self.name!r})"
@@ -93,7 +93,7 @@ class Order(Base):
     created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
 
     # Relationships
-    user: Mapped["User"] = relationship(back_populates="orders")
+    user: Mapped[User] = relationship(back_populates="orders")
 
     def __repr__(self) -> str:
         return f"Order(id={self.id}, user_id={self.user_id}, total={self.total})"

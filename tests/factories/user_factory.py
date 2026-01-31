@@ -56,8 +56,12 @@ class ProductFactory(factory.Factory):
     id = factory.Sequence(lambda n: n + 1)
     name = factory.LazyFunction(fake.word)
     description = factory.LazyFunction(fake.sentence)
-    price = factory.LazyFunction(lambda: Decimal(str(round(fake.pyfloat(min_value=1, max_value=1000), 2))))
-    category = factory.LazyFunction(lambda: fake.random_element(["Electronics", "Furniture", "Office Supplies", "Books"]))
+    price = factory.LazyFunction(
+        lambda: Decimal(str(round(fake.pyfloat(min_value=1, max_value=1000), 2)))
+    )
+    category = factory.LazyFunction(
+        lambda: fake.random_element(["Electronics", "Furniture", "Office Supplies", "Books"])
+    )
     in_stock = factory.LazyFunction(lambda: fake.boolean(chance_of_getting_true=80))
     created_at = factory.LazyFunction(lambda: datetime.now(UTC))
 

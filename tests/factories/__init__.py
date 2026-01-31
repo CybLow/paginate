@@ -10,6 +10,7 @@ from tests.factories.user_factory import (
     UserFactory,
 )
 
+
 __all__ = [
     "ProductFactory",
     "UserBatchFactory",

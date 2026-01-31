@@ -116,10 +116,16 @@ def pytest_collection_modifyitems(config: Config, items: list[Item]) -> None:
     # Handle benchmark tests
     run_benchmark = config.getoption("--run-benchmark", default=False)
     # Also check if pytest-benchmark is enabling benchmarks
-    benchmark_enabled = config.getoption("--benchmark-enable", default=False) if hasattr(config.option, "benchmark_enable") else False
+    benchmark_enabled = (
+        config.getoption("--benchmark-enable", default=False)
+        if hasattr(config.option, "benchmark_enable")
+        else False
+    )
 
     if not run_benchmark and not benchmark_enabled:
-        skip_benchmark = pytest.mark.skip(reason="use --run-benchmark or --benchmark-enable to run benchmarks")
+        skip_benchmark = pytest.mark.skip(
+            reason="use --run-benchmark or --benchmark-enable to run benchmarks"
+        )
         for item in items:
             if "benchmark" in item.keywords:
                 item.add_marker(skip_benchmark)
@@ -246,6 +252,7 @@ def snapshot_json(snapshot):
     """
     try:
         from syrupy.extensions.json import JSONSnapshotExtension
+
         return snapshot.use_extension(JSONSnapshotExtension)
     except ImportError:
         pytest.skip("syrupy not installed")
@@ -264,8 +271,7 @@ def sample_items() -> list[dict[str, int | str]]:
         A list of 20 sample items with id, name, and category.
     """
     return [
-        {"id": i, "name": f"Item {i}", "category": "A" if i % 2 == 0 else "B"}
-        for i in range(1, 21)
+        {"id": i, "name": f"Item {i}", "category": "A" if i % 2 == 0 else "B"} for i in range(1, 21)
     ]
 
 
@@ -284,16 +290,14 @@ def large_dataset() -> list[int]:
 # ============================================
 
 __all__ = [
-    # Models
+    "TEST_USERS",
     "Base",
     "User",
-    "TEST_USERS",
-    # Fixtures
     "async_engine",
     "async_session",
-    "populated_session",
-    "user_query",
-    "sample_items",
     "large_dataset",
+    "populated_session",
+    "sample_items",
     "snapshot_json",
+    "user_query",
 ]

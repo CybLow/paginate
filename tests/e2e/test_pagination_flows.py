@@ -9,12 +9,11 @@ from __future__ import annotations
 import pytest
 from sqlalchemy import select
 
-from pypaginate import Page, PageParams
+from pypaginate import PageParams
 from pypaginate.core.context import PaginationContext
 from pypaginate.engines.memory import MemoryPaginator
 from pypaginate.engines.sql import SqlPaginator
-
-from tests.conftest import TEST_USERS, User
+from tests.conftest import User
 
 
 pytestmark = pytest.mark.e2e
@@ -55,7 +54,10 @@ class TestMemoryPaginationFlow:
         """Should paginate filtered data correctly."""
         paginator: MemoryPaginator[int] = MemoryPaginator()
         items = list(range(1, 101))
-        predicate = lambda x: x % 5 == 0  # Multiples of 5 (20 items)
+
+        def is_multiple_of_five(x: int) -> bool:
+            return x % 5 == 0
+
         limit = 5
 
         all_collected = []
@@ -63,7 +65,7 @@ class TestMemoryPaginationFlow:
 
         while True:
             params = PageParams(page=page_num, limit=limit)
-            result = paginator.paginate(items, params, predicate)
+            result = paginator.paginate(items, params, is_multiple_of_five)
 
             all_collected.extend(result.items)
 
@@ -229,10 +231,7 @@ class TestIntegrationScenarios:
     def test_api_style_pagination_response(self) -> None:
         """Should produce API-style pagination response."""
         paginator: MemoryPaginator[dict] = MemoryPaginator()
-        items = [
-            {"id": i, "title": f"Article {i}", "published": i < 50}
-            for i in range(100)
-        ]
+        items = [{"id": i, "title": f"Article {i}", "published": i < 50} for i in range(100)]
         params = PageParams(page=2, limit=20)
 
         result = paginator.paginate(items, params)

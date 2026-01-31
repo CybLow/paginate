@@ -32,6 +32,7 @@ class TestPageParamsBenchmarks:
 
     def test_pageparams_creation_batch(self, benchmark) -> None:
         """Benchmark creating many PageParams instances."""
+
         def create_many():
             return [PageParams(page=i, limit=20) for i in range(1, 101)]
 
@@ -103,7 +104,7 @@ class TestPageBenchmarks:
         page = Page(items=sample_items, total=1000, page=1, limit=100)
 
         def iterate():
-            return [item for item in page.items]
+            return list(page.items)
 
         result = benchmark(iterate)
         assert len(result) == 100

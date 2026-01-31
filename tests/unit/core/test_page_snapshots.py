@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import pytest
 
+
 try:
     from syrupy.assertion import SnapshotAssertion
+
     SYRUPY_AVAILABLE = True
 except ImportError:
     SYRUPY_AVAILABLE = False

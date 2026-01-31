@@ -8,35 +8,47 @@ from __future__ import annotations
 
 import pytest
 
+
 try:
-    from hypothesis import given, strategies as st, assume, settings
+    from hypothesis import assume, given, settings, strategies as st
+
     HYPOTHESIS_AVAILABLE = True
 except ImportError:
     HYPOTHESIS_AVAILABLE = False
+
     # Create dummy decorators for when hypothesis is not installed
-    def given(*args, **kwargs):
+    def given(*_args, **_kwargs):
         def decorator(func):
             return pytest.mark.skip(reason="hypothesis not installed")(func)
+
         return decorator
-    
-    class st:
+
+    class StrategiesStub:
+        """Stub for hypothesis strategies when not installed."""
+
         @staticmethod
-        def integers(*args, **kwargs):
+        def integers(*_args, **_kwargs):
             return None
+
         @staticmethod
-        def lists(*args, **kwargs):
+        def lists(*_args, **_kwargs):
             return None
+
         @staticmethod
-        def text(*args, **kwargs):
+        def text(*_args, **_kwargs):
             return None
-    
-    def assume(condition):
+
+    st = StrategiesStub()  # type: ignore[misc]
+
+    def assume(_condition):
         pass
-    
-    def settings(*args, **kwargs):
+
+    def settings(*_args, **_kwargs):
         def decorator(func):
             return func
+
         return decorator
+
 
 from pypaginate import Page, PageParams
 
@@ -98,11 +110,10 @@ class TestPageProperties:
         """Total pages should be ceil(total / limit)."""
         items = list(range(items_count))
         pg = Page(items=items, total=total, page=page, limit=limit)
-        
-        # Formula: (total + limit - 1) // limit
+
         # When total=0, this returns 0 (no pages needed)
         expected_pages = (total + limit - 1) // limit
-        
+
         assert pg.pages == expected_pages
 
     @given(
@@ -190,7 +201,7 @@ class TestPaginationMathProperties:
             pages = 1
         else:
             pages = (total + limit - 1) // limit
-        
+
         # Verify all items are covered
         items_covered = 0
         for page_num in range(1, pages + 1):
@@ -200,7 +211,7 @@ class TestPaginationMathProperties:
             end = min(start + limit, total)
             if start < total:
                 items_covered += end - start
-        
+
         assert items_covered == total
 
     @given(
@@ -211,11 +222,11 @@ class TestPaginationMathProperties:
         """Consecutive pages should not have overlapping offsets."""
         params1 = PageParams(page=page, limit=limit)
         params2 = PageParams(page=page + 1, limit=limit)
-        
+
         # End of page 1 should be start of page 2
         end_of_page1 = params1.offset + limit
         start_of_page2 = params2.offset
-        
+
         assert end_of_page1 == start_of_page2
 
     @given(

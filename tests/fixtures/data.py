@@ -102,10 +102,7 @@ def create_large_dataset(count: int) -> list[dict[str, str]]:
     Returns:
         A list of dictionaries with name and email.
     """
-    return [
-        {"name": f"User_{i:05d}", "email": f"user_{i:05d}@example.com"}
-        for i in range(count)
-    ]
+    return [{"name": f"User_{i:05d}", "email": f"user_{i:05d}@example.com"} for i in range(count)]
 
 
 __all__ = [
