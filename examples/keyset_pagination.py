@@ -11,7 +11,7 @@ of OFFSET for deep pages.
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from pypaginator.core import KeysetPageParams
+from pypaginate.core import KeysetPageParams
 
 
 def generate_sample_data(count: int = 100) -> list[dict[str, Any]]:

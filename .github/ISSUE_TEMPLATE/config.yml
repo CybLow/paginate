@@ -2,9 +2,9 @@ blank_issues_enabled: false
 
 contact_links:
   - name: 💬 Questions & Discussions
-    url: https://github.com/CybLow/pypaginator/discussions
+    url: https://github.com/CybLow/pypaginate/discussions
     about: Ask questions and discuss ideas
 
   - name: 📚 Documentation
-    url: https://pypaginator.readthedocs.io
+    url: https://pypaginate.readthedocs.io
     about: Check the documentation first

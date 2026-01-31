@@ -1,5 +1,5 @@
 # =============================================================================
-# CI/CD Pipeline - PyPaginator
+# CI/CD Pipeline - pypaginate
 # =============================================================================
 # Triggers: push (main/develop), pull_request, manual
 # Jobs: quality (lint, format, type-check), test (matrix), build, security
@@ -125,7 +125,7 @@ jobs:
       - name: 🧪 Run tests
         run: |
           uv run pytest \
-            --cov=pypaginator \
+            --cov=pypaginate \
             --cov-report=xml \
             --cov-report=term-missing:skip-covered \
             --junitxml=junit-${{ matrix.os }}-${{ matrix.python }}.xml \

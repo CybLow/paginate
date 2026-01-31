@@ -3,9 +3,7 @@
 This module tests fuzzy matching functionality using RapidFuzz.
 """
 
-import pytest
-
-from pypaginator.filters.search.fuzzy import (
+from pypaginate.filters.search.fuzzy import (
     fuzzy_match,
     is_near_match,
     partial_ratio,

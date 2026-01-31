@@ -20,7 +20,7 @@
 ## ✅ Checklist
 
 - [ ] My code follows the project style guidelines
-- [ ] I have run `uv run pypaginator qa` successfully
+- [ ] I have run `uv run pypaginate qa` successfully
 - [ ] I have added tests for my changes (if applicable)
 - [ ] I have updated documentation (if applicable)
 - [ ] My changes generate no new warnings

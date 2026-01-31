@@ -1,10 +1,10 @@
-"""Basic tests for pypaginator core functionality."""
+"""Basic tests for pypaginate core functionality."""
 
 from __future__ import annotations
 
 import pytest
 
-from pypaginator import Page, PageParams, __version__
+from pypaginate import Page, PageParams, __version__
 
 
 class TestVersion:
@@ -87,7 +87,7 @@ class TestCoreImports:
 
     def test_import_exceptions(self) -> None:
         """Exceptions should be importable."""
-        from pypaginator import (
+        from pypaginate import (
             FilterException,
             PaginationConfigurationError,
             PaginatorException,

@@ -1,12 +1,13 @@
-"""Pytest configuration and shared fixtures for pypaginator tests.
+"""Pytest configuration and shared fixtures for pypaginate tests.
 
 This module provides async SQLAlchemy fixtures for integration testing.
 """
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, AsyncGenerator
+from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 import pytest
 from sqlalchemy import String, select
@@ -32,9 +33,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(200))
-    created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc)
-    )
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
 
     def __repr__(self) -> str:
         return f"User(id={self.id}, name={self.name!r})"
@@ -107,9 +106,9 @@ def user_query():
 
 
 __all__ = [
+    "TEST_USERS",
     "Base",
     "User",
-    "TEST_USERS",
     "async_engine",
     "async_session",
     "populated_session",

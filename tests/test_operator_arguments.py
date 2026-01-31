@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from pypaginator.filters.predicates.operator_arguments import (
+from pypaginate.exceptions import FilterValidationError
+from pypaginate.filters.predicates.operator_arguments import (
     ensure_collection,
     ensure_pair,
 )
-from pypaginator.exceptions import FilterValidationError
 
 
 class TestEnsureCollection:

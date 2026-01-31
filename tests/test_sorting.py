@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from pypaginator.sorting.engine import SortEngine, sort_items
+from pypaginate.sorting.engine import SortEngine, sort_items
 
 
 @dataclass

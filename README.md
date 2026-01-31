@@ -1,94 +1,100 @@
-# PyPaginator 🚀
+# pypaginate
 
 **Advanced pagination, filtering, and search toolkit for Python**
 
-[![CI](https://github.com/CybLow/pypaginator/actions/workflows/ci.yml/badge.svg)](https://github.com/CybLow/pypaginator/actions/workflows/ci.yml)
-[![PyPI version](https://img.shields.io/pypi/v/pypaginator.svg)](https://pypi.org/project/pypaginator/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/pypaginator.svg)](https://pypi.org/project/pypaginator/)
+[![CI](https://github.com/CybLow/pypaginate/actions/workflows/ci.yml/badge.svg)](https://github.com/CybLow/pypaginate/actions/workflows/ci.yml)
+[![PyPI version](https://img.shields.io/pypi/v/pypaginate.svg)](https://pypi.org/project/pypaginate/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/pypaginate.svg)](https://pypi.org/project/pypaginate/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![codecov](https://codecov.io/gh/CybLow/pypaginator/branch/main/graph/badge.svg)](https://codecov.io/gh/CybLow/pypaginator)
+[![codecov](https://codecov.io/gh/CybLow/pypaginate/branch/main/graph/badge.svg)](https://codecov.io/gh/CybLow/pypaginate)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 
-PyPaginator is a modern, framework-agnostic pagination library that provides powerful features for paginating, filtering, and searching data. It works seamlessly with SQLAlchemy (async/sync), in-memory collections, and can be extended to support other ORMs.
+pypaginate is a modern, framework-agnostic pagination library that provides powerful features for paginating, filtering, and searching data. It works seamlessly with SQLAlchemy (async/sync), in-memory collections, and can be extended to support other ORMs.
 
-## ✨ Features
+## Features
 
-- 🔢 **Multiple Pagination Strategies**
+- **Multiple Pagination Strategies**
   - Offset-based pagination (page/limit)
   - Cursor-based (keyset) pagination for efficient large datasets
   - In-memory pagination for collections
   
-- 🔍 **Advanced Filtering**
+- **Advanced Filtering**
   - JSON Logic filtering with 20+ operators
   - JMESPath for nested field access
   - Type-safe filtering with mypy strict mode
   
-- 🔎 **Powerful Text Search**
+- **Powerful Text Search**
   - Full-text search with fuzzy matching (RapidFuzz)
   - Accent-insensitive search
   - SQL and in-memory search engines
   
-- 📊 **Flexible Sorting**
+- **Flexible Sorting**
   - Multi-column sorting
   - Custom sort key functions
   - SQL and in-memory sorting
   
-- 🎯 **Framework Integration**
+- **Framework Integration**
   - Native FastAPI support with dependency injection
   - SQLAlchemy 2.0+ (async and sync)
-  - Django ORM support (coming soon)
   - Framework-agnostic core
 
-- 🛡️ **Production Ready**
+- **Production Ready**
   - 100% type coverage (mypy --strict)
-  - Comprehensive test suite (90%+ coverage)
-  - Zero cyclomatic complexity issues
+  - Comprehensive test suite
   - Fully documented API
 
-## 📦 Installation
+## Installation
 
-### Basic installation (in-memory pagination only)
-
-```bash
-pip install pypaginator
-```
-
-### With SQLAlchemy support
+### Using UV (Recommended)
 
 ```bash
-pip install pypaginator[sqlalchemy]
+# Basic installation
+uv add pypaginate
+
+# With SQLAlchemy support
+uv add pypaginate[sqlalchemy]
+
+# With all features
+uv add pypaginate[all]
 ```
 
-### With all features
+### Using pip
 
 ```bash
-pip install pypaginator[all]
+# Basic installation (in-memory pagination only)
+pip install pypaginate
+
+# With SQLAlchemy support
+pip install pypaginate[sqlalchemy]
+
+# With all features
+pip install pypaginate[all]
 ```
 
-### Optional dependencies
+### Optional Dependencies
 
 ```bash
 # Text search with fuzzy matching
-pip install pypaginator[search]
+pip install pypaginate[search]
 
 # Advanced filtering
-pip install pypaginator[filters]
+pip install pypaginate[filters]
 
 # Text normalization
-pip install pypaginator[text]
+pip install pypaginate[text]
 
 # FastAPI integration
-pip install pypaginator[fastapi]
+pip install pypaginate[fastapi]
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Basic Pagination with SQLAlchemy
 
 ```python
 from sqlalchemy import select
-from pypaginator import PageParams, paginate_entities
+from pypaginate import PageParams, paginate_entities
 
 async def list_users(session, page: int = 1, limit: int = 20):
     """Paginate User entities with automatic count."""
@@ -112,8 +118,8 @@ async def list_users(session, page: int = 1, limit: int = 20):
 ### In-Memory Pagination
 
 ```python
-from pypaginator import PageParams
-from pypaginator.engines import MemoryPaginator
+from pypaginate import PageParams
+from pypaginate.engines import MemoryPaginator
 
 users = [
     {"name": "Alice", "age": 30},
@@ -132,7 +138,7 @@ print(page.total)  # 3
 ### Filtering with JSON Logic
 
 ```python
-from pypaginator.filters.predicates import FilterEngine
+from pypaginate.filters.predicates import FilterEngine
 
 engine = FilterEngine()
 
@@ -159,8 +165,8 @@ filtered = engine.filter(users, {
 ### Text Search
 
 ```python
-from pypaginator.filters.search import MemorySearchService
-from pypaginator.filters.search.options import SearchOptions
+from pypaginate.filters.search import MemorySearchService
+from pypaginate.filters.search.options import SearchOptions
 
 service = MemorySearchService(
     options=SearchOptions(
@@ -182,8 +188,9 @@ results = service.search(users, "alice")
 
 ```python
 from fastapi import FastAPI, Depends
-from pypaginator import PageParams, PagedResponse, get_pagination_params
 from sqlalchemy.ext.asyncio import AsyncSession
+from pypaginate import PageParams, paginate_entities
+from pypaginate.integrations.fastapi import get_pagination_params, PagedResponse
 
 app = FastAPI()
 
@@ -196,23 +203,25 @@ async def list_users(
     return await paginate_entities(session, stmt, params)
 ```
 
-## 📚 Documentation
+## Documentation
 
-- [Full Documentation](https://pypaginator.readthedocs.io)
-- [API Reference](https://pypaginator.readthedocs.io/api/)
-- [Integration Guide](https://pypaginator.readthedocs.io/integration/)
-- [Architecture](https://pypaginator.readthedocs.io/architecture/)
-- [Examples](./examples/)
+Full documentation is available at [pypaginate.readthedocs.io](https://pypaginate.readthedocs.io):
 
-## 🧪 Advanced Usage
+- [Getting Started](https://pypaginate.readthedocs.io/getting-started/)
+- [User Guide](https://pypaginate.readthedocs.io/user-guide/)
+- [API Reference](https://pypaginate.readthedocs.io/api/)
+- [Examples](https://pypaginate.readthedocs.io/examples/)
+- [Contributing](https://pypaginate.readthedocs.io/contributing/)
+
+## Advanced Usage
 
 ### Cursor-Based Pagination (Keyset)
 
 For better performance with large datasets:
 
 ```python
-from pypaginator.core import KeysetPageParams
-from pypaginator.engines import KeysetPaginator
+from pypaginate.core import KeysetPageParams
+from pypaginate.engines import KeysetPaginator
 
 params = KeysetPageParams(
     limit=20,
@@ -263,12 +272,12 @@ filtered = engine.filter(items, {
 })
 ```
 
-## 🏗️ Architecture
+## Architecture
 
-PyPaginator follows a clean, layered architecture:
+pypaginate follows a clean, layered architecture:
 
 ```
-pypaginator/
+pypaginate/
 ├── core/          # Base types (Page, PageParams, protocols)
 ├── engines/       # Pagination strategies (SQL, memory, keyset)
 ├── query/         # Query construction and execution
@@ -277,10 +286,10 @@ pypaginator/
 │   └── search/        # Text search engines
 ├── sorting/       # Sorting utilities
 ├── text/          # Text normalization
-└── database/      # Database utilities
+└── integrations/  # Framework integrations (FastAPI)
 ```
 
-## 🧪 Development
+## Development
 
 ### Prerequisites
 
@@ -290,19 +299,24 @@ pypaginator/
 ### Setup
 
 ```bash
-git clone https://github.com/CybLow/pypaginator.git
-cd pypaginator
-uv sync  # Installs all dependencies
+git clone https://github.com/CybLow/pypaginate.git
+cd pypaginate
+
+# Install UV (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install all dependencies
+uv sync
 ```
 
 ### Running Tests
 
 ```bash
 # Run all tests
-uv run pypaginator test
+uv run pytest
 
 # Run with coverage
-uv run pypaginator test-cov
+uv run pytest --cov=pypaginate --cov-report=term-missing
 
 # Run specific test categories
 uv run pytest -m unit
@@ -312,47 +326,47 @@ uv run pytest -m integration
 ### Code Quality
 
 ```bash
-# Quick quality check (format, lint, test)
-uv run pypaginator qa
+# Format code
+uv run ruff format src tests
 
-# All checks including type checking
-uv run pypaginator qas
+# Lint code
+uv run ruff check src tests
 
-# Individual checks
-uv run pypaginator lint      # Linting
-uv run pypaginator format    # Formatting
-uv run pypaginator typecheck # Type checking
+# Type checking
+uv run mypy src
+
+# All quality checks via Makefile
+make qa
 ```
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Run tests and quality checks
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Run tests and quality checks (`uv run pytest && uv run ruff check src tests`)
+5. Commit your changes (`git commit -m 'feat: add amazing feature'`)
 6. Push to the branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-- Inspired by modern pagination patterns
 - Built with SQLAlchemy, RapidFuzz, and other excellent libraries
+- Inspired by modern pagination patterns from the Python ecosystem
 - Thanks to all contributors
 
-## 📞 Support
+## Support
 
-- [Documentation](https://pypaginator.readthedocs.io)
-- [Issue Tracker](https://github.com/yourusername/pypaginator/issues)
-- [Discussions](https://github.com/yourusername/pypaginator/discussions)
+- [Documentation](https://pypaginate.readthedocs.io)
+- [Issue Tracker](https://github.com/CybLow/pypaginate/issues)
+- [Discussions](https://github.com/CybLow/pypaginate/discussions)
 
 ---
 
-Made with ❤️ by the PyPaginator team
-
+Made with care by the pypaginate team

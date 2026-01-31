@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import pytest
-
-from pypaginator.text.api import (
+from pypaginate.text.api import (
     FilterTextNormalizer,
     MemoryTextNormalizer,
     SqlTextNormalizer,
     Utf8Normalizer,
-    normalize_utf8,
     create_search_normalizer,
+    normalize_utf8,
 )
 
 

@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-import pytest
-
-from pypaginator.types import (
+from pypaginate.core.pages import Page, PageParams
+from pypaginate.types import (
     PageParamsProtocol,
     PageProtocol,
-    SupportsTotalOrdering,
     SqlClause,
     SqlStringExpression,
+    SupportsTotalOrdering,
 )
-from pypaginator.core.pages import PageParams, Page
 
 
 class TestPageParamsProtocol:

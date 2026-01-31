@@ -52,7 +52,7 @@ an individual is officially representing the community in public spaces.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the community leaders responsible for enforcement at
-[INSERT CONTACT EMAIL]. <!--TODO: Replace with actual contact email-->
+cyber_lolow@protonmail.com.
 
 All complaints will be reviewed and investigated promptly and fairly.
 

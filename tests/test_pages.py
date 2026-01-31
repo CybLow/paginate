@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from pypaginator.core.pages import Page, PageParams, KeysetPageParams
+from pypaginate.core.pages import KeysetPageParams, Page, PageParams
 
 
 class TestPageParams:

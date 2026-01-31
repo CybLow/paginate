@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from pypaginator.filters.search.options import SearchMode, DEFAULT_SEARCH_MODE
-from pypaginator.filters.search.memory_search import (
+from pypaginate.filters.search.memory_search import (
     MemorySearchEngine,
     MemorySearchOptions,
     safe_text,
 )
-from pypaginator.filters.search.parser import TokenParser, QueryTokens
-from pypaginator.text.pipelines import MemoryTextNormalizer
+from pypaginate.filters.search.options import DEFAULT_SEARCH_MODE, SearchMode
+from pypaginate.filters.search.parser import QueryTokens, TokenParser
+from pypaginate.text.pipelines import MemoryTextNormalizer
 
 
 class TestSearchMode:
@@ -99,33 +99,25 @@ class TestTokenParser:
         """Should create parser."""
         assert parser is not None
 
-    def test_parse_simple_term(
-        self, parser: TokenParser, normalizer_func: object
-    ) -> None:
+    def test_parse_simple_term(self, parser: TokenParser, normalizer_func: object) -> None:
         """Should parse simple term."""
         tokens = parser.parse("hello", normalizer_func)  # type: ignore[arg-type]
         assert tokens is not None
         assert isinstance(tokens, QueryTokens)
         assert tokens.has_content()
 
-    def test_parse_multiple_terms(
-        self, parser: TokenParser, normalizer_func: object
-    ) -> None:
+    def test_parse_multiple_terms(self, parser: TokenParser, normalizer_func: object) -> None:
         """Should parse multiple terms."""
         tokens = parser.parse("hello world", normalizer_func)  # type: ignore[arg-type]
         assert tokens.has_content()
 
-    def test_parse_quoted_phrase(
-        self, parser: TokenParser, normalizer_func: object
-    ) -> None:
+    def test_parse_quoted_phrase(self, parser: TokenParser, normalizer_func: object) -> None:
         """Should parse quoted phrase."""
         tokens = parser.parse('"hello world"', normalizer_func)  # type: ignore[arg-type]
         assert tokens.has_content()
         assert len(tokens.phrases) >= 1
 
-    def test_parse_empty(
-        self, parser: TokenParser, normalizer_func: object
-    ) -> None:
+    def test_parse_empty(self, parser: TokenParser, normalizer_func: object) -> None:
         """Should handle empty query."""
         tokens = parser.parse("", normalizer_func)  # type: ignore[arg-type]
         assert not tokens.has_content()
@@ -185,4 +177,3 @@ class TestMemoryTextNormalizer:
         result = normalizer.normalize_text("hello  world")
         # Should collapse whitespace
         assert "  " not in result
-

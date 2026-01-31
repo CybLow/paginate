@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from pypaginator.filters.predicates.builder import JsonLogicPredicateBuilder
-from pypaginator.filters.predicates.registry import OperatorRegistry
+from pypaginate.filters.predicates.builder import JsonLogicPredicateBuilder
+from pypaginate.filters.predicates.registry import OperatorRegistry
 
 
 class TestJsonLogicPredicateBuilder:
@@ -115,4 +115,3 @@ class TestJsonLogicOperators:
         predicate = builder.build({"lte": 5})
         assert predicate(5) is True
         assert predicate(6) is False
-

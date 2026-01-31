@@ -6,7 +6,7 @@ import re
 
 import pytest
 
-from pypaginator.text.patterns import (
+from pypaginate.text.patterns import (
     FilterTextNormalizer,
     build_like_regex,
     compile_regex,
@@ -68,7 +68,7 @@ class TestCompileRegex:
 
     def test_invalid_pattern_raises(self) -> None:
         """Should raise on invalid pattern."""
-        from pypaginator.exceptions import FilterValidationError
+        from pypaginate.exceptions import FilterValidationError
 
         with pytest.raises(FilterValidationError):
             compile_regex("[invalid")  # Unclosed bracket

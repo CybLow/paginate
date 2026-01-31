@@ -1,6 +1,6 @@
-# PyPaginator Examples
+# pypaginate Examples
 
-This directory contains example scripts demonstrating various PyPaginator features.
+This directory contains example scripts demonstrating various pypaginate features.
 
 ## Examples
 
@@ -23,7 +23,7 @@ Complete FastAPI application with SQLAlchemy integration.
 
 ```bash
 # Install dependencies
-pip install pypaginator[fastapi,sqlalchemy] uvicorn aiosqlite
+pip install pypaginate[fastapi,sqlalchemy] uvicorn aiosqlite
 
 # Run the server
 uvicorn examples.fastapi_integration:app --reload
@@ -40,17 +40,17 @@ python examples/keyset_pagination.py
 
 ## Requirements
 
-Install PyPaginator with all optional dependencies:
+Install pypaginate with all optional dependencies:
 
 ```bash
-pip install pypaginator[all]
+pip install pypaginate[all]
 ```
 
 Or install specific features:
 
 ```bash
-pip install pypaginator[sqlalchemy]  # SQLAlchemy support
-pip install pypaginator[fastapi]     # FastAPI integration
-pip install pypaginator[filters]     # JSON Logic filtering
-pip install pypaginator[search]      # Text search with fuzzy matching
+pip install pypaginate[sqlalchemy]  # SQLAlchemy support
+pip install pypaginate[fastapi]     # FastAPI integration
+pip install pypaginate[filters]     # JSON Logic filtering
+pip install pypaginate[search]      # Text search with fuzzy matching
 ```

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from pypaginator.filters.predicates.engine import FilterEngine, filter_items, CompiledFilter
+from pypaginate.filters.predicates.engine import CompiledFilter, FilterEngine, filter_items
 
 
 @dataclass
@@ -141,20 +141,26 @@ class TestCompiledFilter:
 
     def test_matches(self) -> None:
         """CompiledFilter.matches should work."""
-        from pypaginator.filters.predicates.field_accessor import FieldAccessor
+        from pypaginate.filters.predicates.field_accessor import FieldAccessor
 
         accessor = FieldAccessor.from_string("active")
-        predicate = lambda v: v is True
+
+        def predicate(v: object) -> bool:
+            return v is True
+
         compiled = CompiledFilter(accessor=accessor, predicate=predicate)
         item = {"active": True}
         assert compiled.matches(item) is True
 
     def test_not_matches(self) -> None:
         """CompiledFilter.matches should return False for non-matching."""
-        from pypaginator.filters.predicates.field_accessor import FieldAccessor
+        from pypaginate.filters.predicates.field_accessor import FieldAccessor
 
         accessor = FieldAccessor.from_string("active")
-        predicate = lambda v: v is True
+
+        def predicate(v: object) -> bool:
+            return v is True
+
         compiled = CompiledFilter(accessor=accessor, predicate=predicate)
         item = {"active": False}
         assert compiled.matches(item) is False

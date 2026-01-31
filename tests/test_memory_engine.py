@@ -6,8 +6,8 @@ from dataclasses import dataclass
 
 import pytest
 
-from pypaginator.engines.memory import MemoryPaginator
-from pypaginator.core.pages import PageParams
+from pypaginate.core.pages import PageParams
+from pypaginate.engines.memory import MemoryPaginator
 
 
 @dataclass

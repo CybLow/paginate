@@ -8,18 +8,18 @@ from __future__ import annotations
 
 import pytest
 
+
 # Skip all tests if FastAPI or httpx are not installed
 fastapi = pytest.importorskip("fastapi")
 pytest.importorskip("httpx")
 
-from typing import Sequence
 
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
-from pypaginator.core.pages import Page, PageParams
-from pypaginator.integrations.fastapi import PagedResponse, get_pagination_params
+from pypaginate.core.pages import Page, PageParams
+from pypaginate.integrations.fastapi import PagedResponse, get_pagination_params
 
 
 class ItemSchema(BaseModel):
@@ -306,8 +306,7 @@ class TestFastAPIImportError:
     def test_module_requires_fastapi(self) -> None:
         """Test that module can be imported when FastAPI is installed."""
         # This test will only run if FastAPI is installed (due to pytest.importorskip)
-        from pypaginator.integrations import fastapi
+        from pypaginate.integrations import fastapi
 
         assert hasattr(fastapi, "PagedResponse")
         assert hasattr(fastapi, "get_pagination_params")
-

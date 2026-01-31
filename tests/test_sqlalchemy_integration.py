@@ -10,18 +10,18 @@ from typing import TYPE_CHECKING
 import pytest
 from sqlalchemy import select
 
-from pypaginator.core.context import PaginationContext
-from pypaginator.core.pages import PageParams
-from pypaginator.database.collations import (
+from pypaginate.core.context import PaginationContext
+from pypaginate.core.pages import PageParams
+from pypaginate.database.collations import (
+    CollationPlan,
     _apply_plan,
     _execute_statements,
     _log_notes,
-    CollationPlan,
     ensure_database_collations,
 )
-from pypaginator.engines.sql import SqlPaginator, get_pagination_strategy
-from pypaginator.exceptions import PaginationConfigurationError
-from pypaginator.query.builders.count_builder import (
+from pypaginate.engines.sql import SqlPaginator, get_pagination_strategy
+from pypaginate.exceptions import PaginationConfigurationError
+from pypaginate.query.builders.count_builder import (
     build_count_statement,
     fetch_count,
     strip_ordering,
@@ -132,9 +132,7 @@ class TestSqlPaginatorOffsetPagination:
 class TestSqlPaginatorWithClamping:
     """Test SqlPaginator with clamping enabled."""
 
-    async def test_clamp_page_beyond_total(
-        self, populated_session: AsyncSession
-    ) -> None:
+    async def test_clamp_page_beyond_total(self, populated_session: AsyncSession) -> None:
         """Should clamp page number to valid bounds."""
         paginator: SqlPaginator[User] = SqlPaginator(populated_session, clamp=True)
         params = PageParams(page=100, limit=3)
@@ -152,9 +150,7 @@ class TestSqlPaginatorWithClamping:
         assert snapshot.params.page <= 4
         assert snapshot.total == 10
 
-    async def test_no_clamp_when_disabled(
-        self, populated_session: AsyncSession
-    ) -> None:
+    async def test_no_clamp_when_disabled(self, populated_session: AsyncSession) -> None:
         """Should not clamp when disabled."""
         paginator: SqlPaginator[User] = SqlPaginator(populated_session, clamp=False)
         params = PageParams(page=100, limit=3)
@@ -275,9 +271,7 @@ class TestCountBuilder:
 class TestCollations:
     """Test database collation functions."""
 
-    async def test_ensure_database_collations_sqlite(
-        self, async_engine: AsyncEngine
-    ) -> None:
+    async def test_ensure_database_collations_sqlite(self, async_engine: AsyncEngine) -> None:
         """Should return SQLite plan for SQLite engine."""
         plan = await ensure_database_collations(async_engine)
 
@@ -287,9 +281,7 @@ class TestCollations:
         assert len(plan.statements) == 0
         assert len(plan.notes) > 0
 
-    async def test_apply_plan_with_statements(
-        self, async_engine: AsyncEngine
-    ) -> None:
+    async def test_apply_plan_with_statements(self, async_engine: AsyncEngine) -> None:
         """Should execute plan statements."""
         # Create a simple plan with a no-op statement
         plan = CollationPlan(

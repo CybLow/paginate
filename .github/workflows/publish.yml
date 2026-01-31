@@ -71,7 +71,7 @@ jobs:
       - name: 📋 Get version
         id: version
         run: |
-          VERSION=$(uv run python -c "from importlib.metadata import version; print(version('pypaginator'))")
+          VERSION=$(uv run python -c "from importlib.metadata import version; print(version('pypaginate'))")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📦 Version: $VERSION"
 
@@ -97,7 +97,7 @@ jobs:
 
     environment:
       name: testpypi
-      url: https://test.pypi.org/project/pypaginator
+      url: https://test.pypi.org/project/pypaginate
 
     steps:
       - name: 📥 Download artifacts
@@ -128,7 +128,7 @@ jobs:
 
     environment:
       name: pypi
-      url: https://pypi.org/project/pypaginator
+      url: https://pypi.org/project/pypaginate
 
     steps:
       - name: 📥 Download artifacts

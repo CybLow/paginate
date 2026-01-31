@@ -10,7 +10,7 @@ import pytest
 from sqlalchemy import Column, Integer, String, create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-from pypaginator.filters.sql_adapter import SqlFilterAdapter
+from pypaginate.filters.sql_adapter import SqlFilterAdapter
 
 
 # Test model
@@ -41,8 +41,8 @@ def engine():
 def session(engine):
     """Create a database session with test data."""
     Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
-    session = SessionLocal()
+    session_local = sessionmaker(bind=engine)
+    session = session_local()
 
     # Insert test data
     products = [
@@ -353,4 +353,3 @@ class TestSqlFilterAdapterCombineConditions:
 
         assert len(results) == 2
         assert all(p.category == "Electronics" and p.price > 50 for p in results)
-

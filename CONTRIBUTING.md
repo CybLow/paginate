@@ -1,6 +1,6 @@
-# Contributing to PyPaginator
+# Contributing to pypaginate
 
-Thank you for your interest in contributing to PyPaginator! We welcome contributions from the community.
+Thank you for your interest in contributing to pypaginate! We welcome contributions from the community.
 
 ## Prerequisites
 
@@ -18,8 +18,8 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
 
 1. **Fork and clone the repository**
    ```bash
-   git clone https://github.com/CybLow/pypaginator.git
-   cd pypaginator
+   git clone https://github.com/CybLow/pypaginate.git
+   cd pypaginate
    ```
 
 2. **Install dependencies with UV**
@@ -39,7 +39,7 @@ All contributions must pass the following quality gates:
 ### Quick Quality Check
 ```bash
 # Run essential checks (format, lint, test)
-uv run pypaginator qa
+uv run pypaginate qa
 
 # Or with make
 make qa
@@ -49,11 +49,11 @@ make qa
 
 | Check | Command | Alias |
 |-------|---------|-------|
-| Linting | `uv run pypaginator lint` | `uv run ruff check src tests` |
-| Formatting | `uv run pypaginator format` | `uv run ruff format src tests` |
-| Type Checking | `uv run pypaginator typecheck` | `uv run mypy src` |
-| Tests | `uv run pypaginator test` | `uv run pytest` |
-| All Checks | `uv run pypaginator qas` | Includes mypy |
+| Linting | `uv run pypaginate lint` | `uv run ruff check src tests` |
+| Formatting | `uv run pypaginate format` | `uv run ruff format src tests` |
+| Type Checking | `uv run pypaginate typecheck` | `uv run mypy src` |
+| Tests | `uv run pypaginate test` | `uv run pytest` |
+| All Checks | `uv run pypaginate qas` | Includes mypy |
 
 ### Requirements
 
@@ -77,7 +77,7 @@ make qa
 
 3. **Run quality checks**
    ```bash
-   uv run pypaginator qa
+   uv run pypaginate qa
    ```
 
 4. **Commit your changes**
@@ -108,7 +108,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 ### PR Checklist
 
 - [ ] Code follows project style guidelines
-- [ ] Quality checks pass (`uv run pypaginator qa`)
+- [ ] Quality checks pass (`uv run pypaginate qa`)
 - [ ] New code has tests
 - [ ] Documentation is updated (if needed)
 - [ ] CHANGELOG.md is updated
@@ -167,4 +167,4 @@ Be respectful and inclusive. We follow the [Contributor Covenant Code of Conduct
 
 ---
 
-Thank you for contributing to PyPaginator! 🚀
+Thank you for contributing to pypaginate! 🚀

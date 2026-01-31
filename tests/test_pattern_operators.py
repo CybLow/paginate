@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import pytest
 
-from pypaginator.exceptions import FilterValidationError
-from pypaginator.filters.predicates.operators.patterns import LikeFactory, RegexFactory
+from pypaginate.exceptions import FilterValidationError
+from pypaginate.filters.predicates.operators.patterns import LikeFactory, RegexFactory
 
 
 class TestLikeFactory:
@@ -423,4 +423,3 @@ class TestFactoriesComparison:
 
         assert like_pred("my test case") is True
         assert regex_pred("my test case") is True
-

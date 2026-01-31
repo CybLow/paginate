@@ -4,15 +4,13 @@ This module tests the search options validation and resolution functionality.
 """
 
 import re
-from typing import Any
 
 import pytest
 
-from pypaginator.exceptions import SearchQueryError
-from pypaginator.filters.search.conditions import SearchMode
-from pypaginator.filters.search.options import (
+from pypaginate.exceptions import SearchQueryError
+from pypaginate.filters.search.conditions import SearchMode
+from pypaginate.filters.search.options import (
     DEFAULT_SEARCH_MODE,
-    ContextOptions,
     ResolvedOptions,
     SearchOptionSet,
     resolve_options,
@@ -44,23 +42,17 @@ class TestSearchOptionSet:
 
     def test_from_mapping_with_mode_string(self) -> None:
         """Mode as string should be converted to enum."""
-        result = SearchOptionSet.from_mapping(
-            {"mode": "or"}, default_pattern=DEFAULT_PATTERN
-        )
+        result = SearchOptionSet.from_mapping({"mode": "or"}, default_pattern=DEFAULT_PATTERN)
         assert result.mode == SearchMode.OR
 
     def test_from_mapping_with_prefix_true(self) -> None:
         """Prefix option should be accepted."""
-        result = SearchOptionSet.from_mapping(
-            {"prefix": True}, default_pattern=DEFAULT_PATTERN
-        )
+        result = SearchOptionSet.from_mapping({"prefix": True}, default_pattern=DEFAULT_PATTERN)
         assert result.prefix is True
 
     def test_from_mapping_with_prefix_false(self) -> None:
         """Prefix false should be accepted."""
-        result = SearchOptionSet.from_mapping(
-            {"prefix": False}, default_pattern=DEFAULT_PATTERN
-        )
+        result = SearchOptionSet.from_mapping({"prefix": False}, default_pattern=DEFAULT_PATTERN)
         assert result.prefix is False
 
     def test_from_mapping_with_id_fields_list(self) -> None:
@@ -193,9 +185,7 @@ class TestIdFieldsCoercion:
 
     def test_id_fields_empty_list(self) -> None:
         """Empty list should result in empty tuple."""
-        result = SearchOptionSet.from_mapping(
-            {"id_fields": []}, default_pattern=DEFAULT_PATTERN
-        )
+        result = SearchOptionSet.from_mapping({"id_fields": []}, default_pattern=DEFAULT_PATTERN)
         assert result.id_fields == ()
 
 

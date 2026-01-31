@@ -1,5 +1,5 @@
 # =============================================================================
-# CodeQL Security Analysis - PyPaginator
+# CodeQL Security Analysis - pypaginate
 # =============================================================================
 # Runs GitHub's CodeQL security scanner to identify vulnerabilities
 # in Python code.

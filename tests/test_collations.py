@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from pypaginator.database.collations import (
+from pypaginate.database.collations import (
     CollationPlan,
     recommend_collation_plan,
 )
