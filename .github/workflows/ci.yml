@@ -133,6 +133,7 @@ jobs:
           uv run pytest tests/ \
             -n auto \
             --dist loadgroup \
+            -p no:benchmark \
             --cov=pypaginate \
             --cov-report=xml:coverage-unit-${{ matrix.python }}.xml \
             --cov-report=term-missing:skip-covered \
@@ -190,6 +191,7 @@ jobs:
       - name: Run integration tests
         run: |
           uv run pytest tests/ \
+            --benchmark-disable \
             --cov=pypaginate \
             --cov-report=xml:coverage-integration-${{ matrix.os }}.xml \
             --cov-report=term-missing:skip-covered \
@@ -246,6 +248,7 @@ jobs:
         run: |
           uv run pytest tests/property \
             -m property \
+            --benchmark-disable \
             --hypothesis-seed=random \
             --junitxml=junit-property.xml \
             -v
