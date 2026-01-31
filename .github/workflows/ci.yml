@@ -189,18 +189,7 @@ jobs:
         run: uv sync --frozen --all-extras --group test
 
       - name: Run integration tests
-        run: |
-          uv run pytest tests/ \
-            --benchmark-disable \
-            --cov=pypaginate \
-            --cov-report=xml:coverage-integration-${{ matrix.os }}.xml \
-            --cov-report=term-missing:skip-covered \
-            --junitxml=junit-integration-${{ matrix.os }}.xml \
-            -v \
-            --ignore=tests/benchmarks \
-            --ignore=tests/e2e \
-            --reruns 2 \
-            --reruns-delay 1
+        run: uv run pytest tests/ --benchmark-disable --cov=pypaginate --cov-report=xml:coverage-integration-${{ matrix.os }}.xml --cov-report=term-missing:skip-covered --junitxml=junit-integration-${{ matrix.os }}.xml -v --ignore=tests/benchmarks --ignore=tests/e2e --reruns 2 --reruns-delay 1
 
       - name: Upload coverage
         if: matrix.os == 'ubuntu-latest'
