@@ -1,10 +1,10 @@
 """FastAPI Integration Example.
 
-This example demonstrates how to integrate PyPaginator
+This example demonstrates how to integrate pypaginate
 with a FastAPI application using SQLAlchemy.
 
 Requirements:
-    pip install pypaginator[fastapi,sqlalchemy] uvicorn
+    pip install pypaginate[fastapi,sqlalchemy] uvicorn
 
 Run:
     uvicorn examples.fastapi_integration:app --reload
@@ -18,7 +18,7 @@ from sqlalchemy import String, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from pypaginator import PageParams, PagedResponse, get_pagination_params, paginate_entities
+from pypaginate import PageParams, PagedResponse, get_pagination_params, paginate_entities
 
 
 # =============================================================================
@@ -61,7 +61,7 @@ class UserOut(BaseModel):
 # =============================================================================
 # FastAPI App
 # =============================================================================
-app = FastAPI(title="PyPaginator FastAPI Example")
+app = FastAPI(title="pypaginate FastAPI Example")
 
 
 @app.on_event("startup")

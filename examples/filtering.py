@@ -1,10 +1,10 @@
 """Filtering Example.
 
 This example demonstrates how to use JSON Logic filtering
-with PyPaginator's FilterEngine.
+with pypaginate's FilterEngine.
 """
 
-from pypaginator.filters.predicates import FilterEngine
+from pypaginate.filters.predicates import FilterEngine
 
 
 def main() -> None:

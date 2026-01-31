@@ -1,0 +1,35 @@
+/* pypaginate custom styles */
+
+/* Primary color adjustments for Material theme */
+:root {
+  --md-primary-fg-color: #7C3AED;
+  --md-primary-fg-color--light: #A78BFA;
+  --md-primary-fg-color--dark: #5B21B6;
+  --md-accent-fg-color: #8B5CF6;
+}
+
+/* Code block improvements */
+.highlight code {
+  font-size: 0.85em;
+}
+
+/* Admonition styling */
+.md-typeset .admonition.tip,
+.md-typeset details.tip {
+  border-color: #7C3AED;
+}
+
+.md-typeset .admonition.tip > .admonition-title,
+.md-typeset details.tip > summary {
+  background-color: rgba(124, 58, 237, 0.1);
+}
+
+/* Table improvements */
+.md-typeset table:not([class]) {
+  font-size: 0.85em;
+}
+
+/* Navigation improvements */
+.md-nav__link--active {
+  font-weight: 600;
+}

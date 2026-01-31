@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from pypaginator.core.context import PaginationContext, clamp_page_params
-from pypaginator.core.pages import PageParams
+from pypaginate.core.context import PaginationContext, clamp_page_params
+from pypaginate.core.pages import PageParams
 
 
 class TestClampPageParams:

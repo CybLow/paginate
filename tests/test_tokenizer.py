@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from pypaginator.filters.search.parser import TokenParser, QueryTokens
+from pypaginate.filters.search.parser import QueryTokens, TokenParser
 
 
 class TestQueryTokens:
@@ -32,9 +32,7 @@ class TestQueryTokens:
 
     def test_all_combined(self) -> None:
         """Tokens with all should have content."""
-        tokens = QueryTokens(
-            terms=("apple",), phrases=("red delicious",), raw=("app",)
-        )
+        tokens = QueryTokens(terms=("apple",), phrases=("red delicious",), raw=("app",))
         assert tokens.has_content()
 
     def test_terms_tuple(self) -> None:

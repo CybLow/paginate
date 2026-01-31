@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
-from pypaginator.text.pipelines import (
+from pypaginate.text.pipelines import (
     MemoryTextNormalizer,
     SqlTextNormalizer,
     Utf8TextPipeline,

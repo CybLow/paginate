@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
-from pypaginator.filters.predicates.field_accessor import FieldAccessor
+from pypaginate.filters.predicates.field_accessor import FieldAccessor
 
 
 class TestFieldAccessor:

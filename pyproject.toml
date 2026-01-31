@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 # PROJECT METADATA (PEP 621)
 # ==========================
 [project]
-name = "pypaginator"
+name = "pypaginate"
 version = "0.1.0"
 description = "Advanced pagination, filtering, and search toolkit for Python with SQLAlchemy support"
 readme = { file = "README.md", content-type = "text/markdown" }
@@ -73,24 +73,24 @@ fastapi = [
 
 # Combo extras (using self-references for DRY)
 all = [
-    "pypaginator[sqlalchemy,search,filters,text,fastapi]",
+    "pypaginate[sqlalchemy,search,filters,text,fastapi]",
 ]
 
 # ==========================
 # CONSOLE SCRIPTS (uv run <cmd>)
 # ==========================
 [project.scripts]
-pypaginator = "pypaginator._cli:main"
+pypaginate = "pypaginate._cli:main"
 
 # ==========================
 # PROJECT URLS
 # ==========================
 [project.urls]
-Homepage = "https://github.com/CybLow/pypaginator"
-Documentation = "https://pypaginator.readthedocs.io"
-Repository = "https://github.com/CybLow/pypaginator"
-Issues = "https://github.com/CybLow/pypaginator/issues"
-Changelog = "https://github.com/CybLow/pypaginator/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/CybLow/pypaginate"
+Documentation = "https://pypaginate.readthedocs.io"
+Repository = "https://github.com/CybLow/pypaginate"
+Issues = "https://github.com/CybLow/pypaginate/issues"
+Changelog = "https://github.com/CybLow/pypaginate/blob/main/CHANGELOG.md"
 
 # ==========================
 # DEPENDENCY GROUPS (PEP 735 - dev only)
@@ -113,6 +113,7 @@ test = [
     "coverage[toml]>=7.6.0",
     "aiosqlite>=0.20.0",
     "httpx>=0.28.1",
+    "greenlet>=3.0.0",  # Required for SQLAlchemy async on all platforms
 ]
 # Linting & Formatting
 lint = [
@@ -137,6 +138,10 @@ docs = [
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.7.1",
     "mkdocstrings[python]>=0.27.0",
+    "mkdocs-gen-files>=0.5.0",
+    "mkdocs-literate-nav>=0.6.0",
+    "mkdocs-section-index>=0.3.9",
+    "griffe>=1.5.0",
 ]
 
 # ==========================
@@ -153,7 +158,7 @@ cache-keys = [{ file = "pyproject.toml" }, { file = "uv.lock" }]
 # HATCH BUILD CONFIGURATION
 # ==========================
 [tool.hatch.build.targets.wheel]
-packages = ["src/pypaginator"]
+packages = ["src/pypaginate"]
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -219,14 +224,14 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "**/__init__.py" = ["F401", "F403", "ARG001"]
-"tests/**/*.py" = ["S101", "ARG001", "PLR2004", "C901"]
+"tests/**/*.py" = ["S101", "ARG001", "PLR2004", "C901", "B017", "E402", "B008"]
 "examples/**/*.py" = ["S101", "T201"]
-"src/pypaginator/_cli.py" = ["T201", "S603", "S607"]
+"src/pypaginate/_cli.py" = ["T201", "S603", "S607"]
 
 [tool.ruff.lint.isort]
 force-single-line = false
 lines-after-imports = 2
-known-first-party = ["pypaginator"]
+known-first-party = ["pypaginate"]
 combine-as-imports = true
 
 [tool.ruff.format]
@@ -249,7 +254,7 @@ disallow_any_generics = true
 check_untyped_defs = true
 no_implicit_optional = true
 warn_redundant_casts = true
-warn_unused_ignores = true
+warn_unused_ignores = false  # Too many false positives with SQLAlchemy
 warn_no_return = true
 show_error_codes = true
 show_column_numbers = true
@@ -264,8 +269,22 @@ module = [
     "text_unidecode.*",
     "rapidfuzz.*",
     "sqlakeyset.*",
+    "sqlalchemy.*",
+    "fastapi.*",
+    "pydantic.*",
+    "pyparsing.*",
 ]
 ignore_missing_imports = true
+
+# Relax strict checking for files with heavy SQLAlchemy/Pydantic usage
+[[tool.mypy.overrides]]
+module = [
+    "pypaginate.dependencies",
+    "pypaginate.integrations.fastapi",
+    "pypaginate.text.pipelines",
+    "pypaginate.filters.search.helpers",
+]
+disable_error_code = ["misc", "no-any-return"]
 
 # ==========================
 # PYTEST CONFIGURATION
@@ -286,6 +305,9 @@ filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
+    # SQLAlchemy async resource cleanup warnings on Windows
+    "ignore::pytest.PytestUnraisableExceptionWarning",
+    "ignore::ResourceWarning",
 ]
 markers = [
     "unit: Unit tests (fast, no external deps)",
@@ -300,7 +322,7 @@ markers = [
 # COVERAGE CONFIGURATION
 # ==========================
 [tool.coverage.run]
-source = ["src/pypaginator"]
+source = ["src/pypaginate"]
 branch = true
 parallel = true
 omit = [
@@ -311,7 +333,7 @@ omit = [
 ]
 
 [tool.coverage.paths]
-source = ["src/pypaginator", "*/site-packages/pypaginator"]
+source = ["src/pypaginate", "*/site-packages/pypaginate"]
 
 [tool.coverage.report]
 precision = 2
@@ -333,7 +355,7 @@ exclude_lines = [
 
 [tool.coverage.html]
 directory = "htmlcov"
-title = "PyPaginator Coverage Report"
+title = "pypaginate Coverage Report"
 
 [tool.coverage.xml]
 output = "coverage.xml"

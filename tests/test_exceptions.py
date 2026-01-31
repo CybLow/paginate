@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
-from pypaginator.exceptions import (
+from pypaginate.exceptions import (
     FilterException,
     FilterValidationError,
     PaginationConfigurationError,
@@ -145,4 +143,3 @@ class TestValidationException:
     def test_inheritance(self) -> None:
         """Should inherit from PaginatorException."""
         assert issubclass(ValidationException, PaginatorException)
-

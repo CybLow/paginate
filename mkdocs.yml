@@ -1,14 +1,16 @@
-# MkDocs Configuration for PyPaginator
+# MkDocs Configuration for pypaginate
 # Documentation: https://www.mkdocs.org/
 
-site_name: PyPaginator
+site_name: pypaginate
 site_description: Advanced pagination, filtering, and search toolkit for Python
 site_author: CybLow
-site_url: https://pypaginator.readthedocs.io
+site_url: https://pypaginate.readthedocs.io
 
-repo_name: CybLow/pypaginator
-repo_url: https://github.com/CybLow/pypaginator
+repo_name: CybLow/pypaginate
+repo_url: https://github.com/CybLow/pypaginate
 edit_uri: edit/main/docs/
+
+copyright: Copyright &copy; 2024-2025 CybLow
 
 theme:
   name: material
@@ -28,61 +30,167 @@ theme:
         name: Switch to light mode
   features:
     - navigation.instant
+    - navigation.instant.prefetch
     - navigation.tracking
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
     - navigation.expand
+    - navigation.path
     - navigation.top
+    - navigation.indexes
+    - toc.follow
     - search.suggest
     - search.highlight
+    - search.share
     - content.tabs.link
     - content.code.copy
     - content.code.annotate
+    - content.tooltips
   icon:
     repo: fontawesome/brands/github
+  logo: assets/logo.svg
+  favicon: assets/favicon.svg
 
 nav:
   - Home: index.md
   - Getting Started:
-      - Installation: QUICKSTART.md
-      - Architecture: ARCHITECTURE.md
+      - getting-started/index.md
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quickstart.md
+      - First Steps: getting-started/first-steps.md
   - User Guide:
-      - Testing Guide: TESTING_GUIDE.md
-      - Publishing: PUBLISHING.md
-  - Reference:
-      - Comparison: COMPARISON.md
-      - Roadmap: ROADMAP.md
+      - user-guide/index.md
+      - Pagination:
+          - user-guide/pagination/index.md
+          - Offset Pagination: user-guide/pagination/offset.md
+          - Cursor/Keyset Pagination: user-guide/pagination/keyset.md
+          - In-Memory Pagination: user-guide/pagination/memory.md
+      - Filtering:
+          - user-guide/filtering/index.md
+          - Basic Filtering: user-guide/filtering/basic.md
+          - JSON Logic: user-guide/filtering/json-logic.md
+          - Operators Reference: user-guide/filtering/operators.md
+      - Search:
+          - user-guide/search/index.md
+          - Text Search: user-guide/search/text-search.md
+          - Fuzzy Matching: user-guide/search/fuzzy.md
+      - Sorting:
+          - user-guide/sorting/index.md
+          - Basic Sorting: user-guide/sorting/basic.md
+          - Multi-Column Sorting: user-guide/sorting/multi-column.md
+      - Integrations:
+          - user-guide/integrations/index.md
+          - FastAPI: user-guide/integrations/fastapi.md
+          - SQLAlchemy: user-guide/integrations/sqlalchemy.md
+  - API Reference:
+      - api/index.md
+      - Core: api/core.md
+      - Engines: api/engines.md
+      - Filters: api/filters.md
+      - Search: api/search.md
+      - Sorting: api/sorting.md
+      - Integrations: api/integrations.md
+      - Exceptions: api/exceptions.md
+  - Examples:
+      - examples/index.md
+      - Basic Pagination: examples/basic-pagination.md
+      - Filtering: examples/filtering.md
+      - FastAPI Integration: examples/fastapi.md
+      - Keyset Pagination: examples/keyset.md
   - Contributing:
-      - Code of Conduct: ../CODE_OF_CONDUCT.md
-      - Contributing Guide: ../CONTRIBUTING.md
+      - contributing/index.md
+      - Development Setup: contributing/development.md
+      - Testing Guide: contributing/testing.md
+      - Code Style: contributing/code-style.md
+      - Architecture: contributing/architecture.md
+      - Roadmap: contributing/roadmap.md
+      - Internal Notes: contributing/internals.md
+  - Changelog: changelog.md
+  - Comparison: comparison.md
 
 plugins:
   - search
+  - gen-files:
+      scripts:
+        - docs/scripts/gen_ref_pages.py
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - section-index
   - mkdocstrings:
       handlers:
         python:
+          paths: [src]
           options:
+            docstring_style: google
             show_source: true
             show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
             heading_level: 2
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+            merge_init_into_class: true
+            filters:
+              - "!^_"
+              - "!^__"
 
 markdown_extensions:
+  - abbr
   - admonition
-  - pymdownx.details
-  - pymdownx.superfences
-  - pymdownx.highlight:
-      anchor_linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - pymdownx.tabbed:
-      alternate_style: true
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
   - tables
   - toc:
       permalink: true
+      permalink_title: Link to this section
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      base_path: ['.', 'examples']
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
 
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/CybLow/pypaginator
+      link: https://github.com/CybLow/pypaginate
     - icon: fontawesome/brands/python
-      link: https://pypi.org/project/pypaginator/
+      link: https://pypi.org/project/pypaginate/
+  version:
+    provider: mike
+    default: stable
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX
+
+extra_css:
+  - stylesheets/extra.css
+
+watch:
+  - src/pypaginate

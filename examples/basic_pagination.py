@@ -1,11 +1,11 @@
 """Basic Pagination Example.
 
 This example demonstrates simple offset-based pagination
-with in-memory data using PyPaginator.
+with in-memory data using pypaginate.
 """
 
-from pypaginator import PageParams
-from pypaginator.engines import MemoryPaginator
+from pypaginate import PageParams
+from pypaginate.engines import MemoryPaginator
 
 
 def main() -> None:

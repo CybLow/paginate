@@ -1,1 +1,1 @@
-"""PyPaginator test suite."""
+"""pypaginate test suite."""

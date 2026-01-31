@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
-from pypaginator.filters.predicates.registry import OperatorRegistry
+from pypaginate.filters.predicates.registry import OperatorRegistry
 
 
 class TestOperatorRegistry:

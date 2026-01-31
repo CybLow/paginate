@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
-from pypaginator.filters.predicates.jsonlogic_evaluator import (
+from pypaginate.filters.predicates.jsonlogic_evaluator import (
     evaluate_json_logic_rule,
 )
 

@@ -26,7 +26,7 @@ assignees: ''
 
 ## 🌍 Environment
 
-- **pypaginator version**: `x.x.x`
+- **pypaginate version**: `x.x.x`
 - **Python version**: `3.x`
 - **OS**: 
 

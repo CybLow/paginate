@@ -10,7 +10,7 @@ import pytest
 from sqlalchemy import Column, Integer, String, create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-from pypaginator.sorting.sql_adapter import SqlSortAdapter
+from pypaginate.sorting.sql_adapter import SqlSortAdapter
 
 
 # Test model
@@ -41,8 +41,8 @@ def engine():
 def session(engine):
     """Create a database session with test data."""
     Base.metadata.create_all(engine)
-    SessionLocal = sessionmaker(bind=engine)
-    session = SessionLocal()
+    session_local = sessionmaker(bind=engine)
+    session = session_local()
 
     # Insert test data with some NULL values
     employees = [
@@ -57,9 +57,12 @@ def session(engine):
     session.add_all(employees)
     session.commit()
 
-    yield session
-
-    session.close()
+    try:
+        yield session
+    finally:
+        session.rollback()
+        session.close()
+        engine.dispose()
 
 
 class TestSqlSortAdapterAscending:
@@ -75,9 +78,7 @@ class TestSqlSortAdapterAscending:
 
     def test_ascending_sort_explicit(self, session: Session) -> None:
         """Test ascending sort with explicit descending=False."""
-        order_expr = SqlSortAdapter.build_order_expression(
-            Employee.name, descending=False
-        )
+        order_expr = SqlSortAdapter.build_order_expression(Employee.name, descending=False)
         results = session.execute(select(Employee).order_by(order_expr)).scalars().all()
 
         names = [emp.name for emp in results]
@@ -97,9 +98,7 @@ class TestSqlSortAdapterDescending:
 
     def test_descending_sort(self, session: Session) -> None:
         """Test descending sort."""
-        order_expr = SqlSortAdapter.build_order_expression(
-            Employee.name, descending=True
-        )
+        order_expr = SqlSortAdapter.build_order_expression(Employee.name, descending=True)
         results = session.execute(select(Employee).order_by(order_expr)).scalars().all()
 
         names = [emp.name for emp in results]
@@ -107,9 +106,7 @@ class TestSqlSortAdapterDescending:
 
     def test_descending_sort_integers(self, session: Session) -> None:
         """Test descending sort on integer column."""
-        order_expr = SqlSortAdapter.build_order_expression(
-            Employee.id, descending=True
-        )
+        order_expr = SqlSortAdapter.build_order_expression(Employee.id, descending=True)
         results = session.execute(select(Employee).order_by(order_expr)).scalars().all()
 
         ids = [emp.id for emp in results]
@@ -117,9 +114,7 @@ class TestSqlSortAdapterDescending:
 
     def test_descending_sort_salary(self, session: Session) -> None:
         """Test descending sort on nullable column (default NULL handling)."""
-        order_expr = SqlSortAdapter.build_order_expression(
-            Employee.salary, descending=True
-        )
+        order_expr = SqlSortAdapter.build_order_expression(Employee.salary, descending=True)
         results = session.execute(select(Employee).order_by(order_expr)).scalars().all()
 
         # Get salaries (None values will be at the end or beginning depending on DB)
@@ -221,11 +216,7 @@ class TestSqlSortAdapterMultipleColumns:
         order_expr2 = SqlSortAdapter.build_order_expression(Employee.name)
 
         results = (
-            session.execute(
-                select(Employee).order_by(order_expr1, order_expr2)
-            )
-            .scalars()
-            .all()
+            session.execute(select(Employee).order_by(order_expr1, order_expr2)).scalars().all()
         )
 
         # Group by department
@@ -241,19 +232,11 @@ class TestSqlSortAdapterMultipleColumns:
 
     def test_sort_department_desc_then_salary_asc(self, session: Session) -> None:
         """Test sorting with mixed order directions."""
-        order_expr1 = SqlSortAdapter.build_order_expression(
-            Employee.department, descending=True
-        )
-        order_expr2 = SqlSortAdapter.build_order_expression(
-            Employee.salary, nulls_position="last"
-        )
+        order_expr1 = SqlSortAdapter.build_order_expression(Employee.department, descending=True)
+        order_expr2 = SqlSortAdapter.build_order_expression(Employee.salary, nulls_position="last")
 
         results = (
-            session.execute(
-                select(Employee).order_by(order_expr1, order_expr2)
-            )
-            .scalars()
-            .all()
+            session.execute(select(Employee).order_by(order_expr1, order_expr2)).scalars().all()
         )
 
         departments = [emp.department for emp in results]
@@ -282,9 +265,7 @@ class TestSqlSortAdapterEdgeCases:
         """Test sorting with no results."""
         order_expr = SqlSortAdapter.build_order_expression(Employee.name)
         results = (
-            session.execute(
-                select(Employee).where(Employee.id == 999).order_by(order_expr)
-            )
+            session.execute(select(Employee).where(Employee.id == 999).order_by(order_expr))
             .scalars()
             .all()
         )
@@ -297,9 +278,7 @@ class TestSqlSortAdapterEdgeCases:
         session.query(Employee).update({"salary": None})
         session.commit()
 
-        order_expr = SqlSortAdapter.build_order_expression(
-            Employee.salary, nulls_position="first"
-        )
+        order_expr = SqlSortAdapter.build_order_expression(Employee.salary, nulls_position="first")
         results = session.execute(select(Employee).order_by(order_expr)).scalars().all()
 
         assert len(results) == 7
@@ -307,9 +286,7 @@ class TestSqlSortAdapterEdgeCases:
 
     def test_none_nulls_position_parameter(self, session: Session) -> None:
         """Test with None as nulls_position (should use default behavior)."""
-        order_expr = SqlSortAdapter.build_order_expression(
-            Employee.salary, nulls_position=None
-        )
+        order_expr = SqlSortAdapter.build_order_expression(Employee.salary, nulls_position=None)
         results = session.execute(select(Employee).order_by(order_expr)).scalars().all()
 
         assert len(results) == 7
@@ -334,14 +311,9 @@ class TestSqlSortAdapterReturnType:
         order_expr = SqlSortAdapter.build_order_expression(Employee.name)
 
         # Use in first query
-        results1 = session.execute(
-            select(Employee).order_by(order_expr)
-        ).scalars().all()
+        results1 = session.execute(select(Employee).order_by(order_expr)).scalars().all()
 
         # Use in second query
-        results2 = session.execute(
-            select(Employee).order_by(order_expr)
-        ).scalars().all()
+        results2 = session.execute(select(Employee).order_by(order_expr)).scalars().all()
 
         assert [e.name for e in results1] == [e.name for e in results2]
-

@@ -6,16 +6,10 @@ LIKE clauses and matching conditions.
 
 from __future__ import annotations
 
-import re
-from dataclasses import dataclass
-from typing import Any
-from unittest.mock import MagicMock, Mock
-
-import pytest
-from sqlalchemy import Column, Integer, String, select
+from sqlalchemy import Integer, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from pypaginator.filters.search.helpers import (
+from pypaginate.filters.search.helpers import (
     _column_expression,
     column_attributes,
     match_columns,

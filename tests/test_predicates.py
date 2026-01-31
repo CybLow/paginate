@@ -6,9 +6,9 @@ from dataclasses import dataclass
 
 import pytest
 
-from pypaginator.filters.predicates.field_accessor import FieldAccessor
-from pypaginator.filters.predicates.registry import OperatorRegistry
-from pypaginator.filters.predicates.engine import FilterEngine, filter_items
+from pypaginate.filters.predicates.engine import FilterEngine, filter_items
+from pypaginate.filters.predicates.field_accessor import FieldAccessor
+from pypaginate.filters.predicates.registry import OperatorRegistry
 
 
 @dataclass
@@ -84,7 +84,7 @@ class TestOperatorRegistry:
 
     def test_build_unknown_operator_raises(self) -> None:
         """Building unknown operator should raise."""
-        from pypaginator.exceptions import FilterValidationError
+        from pypaginate.exceptions import FilterValidationError
 
         registry = OperatorRegistry.default()
         with pytest.raises(FilterValidationError):
@@ -164,9 +164,7 @@ class TestFilterItemsFunction:
         result = filter_items(items, {"price": {"gt": 1.5}})
         assert len(result) == 2
 
-    def test_filter_items_empty_filters(
-        self, items: list[dict[str, object]]
-    ) -> None:
+    def test_filter_items_empty_filters(self, items: list[dict[str, object]]) -> None:
         """Should return all items when no filters."""
         result = filter_items(items, {})
         assert len(result) == 3

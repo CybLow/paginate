@@ -10,9 +10,9 @@ from typing import TYPE_CHECKING
 import pytest
 from sqlalchemy import select
 
-from pypaginator.core.pages import KeysetPageParams
-from pypaginator.engines.keyset import _keyset_kwargs, select_keyset_page
-from pypaginator.engines.sql import SqlPaginator
+from pypaginate.core.pages import KeysetPageParams
+from pypaginate.engines.keyset import _keyset_kwargs, select_keyset_page
+from pypaginate.engines.sql import SqlPaginator
 
 from .conftest import User
 
@@ -61,9 +61,7 @@ class TestSelectKeysetPage:
         query = select(User).order_by(User.id)
         params = KeysetPageParams(limit=3)
 
-        page = await select_keyset_page(
-            populated_session, query, params, unique=False
-        )
+        page = await select_keyset_page(populated_session, query, params, unique=False)
 
         assert len(list(page)) == 3
 
@@ -72,9 +70,7 @@ class TestSelectKeysetPage:
         query = select(User).order_by(User.id)
         params = KeysetPageParams(limit=5)
 
-        page = await select_keyset_page(
-            populated_session, query, params, unique=True
-        )
+        page = await select_keyset_page(populated_session, query, params, unique=True)
 
         assert len(list(page)) == 5
 
@@ -88,9 +84,7 @@ class TestSqlPaginatorKeyset:
         params = KeysetPageParams(limit=3)
         query = select(User).order_by(User.id)
 
-        snapshot = await paginator.paginate_keyset(
-            query, params, unique=False, scalars=True
-        )
+        snapshot = await paginator.paginate_keyset(query, params, unique=False, scalars=True)
 
         assert len(snapshot.items) == 3
         assert snapshot.params.limit == 3
@@ -127,9 +121,7 @@ class TestSqlPaginatorKeyset:
         params = KeysetPageParams(limit=5)
         query = select(User).order_by(User.id)
 
-        snapshot = await paginator.paginate_keyset(
-            query, params, unique=True, scalars=True
-        )
+        snapshot = await paginator.paginate_keyset(query, params, unique=True, scalars=True)
 
         assert len(snapshot.items) == 5
 
@@ -139,9 +131,7 @@ class TestSqlPaginatorKeyset:
         params = KeysetPageParams(limit=2)
         query = select(User).order_by(User.id)
 
-        snapshot = await paginator.paginate_keyset(
-            query, params, unique=False, scalars=False
-        )
+        snapshot = await paginator.paginate_keyset(query, params, unique=False, scalars=False)
 
         assert len(snapshot.items) == 2
 
@@ -151,9 +141,7 @@ class TestSqlPaginatorKeyset:
         params = KeysetPageParams(limit=10)
         query = select(User).order_by(User.id)
 
-        snapshot = await paginator.paginate_keyset(
-            query, params, unique=False, scalars=True
-        )
+        snapshot = await paginator.paginate_keyset(query, params, unique=False, scalars=True)
 
         assert len(snapshot.items) == 0
         assert snapshot.next is None

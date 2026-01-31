@@ -1,5 +1,5 @@
 # =============================================================================
-# CI/CD Pipeline - PyPaginator
+# CI/CD Pipeline - pypaginate
 # =============================================================================
 # Triggers: push (main/develop), pull_request, manual
 # Jobs: quality (lint, format, type-check), test (matrix), build, security
@@ -120,16 +120,10 @@ jobs:
           python-version: ${{ matrix.python }}
 
       - name: 📦 Install dependencies
-        run: uv sync --frozen --all-extras
+        run: uv sync --frozen --all-extras --group test
 
       - name: 🧪 Run tests
-        run: |
-          uv run pytest \
-            --cov=pypaginator \
-            --cov-report=xml \
-            --cov-report=term-missing:skip-covered \
-            --junitxml=junit-${{ matrix.os }}-${{ matrix.python }}.xml \
-            -v
+        run: uv run pytest --cov=pypaginate --cov-report=xml --cov-report=term-missing:skip-covered --junitxml=junit-${{ matrix.os }}-${{ matrix.python }}.xml -v
 
       - name: 📊 Upload coverage
         if: matrix.os == 'ubuntu-latest' && matrix.python == '3.11'

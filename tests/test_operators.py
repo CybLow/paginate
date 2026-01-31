@@ -4,19 +4,19 @@ from __future__ import annotations
 
 import pytest
 
-from pypaginator.filters.predicates.operators.comparison import (
+from pypaginate.exceptions import FilterValidationError
+from pypaginate.filters.predicates.operators.comparison import (
+    COMPARATORS,
     EqualityFactory,
     OrderingFactory,
-    COMPARATORS,
 )
-from pypaginator.filters.predicates.operators.simple import (
+from pypaginate.filters.predicates.operators.range import RangeFactory
+from pypaginate.filters.predicates.operators.simple import (
+    EmptyFactory,
     MembershipFactory,
     NullityFactory,
-    EmptyFactory,
 )
-from pypaginator.filters.predicates.operators.text import TextFactory
-from pypaginator.filters.predicates.operators.range import RangeFactory
-from pypaginator.exceptions import FilterValidationError
+from pypaginate.filters.predicates.operators.text import TextFactory
 
 
 class TestEqualityFactory:

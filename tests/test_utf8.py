@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
-from pypaginator.text.utf8 import (
+from pypaginate.text.utf8 import (
     Utf8Normalizer,
     create_search_normalizer,
     normalize_utf8,
@@ -17,38 +15,28 @@ class TestNormalizeUtf8:
 
     def test_basic_normalization(self) -> None:
         """Should normalize UTF-8 string."""
-        result = normalize_utf8(
-            "Hello", lowercase=False, casefold_output=False, form="NFC"
-        )
+        result = normalize_utf8("Hello", lowercase=False, casefold_output=False, form="NFC")
         assert result == "Hello"
 
     def test_lowercase(self) -> None:
         """Should lowercase when specified."""
-        result = normalize_utf8(
-            "HELLO", lowercase=True, casefold_output=False, form="NFC"
-        )
+        result = normalize_utf8("HELLO", lowercase=True, casefold_output=False, form="NFC")
         assert result == "hello"
 
     def test_casefold(self) -> None:
         """Should casefold when specified."""
-        result = normalize_utf8(
-            "HELLO", lowercase=False, casefold_output=True, form="NFC"
-        )
+        result = normalize_utf8("HELLO", lowercase=False, casefold_output=True, form="NFC")
         assert result == "hello"
 
     def test_nfkc_normalization(self) -> None:
         """Should apply NFKC normalization."""
         # NFKC converts ﬁ ligature to "fi"
-        result = normalize_utf8(
-            "ﬁle", lowercase=False, casefold_output=False, form="NFKC"
-        )
+        result = normalize_utf8("ﬁle", lowercase=False, casefold_output=False, form="NFKC")
         assert "fi" in result
 
     def test_nfd_form(self) -> None:
         """Should handle NFD normalization form."""
-        result = normalize_utf8(
-            "café", lowercase=False, casefold_output=False, form="NFD"
-        )
+        result = normalize_utf8("café", lowercase=False, casefold_output=False, form="NFD")
         assert result is not None
 
 

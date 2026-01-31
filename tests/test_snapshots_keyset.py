@@ -5,14 +5,12 @@ Unit tests for bookmark coercion, materialization, and marker extraction.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from dataclasses import dataclass
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pypaginator.core.snapshots import (
+from pypaginate.core.pages import KeysetPageParams, PageParams
+from pypaginate.core.snapshots import (
     KeysetPaginationSnapshot,
     PaginationSnapshot,
     _coerce_scalar_row,
@@ -23,8 +21,7 @@ from pypaginator.core.snapshots import (
     markers_from_paging,
     materialize_keyset_page,
 )
-from pypaginator.core.pages import KeysetPageParams, PageParams
-from pypaginator.exceptions import PaginationConfigurationError
+from pypaginate.exceptions import PaginationConfigurationError
 
 
 pytestmark = pytest.mark.unit
@@ -188,9 +185,7 @@ class TestCoerceBookmark:
         mock_marker = MagicMock()
         mock_marker.place = (1, "value")
 
-        with patch(
-            "pypaginator.core.snapshots._get_sqlakeyset"
-        ) as mock_get_sqlakeyset:
+        with patch("pypaginate.core.snapshots._get_sqlakeyset") as mock_get_sqlakeyset:
             mock_sqlakeyset = MagicMock()
             mock_sqlakeyset.unserialize_bookmark.return_value = mock_marker
             mock_get_sqlakeyset.return_value = mock_sqlakeyset
@@ -198,18 +193,14 @@ class TestCoerceBookmark:
             result = coerce_bookmark("valid_bookmark")
 
             assert result == (1, "value")
-            mock_sqlakeyset.unserialize_bookmark.assert_called_once_with(
-                "valid_bookmark"
-            )
+            mock_sqlakeyset.unserialize_bookmark.assert_called_once_with("valid_bookmark")
 
     def test_invalid_bookmark_raises(self) -> None:
         """Should raise for invalid bookmark payload."""
         mock_marker = MagicMock()
         mock_marker.place = "not_a_tuple"  # Invalid - should be tuple
 
-        with patch(
-            "pypaginator.core.snapshots._get_sqlakeyset"
-        ) as mock_get_sqlakeyset:
+        with patch("pypaginate.core.snapshots._get_sqlakeyset") as mock_get_sqlakeyset:
             mock_sqlakeyset = MagicMock()
             mock_sqlakeyset.unserialize_bookmark.return_value = mock_marker
             mock_get_sqlakeyset.return_value = mock_sqlakeyset
@@ -227,7 +218,7 @@ class TestMaterializeKeysetPage:
         """Should return rows as-is when scalars=False."""
         items = [(1, "a"), (2, "b"), (3, "c")]
         mock_page = MagicMock()
-        mock_page.__iter__ = lambda self: iter(items)
+        mock_page.__iter__ = lambda _self: iter(items)
 
         result = materialize_keyset_page(mock_page, scalars=False)
 
@@ -238,7 +229,7 @@ class TestMaterializeKeysetPage:
         items = [(1,), (2,), (3,)]
 
         mock_page = MagicMock()
-        mock_page.__iter__ = lambda self: iter(items)
+        mock_page.__iter__ = lambda _self: iter(items)
 
         result = materialize_keyset_page(mock_page, scalars=True)
 
@@ -249,7 +240,7 @@ class TestMaterializeKeysetPage:
         items = [(1, "a"), (2, "b"), (3, "c")]
 
         mock_page = MagicMock()
-        mock_page.__iter__ = lambda self: iter(items)
+        mock_page.__iter__ = lambda _self: iter(items)
 
         result = materialize_keyset_page(mock_page, scalars=True)
 

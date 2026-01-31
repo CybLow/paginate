@@ -1,7 +1,7 @@
-# Makefile for pypaginator
+# Makefile for pypaginate
 # Uses UV for dependency management and tooling
 
-.PHONY: help sync lock upgrade test test-quick test-unit test-integration lint lint-fix format typecheck qa qas clean build publish-test publish docs
+.PHONY: help sync sync-all lock upgrade test test-cov test-quick test-unit test-integration lint lint-fix format format-check typecheck qa qas clean build publish-test publish docs docs-serve docs-clean pre-commit-install pre-commit
 
 # Default target
 .DEFAULT_GOAL := help
@@ -16,8 +16,8 @@ help:  ## Show this help message
 sync:  ## Install/sync all dependencies
 	uv sync
 
-sync-all:  ## Install with all optional features
-	uv sync --all-extras
+sync-all:  ## Install with all optional features and groups
+	uv sync --all-extras --group docs
 
 lock:  ## Update the lock file
 	uv lock
@@ -46,10 +46,22 @@ typecheck:  ## Run type checking with mypy
 	uv run mypy src
 
 qa:  ## Run essential quality checks (format, lint, test)
-	uv run pypaginator qa
+	@echo "Running format check..."
+	uv run ruff format --check src tests
+	@echo "Running lint..."
+	uv run ruff check src tests
+	@echo "Running tests..."
+	uv run pytest -q
 
 qas:  ## Run all quality checks including mypy
-	uv run pypaginator qas
+	@echo "Running format check..."
+	uv run ruff format --check src tests
+	@echo "Running lint..."
+	uv run ruff check src tests
+	@echo "Running type check..."
+	uv run mypy src
+	@echo "Running tests..."
+	uv run pytest -q
 
 # =============================================================================
 # TESTING
@@ -59,7 +71,7 @@ test:  ## Run tests
 	uv run pytest
 
 test-cov:  ## Run tests with coverage
-	uv run pytest --cov=pypaginator --cov-report=term-missing --cov-report=html --cov-report=xml
+	uv run pytest --cov=pypaginate --cov-report=term-missing --cov-report=html --cov-report=xml
 
 test-quick:  ## Run tests without coverage (fast)
 	uv run pytest -x -q
@@ -86,17 +98,21 @@ publish:  ## Publish to PyPI
 	uv publish
 
 clean:  ## Clean build artifacts and caches
-	uv run pypaginator clean
+	rm -rf dist/ build/ *.egg-info .pytest_cache .mypy_cache .ruff_cache htmlcov .coverage coverage.xml
+	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 
 # =============================================================================
 # DOCUMENTATION
 # =============================================================================
 
 docs:  ## Build documentation
-	uv run --group docs mkdocs build
+	uv run mkdocs build
 
 docs-serve:  ## Serve documentation locally
-	uv run --group docs mkdocs serve
+	uv run mkdocs serve
+
+docs-clean:  ## Clean documentation build
+	rm -rf site/
 
 # =============================================================================
 # DEVELOPMENT UTILITIES
@@ -107,3 +123,19 @@ pre-commit-install:  ## Install pre-commit hooks
 
 pre-commit:  ## Run pre-commit on all files
 	uv run pre-commit run --all-files
+
+# =============================================================================
+# QUICK COMMANDS
+# =============================================================================
+
+.PHONY: dev
+dev: sync-all pre-commit-install  ## Set up development environment
+	@echo "Development environment ready!"
+
+.PHONY: check
+check: format-check lint typecheck  ## Run all checks without tests
+	@echo "All checks passed!"
+
+.PHONY: fix
+fix: lint-fix format  ## Auto-fix code style issues
+	@echo "Code fixed!"
