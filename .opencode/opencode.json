@@ -13,12 +13,32 @@
       "url": "https://mcp.grep.app",
       "enabled": true
     },
+    "exa": {
+      "type": "remote",
+      "url": "https://mcp.exa.ai/mcp",
+      "enabled": true
+    },
     "supermemory": {
-      "type": "local",
-      "command": ["npx", "-y", "@supermemory/mcp-server"],
-      "environment": {
-        "SUPERMEMORY_API_KEY": "{env:SUPERMEMORY_API_KEY}"
+      "type": "remote",
+      "url": "https://mcp.supermemory.ai/mcp",
+      "headers": {
+        "x-supermemory-api-key": "{env:SUPERMEMORY_API_KEY}"
       },
+      "enabled": true
+    },
+    "memory": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-memory"],
+      "enabled": true
+    },
+    "ast-grep": {
+      "type": "local",
+      "command": ["uvx", "--from", "git+https://github.com/ast-grep/ast-grep-mcp", "ast-grep-server"],
+      "enabled": true
+    },
+    "filesystem": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem", "/home/skusf"],
       "enabled": true
     },
     "github": {
@@ -31,7 +51,7 @@
     },
     "postgres": {
       "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-postgres"],
+      "command": ["npx", "-y", "@modelcontextprotocol/server-postgres", "{env:DATABASE_URL}"],
       "environment": {
         "DATABASE_URL": "{env:DATABASE_URL}"
       },
@@ -39,18 +59,33 @@
     },
     "playwright": {
       "type": "local",
-      "command": ["npx", "-y", "@anthropic/mcp-playwright"],
+      "command": ["npx", "-y", "@playwright/mcp@latest"],
       "enabled": true
     },
     "docker": {
       "type": "local",
       "command": ["npx", "-y", "@modelcontextprotocol/server-docker"],
       "enabled": true
+    },
+    "cocoindex": {
+      "type": "local",
+      "command": [
+        "python",
+        "/home/skusf/PycharmProjects/pypaginate/.opencode/scripts/cocoindex_mcp_server.py"
+      ],
+      "environment": {
+        "DATABASE_URL": "{env:DATABASE_URL}",
+        "OPENAI_API_KEY": "{env:OPENAI_API_KEY}",
+        "GOOGLE_API_KEY": "{env:GOOGLE_API_KEY}",
+        "COCOINDEX_EMBEDDING_PROVIDER": "{env:COCOINDEX_EMBEDDING_PROVIDER}"
+      },
+      "enabled": true
     }
   },
 
   "lsp": {
     "pyright": {
+      "command": ["pyright-langserver", "--stdio"],
       "extensions": [".py", ".pyi"],
       "initialization": {
         "python": {
@@ -80,7 +115,7 @@
     "build": {
       "model": "github-copilot/claude-opus-4.5",
       "temperature": 0.3,
-      "prompt": "{file:.opencode/prompts/build.md}",
+      "prompt": "{file:/home/skusf/PycharmProjects/pypaginate/.opencode/prompts/build.md}",
       "permission": {
         "edit": "allow",
         "bash": "allow",
@@ -109,10 +144,15 @@
   "tools": {
     "context7_*": true,
     "gh_grep_*": true,
+    "exa_*": true,
     "supermemory_*": true,
-    "github_*": false,
-    "postgres_*": false,
-    "playwright_*": false,
-    "docker_*": false
+    "memory_*": true,
+    "ast-grep_*": true,
+    "filesystem_*": true,
+    "github_*": true,
+    "postgres_*": true,
+    "playwright_*": true,
+    "docker_*": true,
+    "cocoindex_*": true
   }
 }

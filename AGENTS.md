@@ -67,15 +67,16 @@
 
 **MCP Servers** (external tools):
 
-| Server | Purpose |
-|--------|---------|
-| `context7` | Search documentation (use context7) |
-| `gh_grep` | Search GitHub code examples (use gh_grep) |
-| `supermemory` | Long-term memory across sessions |
-| `github` | GitHub issues, PRs, CI status |
-| `postgres` | Database schema inspection and queries |
-| `playwright` | Browser automation for E2E testing |
-| `docker` | Sandboxed code execution |
+| Server | Purpose | Usage |
+|--------|---------|-------|
+| `cocoindex` | Semantic search of pypaginate codebase | `use cocoindex` |
+| `supermemory` | Long-term memory across sessions | `use supermemory` |
+| `context7` | Search external library documentation | `use context7` |
+| `gh_grep` | Search GitHub code examples | `use gh_grep` |
+| `github` | GitHub issues, PRs, CI status | `use github` |
+| `postgres` | Database schema inspection and queries | `use postgres` |
+| `playwright` | Browser automation for E2E testing | `use playwright` |
+| `docker` | Sandboxed code execution | `use docker` |
 
 **Skills available** (use when detailed guidance needed):
 
@@ -951,6 +952,86 @@ For detailed guidance on specific topics, request these skills:
 | Skill | Use When |
 |-------|----------|
 | `type-hints` | Type annotations, generics, protocols |
+
+---
+
+## MCP Server Usage
+
+MCP (Model Context Protocol) servers provide external tools that extend agent capabilities. These are configured globally in `.opencode/opencode.json` and available to all agents.
+
+### CocoIndex - Semantic Codebase Search
+
+Semantic search across the pypaginate codebase using vector embeddings.
+
+**Tools:**
+- `search_code` - Search Python source code by meaning (297 indexed chunks)
+- `search_docs` - Search documentation by meaning (237 indexed chunks)
+
+**When to use:**
+- Before implementing: find existing patterns to follow
+- During debugging: trace code paths, find related implementations
+- During review: find similar code for consistency checks
+- During refactoring: discover all instances of a pattern
+
+**Example prompts:**
+```
+"How is cursor pagination implemented? use cocoindex"
+"Find all filter validation code. use cocoindex"
+"Search for repository pattern implementations. use cocoindex"
+```
+
+### Supermemory - Persistent Memory
+
+Long-term memory that persists across sessions.
+
+**When to use:**
+- Store architectural decisions for future reference
+- Remember project-specific patterns and conventions
+- Track technical debt and planned improvements
+- Recall past debugging sessions and solutions
+
+**Example prompts:**
+```
+"Remember this architectural decision about cursor encoding. use supermemory"
+"What did we decide about the filter API design? use supermemory"
+"Save this performance baseline for pagination. use supermemory"
+```
+
+### Context7 - External Documentation
+
+Search documentation for external libraries and frameworks.
+
+**When to use:**
+- Learning unfamiliar APIs
+- Checking library best practices
+- Finding usage examples
+
+**Example prompts:**
+```
+"How do I use SQLAlchemy async sessions? use context7"
+"What are FastAPI dependency injection patterns? use context7"
+```
+
+### GitHub Tools
+
+**gh_grep** - Search GitHub for code examples:
+```
+"How do other projects implement cursor pagination? use gh_grep"
+```
+
+**github** - Interact with GitHub issues, PRs, CI:
+```
+"What's the status of the CI pipeline? use github"
+"List open issues. use github"
+```
+
+### Other MCP Servers
+
+| Server | Purpose | Example |
+|--------|---------|---------|
+| `postgres` | Database schema inspection | `"Show table structure. use postgres"` |
+| `playwright` | Browser automation, E2E tests | `"Run E2E login test. use playwright"` |
+| `docker` | Sandboxed code execution | `"Run this in a container. use docker"` |
 
 ---
 

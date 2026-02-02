@@ -74,6 +74,9 @@ Thumbs.db
 .env.local
 *.local
 
+# Node.js (MCP servers)
+node_modules/
+
 # Build artifacts
 *.manifest
 *.spec

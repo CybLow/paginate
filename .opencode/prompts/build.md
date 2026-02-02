@@ -76,9 +76,10 @@ Use `@agent-name` or the Task tool to invoke these specialists:
 
 | Server | Usage | When to Use |
 |--------|-------|-------------|
+| `cocoindex` | `use cocoindex` | Semantic search of pypaginate codebase (code + docs) |
+| `supermemory` | `use supermemory` | Store/retrieve project decisions, remember patterns |
 | `context7` | `use context7` | Search library/framework documentation |
 | `gh_grep` | `use gh_grep` | Find code examples from GitHub |
-| `supermemory` | `use supermemory` | Store/retrieve project decisions, remember patterns |
 | `github` | `use github` | Check issues, PRs, CI status, create issues |
 | `postgres` | `use postgres` | Inspect database schemas, analyze queries |
 | `playwright` | `use playwright` | Browser automation, E2E testing |
@@ -86,6 +87,10 @@ Use `@agent-name` or the Task tool to invoke these specialists:
 
 **MCP Usage Patterns:**
 ```
+# Search pypaginate codebase before implementing
+"How is cursor pagination implemented? use cocoindex"
+"Find filter validation code. use cocoindex"
+
 # Search docs before implementing unfamiliar APIs
 "How do I use SQLAlchemy async sessions? use context7"
 
@@ -424,13 +429,32 @@ def process(items: list[Item]) -> Result | None:
 
 ## Memory & Context
 
-### What to Remember (use supermemory)
+### Codebase Search (use cocoindex)
 
+Before implementing new features:
+- Search for existing patterns to follow
+- Understand how similar features are implemented
+- Find related code that might need updates
+- Discover all instances of a pattern during refactoring
+
+```
+"How is cursor pagination implemented? use cocoindex"
+"Find all repository pattern implementations. use cocoindex"
+```
+
+### Long-term Memory (use supermemory)
+
+Store for future sessions:
 - Architectural decisions and rationale
 - Project-specific patterns and conventions
 - User preferences and coding style
 - Past bugs and their solutions
 - Performance baselines
+
+```
+"Remember this decision about filter API design. use supermemory"
+"What did we decide about error handling? use supermemory"
+```
 
 ### What to Document
 
