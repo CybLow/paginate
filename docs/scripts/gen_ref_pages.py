@@ -8,6 +8,7 @@ from pathlib import Path
 
 import mkdocs_gen_files
 
+
 nav = mkdocs_gen_files.Nav()
 
 # Root path for source code
@@ -70,7 +71,7 @@ for module_path, description in MODULES:
     parts = module_path.split(".")
     doc_path = Path("api", *parts[1:]) if len(parts) > 1 else Path("api")
     doc_path = doc_path.with_suffix(".md")
-    
+
     # Handle __init__ modules
     if len(parts) == 1:
         doc_path = Path("api/index.md")
@@ -78,16 +79,16 @@ for module_path, description in MODULES:
         doc_path = Path(f"api/{parts[1]}.md")
     else:
         doc_path = Path(f"api/{'/'.join(parts[1:])}.md")
-    
+
     # Write the documentation file
     with mkdocs_gen_files.open(doc_path, "w") as fd:
         fd.write(f"# {parts[-1]}\n\n")
         fd.write(f"{description}\n\n")
         fd.write(f"::: {module_path}\n")
-    
+
     # Set edit path to the source file
     source_file = Path("src", *parts).with_suffix(".py")
     if not source_file.exists():
         source_file = Path("src", *parts, "__init__.py")
-    
+
     mkdocs_gen_files.set_edit_path(doc_path, source_file)

@@ -103,6 +103,9 @@ dev = [
     { include-group = "type" },
     { include-group = "security" },
     { include-group = "build" },
+    "pip-audit>=2.10.0",
+    "radon>=6.0.1",
+    "vulture>=2.14",
 ]
 # Testing - Core
 test = [
