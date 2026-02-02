@@ -1,983 +1,345 @@
-# AGENTS.md - Coding Standards & Best Practices
+# AGENTS.md - Development Guide
 
-## Project Goal
+> **For AI Agents, Contributors, and Developers**
+>
+> This document defines the coding standards and best practices for **pypaginate**.
 
-**pypaginate** is an advanced pagination, filtering, and search toolkit for Python. It provides a unified API for paginating data from various sources (in-memory collections, SQLAlchemy, Django ORM, MongoDB, etc.) with support for cursor-based and offset-based pagination, filtering, sorting, and full-text search.
+---
+
+## Quick Start
+
+**For AI Agents**: Start with [AI Agent Guidance](#ai-agent-guidance), then [Quick Reference](#quick-reference).
+
+**Commands available**:
+
+| Command | Description | Agent |
+|---------|-------------|-------|
+| `/qa` | Full quality assurance workflow | build |
+| `/test` | Test commands and markers | build |
+| `/format` | Code formatting with ruff | build |
+| `/lint` | Linting with ruff | build |
+| `/typecheck` | Type checking with mypy | build |
+| `/benchmark` | Performance benchmarks | build |
+| `/docs` | Documentation with MkDocs | build |
+| `/security` | Security scanning with bandit | build |
+| `/commit` | Create conventional commit | build |
+| `/pr` | Create GitHub Pull Request | build |
+| `/review` | Code review (quality check) | code-reviewer |
+| `/refactor` | Suggest refactoring improvements | refactorer |
+| `/debug <error>` | Debug an issue or error | debugger |
+| `/coverage` | Analyze test coverage | test-writer |
+| `/audit` | Security audit | security-auditor |
+| `/deps` | Check dependencies | build |
+| `/clean` | Clean up codebase | refactorer |
+| `/architect` | Architecture decisions and design | architect |
+| `/e2e` | End-to-end testing with Playwright | e2e-tester |
+| `/profile` | Performance profiling and analysis | performance-profiler |
+
+**Agents available** (use @agent-name or via commands):
+
+| Agent | Mode | Purpose |
+|-------|------|---------|
+| `build` | primary | Full development work (default) |
+| `plan` | primary | Analysis without changes (Tab to switch) |
+| `code-reviewer` | subagent | Code quality review |
+| `docs-writer` | subagent | Documentation writing |
+| `debugger` | subagent | Bug investigation |
+| `refactorer` | subagent | Code refactoring |
+| `test-writer` | subagent | Test generation |
+| `security-auditor` | subagent | Security analysis |
+| `architect` | subagent | Architecture decisions and design |
+| `e2e-tester` | subagent | End-to-end testing with Playwright |
+| `performance-profiler` | subagent | Performance analysis and profiling |
+
+**Tools available** (custom project tools):
+
+| Tool | Description |
+|------|-------------|
+| `complexity` | Calculate cyclomatic complexity (radon) |
+| `coverage-report` | Get test coverage for file |
+| `deps-check` | Check outdated/vulnerable dependencies |
+| `imports-check` | Find unused imports (ruff) |
+| `dead-code` | Find unreachable code (vulture) |
+| `benchmark` | Run performance benchmarks (pytest-benchmark) |
+| `profile_cpu` | CPU profiling with py-spy flame graphs |
+| `profile_memory` | Memory profiling with memray |
+| `profile_scalene` | Full profiling with Scalene (CPU+memory+GPU) |
+
+**MCP Servers** (external tools):
+
+| Server | Purpose |
+|--------|---------|
+| `context7` | Search documentation (use context7) |
+| `gh_grep` | Search GitHub code examples (use gh_grep) |
+| `supermemory` | Long-term memory across sessions |
+| `github` | GitHub issues, PRs, CI status |
+| `postgres` | Database schema inspection and queries |
+| `playwright` | Browser automation for E2E testing |
+| `docker` | Sandboxed code execution |
+
+**Skills available** (use when detailed guidance needed):
+
+| Category | Skills |
+|----------|--------|
+| Patterns | `guru-patterns-creational`, `guru-patterns-structural`, `guru-patterns-behavioral`, `guru-smells` |
+| Refactoring | `guru-refactor-methods`, `guru-refactor-moving`, `guru-refactor-data`, `guru-refactor-conditionals`, `guru-refactor-calls`, `guru-refactor-generalization` |
+| Architecture | `arch-principles`, `arch-ddd`, `arch-cqrs-es`, `arch-hexagonal`, `arch-microservices` |
+| Security | `sec-basics`, `sec-owasp`, `sec-ops`, `sec-api` |
+| Testing | `test-standards`, `test-ops`, `test-advanced`, `test-load`, `test-chaos`, `test-data` |
+| API Design | `api-rest`, `api-graphql`, `api-grpc`, `api-gateway`, `api-auth`, `api-lifecycle` |
+| Performance | `perf-core`, `perf-ops`, `perf-slo`, `perf-apm`, `perf-profiling`, `perf-database` |
+| Other | `type-hints` |
 
 ---
 
 ## Table of Contents
 
-1. [Core Principles](#core-principles)
-2. [Design Patterns](#design-patterns)
-3. [Code Smells to Avoid](#code-smells-to-avoid)
-4. [Size Limits](#size-limits)
-5. [Naming Conventions](#naming-conventions)
-6. [Type Hints](#type-hints)
-7. [Testing Standards](#testing-standards)
-8. [Git Conventions](#git-conventions)
-9. [Architecture Guidelines](#architecture-guidelines)
-10. [Security Guidelines](#security-guidelines)
-11. [Performance Guidelines](#performance-guidelines)
-12. [API Design Principles](#api-design-principles)
-13. [Refactoring Techniques](#refactoring-techniques)
-14. [Code Review Checklist](#code-review-checklist)
+- [Core Principles](#core-principles)
+- [Size Limits](#size-limits)
+- [Naming Conventions](#naming-conventions)
+- [Type Hints](#type-hints)
+- [Git Conventions](#git-conventions)
+- [Architecture](#architecture)
+- [AI Agent Guidance](#ai-agent-guidance)
+- [Quick Reference](#quick-reference)
 
 ---
 
 ## Core Principles
 
+### Target Python Version
+
+**Python 3.11+** required. Use modern syntax:
+
+```python
+from __future__ import annotations  # Required in all files
+
+X | None          # Instead of Optional[X]
+list[str]         # Instead of List[str]
+dict[str, int]    # Instead of Dict[str, int]
+Self              # For return type of self
+```
+
+### Tooling
+
+```bash
+uv run ruff format .           # Format code
+uv run ruff check --fix .      # Lint and auto-fix
+uv run mypy src/               # Type check
+uv run pytest                  # Run tests
+uv run pytest --cov            # Run with coverage
+```
+
+---
+
 ### SOLID Principles
 
-#### Single Responsibility Principle (SRP)
+| Principle | Rule | Violation Sign |
+|-----------|------|----------------|
+| **S**ingle Responsibility | One class = one reason to change | Class name has "And" or "Manager" |
+| **O**pen/Closed | Open for extension, closed for modification | Adding feature requires changing existing switch |
+| **L**iskov Substitution | Subtypes substitutable for base types | Subclass raises NotImplementedError |
+| **I**nterface Segregation | Many small interfaces > one large | Classes implement unused methods |
+| **D**ependency Inversion | Depend on abstractions, not concretions | High-level imports low-level directly |
 
-A class should have only one reason to change.
+### Other Principles
 
-```python
-# Bad - Multiple responsibilities
-class UserManager:
-    def create_user(self, data): ...
-    def send_email(self, user): ...
-    def generate_report(self, users): ...
-
-# Good - Single responsibility
-class UserRepository:
-    def create(self, data): ...
-
-class EmailService:
-    def send(self, recipient, message): ...
-
-class ReportGenerator:
-    def generate(self, data): ...
-```
-
-#### Open/Closed Principle (OCP)
-
-Open for extension, closed for modification.
-
-```python
-# Good - Extensible via abstraction
-from abc import ABC, abstractmethod
-
-class PaymentProcessor(ABC):
-    @abstractmethod
-    def process(self, amount: float) -> bool: ...
-
-class StripeProcessor(PaymentProcessor):
-    def process(self, amount: float) -> bool:
-        # Stripe-specific implementation
-        return True
-
-class PayPalProcessor(PaymentProcessor):
-    def process(self, amount: float) -> bool:
-        # PayPal-specific implementation
-        return True
-```
-
-#### Liskov Substitution Principle (LSP)
-
-Subtypes must be substitutable for their base types.
-
-```python
-# Good - Subtypes honor the contract
-class Bird(ABC):
-    @abstractmethod
-    def move(self) -> None: ...
-
-class Sparrow(Bird):
-    def move(self) -> None:
-        self.fly()
-
-class Penguin(Bird):
-    def move(self) -> None:
-        self.swim()
-```
-
-#### Interface Segregation Principle (ISP)
-
-Clients should not depend on interfaces they don't use.
-
-```python
-# Bad - Fat interface
-class Worker(ABC):
-    @abstractmethod
-    def work(self): ...
-    @abstractmethod
-    def eat(self): ...
-    @abstractmethod
-    def sleep(self): ...
-
-# Good - Segregated interfaces
-class Workable(ABC):
-    @abstractmethod
-    def work(self): ...
-
-class Eatable(ABC):
-    @abstractmethod
-    def eat(self): ...
-```
-
-#### Dependency Inversion Principle (DIP)
-
-Depend on abstractions, not concretions.
-
-```python
-# Good - Depends on abstraction
-class OrderService:
-    def __init__(self, repository: OrderRepository):
-        self._repository = repository
-
-    def get_order(self, order_id: str) -> Order:
-        return self._repository.find(order_id)
-```
-
-### Other Core Principles
-
-| Principle | Description |
-|-----------|-------------|
-| **KISS** | Keep It Simple, Stupid - Avoid unnecessary complexity |
-| **DRY** | Don't Repeat Yourself - Extract common logic |
-| **YAGNI** | You Aren't Gonna Need It - Don't build speculative features |
-| **SoC** | Separation of Concerns - Divide into distinct sections |
-| **Composition > Inheritance** | Favor object composition over class inheritance |
+| Principle | Rule |
+|-----------|------|
+| **KISS** | Simplest solution that works |
+| **DRY** | Single authoritative representation |
+| **YAGNI** | Don't build until needed |
+| **Fail Fast** | Validate early, raise immediately |
+| **Composition over Inheritance** | Prefer object composition |
 | **Law of Demeter** | Only talk to immediate friends |
-| **Fail Fast** | Detect and report errors immediately |
-| **POLA** | Principle of Least Astonishment - Behave as expected |
-| **Boy Scout Rule** | Leave code cleaner than you found it |
 
----
-
-## Design Patterns
-
-### Creational Patterns
-
-#### Factory Method
-
-Define an interface for creating objects, let subclasses decide which class to instantiate.
-
-```python
-from abc import ABC, abstractmethod
-
-class Document(ABC):
-    @abstractmethod
-    def render(self) -> str: ...
-
-class PDFDocument(Document):
-    def render(self) -> str:
-        return "Rendering PDF"
-
-class HTMLDocument(Document):
-    def render(self) -> str:
-        return "Rendering HTML"
-
-class DocumentFactory(ABC):
-    @abstractmethod
-    def create_document(self) -> Document: ...
-
-class PDFFactory(DocumentFactory):
-    def create_document(self) -> Document:
-        return PDFDocument()
-```
-
-#### Abstract Factory
-
-Create families of related objects without specifying concrete classes.
-
-```python
-class GUIFactory(ABC):
-    @abstractmethod
-    def create_button(self) -> Button: ...
-    @abstractmethod
-    def create_checkbox(self) -> Checkbox: ...
-
-class WindowsFactory(GUIFactory):
-    def create_button(self) -> Button:
-        return WindowsButton()
-    def create_checkbox(self) -> Checkbox:
-        return WindowsCheckbox()
-
-class MacFactory(GUIFactory):
-    def create_button(self) -> Button:
-        return MacButton()
-    def create_checkbox(self) -> Checkbox:
-        return MacCheckbox()
-```
-
-#### Builder
-
-Construct complex objects step by step.
-
-```python
-class QueryBuilder:
-    def __init__(self):
-        self._query = Query()
-
-    def select(self, *fields: str) -> "QueryBuilder":
-        self._query.fields = fields
-        return self
-
-    def where(self, condition: str) -> "QueryBuilder":
-        self._query.conditions.append(condition)
-        return self
-
-    def limit(self, count: int) -> "QueryBuilder":
-        self._query.limit = count
-        return self
-
-    def build(self) -> Query:
-        return self._query
-
-# Usage
-query = QueryBuilder().select("id", "name").where("active=true").limit(10).build()
-```
-
-#### Prototype
-
-Clone existing objects without depending on their classes.
-
-```python
-import copy
-from abc import ABC, abstractmethod
-
-class Prototype(ABC):
-    @abstractmethod
-    def clone(self) -> "Prototype": ...
-
-class ConcretePrototype(Prototype):
-    def __init__(self, data: dict):
-        self.data = data
-
-    def clone(self) -> "ConcretePrototype":
-        return copy.deepcopy(self)
-```
-
-#### Singleton
-
-Ensure a class has only one instance.
-
-```python
-class DatabaseConnection:
-    _instance = None
-
-    def __new__(cls) -> "DatabaseConnection":
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-```
-
-### Structural Patterns
-
-#### Adapter
-
-Convert interface of a class into another interface clients expect.
-
-```python
-class LegacyPrinter:
-    def print_document(self, text: str) -> None:
-        print(f"Legacy: {text}")
-
-class ModernPrinter(ABC):
-    @abstractmethod
-    def print(self, content: str) -> None: ...
-
-class PrinterAdapter(ModernPrinter):
-    def __init__(self, legacy: LegacyPrinter):
-        self._legacy = legacy
-
-    def print(self, content: str) -> None:
-        self._legacy.print_document(content)
-```
-
-#### Bridge
-
-Separate abstraction from implementation.
-
-```python
-class Renderer(ABC):
-    @abstractmethod
-    def render_circle(self, radius: float) -> str: ...
-
-class VectorRenderer(Renderer):
-    def render_circle(self, radius: float) -> str:
-        return f"Drawing circle with radius {radius} as vectors"
-
-class Shape(ABC):
-    def __init__(self, renderer: Renderer):
-        self.renderer = renderer
-
-class Circle(Shape):
-    def __init__(self, renderer: Renderer, radius: float):
-        super().__init__(renderer)
-        self.radius = radius
-
-    def draw(self) -> str:
-        return self.renderer.render_circle(self.radius)
-```
-
-#### Composite
-
-Compose objects into tree structures.
-
-```python
-class Component(ABC):
-    @abstractmethod
-    def operation(self) -> str: ...
-
-class Leaf(Component):
-    def __init__(self, name: str):
-        self.name = name
-
-    def operation(self) -> str:
-        return self.name
-
-class Composite(Component):
-    def __init__(self):
-        self._children: list[Component] = []
-
-    def add(self, component: Component) -> None:
-        self._children.append(component)
-
-    def operation(self) -> str:
-        results = [child.operation() for child in self._children]
-        return f"Branch({', '.join(results)})"
-```
-
-#### Decorator
-
-Attach additional responsibilities dynamically.
-
-```python
-class DataSource(ABC):
-    @abstractmethod
-    def read(self) -> str: ...
-    @abstractmethod
-    def write(self, data: str) -> None: ...
-
-class FileDataSource(DataSource):
-    def read(self) -> str:
-        return "file content"
-    def write(self, data: str) -> None:
-        pass
-
-class DataSourceDecorator(DataSource):
-    def __init__(self, source: DataSource):
-        self._source = source
-
-    def read(self) -> str:
-        return self._source.read()
-
-    def write(self, data: str) -> None:
-        self._source.write(data)
-
-class EncryptionDecorator(DataSourceDecorator):
-    def read(self) -> str:
-        return self._decrypt(self._source.read())
-
-    def write(self, data: str) -> None:
-        self._source.write(self._encrypt(data))
-
-    def _encrypt(self, data: str) -> str:
-        return f"encrypted({data})"
-
-    def _decrypt(self, data: str) -> str:
-        return data.replace("encrypted(", "").rstrip(")")
-```
-
-#### Facade
-
-Provide a simplified interface to a complex subsystem.
-
-```python
-class VideoConverter:
-    def convert(self, filename: str, format: str) -> str:
-        # Hides complexity of codec, bitrate, audio mixing, etc.
-        file = VideoFile(filename)
-        codec = CodecFactory.extract(file)
-        result = BitrateReader.convert(file, codec)
-        return AudioMixer.fix(result)
-```
-
-#### Flyweight
-
-Share common state between multiple objects.
-
-```python
-class TreeType:
-    """Flyweight - shared intrinsic state"""
-    def __init__(self, name: str, color: str, texture: str):
-        self.name = name
-        self.color = color
-        self.texture = texture
-
-class TreeFactory:
-    _types: dict[str, TreeType] = {}
-
-    @classmethod
-    def get_tree_type(cls, name: str, color: str, texture: str) -> TreeType:
-        key = f"{name}_{color}_{texture}"
-        if key not in cls._types:
-            cls._types[key] = TreeType(name, color, texture)
-        return cls._types[key]
-
-class Tree:
-    """Context - unique extrinsic state"""
-    def __init__(self, x: int, y: int, tree_type: TreeType):
-        self.x = x
-        self.y = y
-        self.type = tree_type
-```
-
-#### Proxy
-
-Provide a surrogate or placeholder for another object.
-
-```python
-class Service(ABC):
-    @abstractmethod
-    def request(self) -> str: ...
-
-class RealService(Service):
-    def request(self) -> str:
-        return "Real service response"
-
-class CachingProxy(Service):
-    def __init__(self, service: Service):
-        self._service = service
-        self._cache: str | None = None
-
-    def request(self) -> str:
-        if self._cache is None:
-            self._cache = self._service.request()
-        return self._cache
-```
-
-### Behavioral Patterns
-
-#### Chain of Responsibility
-
-Pass requests along a chain of handlers.
-
-```python
-class Handler(ABC):
-    def __init__(self):
-        self._next: Handler | None = None
-
-    def set_next(self, handler: "Handler") -> "Handler":
-        self._next = handler
-        return handler
-
-    def handle(self, request: str) -> str | None:
-        if self._next:
-            return self._next.handle(request)
-        return None
-
-class AuthHandler(Handler):
-    def handle(self, request: str) -> str | None:
-        if "auth" in request:
-            return "Authenticated"
-        return super().handle(request)
-```
-
-#### Command
-
-Encapsulate a request as an object.
-
-```python
-class Command(ABC):
-    @abstractmethod
-    def execute(self) -> None: ...
-    @abstractmethod
-    def undo(self) -> None: ...
-
-class InsertTextCommand(Command):
-    def __init__(self, editor: Editor, text: str):
-        self._editor = editor
-        self._text = text
-
-    def execute(self) -> None:
-        self._editor.insert(self._text)
-
-    def undo(self) -> None:
-        self._editor.delete(len(self._text))
-```
-
-#### Iterator
-
-Access elements sequentially without exposing underlying representation.
-
-```python
-from collections.abc import Iterator, Iterable
-
-class AlphabeticalIterator(Iterator[str]):
-    def __init__(self, collection: list[str], reverse: bool = False):
-        self._collection = sorted(collection, reverse=reverse)
-        self._position = 0
-
-    def __next__(self) -> str:
-        if self._position >= len(self._collection):
-            raise StopIteration
-        value = self._collection[self._position]
-        self._position += 1
-        return value
-
-class WordsCollection(Iterable[str]):
-    def __init__(self):
-        self._items: list[str] = []
-
-    def __iter__(self) -> AlphabeticalIterator:
-        return AlphabeticalIterator(self._items)
-```
-
-#### Mediator
-
-Define an object that encapsulates how objects interact.
-
-```python
-class Mediator(ABC):
-    @abstractmethod
-    def notify(self, sender: object, event: str) -> None: ...
-
-class AuthMediator(Mediator):
-    def __init__(self):
-        self.login_form = LoginForm(self)
-        self.login_button = LoginButton(self)
-
-    def notify(self, sender: object, event: str) -> None:
-        if event == "login_clicked":
-            self._validate_and_login()
-
-class Component:
-    def __init__(self, mediator: Mediator):
-        self._mediator = mediator
-```
-
-#### Memento
-
-Capture and restore an object's internal state.
-
-```python
-class EditorMemento:
-    def __init__(self, content: str, cursor: int):
-        self._content = content
-        self._cursor = cursor
-
-    def get_state(self) -> tuple[str, int]:
-        return self._content, self._cursor
-
-class Editor:
-    def __init__(self):
-        self._content = ""
-        self._cursor = 0
-
-    def save(self) -> EditorMemento:
-        return EditorMemento(self._content, self._cursor)
-
-    def restore(self, memento: EditorMemento) -> None:
-        self._content, self._cursor = memento.get_state()
-```
-
-#### Observer
-
-Define a subscription mechanism to notify multiple objects.
-
-```python
-class Subject(ABC):
-    @abstractmethod
-    def attach(self, observer: "Observer") -> None: ...
-    @abstractmethod
-    def detach(self, observer: "Observer") -> None: ...
-    @abstractmethod
-    def notify(self) -> None: ...
-
-class Observer(ABC):
-    @abstractmethod
-    def update(self, subject: Subject) -> None: ...
-
-class EventManager(Subject):
-    def __init__(self):
-        self._observers: list[Observer] = []
-
-    def attach(self, observer: Observer) -> None:
-        self._observers.append(observer)
-
-    def detach(self, observer: Observer) -> None:
-        self._observers.remove(observer)
-
-    def notify(self) -> None:
-        for observer in self._observers:
-            observer.update(self)
-```
-
-#### State
-
-Alter behavior when internal state changes.
-
-```python
-class State(ABC):
-    @abstractmethod
-    def handle(self, context: "Context") -> None: ...
-
-class ConcreteStateA(State):
-    def handle(self, context: "Context") -> None:
-        context.state = ConcreteStateB()
-
-class ConcreteStateB(State):
-    def handle(self, context: "Context") -> None:
-        context.state = ConcreteStateA()
-
-class Context:
-    def __init__(self, state: State):
-        self.state = state
-
-    def request(self) -> None:
-        self.state.handle(self)
-```
-
-#### Strategy
-
-Define a family of algorithms, encapsulate each one.
-
-```python
-class SortStrategy(ABC):
-    @abstractmethod
-    def sort(self, data: list[int]) -> list[int]: ...
-
-class QuickSort(SortStrategy):
-    def sort(self, data: list[int]) -> list[int]:
-        # Quick sort implementation
-        return sorted(data)
-
-class MergeSort(SortStrategy):
-    def sort(self, data: list[int]) -> list[int]:
-        # Merge sort implementation
-        return sorted(data)
-
-class Sorter:
-    def __init__(self, strategy: SortStrategy):
-        self._strategy = strategy
-
-    def sort(self, data: list[int]) -> list[int]:
-        return self._strategy.sort(data)
-```
-
-#### Template Method
-
-Define the skeleton of an algorithm, defer steps to subclasses.
-
-```python
-class DataMiner(ABC):
-    def mine(self, path: str) -> None:
-        file = self.open_file(path)
-        data = self.extract_data(file)
-        parsed = self.parse_data(data)
-        self.analyze(parsed)
-
-    @abstractmethod
-    def open_file(self, path: str) -> object: ...
-    @abstractmethod
-    def extract_data(self, file: object) -> str: ...
-    @abstractmethod
-    def parse_data(self, data: str) -> dict: ...
-
-    def analyze(self, data: dict) -> None:
-        # Common analysis logic
-        pass
-```
-
-#### Visitor
-
-Separate algorithms from the objects on which they operate.
-
-```python
-class Visitor(ABC):
-    @abstractmethod
-    def visit_dot(self, dot: "Dot") -> str: ...
-    @abstractmethod
-    def visit_circle(self, circle: "Circle") -> str: ...
-
-class Shape(ABC):
-    @abstractmethod
-    def accept(self, visitor: Visitor) -> str: ...
-
-class Dot(Shape):
-    def accept(self, visitor: Visitor) -> str:
-        return visitor.visit_dot(self)
-
-class XMLExportVisitor(Visitor):
-    def visit_dot(self, dot: Dot) -> str:
-        return "<dot/>"
-
-    def visit_circle(self, circle: "Circle") -> str:
-        return "<circle/>"
-```
-
----
-
-## Code Smells to Avoid
-
-### Bloaters
-
-| Smell | Description | Solution |
-|-------|-------------|----------|
-| Long Method | Method too long (>12 lines) | Extract Method |
-| Large Class | Class doing too much (>200 lines) | Extract Class |
-| Primitive Obsession | Overuse of primitives | Replace with Value Objects |
-| Long Parameter List | Too many parameters (>4) | Introduce Parameter Object |
-| Data Clumps | Groups of data appearing together | Extract Class |
-
-### Object-Orientation Abusers
-
-| Smell | Description | Solution |
-|-------|-------------|----------|
-| Switch Statements | Complex switch/if-else chains | Replace with Polymorphism |
-| Temporary Field | Fields only used sometimes | Extract Class |
-| Refused Bequest | Subclass doesn't use parent methods | Replace with Delegation |
-| Alternative Classes | Similar classes, different interfaces | Unify Interface |
-
-### Change Preventers
-
-| Smell | Description | Solution |
-|-------|-------------|----------|
-| Divergent Change | One class changed for multiple reasons | Extract Class |
-| Shotgun Surgery | One change requires many class edits | Move Method/Field |
-| Parallel Inheritance | Creating subclass requires another | Merge Hierarchies |
-
-### Dispensables
-
-| Smell | Description | Solution |
-|-------|-------------|----------|
-| Comments | Excessive comments explaining bad code | Refactor code to be self-documenting |
-| Duplicate Code | Same code in multiple places | Extract Method |
-| Lazy Class | Class that does too little | Inline Class |
-| Data Class | Class with only getters/setters | Move Behavior to Class |
-| Dead Code | Unused code | Delete It |
-| Speculative Generality | Unused abstractions "just in case" | Collapse Hierarchy |
-
-### Couplers
-
-| Smell | Description | Solution |
-|-------|-------------|----------|
-| Feature Envy | Method uses another class more than its own | Move Method |
-| Inappropriate Intimacy | Classes too intertwined | Move Method/Field |
-| Message Chains | Long chains: a.b().c().d() | Hide Delegate |
-| Middle Man | Class only delegates | Remove Middle Man |
+> **For detailed patterns and examples, use skill: design-patterns**
 
 ---
 
 ## Size Limits
 
-### Strict Limits (MUST Follow)
+### Hard Limits
 
-| Element | Maximum | Preferred |
-|---------|---------|-----------|
-| **File** | 200 lines | 150 lines |
-| **Function/Method** | 12 lines | 10 lines |
-| **Class** | 200 lines | 150 lines |
-| **Parameters** | 4 | 3 |
-| **Nesting Depth** | 3 levels | 2 levels |
-| **Line Length** | 88 chars | 80 chars |
-| **Cyclomatic Complexity** | 10 | 7 |
+| Metric | Hard Limit | Preferred |
+|--------|------------|-----------|
+| Lines per file | **200** | 150 |
+| Lines per function | **12** | 10 |
+| Lines per class | **200** | 100-150 |
+| Parameters per function | **4** | 3 |
+| Indentation levels | **2** | 1 |
+| Public methods per class | 10 | 5-7 |
+| Instance attributes | 5 | 3-4 |
+| Cyclomatic complexity | 10 | 5 |
 
-### Enforcement
+### Boolean Parameters
 
-```toml
-# pyproject.toml
-[tool.ruff]
-line-length = 88
+**Boolean parameters are forbidden.** Use separate methods or enums:
 
-[tool.ruff.lint]
-select = ["C901"]  # McCabe complexity
+```python
+# BAD
+def find_users(include_deleted: bool = False): ...
 
-[tool.ruff.lint.mccabe]
-max-complexity = 10
+# GOOD
+def find_active_users(): ...
+def find_all_users(): ...
+```
+
+### Nesting
+
+Use guard clauses to avoid deep nesting:
+
+```python
+# BAD: Deep nesting
+def process(data):
+    if data:
+        if data.get("valid"):
+            if data.get("type") == "order":
+                return Result(...)
+    return None
+
+# GOOD: Guard clauses
+def process(data):
+    if not data:
+        return None
+    if not data.get("valid"):
+        return None
+    if data.get("type") != "order":
+        return None
+    return Result(...)
 ```
 
 ---
 
 ## Naming Conventions
 
-### General Rules
+### Files & Modules
 
-| Element | Convention | Example |
-|---------|------------|---------|
-| Classes | PascalCase | `UserRepository` |
-| Functions/Methods | snake_case | `get_user_by_id` |
-| Variables | snake_case | `user_count` |
-| Constants | SCREAMING_SNAKE_CASE | `MAX_RETRY_COUNT` |
-| Private | Leading underscore | `_internal_method` |
-| Protected | Leading underscore | `_protected_attr` |
-| Type Variables | Single uppercase or PascalCase | `T`, `KeyType` |
-| Modules | snake_case | `user_service.py` |
+| Rule | Example | Bad |
+|------|---------|-----|
+| `snake_case.py` | `user_repository.py` | `UserRepository.py` |
+| Descriptive, singular | `order.py` | `orders.py` |
+| No abbreviations | `configuration.py` | `cfg.py` |
 
-### Semantic Naming
+### Classes
 
-```python
-# Functions - use verbs
-def calculate_total() -> float: ...
-def is_valid() -> bool: ...
-def has_permission() -> bool: ...
-def can_execute() -> bool: ...
+| Rule | Example | Bad |
+|------|---------|-----|
+| `PascalCase` | `UserRepository` | `user_repository` |
+| Nouns | `Order`, `Customer` | `ProcessOrder` |
 
-# Classes - use nouns
-class UserRepository: ...
-class PaymentProcessor: ...
-class EmailValidator: ...
+**Common suffixes**: `Error`, `Factory`, `Builder`, `Handler`, `Service`, `Repository`, `Adapter`, `Strategy`, `Validator`, `Protocol`
 
-# Booleans - use is/has/can/should prefixes
-is_active: bool
-has_children: bool
-can_edit: bool
-should_notify: bool
+### Functions & Methods
 
-# Collections - use plural nouns
-users: list[User]
-active_orders: set[Order]
-```
+| Rule | Example | Bad |
+|------|---------|-----|
+| `snake_case` | `get_user_by_id` | `getUserById` |
+| Verb prefix | `calculate_total` | `total` |
 
-### Avoid
+**Verb prefixes**:
 
-```python
-# Bad - Ambiguous names
-data = get_data()  # What data?
-temp = process()   # Temporary what?
-x = calculate()    # What is x?
+| Prefix | Returns | Example |
+|--------|---------|---------|
+| `get_*` | Value or raises | `get_user(id)` |
+| `find_*` | Value or None | `find_user_by_email(email)` |
+| `create_*` | New object | `create_order(items)` |
+| `update_*` | Updated object | `update_user(id, data)` |
+| `delete_*` | None or bool | `delete_order(id)` |
+| `validate_*` | None (raises) or bool | `validate_email(email)` |
+| `is_*` / `has_*` / `can_*` | bool | `is_active()`, `has_items()` |
 
-# Good - Descriptive names
-user_profiles = fetch_active_users()
-pending_orders = process_checkout_queue()
-total_revenue = calculate_monthly_revenue()
-```
+### Variables
+
+| Rule | Example | Bad |
+|------|---------|-----|
+| `snake_case` | `user_count` | `userCount` |
+| Descriptive | `total_price` | `tp`, `x` |
+| Plurals for collections | `users` | `user_list` |
+
+### Constants
+
+| Rule | Example |
+|------|---------|
+| `UPPER_SNAKE_CASE` | `MAX_PAGE_SIZE = 100` |
+| Module-level only | After imports, at top |
+
+### Private Members
+
+| Convention | Meaning | Example |
+|------------|---------|---------|
+| `_single` | Internal (convention) | `self._cache` |
+| `__double` | Name mangling (rare) | `self.__secret` |
 
 ---
 
 ## Type Hints
 
-### Required Type Hints
-
-All public APIs MUST have complete type hints.
+### Required
 
 ```python
-from typing import TypeVar, Generic
-from collections.abc import Callable, Iterator
-
-T = TypeVar("T")
-K = TypeVar("K")
-V = TypeVar("V")
-
-# Function signatures
-def find_user(user_id: str) -> User | None: ...
-
-def process_items(
-    items: list[Item],
-    filter_fn: Callable[[Item], bool],
-) -> Iterator[Item]: ...
-
-# Generic classes
-class Repository(Generic[T]):
-    def find(self, id: str) -> T | None: ...
-    def save(self, entity: T) -> T: ...
-
-# TypedDict for structured dictionaries
-from typing import TypedDict
-
-class UserDict(TypedDict):
-    id: str
-    name: str
-    email: str
+from __future__ import annotations  # Required in all files
 ```
 
-### Type Hint Best Practices
+Annotate all public APIs. Use modern syntax:
 
 ```python
-# Use | instead of Union (Python 3.10+)
-def get_value(key: str) -> str | None: ...
+# Modern (use these)
+X | None                  # Optional
+list[str]                 # List
+dict[str, int]            # Dict
+tuple[int, str]           # Fixed tuple
 
-# Use collections.abc for abstract types
-from collections.abc import Mapping, Sequence, Iterable
-
-def process(items: Sequence[int]) -> Mapping[str, int]: ...
-
-# Use Self for return type of instance methods (Python 3.11+)
+# Return self
 from typing import Self
-
-class Builder:
-    def with_name(self, name: str) -> Self:
-        self._name = name
-        return self
+def with_name(self, name: str) -> Self: ...
 ```
 
----
-
-## Testing Standards
-
-### Test Structure
-
-```
-tests/
-├── conftest.py          # Shared fixtures
-├── fixtures/            # Test data fixtures
-├── factories/           # Test data factories
-├── unit/                # Fast, isolated tests
-├── integration/         # Database/service tests
-├── e2e/                 # End-to-end tests
-├── property/            # Property-based tests (Hypothesis)
-├── benchmarks/          # Performance tests
-└── snapshots/           # Snapshot test data
-```
-
-### Test Naming
+### Common Patterns
 
 ```python
-# Pattern: test_<unit>_<scenario>_<expected_result>
-def test_user_creation_with_valid_data_succeeds(): ...
-def test_user_creation_with_empty_name_raises_validation_error(): ...
-def test_pagination_with_empty_list_returns_zero_pages(): ...
+from collections.abc import Sequence, Mapping, Callable
+from typing import TypeVar, Generic, Protocol
+
+# Abstract types for parameters
+def process(items: Sequence[Item]) -> None: ...
+
+# Concrete types for return values
+def get_items() -> list[Item]: ...
+
+# Callable
+Handler = Callable[[Request], Response]
+
+# Protocol (interface)
+class Readable(Protocol):
+    def read(self) -> bytes: ...
+
+# Generic
+T = TypeVar("T")
+class Repository(Generic[T]):
+    def get(self, id: int) -> T | None: ...
 ```
 
-### Arrange-Act-Assert (AAA)
+### Docstrings (Google Style)
 
 ```python
-def test_order_total_calculation():
-    # Arrange
-    order = Order()
-    order.add_item(Item(price=10.00, quantity=2))
-    order.add_item(Item(price=5.00, quantity=1))
+def search_users(query: str, *, limit: int = 20) -> list[User]:
+    """Search users by name or email.
 
-    # Act
-    total = order.calculate_total()
+    Args:
+        query: Search query string. Minimum 2 characters.
+        limit: Maximum results. Defaults to 20.
 
-    # Assert
-    assert total == 25.00
+    Returns:
+        List of matching users, ordered by relevance.
+
+    Raises:
+        ValueError: If query is shorter than 2 characters.
+    """
 ```
 
-### Test Types and Markers
-
-```python
-import pytest
-
-@pytest.mark.unit
-def test_fast_unit_test(): ...
-
-@pytest.mark.integration
-def test_database_integration(): ...
-
-@pytest.mark.e2e
-def test_full_user_flow(): ...
-
-@pytest.mark.slow
-def test_performance_critical(): ...
-
-@pytest.mark.skip(reason="Not implemented yet")
-def test_future_feature(): ...
-```
-
-### Coverage Requirements
-
-| Type | Minimum Coverage |
-|------|-----------------|
-| Unit Tests | 90% |
-| Integration | 80% |
-| Overall | 85% |
+> **For testing patterns, use skill: testing**
+> **For security guidelines, use skill: security**
 
 ---
 
@@ -985,511 +347,611 @@ def test_future_feature(): ...
 
 ### Branch Naming
 
-| Branch Type | Pattern | Example |
-|-------------|---------|---------|
-| Main | `main` | Production-ready code |
-| Develop | `develop` | Integration branch |
-| Feature | `feature/<description>` | `feature/add-cursor-pagination` |
-| Fix | `fix/<description>` | `fix/null-pointer-exception` |
-| Hotfix | `hotfix/<description>` | `hotfix/security-patch` |
-| Release | `release/v<version>` | `release/v1.2.0` |
-| Refactor | `refactor/<description>` | `refactor/extract-base-class` |
-| Docs | `docs/<description>` | `docs/api-documentation` |
-| Test | `test/<description>` | `test/add-e2e-tests` |
-| Chore | `chore/<description>` | `chore/update-dependencies` |
+`<type>/<short-description>`
 
-### Commit Messages
+| Prefix | Purpose | Example |
+|--------|---------|---------|
+| `feature/` | New features | `feature/user-authentication` |
+| `fix/` | Bug fixes | `fix/login-validation-error` |
+| `hotfix/` | Urgent production fixes | `hotfix/payment-timeout` |
+| `refactor/` | Code improvements | `refactor/extract-user-service` |
+| `docs/` | Documentation only | `docs/api-reference` |
+| `test/` | Test improvements | `test/add-integration-tests` |
+| `chore/` | Maintenance tasks | `chore/update-dependencies` |
+| `release/` | Release candidates | `release/v1.2.0` |
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
+**Rules:**
+- Use lowercase with hyphens: `feature/add-user-search`
+- Be descriptive but concise: max 50 characters
+- Include issue number if applicable: `fix/123-login-error`
+
+### Commit Messages (Conventional Commits)
 
 ```
-<type>(<scope>): <description>
+<type>(<scope>): <subject>
 
 [optional body]
 
-[optional footer(s)]
+[optional footer]
 ```
 
-#### Types
+**Types**:
 
-| Type | Description |
-|------|-------------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation only |
-| `style` | Formatting, no code change |
-| `refactor` | Code change, no feature/fix |
-| `perf` | Performance improvement |
-| `test` | Adding/fixing tests |
-| `build` | Build system changes |
-| `ci` | CI configuration changes |
-| `chore` | Other changes |
-| `revert` | Revert previous commit |
+| Type | Purpose | Example |
+|------|---------|---------|
+| `feat` | New feature | `feat(auth): add OAuth2 login` |
+| `fix` | Bug fix | `fix(cart): correct quantity calculation` |
+| `docs` | Documentation | `docs(readme): update installation steps` |
+| `style` | Formatting | `style: apply ruff formatting` |
+| `refactor` | Code restructuring | `refactor(user): extract validation logic` |
+| `test` | Test changes | `test(order): add integration tests` |
+| `perf` | Performance | `perf(query): add database index` |
+| `chore` | Maintenance | `chore: update dependencies` |
+| `ci` | CI/CD changes | `ci: add coverage reporting` |
+| `build` | Build changes | `build: update Python to 3.12` |
 
-#### Examples
+**Subject rules:**
+- Imperative mood: "add" not "added" or "adds"
+- Lowercase first letter
+- No period at end
+- Max 50 characters
 
+**Body:**
+- Explain what and why (not how)
+- Wrap at 72 characters
+- Separate from subject with blank line
+
+**Example:**
+```
+feat(search): add fuzzy matching for user search
+
+Implement Levenshtein distance-based fuzzy matching to improve
+search results when users make typos. Uses rapidfuzz library
+for performance.
+
+- Add FuzzyMatcher class with configurable threshold
+- Integrate with existing SearchService
+- Add configuration option to enable/disable
+
+Closes #234
+```
+
+### Commit Best Practices
+
+| Do | Don't |
+|----|-------|
+| Atomic commits (one logical change) | Mix unrelated changes |
+| Write in imperative mood | Use past tense ("added", "fixed") |
+| Explain why, not what | State the obvious |
+| Reference issues | Leave commits orphaned |
+| Commit early and often | Create massive commits |
+| Test before committing | Commit broken code |
+| Review diff before committing | Commit blindly |
+
+**Atomic commits:**
 ```bash
-feat(pagination): add cursor-based pagination support
+# GOOD: Separate logical changes
+git commit -m "refactor(user): extract validation to separate class"
+git commit -m "feat(user): add email uniqueness check"
+git commit -m "test(user): add validation test cases"
 
-Implement cursor pagination for large datasets to improve
-performance and provide stable pagination results.
+# BAD: Everything in one commit
+git commit -m "refactor user and add validation and tests"
+```
 
+**When to commit:**
+- Feature or sub-feature complete
+- Meaningful checkpoint (code works)
+- Before switching context
+- Before risky changes (can revert)
+
+### PR Guidelines
+
+**Title:** Follow commit message format
+```
+feat(filters): add JSONLogic filter support
+```
+
+**Description Template:**
+```markdown
+## Summary
+Brief description of changes and motivation.
+
+## Changes
+- Added JSONLogic parser for complex filter expressions
+- Integrated with existing FilterEngine
+- Added validation for filter syntax
+
+## How to Test
+1. Create a filter with JSONLogic syntax
+2. Apply to a query
+3. Verify results match expected output
+
+## Checklist
+- [ ] Tests added/updated
+- [ ] Documentation updated
+- [ ] Type hints added
+- [ ] Linting passes
+- [ ] No breaking changes (or documented)
+
+## Related Issues
 Closes #123
+Related to #456
 ```
 
+**PR Best Practices:**
+- Keep PRs small and focused (< 400 lines ideal)
+- One feature/fix per PR
+- Request review from relevant owners
+- Respond to feedback promptly
+- Squash commits when merging (if many small commits)
+
+### Git Workflow
+
+**Feature development:**
 ```bash
-fix(filters): handle null values in range filters
+# 1. Create feature branch from main
+git checkout main
+git pull origin main
+git checkout -b feature/add-user-search
 
-Previously, null values caused IndexError. Now they are
-filtered out before processing.
+# 2. Make changes with atomic commits
+git add src/search.py
+git commit -m "feat(search): add basic user search"
 
-Fixes #456
+git add tests/test_search.py
+git commit -m "test(search): add search test cases"
+
+# 3. Keep branch updated
+git fetch origin main
+git rebase origin/main
+
+# 4. Push and create PR
+git push -u origin feature/add-user-search
+```
+
+**Fixing a bug:**
+```bash
+# 1. Create fix branch
+git checkout -b fix/123-login-error
+
+# 2. Write failing test first
+git add tests/test_login.py
+git commit -m "test(auth): add test for login edge case"
+
+# 3. Fix the bug
+git add src/auth.py
+git commit -m "fix(auth): handle empty password correctly
+
+Fixes #123"
+
+# 4. Push and create PR
+git push -u origin fix/123-login-error
+```
+
+**Hotfix for production:**
+```bash
+# 1. Branch from production tag
+git checkout v1.2.0
+git checkout -b hotfix/payment-timeout
+
+# 2. Fix with minimal changes
+git commit -m "hotfix(payment): increase timeout to 60s
+
+Critical fix for payment failures in production.
+
+Fixes #789"
+
+# 3. Create PR to main and release branch
+git push -u origin hotfix/payment-timeout
+```
+
+### Pre-commit Hooks
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types: [python]
+
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
+        types: [python]
+        pass_filenames: false
 ```
 
 ---
 
-## Architecture Guidelines
+## Architecture
 
-### Layer Architecture
+### Layered Architecture
 
 ```
-┌─────────────────────────────────────┐
-│           Presentation              │  ← API endpoints, CLI
-├─────────────────────────────────────┤
-│           Application               │  ← Use cases, orchestration
-├─────────────────────────────────────┤
-│             Domain                  │  ← Business logic, entities
-├─────────────────────────────────────┤
-│          Infrastructure             │  ← Database, external services
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│           Presentation Layer                │  API, CLI
+├─────────────────────────────────────────────┤
+│              Application Layer              │  Use cases
+├─────────────────────────────────────────────┤
+│                Domain Layer                 │  Business logic
+├─────────────────────────────────────────────┤
+│             Infrastructure Layer            │  Database, APIs
+└─────────────────────────────────────────────┘
 ```
 
-### Dependency Rule
+**Rules**:
+1. Each layer only depends on layers **below** it
+2. Domain layer has **no external dependencies**
+3. Never import from upper layers
 
-Dependencies point inward. Inner layers know nothing about outer layers.
-
-```python
-# Domain layer - no external dependencies
-class User:
-    def __init__(self, id: str, email: str):
-        self.id = id
-        self.email = email
-
-# Application layer - depends on domain
-class CreateUserUseCase:
-    def __init__(self, repository: UserRepository):
-        self._repository = repository
-
-    def execute(self, email: str) -> User:
-        user = User(id=generate_id(), email=email)
-        return self._repository.save(user)
-
-# Infrastructure layer - implements domain interfaces
-class SQLAlchemyUserRepository(UserRepository):
-    def save(self, user: User) -> User:
-        # Database implementation
-        pass
-```
-
-### Module Organization
+### Project Structure
 
 ```
 src/
-├── __init__.py
-├── core/               # Domain entities and interfaces
-│   ├── entities/
-│   └── interfaces/
-├── application/        # Use cases
-│   └── use_cases/
-├── infrastructure/     # External implementations
-│   ├── database/
-│   └── external/
-└── presentation/       # API layer
-    ├── api/
-    └── cli/
+└── mypackage/
+    ├── __init__.py         # Public API exports
+    ├── py.typed            # PEP 561 marker
+    ├── exceptions.py       # Exception hierarchy
+    ├── types.py            # Shared types
+    ├── core/               # Domain (no deps)
+    ├── application/        # Use cases
+    ├── adapters/           # Infrastructure
+    └── integrations/       # Framework support
+
+tests/
+├── conftest.py             # Shared fixtures
+├── unit/
+├── integration/
+└── e2e/
 ```
 
----
-
-## Security Guidelines
-
-### Input Validation
+### Dependency Injection
 
 ```python
-from pydantic import BaseModel, Field, validator
-
-class UserInput(BaseModel):
-    email: str = Field(..., max_length=255)
-    name: str = Field(..., min_length=1, max_length=100)
-
-    @validator("email")
-    def validate_email(cls, v: str) -> str:
-        if "@" not in v:
-            raise ValueError("Invalid email format")
-        return v.lower()
-```
-
-### SQL Injection Prevention
-
-```python
-# Bad - SQL injection vulnerable
-query = f"SELECT * FROM users WHERE id = '{user_id}'"
-
-# Good - Parameterized queries
-query = "SELECT * FROM users WHERE id = :id"
-result = session.execute(text(query), {"id": user_id})
-```
-
-### Secrets Management
-
-```python
-# Never hardcode secrets
-# Bad
-API_KEY = "sk-12345abcdef"
-
-# Good - Use environment variables
-import os
-API_KEY = os.environ["API_KEY"]
-
-# Better - Use secrets management
-from your_secrets_lib import get_secret
-API_KEY = get_secret("api-key")
-```
-
-### Sensitive Data
-
-```python
-# Exclude sensitive fields from logs/responses
-class User(BaseModel):
-    id: str
-    email: str
-    password_hash: str = Field(exclude=True)
-
-    class Config:
-        # Exclude from __repr__
-        fields = {"password_hash": {"exclude": True}}
-```
-
----
-
-## Performance Guidelines
-
-### Database Optimization
-
-```python
-# Use eager loading to avoid N+1 queries
-users = session.query(User).options(
-    joinedload(User.orders)
-).all()
-
-# Use pagination for large result sets
-def get_users(page: int, size: int) -> list[User]:
-    return session.query(User).offset(page * size).limit(size).all()
-
-# Index frequently queried columns
-class User(Base):
-    __tablename__ = "users"
-    email = Column(String, index=True)
-```
-
-### Caching
-
-```python
-from functools import lru_cache
-
-@lru_cache(maxsize=128)
-def get_configuration(key: str) -> str:
-    # Expensive operation
-    return load_from_database(key)
-
-# For async/more control, use explicit cache
-class CachedRepository:
-    def __init__(self, cache: Cache, repository: Repository):
-        self._cache = cache
+# GOOD: Constructor injection
+class OrderService:
+    def __init__(self, repository: OrderRepository) -> None:
         self._repository = repository
 
-    def find(self, id: str) -> Entity | None:
-        cached = self._cache.get(id)
-        if cached:
-            return cached
-        entity = self._repository.find(id)
-        if entity:
-            self._cache.set(id, entity)
-        return entity
+# BAD: Hidden dependency
+class OrderService:
+    def process(self):
+        repository = ServiceLocator.get(OrderRepository)  # Hidden!
 ```
 
-### Async Operations
+### Exception Hierarchy
 
 ```python
-import asyncio
-from collections.abc import Coroutine
+class AppError(Exception):
+    """Base exception."""
 
-async def fetch_all(urls: list[str]) -> list[Response]:
-    tasks: list[Coroutine] = [fetch(url) for url in urls]
-    return await asyncio.gather(*tasks)
+class DomainError(AppError):
+    """Domain rule violations."""
+
+class ValidationError(DomainError):
+    """Invalid input."""
+
+class NotFoundError(AppError):
+    """Resource not found."""
+
+class InfrastructureError(AppError):
+    """Infrastructure failures."""
 ```
+
+> **For refactoring techniques, use skill: refactoring**
+> **For performance optimization, use skill: performance**
+> **For API design, use skill: api-design**
 
 ---
 
-## API Design Principles
+## AI Agent Guidance
 
-### RESTful Conventions
+### Before Making Changes
 
-| Method | Endpoint | Action |
-|--------|----------|--------|
-| GET | `/users` | List users |
-| GET | `/users/{id}` | Get user |
-| POST | `/users` | Create user |
-| PUT | `/users/{id}` | Replace user |
-| PATCH | `/users/{id}` | Update user |
-| DELETE | `/users/{id}` | Delete user |
+1. **Read** the file(s) you plan to modify
+2. **Look** at similar implementations in codebase
+3. **Check** existing tests for the module
+4. **Understand** existing patterns before adding code
 
-### Response Format
+### Decision Tree: Create vs Edit
 
-```python
-# Success response
-{
-    "data": {...},
-    "meta": {
-        "page": 1,
-        "total": 100
-    }
-}
-
-# Error response
-{
-    "error": {
-        "code": "VALIDATION_ERROR",
-        "message": "Invalid input",
-        "details": [
-            {"field": "email", "message": "Invalid format"}
-        ]
-    }
-}
+```
+Need new functionality?
+├── YES → Is there a file for this concern?
+│         ├── YES → Will it exceed 200 lines?
+│         │         ├── YES → CREATE new file
+│         │         └── NO  → EDIT existing
+│         └── NO  → Is this a new concern?
+│                   ├── YES → CREATE new file
+│                   └── NO  → EDIT nearest related
+└── NO  → EDIT existing file
 ```
 
-### Versioning
+**Prefer editing over creating new files.**
 
-```python
-# URL versioning (preferred)
-/api/v1/users
-/api/v2/users
+### Decision Tree: Refactor vs Extend
 
-# Header versioning
-Accept: application/vnd.api+json; version=1
+```
+Is the code clean?
+├── YES → Add feature following pattern
+└── NO  → Does refactoring help the task?
+          ├── YES → Is it small refactoring?
+          │         ├── YES → Refactor then add
+          │         └── NO  → Ask user first
+          └── NO  → Add with minimal changes
 ```
 
-### Pagination
+**Small refactoring** (do immediately): Rename, extract 1-2 methods, add type hints
+**Large refactoring** (ask first): Restructure files, change API, modify abstractions
 
-```python
-# Offset-based
-GET /users?page=2&size=20
+### Workflow: Adding a Feature
 
-# Cursor-based (preferred for large datasets)
-GET /users?cursor=abc123&size=20
+```
+1. UNDERSTAND
+   ├── Read user's request
+   ├── Identify affected modules
+   └── Check similar implementations
+
+2. PLAN
+   ├── List files to create/modify
+   ├── Check size limits
+   └── Identify tests needed
+
+3. IMPLEMENT
+   ├── Start with core logic
+   ├── Add type hints
+   ├── Keep functions ≤12 lines
+   └── Follow existing patterns
+
+4. VERIFY
+   ├── uv run ruff format .
+   ├── uv run ruff check --fix .
+   ├── uv run mypy src/
+   └── uv run pytest
 ```
 
----
+### Workflow: Fixing a Bug
 
-## Refactoring Techniques
-
-### Extract Method
-
-```python
-# Before
-def process_order(order: Order) -> None:
-    # Validate order
-    if not order.items:
-        raise ValueError("Empty order")
-    if order.total < 0:
-        raise ValueError("Invalid total")
-    # Calculate shipping
-    if order.total > 100:
-        shipping = 0
-    else:
-        shipping = 10
-    # Process payment
-    payment.charge(order.total + shipping)
-
-# After
-def process_order(order: Order) -> None:
-    validate_order(order)
-    shipping = calculate_shipping(order)
-    process_payment(order, shipping)
-
-def validate_order(order: Order) -> None:
-    if not order.items:
-        raise ValueError("Empty order")
-    if order.total < 0:
-        raise ValueError("Invalid total")
-
-def calculate_shipping(order: Order) -> float:
-    return 0 if order.total > 100 else 10
-
-def process_payment(order: Order, shipping: float) -> None:
-    payment.charge(order.total + shipping)
+```
+1. REPRODUCE → Write failing test
+2. LOCATE   → Find root cause
+3. FIX      → Minimal change
+4. VERIFY   → All tests pass
 ```
 
-### Replace Conditional with Polymorphism
+### Workflow: Refactoring
 
-```python
-# Before
-def calculate_area(shape: dict) -> float:
-    if shape["type"] == "circle":
-        return 3.14 * shape["radius"] ** 2
-    elif shape["type"] == "rectangle":
-        return shape["width"] * shape["height"]
-    else:
-        raise ValueError("Unknown shape")
-
-# After
-class Shape(ABC):
-    @abstractmethod
-    def area(self) -> float: ...
-
-class Circle(Shape):
-    def __init__(self, radius: float):
-        self.radius = radius
-
-    def area(self) -> float:
-        return 3.14 * self.radius ** 2
-
-class Rectangle(Shape):
-    def __init__(self, width: float, height: float):
-        self.width = width
-        self.height = height
-
-    def area(self) -> float:
-        return self.width * self.height
+```
+1. ENSURE   → All tests pass before starting
+2. SMALL    → One change at a time
+3. TEST     → Run tests after each change
+4. COMMIT   → Commit after each success
 ```
 
-### Introduce Parameter Object
+### Common Mistakes to Avoid
 
-```python
-# Before
-def search_users(
-    name: str | None,
-    email: str | None,
-    age_min: int | None,
-    age_max: int | None,
-    active: bool | None,
-) -> list[User]: ...
+| Mistake | Do Instead |
+|---------|------------|
+| Writing without reading first | Read related files first |
+| Creating files unnecessarily | Edit existing files |
+| Large functions | Keep ≤12 lines |
+| Missing type hints | Add types as you write |
+| Mixing refactoring and features | Separate commits |
+| Not running tests | Test after every change |
+| Deep nesting | Use guard clauses |
 
-# After
-@dataclass
-class UserSearchCriteria:
-    name: str | None = None
-    email: str | None = None
-    age_min: int | None = None
-    age_max: int | None = None
-    active: bool | None = None
+### When to Ask the User
 
-def search_users(criteria: UserSearchCriteria) -> list[User]: ...
+- Request is ambiguous
+- Multiple valid approaches exist
+- Change might break existing behavior
+- Large refactoring needed
+- Unsure about requirements
+
+### Verification Commands
+
+**Run before completing any work:**
+
+```bash
+uv run ruff format .
+uv run ruff check --fix .
+uv run mypy src/
+uv run pytest
 ```
 
----
+### Self-Review Checklist
 
-## Code Review Checklist
-
-### Functionality
-
-- [ ] Code works as intended
-- [ ] Edge cases are handled
-- [ ] Error handling is appropriate
-- [ ] No obvious bugs
-
-### Code Quality
-
-- [ ] Follows naming conventions
-- [ ] Functions are ≤12 lines
-- [ ] Files are ≤200 lines
-- [ ] No code duplication (DRY)
-- [ ] Single responsibility (SRP)
-- [ ] No hardcoded values
-
-### Type Safety
-
-- [ ] All public APIs have type hints
-- [ ] No `Any` types without justification
-- [ ] Generics used appropriately
-
-### Testing
-
-- [ ] Unit tests for new code
-- [ ] Edge cases tested
-- [ ] Tests are readable (AAA pattern)
-- [ ] No flaky tests
-
-### Security
-
-- [ ] No hardcoded secrets
-- [ ] Input validation present
-- [ ] SQL injection prevented
-- [ ] Sensitive data protected
-
-### Performance
-
-- [ ] No N+1 queries
-- [ ] Appropriate caching
-- [ ] No unnecessary computations
-- [ ] Large data sets paginated
-
-### Documentation
-
-- [ ] Complex logic explained
-- [ ] Public APIs documented
-- [ ] README updated if needed
-
-### Git
-
-- [ ] Commit messages follow conventions
-- [ ] Commits are atomic
-- [ ] No merge conflicts
-- [ ] Branch is up to date
+- [ ] Code does what was requested
+- [ ] Functions ≤12 lines
+- [ ] No deep nesting (max 2 levels)
+- [ ] Type hints on public APIs
+- [ ] Tests cover happy path and errors
+- [ ] All checks pass
 
 ---
 
 ## Quick Reference
 
-### Commands
+### Size Limits
 
-```bash
-# Run all tests
-pytest
+| Metric | Limit |
+|--------|-------|
+| Lines per file | 200 |
+| Lines per function | 12 |
+| Parameters per function | 4 |
+| Nesting levels | 2 |
+| Public methods per class | 10 |
 
-# Run with coverage
-pytest --cov=src --cov-report=html
+### Naming
 
-# Run specific test types
-pytest -m unit
-pytest -m integration
-pytest -m "not slow"
+| Element | Convention | Example |
+|---------|------------|---------|
+| Files | snake_case | `user_repository.py` |
+| Classes | PascalCase | `UserRepository` |
+| Functions | snake_case + verb | `get_user()` |
+| Variables | snake_case | `user_count` |
+| Constants | UPPER_SNAKE | `MAX_SIZE` |
+| Private | Leading underscore | `_internal` |
 
-# Lint and format
-ruff check .
-ruff format .
+### Commit Types
 
-# Type checking
-mypy src/
-```
+| Type | Purpose |
+|------|---------|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `docs` | Documentation |
+| `refactor` | Code restructuring |
+| `test` | Test changes |
+| `chore` | Maintenance |
 
-### File Template
+### HTTP Status Codes
+
+| Code | Meaning |
+|------|---------|
+| 200 | OK |
+| 201 | Created |
+| 204 | No Content |
+| 400 | Bad Request |
+| 401 | Unauthorized |
+| 403 | Forbidden |
+| 404 | Not Found |
+| 422 | Validation Failed |
+| 500 | Server Error |
+
+### Type Hints Cheat Sheet
 
 ```python
-"""Module docstring explaining purpose."""
-from __future__ import annotations
+# Basic
+x: int
+y: str | None
+z: list[str]
 
-from typing import TYPE_CHECKING
+# Collections
+items: list[Item]
+mapping: dict[str, int]
 
-if TYPE_CHECKING:
-    from collections.abc import Sequence
+# Callable
+Handler = Callable[[Request], Response]
 
-# Constants
-MAX_ITEMS = 100
+# Protocol
+class Readable(Protocol):
+    def read(self) -> bytes: ...
 
-# Classes and functions below...
+# Generic
+T = TypeVar("T")
+def first(items: list[T]) -> T | None: ...
+```
+
+### Command Reference
+
+```bash
+# All checks
+uv run ruff format . && uv run ruff check --fix . && uv run mypy src/ && uv run pytest
+
+# Individual
+uv run ruff format .           # Format
+uv run ruff check --fix .      # Lint
+uv run mypy src/               # Type check
+uv run pytest                  # Test
+uv run pytest --cov            # Coverage
 ```
 
 ---
 
-*Last updated: 2024*
+## Skills Reference
+
+For detailed guidance on specific topics, request these skills:
+
+### Design Patterns (RefactoringGuru)
+
+| Skill | Use When |
+|-------|----------|
+| `guru-patterns-creational` | Need Factory, Builder, Singleton, Prototype patterns |
+| `guru-patterns-structural` | Need Adapter, Decorator, Facade, Proxy patterns |
+| `guru-patterns-behavioral` | Need Strategy, Observer, Command, State patterns |
+| `guru-smells` | Detecting and fixing code smells |
+
+### Refactoring (RefactoringGuru)
+
+| Skill | Use When |
+|-------|----------|
+| `guru-refactor-methods` | Extract Method, Inline Method, Extract Variable |
+| `guru-refactor-moving` | Move Method, Extract Class, Hide Delegate |
+| `guru-refactor-data` | Encapsulate Collection, Replace Primitive with Object |
+| `guru-refactor-conditionals` | Decompose Conditional, Guard Clauses, Polymorphism |
+| `guru-refactor-calls` | Rename Method, Add/Remove Parameter, Parameter Object |
+| `guru-refactor-generalization` | Pull Up/Push Down, Extract Superclass, Template Method |
+
+### Architecture
+
+| Skill | Use When |
+|-------|----------|
+| `arch-principles` | Core principles, DI, observability, feature flags |
+| `arch-ddd` | Domain-Driven Design (entities, aggregates, value objects) |
+| `arch-cqrs-es` | Event Sourcing + CQRS patterns |
+| `arch-hexagonal` | Hexagonal/Ports & Adapters architecture |
+| `arch-microservices` | Saga, Circuit Breaker, 12-Factor App |
+
+### Security
+
+| Skill | Use When |
+|-------|----------|
+| `sec-basics` | Input validation, SQL injection, secrets, auth |
+| `sec-owasp` | Complete OWASP Top 10 with Python examples |
+| `sec-ops` | SecOps CI/CD, SAST/DAST, threat modeling (STRIDE) |
+| `sec-api` | Security headers, CORS, rate limiting, JWT, API keys |
+
+### Testing
+
+| Skill | Use When |
+|-------|----------|
+| `test-standards` | Naming, AAA pattern, fixtures, mocking, property-based |
+| `test-ops` | CI/CD integration, GitHub Actions, GitLab CI, parallelization |
+| `test-advanced` | Mutation testing (mutmut), Contract testing (Pact) |
+| `test-load` | Load/Performance testing with Locust |
+| `test-chaos` | Chaos engineering, resilience testing |
+| `test-data` | Test data management, factories, visual regression |
+
+### API Design
+
+| Skill | Use When |
+|-------|----------|
+| `api-rest` | RESTful conventions, response formats, pagination, versioning |
+| `api-graphql` | GraphQL with Strawberry, DataLoaders, N+1 prevention |
+| `api-grpc` | gRPC for microservices, Protocol Buffers, streaming |
+| `api-gateway` | API Gateway patterns, BFF, HTTP caching |
+| `api-auth` | API keys, JWT, OAuth2 scopes, rate limiting |
+| `api-lifecycle` | Deprecation, versioning changes, HATEOAS |
+
+### Performance
+
+| Skill | Use When |
+|-------|----------|
+| `perf-core` | Core optimization: caching, async, memory, N+1 prevention |
+| `perf-ops` | Performance testing in CI/CD, benchmarking, regression detection |
+| `perf-slo` | SLOs, SLIs, SLAs, error budgets |
+| `perf-apm` | OpenTelemetry, distributed tracing, metrics |
+| `perf-profiling` | py-spy, Scalene, memray, flame graphs |
+| `perf-database` | Query analysis, connection pooling, EXPLAIN |
+
+### Other
+
+| Skill | Use When |
+|-------|----------|
+| `type-hints` | Type annotations, generics, protocols |
+
+---
+
+*This document provides essential rules. For detailed examples and advanced techniques, use the appropriate skill.*
