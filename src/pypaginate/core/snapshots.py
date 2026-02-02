@@ -134,8 +134,7 @@ def coerce_bookmark(value: str | None) -> BookmarkPayload | None:
         A tuple payload accepted by sqlakeyset, or None when input is None.
 
     Raises:
-        PaginationConfigurationError: If the deserialized structure does not match
-        the expected sqlakeyset tuple payload.
+        PaginationConfigurationError: When the deserialized structure is invalid.
     """
     if value is None:
         return None

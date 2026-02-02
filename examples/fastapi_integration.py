@@ -18,7 +18,7 @@ from sqlalchemy import String, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from pypaginate import PageParams, PagedResponse, get_pagination_params, paginate_entities
+from pypaginate import PagedResponse, PageParams, get_pagination_params, paginate_entities
 
 
 # =============================================================================

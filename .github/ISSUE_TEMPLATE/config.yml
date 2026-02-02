@@ -2,9 +2,21 @@ blank_issues_enabled: false
 
 contact_links:
   - name: 💬 Questions & Discussions
-    url: https://github.com/CybLow/pypaginate/discussions
-    about: Ask questions and discuss ideas
+    url: https://github.com/CybLow/pypaginate/discussions/categories/q-a
+    about: Ask questions and get help from the community
+
+  - name: 💡 Ideas & Feedback
+    url: https://github.com/CybLow/pypaginate/discussions/categories/ideas
+    about: Share ideas and feedback for new features
 
   - name: 📚 Documentation
-    url: https://pypaginate.readthedocs.io
-    about: Check the documentation first
+    url: https://cyblow.github.io/pypaginate/
+    about: Read the documentation before opening an issue
+
+  - name: 🔒 Security Vulnerability (Private)
+    url: https://github.com/CybLow/pypaginate/security/advisories/new
+    about: Report critical security vulnerabilities privately
+
+  - name: 📦 PyPI Package
+    url: https://pypi.org/project/pypaginate/
+    about: View the package on PyPI

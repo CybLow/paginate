@@ -3,6 +3,11 @@
 # =============================================================================
 # Trigger: GitHub Release (published)
 # Uses: Trusted Publishing (OIDC) - no tokens required
+#
+# Features:
+#   - SBOM generation (CycloneDX)
+#   - Build attestation (SLSA provenance)
+#   - Trusted publishing (no API tokens)
 # =============================================================================
 
 name: Publish
@@ -27,7 +32,6 @@ on:
         default: false
         type: boolean
 
-# Global: lecture seule. Les droits élevés sont "job-scopés".
 permissions:
   contents: read
 
@@ -44,16 +48,19 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      id-token: write
+      attestations: write
 
     outputs:
       version: ${{ steps.version.outputs.version }}
+      hashes: ${{ steps.hash.outputs.hashes }}
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: 🐍 Setup UV
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
@@ -75,12 +82,39 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "📦 Version: $VERSION"
 
-      - name: 📤 Upload
-        uses: actions/upload-artifact@v6
+      - name: 🔐 Generate hashes
+        id: hash
+        run: |
+          cd dist
+          HASHES=$(sha256sum * | base64 -w0)
+          echo "hashes=$HASHES" >> $GITHUB_OUTPUT
+
+      - name: 📜 Generate SBOM
+        run: |
+          uv run pip install cyclonedx-bom
+          uv run cyclonedx-py environment -o sbom.json --format json
+          uv run cyclonedx-py environment -o sbom.xml --format xml
+
+      - name: 🔏 Generate build attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*
+
+      - name: 📤 Upload dist
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
           retention-days: 5
+
+      - name: 📤 Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: |
+            sbom.json
+            sbom.xml
+          retention-days: 90
 
   # ---------------------------------------------------------------------------
   # Publish to TestPyPI
@@ -101,7 +135,7 @@ jobs:
 
     steps:
       - name: 📥 Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
@@ -132,7 +166,7 @@ jobs:
 
     steps:
       - name: 📥 Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
@@ -154,13 +188,21 @@ jobs:
     if: github.event_name == 'release' && !github.event.release.prerelease
 
     steps:
-      - name: 📥 Download artifacts
-        uses: actions/download-artifact@v7
+      - name: 📥 Download dist
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
 
+      - name: 📥 Download SBOM
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom
+          path: sbom/
+
       - name: 📤 Upload to release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: |
+            dist/*
+            sbom/*

@@ -1,8 +1,24 @@
 # =============================================================================
 # CI/CD Pipeline - pypaginate
 # =============================================================================
-# Triggers: push (main/develop), pull_request, manual
-# Jobs: quality (lint, format, type-check), test (matrix), build, security
+# Tiered test infrastructure based on branch type:
+#
+# Branch Naming Convention:
+#   - main              : Production-ready code, triggers release
+#   - develop           : Integration branch for features
+#   - release/v*        : Release candidates (e.g., release/v1.2.0)
+#   - feature/*         : New features (e.g., feature/add-keyset-pagination)
+#   - fix/*             : Bug fixes (e.g., fix/memory-leak-in-paginator)
+#   - hotfix/*          : Urgent production fixes (e.g., hotfix/critical-bug)
+#   - refactor/*        : Code improvements (e.g., refactor/simplify-engine)
+#   - docs/*            : Documentation only (e.g., docs/update-readme)
+#   - test/*            : Test improvements (e.g., test/add-edge-cases)
+#   - chore/*           : Maintenance tasks (e.g., chore/update-deps)
+#
+# Pipeline Tiers:
+#   Tier 1 (Fast)     : quality + unit tests         → feature/*, fix/*, etc.
+#   Tier 2 (Standard) : + integration + property     → develop, PRs
+#   Tier 3 (Full)     : + benchmarks + build         → release/*, main
 # =============================================================================
 
 name: CI
@@ -12,9 +28,14 @@ on:
     branches:
       - main
       - develop
-      - 'release/*'
+      - 'release/v*'
       - 'feature/*'
       - 'fix/*'
+      - 'hotfix/*'
+      - 'refactor/*'
+      - 'docs/*'
+      - 'test/*'
+      - 'chore/*'
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -39,6 +60,16 @@ on:
         required: false
         default: false
         type: boolean
+      run_all_tests:
+        description: 'Run full test suite (all tiers)'
+        required: false
+        default: false
+        type: boolean
+      run_benchmarks:
+        description: 'Run benchmark tests'
+        required: false
+        default: false
+        type: boolean
 
 # Cancel in-progress runs for the same ref
 concurrency:
@@ -48,6 +79,8 @@ concurrency:
 env:
   PYTHON_VERSION: '3.11'
   UV_SYSTEM_PYTHON: 1
+  PYTEST_ADDOPTS: '--color=yes'
+  HYPOTHESIS_PROFILE: 'ci'
 
 # =============================================================================
 # JOBS
@@ -55,163 +88,438 @@ env:
 jobs:
 
   # ---------------------------------------------------------------------------
-  # Quality Checks (Lint + Format + Type Check)
+  # Determine Pipeline Tier
+  # ---------------------------------------------------------------------------
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    outputs:
+      tier: ${{ steps.tier.outputs.tier }}
+      run_integration: ${{ steps.tier.outputs.run_integration }}
+      run_property: ${{ steps.tier.outputs.run_property }}
+      run_benchmarks: ${{ steps.tier.outputs.run_benchmarks }}
+      run_build: ${{ steps.tier.outputs.run_build }}
+    steps:
+      - name: Determine pipeline tier
+        id: tier
+        run: |
+          REF="${{ github.ref }}"
+          EVENT="${{ github.event_name }}"
+          RUN_ALL="${{ github.event.inputs.run_all_tests }}"
+          RUN_BENCH="${{ github.event.inputs.run_benchmarks }}"
+
+          # Default: Tier 1 (fast feedback)
+          TIER=1
+          RUN_INTEGRATION=false
+          RUN_PROPERTY=false
+          RUN_BENCHMARKS=false
+          RUN_BUILD=false
+
+          # Manual override: run all tests
+          if [[ "$RUN_ALL" == "true" ]]; then
+            TIER=3
+            RUN_INTEGRATION=true
+            RUN_PROPERTY=true
+            RUN_BENCHMARKS=true
+            RUN_BUILD=true
+          # Pull requests: Tier 2 (standard validation)
+          elif [[ "$EVENT" == "pull_request" ]]; then
+            TIER=2
+            RUN_INTEGRATION=true
+            RUN_PROPERTY=true
+            RUN_BUILD=true
+          # Main branch: Tier 3 (full pipeline)
+          elif [[ "$REF" == "refs/heads/main" ]]; then
+            TIER=3
+            RUN_INTEGRATION=true
+            RUN_PROPERTY=true
+            RUN_BENCHMARKS=true
+            RUN_BUILD=true
+          # Release branches: Tier 3 (full pipeline)
+          elif [[ "$REF" == refs/heads/release/* ]]; then
+            TIER=3
+            RUN_INTEGRATION=true
+            RUN_PROPERTY=true
+            RUN_BENCHMARKS=true
+            RUN_BUILD=true
+          # Develop branch: Tier 2 (standard)
+          elif [[ "$REF" == "refs/heads/develop" ]]; then
+            TIER=2
+            RUN_INTEGRATION=true
+            RUN_PROPERTY=true
+            RUN_BUILD=true
+          # Feature/fix/other branches: Tier 1 (fast)
+          else
+            TIER=1
+          fi
+
+          # Manual benchmark override
+          if [[ "$RUN_BENCH" == "true" ]]; then
+            RUN_BENCHMARKS=true
+          fi
+
+          echo "tier=$TIER" >> $GITHUB_OUTPUT
+          echo "run_integration=$RUN_INTEGRATION" >> $GITHUB_OUTPUT
+          echo "run_property=$RUN_PROPERTY" >> $GITHUB_OUTPUT
+          echo "run_benchmarks=$RUN_BENCHMARKS" >> $GITHUB_OUTPUT
+          echo "run_build=$RUN_BUILD" >> $GITHUB_OUTPUT
+
+          echo "📊 Pipeline Configuration:"
+          echo "   Tier: $TIER"
+          echo "   Branch: $REF"
+          echo "   Event: $EVENT"
+          echo "   Integration: $RUN_INTEGRATION"
+          echo "   Property: $RUN_PROPERTY"
+          echo "   Benchmarks: $RUN_BENCHMARKS"
+          echo "   Build: $RUN_BUILD"
+
+  # ---------------------------------------------------------------------------
+  # Quality Checks (Lint + Format + Type Check) - ALL TIERS
   # ---------------------------------------------------------------------------
   quality:
     name: Quality
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: setup
     if: github.event.pull_request.draft != true
 
     steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 🐍 Setup UV + Python
-        uses: astral-sh/setup-uv@v7
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: uv sync --frozen --all-extras --group lint --group type
 
-      - name: 🎨 Check formatting
+      - name: Check formatting
         run: uv run ruff format --check --diff src tests
 
-      - name: 🔍 Lint
+      - name: Lint
         run: uv run ruff check --output-format=github src tests
 
-      - name: 🔬 Type check
+      - name: Type check
         run: uv run mypy src
 
   # ---------------------------------------------------------------------------
-  # Tests (Multi-version Python matrix)
+  # Unit Tests (Fast, Parallel) - ALL TIERS
   # ---------------------------------------------------------------------------
-  test:
-    name: Test / Python ${{ matrix.python }} / ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-    needs: quality
+  test-unit:
+    name: Unit Tests / Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [setup, quality]
 
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
         python: ['3.11', '3.12', '3.13']
-        include:
-          - os: windows-latest
-            python: '3.11'
-          - os: macos-latest
-            python: '3.11'
 
     steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: 🐍 Setup UV + Python ${{ matrix.python }}
-        uses: astral-sh/setup-uv@v7
+      - name: Setup UV + Python ${{ matrix.python }}
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
           python-version: ${{ matrix.python }}
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: uv sync --frozen --all-extras --group test
 
-      - name: 🧪 Run tests
-        run: uv run pytest --cov=pypaginate --cov-report=xml --cov-report=term-missing:skip-covered --junitxml=junit-${{ matrix.os }}-${{ matrix.python }}.xml -v
+      - name: Run unit tests (parallel)
+        run: |
+          uv run pytest tests/ \
+            -n auto \
+            --dist loadgroup \
+            -p no:benchmark \
+            --cov=pypaginate \
+            --cov-report=xml:coverage-unit-${{ matrix.python }}.xml \
+            --cov-report=term-missing:skip-covered \
+            --junitxml=junit-unit-${{ matrix.python }}.xml \
+            -v \
+            --ignore=tests/benchmarks \
+            --ignore=tests/e2e
 
-      - name: 📊 Upload coverage
-        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.11'
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
-          flags: unittests
+          files: coverage-unit-${{ matrix.python }}.xml
+          flags: unit,python-${{ matrix.python }}
           fail_ci_if_error: false
 
-      - name: 📤 Upload test results
+      - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.os }}-py${{ matrix.python }}
-          path: junit-*.xml
+          name: unit-results-py${{ matrix.python }}
+          path: |
+            junit-unit-*.xml
+            coverage-unit-*.xml
           retention-days: 7
 
   # ---------------------------------------------------------------------------
-  # Build Package
+  # Integration Tests (Cross-platform) - TIER 2+
   # ---------------------------------------------------------------------------
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: test
+  test-integration:
+    name: Integration Tests / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    needs: [setup, test-unit]
+    if: needs.setup.outputs.run_integration == 'true'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: 🐍 Setup UV + Python
-        uses: astral-sh/setup-uv@v7
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: 📦 Install build tools
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras --group test
+
+      - name: Run integration tests
+        run: uv run pytest tests/ --benchmark-disable --cov=pypaginate --cov-report=xml:coverage-integration-${{ matrix.os }}.xml --cov-report=term-missing:skip-covered --junitxml=junit-integration-${{ matrix.os }}.xml -v --ignore=tests/benchmarks --ignore=tests/e2e --reruns 2 --reruns-delay 1
+
+      - name: Upload coverage
+        if: matrix.os == 'ubuntu-latest'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage-integration-${{ matrix.os }}.xml
+          flags: integration,${{ matrix.os }}
+          fail_ci_if_error: false
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-results-${{ matrix.os }}
+          path: |
+            junit-integration-*.xml
+            coverage-integration-*.xml
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Property-Based Tests (Hypothesis) - TIER 2+
+  # ---------------------------------------------------------------------------
+  test-property:
+    name: Property Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [setup, test-unit]
+    if: needs.setup.outputs.run_property == 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras --group test
+
+      - name: Run property tests
+        run: |
+          uv run pytest tests/property \
+            -m property \
+            --benchmark-disable \
+            --hypothesis-seed=random \
+            --junitxml=junit-property.xml \
+            -v
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: property-results
+          path: junit-property.xml
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Benchmark Tests (Performance Tracking) - TIER 3 or manual
+  # ---------------------------------------------------------------------------
+  test-benchmarks:
+    name: Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [setup, test-unit]
+    if: needs.setup.outputs.run_benchmarks == 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras --group test
+
+      - name: Run benchmarks
+        run: |
+          uv run pytest tests/benchmarks \
+            --run-benchmark \
+            --benchmark-enable \
+            --benchmark-json=benchmark-results.json \
+            --benchmark-autosave \
+            -v
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            benchmark-results.json
+            .benchmarks/
+          retention-days: 90
+
+  # ---------------------------------------------------------------------------
+  # Build Package - TIER 2+
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [setup, test-unit]
+    if: needs.setup.outputs.run_build == 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install build tools
         run: uv sync --frozen --group build
 
-      - name: 🏗️ Build package
+      - name: Build package
         run: uv build
 
-      - name: ✅ Verify with twine
+      - name: Verify with twine
         run: uv run twine check dist/*
 
-      - name: 📤 Upload artifacts
-        uses: actions/upload-artifact@v6
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
           retention-days: 30
 
   # ---------------------------------------------------------------------------
-  # Security Scan
+  # Security Scan - ALL TIERS
   # ---------------------------------------------------------------------------
   security:
     name: Security
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: setup
     permissions:
       security-events: write
       contents: read
 
     steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: 🐍 Setup UV + Python
-        uses: astral-sh/setup-uv@v7
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: 📦 Install dependencies
-        run: uv sync --frozen
+      - name: Install dependencies
+        run: uv sync --frozen --group security
 
-      - name: 🔒 Run Bandit security scan
-        run: uv run bandit -r src -f json -o bandit-report.json || true
+      - name: Run Bandit security scan
+        run: |
+          uv run bandit -r src -f sarif -o bandit-results.sarif || true
+          uv run bandit -r src -f json -o bandit-report.json || true
 
-      - name: 📤 Upload security report
-        uses: actions/upload-artifact@v6
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('bandit-results.sarif') != ''
         with:
-          name: security-report
-          path: bandit-report.json
-          retention-days: 7
+          sarif_file: bandit-results.sarif
+          category: bandit
+
+      - name: Run pip-audit
+        run: |
+          uv run pip-audit --format=json --output=pip-audit-report.json || true
+        continue-on-error: true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            bandit-results.sarif
+            pip-audit-report.json
+          retention-days: 30
+
+  # ---------------------------------------------------------------------------
+  # Test Results Summary - PRs only
+  # ---------------------------------------------------------------------------
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [setup, test-unit, test-integration, test-property]
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-results*'
+          merge-multiple: true
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: |
+            junit-*.xml
+          check_name: Test Results
+          comment_mode: always
+          compare_to_earlier_commit: false
 
   # ---------------------------------------------------------------------------
   # CI Status Gate
@@ -219,19 +527,39 @@ jobs:
   ci-status:
     name: CI ✓
     runs-on: ubuntu-latest
-    needs: [quality, test, build]
+    needs: [setup, quality, test-unit, test-integration, test-property, build, security]
     if: always()
 
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.quality.result }}" != "success" ]]; then
-            echo "❌ Quality checks failed"; exit 1
-          fi
-          if [[ "${{ needs.test.result }}" != "success" ]]; then
-            echo "❌ Tests failed"; exit 1
-          fi
-          if [[ "${{ needs.build.result }}" != "success" ]]; then
-            echo "❌ Build failed"; exit 1
-          fi
+          echo "📋 Job Results:"
+          echo "   Setup: ${{ needs.setup.result }}"
+          echo "   Quality: ${{ needs.quality.result }}"
+          echo "   Unit Tests: ${{ needs.test-unit.result }}"
+          echo "   Integration: ${{ needs.test-integration.result }}"
+          echo "   Property: ${{ needs.test-property.result }}"
+          echo "   Build: ${{ needs.build.result }}"
+          echo "   Security: ${{ needs.security.result }}"
+
+          # Required jobs
+          REQUIRED=("${{ needs.quality.result }}" "${{ needs.test-unit.result }}")
+
+          # Optional jobs (may be skipped based on tier)
+          OPTIONAL=("${{ needs.test-integration.result }}" "${{ needs.test-property.result }}" "${{ needs.build.result }}" "${{ needs.security.result }}")
+
+          for result in "${REQUIRED[@]}"; do
+            if [[ "$result" != "success" ]]; then
+              echo "❌ Required job failed: $result"
+              exit 1
+            fi
+          done
+
+          for result in "${OPTIONAL[@]}"; do
+            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+              echo "❌ Optional job failed: $result"
+              exit 1
+            fi
+          done
+
           echo "✅ All checks passed!"

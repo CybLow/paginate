@@ -8,7 +8,7 @@ sort key) to fetch the next page, avoiding the performance issues
 of OFFSET for deep pages.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from pypaginate.core import KeysetPageParams
@@ -16,7 +16,7 @@ from pypaginate.core import KeysetPageParams
 
 def generate_sample_data(count: int = 100) -> list[dict[str, Any]]:
     """Generate sample data with timestamps."""
-    base_time = datetime.now(tz=timezone.utc)
+    base_time = datetime.now(tz=UTC)
     return [
         {
             "id": i,
@@ -73,9 +73,7 @@ def main() -> None:
     page_num = 1
 
     while True:
-        items, next_cursor = simulate_keyset_pagination(
-            data, cursor=cursor, limit=limit
-        )
+        items, next_cursor = simulate_keyset_pagination(data, cursor=cursor, limit=limit)
 
         print(f"\n--- Page {page_num} ---")
         print(f"Cursor used: {cursor or 'None (first page)'}")
