@@ -193,7 +193,7 @@ mcp = [
 # ==========================
 [tool.uv]
 package = true
-default-groups = ["dev", "docs", "mcp"]
+default-groups = ["dev", "docs"]  # mcp group is optional (heavy ML deps)
 
 # Cache optimization
 cache-keys = [{ file = "pyproject.toml" }, { file = "uv.lock" }]
