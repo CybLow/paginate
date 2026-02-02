@@ -519,7 +519,7 @@ jobs:
             junit-*.xml
           check_name: Test Results
           comment_mode: always
-          compare_to_earlier_commit: true
+          compare_to_earlier_commit: false
 
   # ---------------------------------------------------------------------------
   # CI Status Gate

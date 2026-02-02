@@ -239,7 +239,7 @@ async def keyset_pagination(session: AsyncSession):
         )
 ```
 
-## Query Building Patterns
+## Query Building Patterns {#filtering}
 
 ### With Filtering
 
