@@ -234,7 +234,7 @@ def _coerce_field_option(value: object | None) -> tuple[str, ...]:
     """
     if value is None:
         return ()
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+    if isinstance(value, Sequence) and not isinstance(value, str | bytes | bytearray):
         return tuple(_iter_string_values(value))
     raise SearchQueryError(
         "id_fields must be a sequence of strings when provided",

@@ -113,38 +113,38 @@ test = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
     "pytest-cov>=7.0.0",
-    
+
     # Parallel execution
     "pytest-xdist>=3.6.1",
-    
+
     # Property-based testing
     "hypothesis>=6.100.0",
-    
+
     # Mutation testing
     "mutmut>=3.0.0",
-    
+
     # Performance benchmarking
     "pytest-benchmark>=4.0.0",
-    
+
     # Snapshot testing
     "syrupy>=4.6.0",
-    
+
     # Test utilities
     "factory-boy>=3.3.0",
     "faker>=28.0.0",
     "pytest-randomly>=3.15.0",
     "pytest-timeout>=2.3.0",
     "pytest-rerunfailures>=14.0",
-    
+
     # Coverage
     "coverage[toml]>=7.6.0",
-    
+
     # Database testing
     "aiosqlite>=0.20.0",
-    
+
     # HTTP testing
     "httpx>=0.28.1",
-    
+
     # Async support
     "greenlet>=3.0.0",
     "anyio>=4.0.0",
@@ -372,7 +372,7 @@ markers = [
     "property: Property-based tests using Hypothesis",
     "benchmark: Performance benchmark tests",
     "snapshot: Snapshot comparison tests",
-    
+
     # Feature categories
     "sqlalchemy: Tests requiring SQLAlchemy",
     "fastapi: Tests requiring FastAPI",
@@ -380,7 +380,7 @@ markers = [
     "filters: Tests for filter features",
     "sorting: Tests for sorting features",
     "keyset: Tests for keyset pagination",
-    
+
     # Execution hints
     "slow: Slow running tests (>1s)",
     "flaky: Known flaky tests requiring retry",
@@ -463,5 +463,5 @@ dict_synonyms = ["Struct", "NamedTuple"]
 # ==========================
 [tool.bandit]
 targets = ["src"]
-exclude_dirs = ["tests", "docs", "examples"]
-skips = ["B101"]  # Skip assert_used (used in tests)
+exclude_dirs = ["tests", "docs", "examples", ".opencode"]
+skips = ["B101", "B404", "B603"]  # B101: assert, B404/B603: subprocess in _cli.py

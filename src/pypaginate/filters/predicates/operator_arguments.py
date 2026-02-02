@@ -107,7 +107,7 @@ def _is_pair_sequence(argument: object) -> TypeGuard[Sequence[object]]:
     Returns:
         True if argument is a sequence (not string/bytes).
     """
-    return isinstance(argument, Sequence) and not isinstance(argument, (str, bytes))
+    return isinstance(argument, Sequence) and not isinstance(argument, str | bytes)
 
 
 def _materialize_collection(argument: object) -> Sequence[object]:
@@ -119,9 +119,9 @@ def _materialize_collection(argument: object) -> Sequence[object]:
     Returns:
         A sequence representation of the argument.
     """
-    if isinstance(argument, Sequence) and not isinstance(argument, (str, bytes)):
+    if isinstance(argument, Sequence) and not isinstance(argument, str | bytes):
         return argument
-    if isinstance(argument, Iterable) and not isinstance(argument, (str, bytes)):
+    if isinstance(argument, Iterable) and not isinstance(argument, str | bytes):
         return tuple(argument)
     return (argument,)
 

@@ -55,7 +55,7 @@ def _decode_bytes(value: object) -> str:
     Raises:
         TypeError: If value is not bytes-like.
     """
-    if not isinstance(value, (bytes, bytearray, memoryview)):
+    if not isinstance(value, bytes | bytearray | memoryview):
         raise TypeError
     return bytes(value).decode("utf-8", errors="ignore")
 

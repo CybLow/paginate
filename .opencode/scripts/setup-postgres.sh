@@ -21,7 +21,7 @@ fi
 # Check if container already exists
 if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
     echo "Container '${CONTAINER_NAME}' already exists."
-    
+
     if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
         echo "Container is already running."
     else
@@ -38,10 +38,10 @@ else
         -p "${POSTGRES_PORT}:5432" \
         -v opencode-postgres-data:/var/lib/postgresql/data \
         pgvector/pgvector:pg16
-    
+
     echo "Waiting for PostgreSQL to be ready..."
     sleep 5
-    
+
     # Enable pgvector extension
     echo "Enabling pgvector extension..."
     docker exec "${CONTAINER_NAME}" psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" -c "CREATE EXTENSION IF NOT EXISTS vector;"

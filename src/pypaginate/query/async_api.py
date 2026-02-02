@@ -191,9 +191,7 @@ async def paginate_entities(
         Tuple (items, total) where items are ORM entities.
 
     Example:
-        >>> items, total = await paginate_entities(
-        ...     session, select(User), PageParams(page=1, limit=20)
-        ... )
+        >>> items, total = await paginate_entities(session, select(User), PageParams(page=1, limit=20))
     """
     options = _make_options(kwargs, True)
     return await _collect(session, query, params, _entities, options)
@@ -217,9 +215,7 @@ async def paginate_entities_to_page(
         A Page object containing items, total, and pagination metadata.
 
     Example:
-        >>> page = await paginate_entities_to_page(
-        ...     session, select(User), PageParams(page=1, limit=20)
-        ... )
+        >>> page = await paginate_entities_to_page(session, select(User), PageParams(page=1, limit=20))
     """
     options = _make_options(kwargs, True)
     return await _collect(session, query, params, _entities_page, options)

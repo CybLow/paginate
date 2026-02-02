@@ -22,7 +22,7 @@ def _is_collection(value: object) -> TypeGuard[Collection[object]]:
     Returns:
         True if value is a collection (excluding strings/bytes).
     """
-    if isinstance(value, (str, bytes, bytearray, memoryview)):
+    if isinstance(value, str | bytes | bytearray | memoryview):
         return False
     return isinstance(value, Collection)
 
