@@ -15,53 +15,34 @@ nav = mkdocs_gen_files.Nav()
 src_path = Path("src/pypaginate")
 
 # Modules to document (in order)
+# NOTE: Top-level modules with manual documentation in docs/api/*.md are EXCLUDED
+# to prevent overwriting the manually-written documentation:
+#   - pypaginate (root) -> manual docs/api/index.md
+#   - pypaginate.core -> manual docs/api/core.md
+#   - pypaginate.engines -> manual docs/api/engines.md
+#   - pypaginate.filters -> manual docs/api/filters.md
+#   - pypaginate.sorting -> manual docs/api/sorting.md
+#   - pypaginate.integrations -> manual docs/api/integrations.md
+#   - pypaginate.exceptions -> manual docs/api/exceptions.md
+#   - pypaginate.filters.search.* -> manual docs/api/search.md
+#
+# Submodules of manually-documented modules are also EXCLUDED to avoid
+# duplicate anchor warnings from mkdocs_autorefs.
 MODULES = [
-    # Core
-    ("pypaginate", "Core package exports"),
-    ("pypaginate.core", "Core types and data structures"),
-    ("pypaginate.core.pages", "Page and PageParams classes"),
-    ("pypaginate.core.context", "Pagination context"),
-    ("pypaginate.core.snapshots", "Pagination snapshots"),
-    # Engines
-    ("pypaginate.engines", "Pagination engines"),
-    ("pypaginate.engines.memory", "In-memory pagination"),
-    ("pypaginate.engines.sql", "SQL/SQLAlchemy pagination"),
-    ("pypaginate.engines.keyset", "Cursor-based pagination"),
-    # Query
+    # Query submodules (no manual docs)
     ("pypaginate.query", "Query execution"),
     ("pypaginate.query.async_api", "Async pagination functions"),
-    # Filters
-    ("pypaginate.filters", "Filtering system"),
-    ("pypaginate.filters.predicates", "Predicate-based filtering"),
-    ("pypaginate.filters.predicates.engine", "Filter engine"),
-    ("pypaginate.filters.predicates.builder", "Filter builder"),
-    ("pypaginate.filters.predicates.operators", "Filter operators"),
-    ("pypaginate.filters.sql_adapter", "SQL filter adapter"),
-    # Search
-    ("pypaginate.filters.search", "Search functionality"),
-    ("pypaginate.filters.search.memory_search", "In-memory search"),
-    ("pypaginate.filters.search.sql_search", "SQL search"),
-    ("pypaginate.filters.search.options", "Search options"),
-    ("pypaginate.filters.search.fuzzy", "Fuzzy matching"),
-    # Sorting
-    ("pypaginate.sorting", "Sorting utilities"),
-    ("pypaginate.sorting.engine", "Sort engine"),
-    ("pypaginate.sorting.sql_adapter", "SQL sort adapter"),
-    # Text
+    # Text submodules (no manual docs)
     ("pypaginate.text", "Text processing"),
     ("pypaginate.text.pipelines", "Text pipelines"),
     ("pypaginate.text.patterns", "Text patterns"),
     ("pypaginate.text.utf8", "UTF-8 utilities"),
-    # Database
+    # Database submodules (no manual docs)
     ("pypaginate.database", "Database utilities"),
     ("pypaginate.database.collations", "Database collations"),
     ("pypaginate.database.types", "Database types"),
-    # Integrations
-    ("pypaginate.integrations", "Framework integrations"),
-    ("pypaginate.integrations.fastapi", "FastAPI integration"),
-    # Other
+    # Other (no manual docs)
     ("pypaginate.types", "Type definitions"),
-    ("pypaginate.exceptions", "Exception classes"),
     ("pypaginate.dependencies", "Dependency injection"),
 ]
 
@@ -72,10 +53,8 @@ for module_path, description in MODULES:
     doc_path = Path("api", *parts[1:]) if len(parts) > 1 else Path("api")
     doc_path = doc_path.with_suffix(".md")
 
-    # Handle __init__ modules
-    if len(parts) == 1:
-        doc_path = Path("api/index.md")
-    elif len(parts) == 2:
+    # Handle module paths
+    if len(parts) == 2:
         doc_path = Path(f"api/{parts[1]}.md")
     else:
         doc_path = Path(f"api/{'/'.join(parts[1:])}.md")

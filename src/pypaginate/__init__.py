@@ -7,9 +7,12 @@ other ORMs.
 
 Quick Start
 -----------
->>> from pypaginate import PageParams, paginate_entities
->>> params = PageParams(page=1, limit=20)
->>> page = await paginate_entities(session, select(User), params)
+```python
+from pypaginate import PageParams, paginate_entities
+
+params = PageParams(page=1, limit=20)
+page = await paginate_entities(session, select(User), params)
+```
 
 Architecture
 ------------

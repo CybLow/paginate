@@ -64,6 +64,42 @@ sorted_items = SortEngine.sort(items, "name", reverse=False, ...)
 order_expr = SqlSortAdapter.build_order_expression(User.name, descending=True)
 ```
 
+### FastAPI Integration
+
+```python
+from fastapi import Depends, FastAPI
+from pypaginate.integrations.fastapi import get_pagination_params, PagedResponse
+from pypaginate.core import PageParams
+
+app = FastAPI()
+
+@app.get("/users", response_model=PagedResponse[UserSchema])
+async def list_users(
+    session: AsyncSession = Depends(get_session),
+    params: PageParams = Depends(get_pagination_params),
+):
+    stmt = select(User).order_by(User.id)
+    page = await paginate_entities_to_page(session, stmt, params)
+    return PagedResponse.from_page(page)
+```
+
+### SQLAlchemy Integration
+
+```python
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from pypaginate.query import paginate_entities_to_page
+from pypaginate.core import PageParams
+
+async def list_users(session: AsyncSession):
+    stmt = select(User).order_by(User.created_at.desc())
+    params = PageParams(page=1, limit=20)
+    
+    # Returns a Page object with items, total, pagination metadata
+    page = await paginate_entities_to_page(session, stmt, params)
+    return page
+```
+
 ## Import Patterns
 
 ### Recommended Imports
@@ -95,9 +131,10 @@ from pypaginate.filters.search import SqlSearchService, SearchOptions
 
 # Exceptions
 from pypaginate.exceptions import (
-    PaginationError,
+    PaginatorException,
     PaginationConfigurationError,
-    InvalidPageError,
+    FilterException,
+    ValidationException,
 )
 ```
 

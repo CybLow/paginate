@@ -4,7 +4,7 @@ The exceptions module provides error classes for pagination-related errors.
 
 ## Base Exception
 
-::: pypaginate.exceptions.PaginationError
+::: pypaginate.exceptions.PaginatorException
     options:
       show_source: true
 
@@ -14,33 +14,39 @@ The exceptions module provides error classes for pagination-related errors.
     options:
       show_source: true
 
-## Validation Errors
-
-::: pypaginate.exceptions.InvalidPageError
-    options:
-      show_source: true
-
-::: pypaginate.exceptions.InvalidLimitError
-    options:
-      show_source: true
-
 ## Filter Errors
 
-::: pypaginate.exceptions.FilterError
+::: pypaginate.exceptions.FilterException
     options:
       show_source: true
 
-::: pypaginate.exceptions.InvalidOperatorError
-    options:
-      show_source: true
-
-::: pypaginate.exceptions.InvalidFieldError
+::: pypaginate.exceptions.FilterValidationError
     options:
       show_source: true
 
 ## Search Errors
 
-::: pypaginate.exceptions.SearchError
+::: pypaginate.exceptions.SearchException
+    options:
+      show_source: true
+
+::: pypaginate.exceptions.SearchQueryError
+    options:
+      show_source: true
+
+::: pypaginate.exceptions.SearchNormalizationError
+    options:
+      show_source: true
+
+## Sort Errors
+
+::: pypaginate.exceptions.SortException
+    options:
+      show_source: true
+
+## Validation Errors
+
+::: pypaginate.exceptions.ValidationException
     options:
       show_source: true
 
@@ -50,20 +56,18 @@ The exceptions module provides error classes for pagination-related errors.
 
 ```python
 from pypaginate.exceptions import (
-    PaginationError,
+    PaginatorException,
     PaginationConfigurationError,
-    InvalidPageError,
 )
 
 try:
     page = await paginate_entities_to_page(session, stmt, params)
-except InvalidPageError as e:
-    # Handle invalid page number
-    print(f"Invalid page: {e}")
 except PaginationConfigurationError as e:
     # Handle configuration issues
     print(f"Config error: {e}")
-except PaginationError as e:
+    if e.details:
+        print(f"Details: {e.details}")
+except PaginatorException as e:
     # Catch all pagination errors
     print(f"Pagination error: {e}")
 ```
@@ -74,35 +78,36 @@ except PaginationError as e:
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pypaginate.exceptions import (
-    PaginationError,
-    InvalidPageError,
-    InvalidLimitError,
+    PaginatorException,
+    PaginationConfigurationError,
+    ValidationException,
 )
 
 app = FastAPI()
 
-@app.exception_handler(InvalidPageError)
-async def invalid_page_handler(request: Request, exc: InvalidPageError):
+@app.exception_handler(ValidationException)
+async def validation_error_handler(request: Request, exc: ValidationException):
     return JSONResponse(
         status_code=400,
         content={
-            "error": "invalid_page",
+            "error": "validation_error",
+            "field": exc.field,
             "message": str(exc),
         },
     )
 
-@app.exception_handler(InvalidLimitError)
-async def invalid_limit_handler(request: Request, exc: InvalidLimitError):
+@app.exception_handler(PaginationConfigurationError)
+async def config_error_handler(request: Request, exc: PaginationConfigurationError):
     return JSONResponse(
         status_code=400,
         content={
-            "error": "invalid_limit",
+            "error": "configuration_error",
             "message": str(exc),
         },
     )
 
-@app.exception_handler(PaginationError)
-async def pagination_error_handler(request: Request, exc: PaginationError):
+@app.exception_handler(PaginatorException)
+async def pagination_error_handler(request: Request, exc: PaginatorException):
     return JSONResponse(
         status_code=500,
         content={
@@ -116,19 +121,37 @@ async def pagination_error_handler(request: Request, exc: PaginationError):
 
 ```python
 from pypaginate.exceptions import (
-    FilterError,
-    InvalidOperatorError,
-    InvalidFieldError,
+    FilterException,
+    FilterValidationError,
 )
 
 try:
     conditions = engine.build_conditions(User, filters)
-except InvalidOperatorError as e:
-    print(f"Unknown operator: {e}")
-except InvalidFieldError as e:
-    print(f"Invalid field: {e}")
-except FilterError as e:
+except FilterValidationError as e:
+    print(f"Invalid filter: {e}")
+    if e.details:
+        print(f"Details: {e.details}")
+except FilterException as e:
     print(f"Filter error: {e}")
+```
+
+### Search Error Handling
+
+```python
+from pypaginate.exceptions import (
+    SearchException,
+    SearchQueryError,
+    SearchNormalizationError,
+)
+
+try:
+    results = search_service.search(items, query)
+except SearchQueryError as e:
+    print(f"Invalid query: {e}")
+except SearchNormalizationError as e:
+    print(f"Normalization failed: {e}")
+except SearchException as e:
+    print(f"Search error: {e}")
 ```
 
 ### Custom Exception Details
@@ -141,22 +164,24 @@ try:
     strategy = get_pagination_strategy("unknown")
 except PaginationConfigurationError as e:
     print(f"Error: {e}")
-    # Access error details if available
-    if hasattr(e, 'details'):
-        print(f"Details: {e.details}")
+    print(f"Field: {e.field}")
+    print(f"Value: {e.value}")
+    print(f"Reason: {e.reason}")
+    print(f"Details: {e.details}")
 ```
 
 ## Exception Hierarchy
 
 ```
-PaginationError (base)
+PaginatorException (base)
 ├── PaginationConfigurationError
-├── InvalidPageError
-├── InvalidLimitError
-├── FilterError
-│   ├── InvalidOperatorError
-│   └── InvalidFieldError
-└── SearchError
+├── FilterException
+│   └── FilterValidationError
+├── SearchException
+│   ├── SearchQueryError
+│   └── SearchNormalizationError
+├── SortException
+└── ValidationException
 ```
 
 ## Best Practices
@@ -166,3 +191,4 @@ PaginationError (base)
 3. **Return appropriate HTTP status codes** in APIs
 4. **Include helpful error messages** for API consumers
 5. **Don't expose internal details** in production error responses
+6. **Access exception attributes** (field, value, details) for richer error handling

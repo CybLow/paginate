@@ -204,7 +204,7 @@ pypaginate is released under the [MIT License](https://opensource.org/licenses/M
 
 ---
 
-<div style="text-align: center; margin-top: 2rem;">
+<div style="text-align: center; margin-top: 2rem;" markdown>
 
 [Get Started](getting-started/index.md){ .md-button .md-button--primary }
 [View on GitHub](https://github.com/CybLow/pypaginate){ .md-button }
