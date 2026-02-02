@@ -57,10 +57,10 @@ jobs:
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 🐍 Setup UV
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
@@ -96,19 +96,19 @@ jobs:
           uv run cyclonedx-py environment -o sbom.xml --format xml
 
       - name: 🔏 Generate build attestation
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: dist/*
 
       - name: 📤 Upload dist
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: dist
           path: dist/
           retention-days: 5
 
       - name: 📤 Upload SBOM
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: sbom
           path: |
@@ -135,7 +135,7 @@ jobs:
 
     steps:
       - name: 📥 Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: dist
           path: dist/
@@ -166,7 +166,7 @@ jobs:
 
     steps:
       - name: 📥 Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: dist
           path: dist/
@@ -189,13 +189,13 @@ jobs:
 
     steps:
       - name: 📥 Download dist
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: dist
           path: dist/
 
       - name: 📥 Download SBOM
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: sbom
           path: sbom/
