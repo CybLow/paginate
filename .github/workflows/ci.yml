@@ -298,18 +298,7 @@ jobs:
         run: uv sync --frozen --all-extras --group test
 
       - name: Run integration tests
-        run: |
-          uv run pytest tests/ \
-            --benchmark-disable \
-            --cov=pypaginate \
-            --cov-report=xml:coverage-integration-${{ matrix.os }}.xml \
-            --cov-report=term-missing:skip-covered \
-            --junitxml=junit-integration-${{ matrix.os }}.xml \
-            -v \
-            --ignore=tests/benchmarks \
-            --ignore=tests/e2e \
-            --reruns 2 \
-            --reruns-delay 1
+        run: uv run pytest tests/ --benchmark-disable --cov=pypaginate --cov-report=xml:coverage-integration-${{ matrix.os }}.xml --cov-report=term-missing:skip-covered --junitxml=junit-integration-${{ matrix.os }}.xml -v --ignore=tests/benchmarks --ignore=tests/e2e --reruns 2 --reruns-delay 1
 
       - name: Upload coverage
         if: matrix.os == 'ubuntu-latest'
@@ -483,7 +472,7 @@ jobs:
 
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && hashFiles('bandit-results.sarif') != ''
         with:
           sarif_file: bandit-results.sarif
           category: bandit
@@ -511,7 +500,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [setup, test-unit, test-integration, test-property]
-    if: always() && github.event_name == 'pull_request'
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       checks: write
       pull-requests: write
