@@ -12,7 +12,7 @@ from pathlib import Path
 from sphinx_polyversion.api import apply_overrides
 from sphinx_polyversion.driver import DefaultDriver
 from sphinx_polyversion.git import Git, GitRef, GitRefType, file_predicate, refs_by_type
-from sphinx_polyversion.pyvenv import Pip
+from sphinx_polyversion.pyvenv import Pip, VenvWrapper
 from sphinx_polyversion.sphinx import SphinxBuilder
 
 # =============================================================================
@@ -33,6 +33,9 @@ SOURCE_DIR = "docs-sphinx"
 
 #: Arguments to pass to `sphinx-build`
 SPHINX_ARGS = "-a -v"
+
+#: Arguments to pass to `pip install`
+PIP_ARGS = ["-e", ".[all]"]
 
 #: Mock data used for building local version (when no git tags exist)
 MOCK_DATA = {
@@ -102,8 +105,14 @@ DefaultDriver(
         predicate=file_predicate([src]),  # exclude refs without source dir
     ),
     builder=SphinxBuilder(src, args=SPHINX_ARGS.split()),
-    env=Pip.factory(args=["-e", ".[all]"]),  # Install package in editable mode
-    template_dir=root / src / "_templates",
+    env=Pip.factory(
+        venv=Path(".venv-docs"),
+        args=PIP_ARGS,
+        creator=VenvWrapper(),
+        temporary=True,  # Create venv in temp dir relative to source path
+    ),
+    # Note: Don't set template_dir - use polyversion's default root templates
+    # The templates in _templates/ are Sphinx templates that extend RTD theme
     static_dir=root / src / "_static",
     data_factory=data,
     root_data_factory=root_data,
