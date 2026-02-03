@@ -1,7 +1,8 @@
 # =============================================================================
 # Documentation Deployment - pypaginate
 # =============================================================================
-# Builds and deploys documentation to GitHub Pages using MkDocs
+# Builds and deploys Sphinx documentation to GitHub Pages
+# Uses sphinx-multiversion for multi-version documentation
 # =============================================================================
 
 name: Documentation
@@ -10,18 +11,19 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*.*.*'  # Trigger on version tags
     paths:
-      - 'docs/**'
-      - 'mkdocs.yml'
+      - 'docs-sphinx/**'
       - 'src/pypaginate/**'
       - '.github/workflows/docs.yml'
+      - 'pyproject.toml'
 
   pull_request:
     branches:
       - main
     paths:
-      - 'docs/**'
-      - 'mkdocs.yml'
+      - 'docs-sphinx/**'
       - 'src/pypaginate/**'
 
   workflow_dispatch:
@@ -42,31 +44,63 @@ jobs:
   build:
     name: Build Documentation
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Full history for sphinx-multiversion
 
       - name: 🐍 Setup UV + Python
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: 📦 Install documentation dependencies
+      - name: 📦 Install dependencies
         run: uv sync --frozen --group docs --all-extras
 
-      - name: 🏗️ Build documentation
-        run: uv run mkdocs build --strict
+      - name: 🏗️ Build documentation (multi-version)
+        run: |
+          cd docs-sphinx
+          # Build all versions using sphinx-multiversion
+          uv run sphinx-multiversion . ../_build/html
+          
+          # If no versions were built (no tags yet), do a regular build
+          if [ ! -d "../_build/html/main" ] && [ ! "$(ls -A ../_build/html 2>/dev/null)" ]; then
+            echo "No versions found, building single version..."
+            uv run sphinx-build -b html . ../_build/html
+          fi
+
+      - name: 📄 Create root index.html redirect
+        run: |
+          # Create redirect from root to main (or latest tag)
+          if [ -d "_build/html/main" ]; then
+            cat > _build/html/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Redirecting to pypaginate documentation</title>
+            <meta http-equiv="refresh" content="0; url=./main/">
+            <link rel="canonical" href="https://cyblow.github.io/pypaginate/main/">
+          </head>
+          <body>
+            <p>Redirecting to <a href="./main/">pypaginate documentation</a>...</p>
+          </body>
+          </html>
+          EOF
+          fi
+
+      - name: 📄 Create .nojekyll
+        run: touch _build/html/.nojekyll
 
       - name: 📤 Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
-          path: site/
+          path: _build/html/
 
   deploy:
     name: Deploy to GitHub Pages

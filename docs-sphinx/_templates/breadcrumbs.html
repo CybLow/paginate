@@ -1,0 +1,18 @@
+{# Override breadcrumbs to add Home link #}
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="{{ pathto('index') }}" class="icon icon-home" aria-label="Home"></a></li>
+    {%- block breadcrumbs %}
+    {%- for doc in parents %}
+      <li class="breadcrumb-item"><a href="{{ doc.link|e }}">{{ doc.title }}</a></li>
+    {%- endfor %}
+    <li class="breadcrumb-item active">{{ title }}</li>
+    {%- endblock %}
+    {% if show_source and has_source and sourcename %}
+    <li class="wy-breadcrumbs-aside">
+      <a href="{{ pathto('_sources/' + sourcename, true)|e }}" rel="nofollow">{{ _('View page source') }}</a>
+    </li>
+    {% endif %}
+  </ul>
+  <hr/>
+</div>

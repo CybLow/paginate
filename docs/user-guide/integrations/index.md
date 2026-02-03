@@ -1,6 +1,14 @@
 # Framework Integrations
 
-pypaginate provides seamless integrations with popular Python frameworks and ORMs. These integrations simplify common patterns and provide framework-specific utilities.
+pypaginate provides seamless integrations with popular Python frameworks and ORMs.
+
+!!! tip "Installation"
+    ```bash
+    pip install pypaginate[fastapi]  # For FastAPI
+    pip install pypaginate[all]      # All integrations
+    ```
+
+These integrations simplify common patterns and provide framework-specific utilities.
 
 ## Available Integrations
 

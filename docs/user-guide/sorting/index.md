@@ -1,6 +1,15 @@
 # Sorting
 
-pypaginate provides flexible sorting capabilities for both in-memory collections and SQL queries. The sorting system supports:
+pypaginate provides flexible sorting capabilities for both in-memory collections and SQL queries.
+
+!!! tip "Quick Start"
+    ```python
+    from pypaginate.sorting import sort_items
+    
+    sorted_users = sort_items(users, sort_field="name", reverse=False)
+    ```
+
+The sorting system supports:
 
 - **Single-field sorting** with ascending/descending order
 - **Multi-column sorting** for complex ordering requirements

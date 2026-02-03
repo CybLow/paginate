@@ -2,6 +2,14 @@
 
 pypaginate provides powerful filtering capabilities using JSON Logic.
 
+!!! tip "Quick Start"
+    ```python
+    from pypaginate.filters.predicates import FilterEngine
+    
+    engine = FilterEngine()
+    result = engine.filter(items, {"status": {"eq": "active"}})
+    ```
+
 ## Overview
 
 | Feature | Description |

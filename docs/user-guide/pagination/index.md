@@ -2,6 +2,11 @@
 
 pypaginate provides multiple pagination strategies to suit different use cases.
 
+!!! tip "Quick Decision Guide"
+    - **Small datasets (<100k rows)?** → Use [Offset Pagination](offset.md)
+    - **Large datasets or infinite scroll?** → Use [Keyset Pagination](keyset.md)
+    - **In-memory data?** → Use [Memory Pagination](memory.md)
+
 ## Overview
 
 | Strategy | Best For | Performance |

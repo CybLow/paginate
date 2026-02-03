@@ -2,6 +2,15 @@
 
 pypaginate provides powerful text search capabilities with fuzzy matching.
 
+!!! tip "Quick Start"
+    ```python
+    from pypaginate.filters.search import MemorySearchService
+    from pypaginate.filters.search.options import SearchOptions
+    
+    service = MemorySearchService(options=SearchOptions(fields=["name"]))
+    results = service.search(items, "query")
+    ```
+
 ## Overview
 
 | Feature | Description |

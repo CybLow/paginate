@@ -77,17 +77,16 @@ def _group_pyparsing_tokens(
 
 @dataclass(frozen=True)
 class QueryTokens:
-    """Normalized tokens extracted from a raw query string.
-
-    Attributes:
-        terms: Lowercased, normalized individual tokens.
-        phrases: Lowercased, normalized quoted phrases.
-        raw: Original unnormalized terms (for ID matching, etc.).
-    """
+    """Normalized tokens extracted from a raw query string."""
 
     terms: tuple[str, ...]
+    """Lowercased, normalized individual tokens."""
+
     phrases: tuple[str, ...]
+    """Lowercased, normalized quoted phrases."""
+
     raw: tuple[str, ...]
+    """Original unnormalized terms (for ID matching, etc.)."""
 
     def has_content(self) -> bool:
         """Check if tokens contain any searchable content.
@@ -99,11 +98,7 @@ class QueryTokens:
 
 
 class TokenParser:
-    """Extract quoted phrases and free terms from a search query.
-
-    Attributes:
-        _GRAMMAR: Shared pyparsing grammar for tokenization.
-    """
+    """Extract quoted phrases and free terms from a search query."""
 
     _GRAMMAR: ClassVar[ParserElement | None] = None
 

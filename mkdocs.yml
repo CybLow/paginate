@@ -12,79 +12,69 @@ edit_uri: edit/main/docs/
 
 copyright: Copyright &copy; 2024-2025 CybLow
 
-theme:
-  name: material
-  language: en
-  palette:
-    - scheme: default
-      primary: deep purple
-      accent: purple
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    - scheme: slate
-      primary: deep purple
-      accent: purple
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
-  features:
-    - navigation.instant
-    - navigation.instant.prefetch
-    - navigation.tracking
-    - navigation.tabs
-    - navigation.tabs.sticky
-    - navigation.sections
-    - navigation.expand
-    - navigation.path
-    - navigation.top
-    - navigation.indexes
-    - toc.follow
-    - search.suggest
-    - search.highlight
-    - search.share
-    - content.tabs.link
-    - content.code.copy
-    - content.code.annotate
-    - content.tooltips
-  icon:
-    repo: fontawesome/brands/github
-  logo: assets/logo.svg
-  favicon: assets/favicon.svg
+# Strict mode for catching broken links and missing refs
+strict: true
 
+# ReadTheDocs theme configuration
+theme:
+  name: readthedocs
+  locale: en
+  highlightjs: true
+  hljs_languages:
+    - python
+    - yaml
+    - bash
+    - json
+    - sql
+    - javascript
+
+# Navigation structure (2 levels max for RTD theme)
 nav:
   - Home: index.md
+
   - Getting Started:
-      - getting-started/index.md
+      - Overview: getting-started/index.md
       - Installation: getting-started/installation.md
       - Quick Start: getting-started/quickstart.md
       - First Steps: getting-started/first-steps.md
-  - User Guide:
-      - user-guide/index.md
-      - Pagination:
-          - user-guide/pagination/index.md
-          - Offset Pagination: user-guide/pagination/offset.md
-          - Cursor/Keyset Pagination: user-guide/pagination/keyset.md
-          - In-Memory Pagination: user-guide/pagination/memory.md
-      - Filtering:
-          - user-guide/filtering/index.md
-          - Basic Filtering: user-guide/filtering/basic.md
-          - JSON Logic: user-guide/filtering/json-logic.md
-          - Operators Reference: user-guide/filtering/operators.md
-      - Search:
-          - user-guide/search/index.md
-          - Text Search: user-guide/search/text-search.md
-          - Fuzzy Matching: user-guide/search/fuzzy.md
-      - Sorting:
-          - user-guide/sorting/index.md
-          - Basic Sorting: user-guide/sorting/basic.md
-          - Multi-Column Sorting: user-guide/sorting/multi-column.md
-      - Integrations:
-          - user-guide/integrations/index.md
-          - FastAPI: user-guide/integrations/fastapi.md
-          - SQLAlchemy: user-guide/integrations/sqlalchemy.md
+
+  - Pagination:
+      - Overview: user-guide/pagination/index.md
+      - Offset Pagination: user-guide/pagination/offset.md
+      - Keyset Pagination: user-guide/pagination/keyset.md
+      - In-Memory: user-guide/pagination/memory.md
+
+  - Filtering:
+      - Overview: user-guide/filtering/index.md
+      - Basic Filtering: user-guide/filtering/basic.md
+      - JSON Logic: user-guide/filtering/json-logic.md
+      - Operators: user-guide/filtering/operators.md
+
+  - Search:
+      - Overview: user-guide/search/index.md
+      - Text Search: user-guide/search/text-search.md
+      - Fuzzy Matching: user-guide/search/fuzzy.md
+
+  - Sorting:
+      - Overview: user-guide/sorting/index.md
+      - Basic Sorting: user-guide/sorting/basic.md
+      - Multi-Column: user-guide/sorting/multi-column.md
+
+  - Integrations:
+      - Overview: user-guide/integrations/index.md
+      - FastAPI: user-guide/integrations/fastapi.md
+      - SQLAlchemy: user-guide/integrations/sqlalchemy.md
+
+  - Concepts:
+      - Overview: concepts/index.md
+      - Pagination Strategies: concepts/pagination-strategies.md
+      - Cursor Encoding: concepts/cursor-encoding.md
+      - Filter Expressions: concepts/filter-expressions.md
+      - Search & Relevance: concepts/search-relevance.md
+      - Architecture: concepts/architecture.md
+
   - API Reference:
-      - api/index.md
+      - Overview: api/index.md
       - Core: api/core.md
       - Engines: api/engines.md
       - Filters: api/filters.md
@@ -92,35 +82,42 @@ nav:
       - Sorting: api/sorting.md
       - Integrations: api/integrations.md
       - Exceptions: api/exceptions.md
+      - Query Utilities: api/query.md
+      - Text Processing: api/text.md
+      - Database Types: api/database.md
+
   - Examples:
-      - examples/index.md
+      - Overview: examples/index.md
       - Basic Pagination: examples/basic-pagination.md
       - Filtering: examples/filtering.md
-      - FastAPI Integration: examples/fastapi.md
-      - Keyset Pagination: examples/keyset.md
+      - FastAPI: examples/fastapi.md
+      - Keyset: examples/keyset.md
+
   - Contributing:
-      - contributing/index.md
-      - Development Setup: contributing/development.md
-      - Testing Guide: contributing/testing.md
+      - Overview: contributing/index.md
+      - Development: contributing/development.md
+      - Testing: contributing/testing.md
       - Code Style: contributing/code-style.md
       - Architecture: contributing/architecture.md
       - Roadmap: contributing/roadmap.md
-      - Internal Notes: contributing/internals.md
+      - Code of Conduct: CODE_OF_CONDUCT.md
+
   - Changelog: changelog.md
   - Comparison: comparison.md
 
+# Plugins
 plugins:
   - search
-  - gen-files:
-      scripts:
-        - docs/scripts/gen_ref_pages.py
-  - literate-nav:
-      nav_file: SUMMARY.md
-  - section-index
   - mkdocstrings:
       handlers:
         python:
           paths: [src]
+          import:
+            # Cross-reference external libraries
+            - https://docs.python.org/3/objects.inv
+            - https://docs.sqlalchemy.org/en/20/objects.inv
+            - https://docs.pydantic.dev/latest/objects.inv
+            - https://fastapi.tiangolo.com/objects.inv
           options:
             docstring_style: google
             show_source: true
@@ -138,7 +135,9 @@ plugins:
               - "!^_"
               - "!^__"
 
+# Markdown extensions
 markdown_extensions:
+  # Standard extensions
   - abbr
   - admonition
   - attr_list
@@ -149,51 +148,37 @@ markdown_extensions:
   - toc:
       permalink: true
       permalink_title: Link to this section
-  - pymdownx.arithmatex:
-      generic: true
-  - pymdownx.betterem:
-      smart_enable: all
-  - pymdownx.caret
+
+  # PyMdownx extensions for enhanced formatting
   - pymdownx.details
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.inlinehilite
-  - pymdownx.keys
-  - pymdownx.mark
-  - pymdownx.smartsymbols
-  - pymdownx.snippets:
-      base_path: ['.', 'examples']
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.snippets:
+      base_path: ['.', 'examples']
+      auto_append:
+        - docs/includes/abbreviations.md
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.tasklist:
       custom_checkbox: true
-  - pymdownx.tilde
-  - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
-extra:
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/CybLow/pypaginate
-    - icon: fontawesome/brands/python
-      link: https://pypi.org/project/pypaginate/
-  version:
-    provider: mike
-    default: stable
-  analytics:
-    provider: google
-    property: G-XXXXXXXXXX
-
+# Custom CSS
 extra_css:
   - stylesheets/extra.css
 
+# Extra JavaScript for Mermaid diagrams
+extra_javascript:
+  - https://unpkg.com/mermaid@10/dist/mermaid.min.js
+  - javascripts/mermaid-init.js
+
+# Watch source files for live reload
 watch:
   - src/pypaginate

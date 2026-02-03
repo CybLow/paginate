@@ -18,14 +18,7 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 
 
 class SqlSearchService:
-    """Facade orchestrating token parsing and SQL condition building.
-
-    Attributes:
-        _parser: Token parser instance used to extract terms and phrases.
-        _normalizer: SQL text normalizer for columns and inputs.
-        _builder: Condition builder composing SQLAlchemy expressions.
-        _id_pattern: Regex used to recognize identifier-like tokens.
-    """
+    """Facade orchestrating token parsing and SQL condition building."""
 
     DEFAULT_ID_PATTERN = re.compile(r"^[A-Za-z0-9:_\-]{6,}$")
 
