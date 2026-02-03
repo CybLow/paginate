@@ -6,7 +6,7 @@ This configuration provides:
 - Modern RTD theme with Material-like UX
 - Full Markdown support via MyST parser
 - API autodoc with type hints
-- Version switching via sphinx-multiversion
+- Version switching via sphinx-polyversion
 - Cards, tabs, dropdowns via sphinx-design
 - Copy buttons on code blocks
 """
@@ -19,6 +19,27 @@ from datetime import datetime
 
 # Add source path for autodoc
 sys.path.insert(0, os.path.abspath("../src"))
+
+# =============================================================================
+# POLYVERSION DATA (loaded when building with sphinx-polyversion)
+# =============================================================================
+
+# Try to load version data from sphinx-polyversion
+# This only works when POLYVERSION_DATA env var is set (by sphinx-polyversion driver)
+if os.environ.get("POLYVERSION_DATA"):
+    try:
+        from sphinx_polyversion.api import load
+
+        load(globals())
+        # This adds to global scope:
+        # html_context["current"] = GitRef(...)
+        # html_context["tags"] = [GitRef(...), ...]
+        # html_context["branches"] = [GitRef(...), ...]
+        # html_context["revisions"] = [GitRef(...), ...]
+        # html_context["latest"] = GitRef(...)
+    except ImportError:
+        # sphinx-polyversion not installed
+        pass
 
 # =============================================================================
 # PROJECT INFORMATION
@@ -64,10 +85,6 @@ extensions = [
     # Diagrams
     # -------------------------------------------------------------------------
     "sphinxcontrib.mermaid",  # Mermaid diagrams
-    # -------------------------------------------------------------------------
-    # Versioning
-    # -------------------------------------------------------------------------
-    "sphinx_multiversion",  # Version selector
 ]
 
 # =============================================================================
@@ -248,18 +265,6 @@ ogp_type = "website"
 
 # GitHub Pages path prefix
 notfound_urls_prefix = "/pypaginate/"
-
-# =============================================================================
-# SPHINX-MULTIVERSION SETTINGS
-# =============================================================================
-
-# Which tags/branches to build
-smv_tag_whitelist = r"^v\d+\.\d+\.\d+$"  # v1.0.0, v1.2.3, etc.
-smv_branch_whitelist = r"^main$"  # main branch = latest
-smv_remote_whitelist = r"^origin$"
-smv_released_pattern = r"^tags/.*$"
-smv_outputdir_format = "{ref.name}"
-smv_prefer_remote_refs = False
 
 # =============================================================================
 # HTML OUTPUT SETTINGS

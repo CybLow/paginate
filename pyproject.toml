@@ -169,25 +169,26 @@ build = [
 ]
 # Documentation (Sphinx + RTD theme)
 docs = [
-    # Core Sphinx (pinned to 7.x for sphinx-multiversion compatibility)
-    "sphinx>=7.0,<8.0",
-    "sphinx-rtd-theme>=2.0",
+    # Core Sphinx (latest version)
+    "sphinx>=9.0",
+    "sphinx-rtd-theme>=3.0",
     
     # Modern UX extensions
     "sphinx-design>=0.6",              # Cards, grids, tabs, dropdowns
     "sphinx-copybutton>=0.5",          # Copy button on code blocks
-    "sphinx-autodoc-typehints>=2.3",   # Type hints in API docs
+    "sphinx-autodoc-typehints>=3.0",   # Type hints in API docs
     
     # Markdown support
-    "myst-parser>=3.0,<4.0",           # Full Markdown support (3.x for Sphinx 7)
+    "myst-parser>=4.0",                # Full Markdown support
     
     # Diagrams & extras
     "sphinxcontrib-mermaid>=0.9",      # Mermaid diagrams
     "sphinxext-opengraph>=0.9",        # Social preview cards
     "sphinx-notfound-page>=1.0",       # Custom 404 page
     
-    # Versioning for releases
-    "sphinx-multiversion>=0.2",        # Version selector
+    # Versioning for releases (modern alternative to sphinx-multiversion)
+    "sphinx-polyversion>=2.0",         # Multi-version docs builder
+    "jinja2>=3.0",                     # Required for polyversion templates
     
     # All optional dependencies for complete autodoc
     "SQLAlchemy>=2.0.45",

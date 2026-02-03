@@ -2,7 +2,7 @@
 # Documentation Deployment - pypaginate
 # =============================================================================
 # Builds and deploys Sphinx documentation to GitHub Pages
-# Uses sphinx-multiversion for multi-version documentation
+# Uses sphinx-polyversion for multi-version documentation
 # =============================================================================
 
 name: Documentation
@@ -50,7 +50,7 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for sphinx-multiversion
+          fetch-depth: 0  # Full history for sphinx-polyversion
 
       - name: 🐍 Setup UV + Python
         uses: astral-sh/setup-uv@v5
@@ -62,15 +62,14 @@ jobs:
       - name: 📦 Install dependencies
         run: uv sync --frozen --group docs --all-extras
 
-      - name: 🏗️ Build documentation (multi-version)
+      - name: 🏗️ Build documentation
         run: |
-          cd docs-sphinx
-          # Build all versions using sphinx-multiversion
-          uv run sphinx-multiversion . ../_build/html
-          
-          # If no versions were built (no tags yet), do a regular build
-          if [ ! -d "../_build/html/main" ] && [ ! "$(ls -A ../_build/html 2>/dev/null)" ]; then
-            echo "No versions found, building single version..."
+          # Try multi-version build first
+          if uv run sphinx-polyversion docs-sphinx/poly.py 2>/dev/null; then
+            echo "Multi-version build successful"
+          else
+            echo "No matching refs found or polyversion failed, building single version..."
+            cd docs-sphinx
             uv run sphinx-build -b html . ../_build/html
           fi
 
