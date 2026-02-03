@@ -1,5 +1,7 @@
 # Sphinx documentation dependencies
-sphinx>=7.0
+# Pinned to Sphinx 7.x for sphinx-multiversion compatibility
+sphinx>=7.0,<8.0
 sphinx-rtd-theme>=2.0
-myst-parser>=2.0
+myst-parser>=3.0,<4.0
 sphinxcontrib-mermaid>=0.9
+sphinx-multiversion>=0.2
