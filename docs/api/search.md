@@ -2,14 +2,6 @@
 
 The search module provides text search capabilities including fuzzy matching and SQL search services.
 
-!!! note "API Reference"
-    For detailed API documentation, see:
-    
-    - [Search Options](filters/search/options.md)
-    - [SQL Search](filters/search/sql_search.md)
-    - [Memory Search](filters/search/memory_search.md)
-    - [Fuzzy Matching](filters/search/fuzzy.md)
-
 ## Overview
 
 The search module provides:
@@ -18,6 +10,30 @@ The search module provides:
 - **MemorySearchService** - In-memory search for Python collections
 - **SearchOptions** - Configuration for search behavior
 - **Fuzzy matching** - Typo-tolerant searching
+
+## SqlSearchService
+
+::: pypaginate.filters.search.sql_search.SqlSearchService
+    options:
+      show_source: true
+      members:
+        - __init__
+        - apply_search
+
+## MemorySearchService
+
+::: pypaginate.filters.search.memory_search.MemorySearchService
+    options:
+      show_source: true
+      members:
+        - __init__
+        - search
+
+## SearchOptions
+
+::: pypaginate.filters.search.options.SearchOptions
+    options:
+      show_source: true
 
 ## Usage Examples
 

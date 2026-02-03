@@ -2,6 +2,9 @@
 
 Offset pagination is the traditional approach where you specify a page number and items per page.
 
+!!! tip "When to Use"
+    Offset pagination is best for **small to medium datasets** (<100k rows) where users need page numbers in the UI and rarely go beyond page 10.
+
 ## Overview
 
 Offset pagination uses `LIMIT` and `OFFSET` SQL clauses:
@@ -134,32 +137,33 @@ for row in result.items:
 
 For complex queries with joins, automatic count may be slow. Provide a custom count:
 
-```python
-from sqlalchemy import func, select
+??? example "Custom Count Query Example"
+    ```python
+    from sqlalchemy import func, select
 
-# Complex query with joins
-stmt = (
-    select(User)
-    .join(Profile)
-    .where(Profile.is_public == True)
-    .order_by(User.name)
-)
+    # Complex query with joins
+    stmt = (
+        select(User)
+        .join(Profile)
+        .where(Profile.is_public == True)
+        .order_by(User.name)
+    )
 
-# Optimized count query
-count_stmt = (
-    select(func.count(User.id))
-    .join(Profile)
-    .where(Profile.is_public == True)
-)
+    # Optimized count query
+    count_stmt = (
+        select(func.count(User.id))
+        .join(Profile)
+        .where(Profile.is_public == True)
+    )
 
-# Use custom count
-result = await paginate_entities(
-    session, 
-    stmt, 
-    params,
-    count_statement=count_stmt
-)
-```
+    # Use custom count
+    result = await paginate_entities(
+        session, 
+        stmt, 
+        params,
+        count_statement=count_stmt
+    )
+    ```
 
 ## Ordering Requirements
 
@@ -235,25 +239,24 @@ OFFSET 0 LIMIT 20
 OFFSET 19980 LIMIT 20
 ```
 
-### Mitigation Strategies
+??? info "Mitigation Strategies"
+    1. **Limit maximum page**: Don't allow pages beyond a reasonable number
+    2. **Use keyset pagination**: For deep pagination needs
+    3. **Cache counts**: Expensive count queries can be cached
+    4. **Use covering indexes**: Ensure ORDER BY columns are indexed
 
-1. **Limit maximum page**: Don't allow pages beyond a reasonable number
-2. **Use keyset pagination**: For deep pagination needs
-3. **Cache counts**: Expensive count queries can be cached
-4. **Use covering indexes**: Ensure ORDER BY columns are indexed
+    ```python
+    # Limit maximum accessible pages
+    MAX_PAGE = 100
 
-```python
-# Limit maximum accessible pages
-MAX_PAGE = 100
-
-@app.get("/users")
-async def list_users(
-    page: int = Query(1, ge=1, le=MAX_PAGE),
-    limit: int = Query(20, ge=1, le=100),
-):
-    params = PageParams(page=page, limit=limit)
-    ...
-```
+    @app.get("/users")
+    async def list_users(
+        page: int = Query(1, ge=1, le=MAX_PAGE),
+        limit: int = Query(20, ge=1, le=100),
+    ):
+        params = PageParams(page=page, limit=limit)
+        ...
+    ```
 
 ## Sync Usage
 

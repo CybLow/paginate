@@ -14,10 +14,6 @@ class FilterTextNormalizer:
 
     Provides case-sensitive or case-insensitive text matching for
     filter predicates.
-
-    Attributes:
-        _case_sensitive: Whether to preserve case during normalization.
-        _memory_normalizer: Memory text normalizer instance.
     """
 
     def __init__(self, *, case_sensitive: bool) -> None:

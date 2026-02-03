@@ -12,7 +12,7 @@ The core module provides the fundamental types for pagination: `Page`, `PagePara
         - total
         - page
         - limit
-        - total_pages
+        - pages
         - has_next
         - has_previous
         - create
@@ -71,7 +71,7 @@ print(page.items)        # [user1, user2, user3]
 print(page.total)        # 100
 print(page.page)         # 1
 print(page.limit)        # 20
-print(page.total_pages)  # 5
+print(page.pages)        # 5
 print(page.has_next)     # True
 print(page.has_previous) # False
 ```

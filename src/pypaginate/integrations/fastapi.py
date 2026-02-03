@@ -33,9 +33,11 @@ class PagedResponse(BaseModel, Generic[T]):
 
     Wraps the Page dataclass to ensure correct OpenAPI schema generation.
 
-    Usage:
+    Example:
+        ```python
         @app.get("/items", response_model=PagedResponse[ItemSchema])
         async def get_items(): ...
+        ```
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -69,10 +71,11 @@ def get_pagination_params(
 ) -> PageParams:
     """FastAPI dependency to extract pagination parameters.
 
-    Usage:
+    Example:
+        ```python
         @app.get("/items")
-        def endpoint(params: PageParams = Depends(get_pagination_params)):
-            ...
+        def endpoint(params: PageParams = Depends(get_pagination_params)): ...
+        ```
 
     Args:
         page: Page number from query parameter (default 1).

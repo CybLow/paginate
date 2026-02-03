@@ -167,15 +167,36 @@ build = [
     "build>=1.2.2",
     "twine>=6.0.1",
 ]
-# Documentation
+# Documentation (Sphinx + RTD theme)
 docs = [
-    "mkdocs>=1.6.1",
-    "mkdocs-material>=9.7.1",
-    "mkdocstrings[python]>=0.27.0",
-    "mkdocs-gen-files>=0.5.0",
-    "mkdocs-literate-nav>=0.6.0",
-    "mkdocs-section-index>=0.3.9",
-    "griffe>=1.5.0",
+    # Core Sphinx (latest version)
+    "sphinx>=9.0",
+    "sphinx-rtd-theme>=3.0",
+    
+    # Modern UX extensions
+    "sphinx-design>=0.6",              # Cards, grids, tabs, dropdowns
+    "sphinx-copybutton>=0.5",          # Copy button on code blocks
+    "sphinx-autodoc-typehints>=3.0",   # Type hints in API docs
+    
+    # Markdown support
+    "myst-parser>=4.0",                # Full Markdown support
+    
+    # Diagrams & extras
+    "sphinxcontrib-mermaid>=0.9",      # Mermaid diagrams
+    "sphinxext-opengraph>=0.9",        # Social preview cards
+    "sphinx-notfound-page>=1.0",       # Custom 404 page
+    
+    # Versioning for releases (modern alternative to sphinx-multiversion)
+    "sphinx-polyversion>=2.0",         # Multi-version docs builder
+    "jinja2>=3.0",                     # Required for polyversion templates
+    
+    # All optional dependencies for complete autodoc
+    "SQLAlchemy>=2.0.45",
+    "sqlakeyset>=2.0.1762907931",
+    "rapidfuzz>=3.14.3",
+    "json-logic-qubit>=0.9.1",
+    "jmespath>=1.0.1",
+    "fastapi>=0.127.0",
 ]
 # MCP server dependencies (for .opencode/scripts)
 mcp = [

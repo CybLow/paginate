@@ -94,7 +94,12 @@ def _entities_page(
         snapshot: Pagination snapshot containing items and metadata.
 
     Returns:
-        A Page object with items, total, and pagination parameters.
+        A Page object containing items, total, and pagination metadata.
+
+    Example:
+        ```python
+        page = await paginate_entities_to_page(session, select(User), PageParams(page=1, limit=20))
+        ```
     """
     return Page.create(snapshot.items, snapshot.total, snapshot.params)
 
@@ -191,7 +196,9 @@ async def paginate_entities(
         Tuple (items, total) where items are ORM entities.
 
     Example:
-        >>> items, total = await paginate_entities(session, select(User), PageParams(page=1, limit=20))
+        ```python
+        items, total = await paginate_entities(session, select(User), PageParams(page=1, limit=20))
+        ```
     """
     options = _make_options(kwargs, True)
     return await _collect(session, query, params, _entities, options)
@@ -215,7 +222,9 @@ async def paginate_entities_to_page(
         A Page object containing items, total, and pagination metadata.
 
     Example:
-        >>> page = await paginate_entities_to_page(session, select(User), PageParams(page=1, limit=20))
+        ```python
+        page = await paginate_entities_to_page(session, select(User), PageParams(page=1, limit=20))
+        ```
     """
     options = _make_options(kwargs, True)
     return await _collect(session, query, params, _entities_page, options)
@@ -239,9 +248,11 @@ async def paginate_rows(
         Tuple (items, total) where items are raw row tuples.
 
     Example:
-        >>> rows, total = await paginate_rows(
-        ...     session, select(User.id, User.name), PageParams(page=1, limit=20)
-        ... )
+        ```python
+        rows, total = await paginate_rows(
+            session, select(User.id, User.name), PageParams(page=1, limit=20)
+        )
+        ```
     """
     options = _make_options(kwargs, False)
     return await _collect(session, query, params, _rows, options)
@@ -265,9 +276,11 @@ async def paginate_rows_to_page(
         A Page object containing raw rows, total, and pagination metadata.
 
     Example:
-        >>> page = await paginate_rows_to_page(
-        ...     session, select(User.id, User.name), PageParams(page=1, limit=20)
-        ... )
+        ```python
+        page = await paginate_rows_to_page(
+            session, select(User.id, User.name), PageParams(page=1, limit=20)
+        )
+        ```
     """
     options = _make_options(kwargs, False)
     return await _collect(session, query, params, _rows_page, options)

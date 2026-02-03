@@ -38,10 +38,6 @@ class SqlPaginator(Generic[ItemT]):
     The paginator supports both offset-based and keyset-based strategies and
     provides helpers to materialize results, compute counts, and clamp
     parameters.
-
-    Attributes:
-        _session: Async SQLAlchemy session used for execution.
-        _clamp: When ``True``, clamp parameters to the computed total.
     """
 
     def __init__(self, session: AsyncSession, *, clamp: bool) -> None:

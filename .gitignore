@@ -60,6 +60,7 @@ dmypy.json
 
 # Documentation
 docs/_build/
+docs-sphinx/_build/
 site/
 
 # Jupyter

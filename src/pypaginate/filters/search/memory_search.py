@@ -240,11 +240,7 @@ class MemorySearchOptions:
 
 
 class MemorySearchEngine:
-    """Filter Python objects using SQL-compatible normalisation rules.
-
-    Attributes:
-        _normalizer: Text normalizer used for consistent comparisons.
-    """
+    """Filter Python objects using SQL-compatible normalisation rules."""
 
     def __init__(self, normalizer: MemoryTextNormalizer) -> None:
         """Initialize the search engine with a text normalizer.
@@ -336,12 +332,7 @@ class MemorySearchEngine:
 
 
 class MemorySearchService:
-    """Facade orchestrating token parsing and in-memory filtering.
-
-    Attributes:
-        _parser: Token parser instance.
-        _engine: In-memory search engine.
-    """
+    """Facade orchestrating token parsing and in-memory filtering."""
 
     def __init__(self, parser: TokenParser, engine: MemorySearchEngine) -> None:
         """Initialize the search service.

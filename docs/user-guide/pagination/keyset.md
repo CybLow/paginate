@@ -2,6 +2,9 @@
 
 Keyset pagination (also called cursor-based pagination) uses unique column values instead of offsets, providing constant-time performance regardless of page depth.
 
+!!! tip "When to Use"
+    Keyset pagination is best for **large datasets** (100k+ rows), **infinite scroll** UIs, and **real-time data streams** where consistent performance matters.
+
 ## Overview
 
 Instead of using page numbers, keyset pagination uses the last item's value as a reference point:
@@ -129,39 +132,40 @@ stmt = select(User).order_by(User.created_at.desc(), User.id.desc())
 
 A typical keyset-paginated API:
 
-```python
-from fastapi import FastAPI, Query
-from pydantic import BaseModel
+??? example "Complete FastAPI Example"
+    ```python
+    from fastapi import FastAPI, Query
+    from pydantic import BaseModel
 
-app = FastAPI()
+    app = FastAPI()
 
-class CursorPageResponse(BaseModel):
-    items: list[UserSchema]
-    next_cursor: str | None
-    prev_cursor: str | None
-    has_next: bool
-    has_previous: bool
+    class CursorPageResponse(BaseModel):
+        items: list[UserSchema]
+        next_cursor: str | None
+        prev_cursor: str | None
+        has_next: bool
+        has_previous: bool
 
-@app.get("/users", response_model=CursorPageResponse)
-async def list_users(
-    session: AsyncSession = Depends(get_session),
-    cursor: str | None = Query(None, description="Pagination cursor"),
-    limit: int = Query(20, ge=1, le=100),
-):
-    params = KeysetPageParams(limit=limit, after=cursor)
-    stmt = select(User).order_by(User.created_at.desc(), User.id.desc())
-    
-    paginator = KeysetPaginator()
-    result = await paginator.paginate(session, stmt, params)
-    
-    return CursorPageResponse(
-        items=result.items,
-        next_cursor=result.next_page,
-        prev_cursor=result.previous_page,
-        has_next=result.next_page is not None,
-        has_previous=result.previous_page is not None,
-    )
-```
+    @app.get("/users", response_model=CursorPageResponse)
+    async def list_users(
+        session: AsyncSession = Depends(get_session),
+        cursor: str | None = Query(None, description="Pagination cursor"),
+        limit: int = Query(20, ge=1, le=100),
+    ):
+        params = KeysetPageParams(limit=limit, after=cursor)
+        stmt = select(User).order_by(User.created_at.desc(), User.id.desc())
+        
+        paginator = KeysetPaginator()
+        result = await paginator.paginate(session, stmt, params)
+        
+        return CursorPageResponse(
+            items=result.items,
+            next_cursor=result.next_page,
+            prev_cursor=result.previous_page,
+            has_next=result.next_page is not None,
+            has_previous=result.previous_page is not None,
+        )
+    ```
 
 Client usage:
 
@@ -233,21 +237,22 @@ Keyset pagination handles concurrent modifications better than offset:
 
 If you need approximate totals:
 
-```python
-from sqlalchemy import func, text
+??? example "PostgreSQL Approximate Count"
+    ```python
+    from sqlalchemy import func, text
 
-async def get_approximate_count(session, table_name: str) -> int:
-    """Get approximate count using table statistics (PostgreSQL)."""
-    result = await session.execute(
-        text(f"""
-            SELECT reltuples::bigint 
-            FROM pg_class 
-            WHERE relname = :table
-        """),
-        {"table": table_name}
-    )
-    return result.scalar() or 0
-```
+    async def get_approximate_count(session, table_name: str) -> int:
+        """Get approximate count using table statistics (PostgreSQL)."""
+        result = await session.execute(
+            text(f"""
+                SELECT reltuples::bigint 
+                FROM pg_class 
+                WHERE relname = :table
+            """),
+            {"table": table_name}
+        )
+        return result.scalar() or 0
+    ```
 
 ## Indexed Columns
 

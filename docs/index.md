@@ -179,7 +179,7 @@ filtered = engine.filter(users, {
 | Section | Description |
 |---------|-------------|
 | [Getting Started](getting-started/index.md) | Installation and first steps |
-| [User Guide](user-guide/index.md) | In-depth feature documentation |
+| [Pagination](user-guide/pagination/index.md) | Pagination strategies and usage |
 | [API Reference](api/index.md) | Complete API documentation |
 | [Examples](examples/index.md) | Practical code examples |
 | [Contributing](contributing/index.md) | How to contribute |
@@ -204,7 +204,7 @@ pypaginate is released under the [MIT License](https://opensource.org/licenses/M
 
 ---
 
-<div style="text-align: center; margin-top: 2rem;">
+<div style="text-align: center; margin-top: 2rem;" markdown>
 
 [Get Started](getting-started/index.md){ .md-button .md-button--primary }
 [View on GitHub](https://github.com/CybLow/pypaginate){ .md-button }
