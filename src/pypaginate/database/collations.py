@@ -34,15 +34,13 @@ class _HasDialect(Protocol):
 
 @dataclass(frozen=True)
 class CollationPlan:
-    """Describe the SQL statements and notes required for a dialect.
-
-    Attributes:
-        statements: SQL commands to provision collation capabilities.
-        notes: Informational notes associated with the plan.
-    """
+    """Describe the SQL statements and notes required for a dialect."""
 
     statements: tuple[str, ...]
+    """SQL commands to provision collation capabilities."""
+
     notes: tuple[str, ...] = ()
+    """Informational notes associated with the plan."""
 
 
 _POSTGRES_PLAN = CollationPlan(

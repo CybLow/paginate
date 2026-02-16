@@ -207,4 +207,4 @@ page = await filter_products(filters)
 ## Next Steps
 
 - [FastAPI Example](fastapi.md) - Expose filters via API
-- [Search Example](../user-guide/search/text-search.md) - Full-text search
+- [Search Example](../search/text-search.md) - Full-text search

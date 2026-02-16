@@ -219,7 +219,7 @@ if __name__ == "__main__":
 
 ```bash
 # Install dependencies
-pip install pypaginate[fastapi] uvicorn aiosqlite
+uv add pypaginate[fastapi] uvicorn aiosqlite
 
 # Run the server
 python examples/fastapi_example.py
@@ -286,4 +286,4 @@ Visit `http://localhost:8000/docs` for interactive Swagger UI documentation.
 ## Next Steps
 
 - [Keyset Pagination](keyset.md) - Handle large datasets
-- [SQLAlchemy Integration](../user-guide/integrations/sqlalchemy.md) - Advanced patterns
+- [SQLAlchemy Integration](../integrations/sqlalchemy.md) - Advanced patterns

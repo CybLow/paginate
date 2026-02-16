@@ -1,22 +1,123 @@
 # pypaginate
 
-<div class="hero" markdown>
+```{image} _static/logo.svg
+:alt: pypaginate
+:width: 300px
+:align: center
+```
 
 **Advanced pagination, filtering, and search toolkit for Python**
 
-[![PyPI version](https://img.shields.io/pypi/v/pypaginate.svg)](https://pypi.org/project/pypaginate/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/pypaginate.svg)](https://pypi.org/project/pypaginate/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CI](https://github.com/CybLow/pypaginate/actions/workflows/ci.yml/badge.svg)](https://github.com/CybLow/pypaginate/actions/workflows/ci.yml)
-
-</div>
+```{raw} html
+<p align="center">
+    <a href="https://pypi.org/project/pypaginate/"><img src="https://img.shields.io/pypi/v/pypaginate.svg" alt="PyPI version"></a>
+    <a href="https://pypi.org/project/pypaginate/"><img src="https://img.shields.io/pypi/pyversions/pypaginate.svg" alt="Python Versions"></a>
+    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+    <a href="https://github.com/CybLow/pypaginate/actions/workflows/ci.yml"><img src="https://github.com/CybLow/pypaginate/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+</p>
+```
 
 ---
 
-## What is pypaginate?
+## Get Started in 5 Minutes
 
-**pypaginate** is a modern, framework-agnostic pagination library that provides powerful features for paginating, filtering, and searching data. It works seamlessly with SQLAlchemy (async/sync), in-memory collections, and can be extended to support other ORMs.
+::::{grid} 1 2 3 3
+:gutter: 3
 
+:::{grid-item-card} Installation
+:link: getting-started/installation
+:link-type: doc
+:class-card: sd-border-primary
+
+Install pypaginate and optional dependencies for your use case.
+
+```bash
+uv add pypaginate[all]
+```
+:::
+
+:::{grid-item-card} Quick Start
+:link: getting-started/quickstart
+:link-type: doc
+:class-card: sd-border-primary
+
+Learn the basics with our step-by-step quickstart guide.
+:::
+
+:::{grid-item-card} First Steps
+:link: getting-started/first-steps
+:link-type: doc
+:class-card: sd-border-primary
+
+Build your first paginated API with FastAPI and SQLAlchemy.
+:::
+
+::::
+
+---
+
+## Why pypaginate?
+
+::::{grid} 1 2 2 3
+:gutter: 3
+
+:::{grid-item-card} Multiple Pagination Strategies
+:class-card: sd-rounded-3
+
+- **Offset-based** pagination (page/limit)
+- **Cursor-based** (keyset) for large datasets
+- **In-memory** for Python collections
+:::
+
+:::{grid-item-card} Advanced Filtering
+:class-card: sd-rounded-3
+
+- JSON Logic with 20+ operators
+- JMESPath for nested fields
+- Type-safe with mypy strict
+:::
+
+:::{grid-item-card} Powerful Text Search
+:class-card: sd-rounded-3
+
+- Full-text with fuzzy matching
+- Accent-insensitive search
+- SQL and in-memory engines
+:::
+
+:::{grid-item-card} Flexible Sorting
+:class-card: sd-rounded-3
+
+- Multi-column sorting
+- Custom sort key functions
+- Bidirectional support
+:::
+
+:::{grid-item-card} Framework Integration
+:class-card: sd-rounded-3
+
+- Native FastAPI support
+- SQLAlchemy 2.0+ (async/sync)
+- Framework-agnostic core
+:::
+
+:::{grid-item-card} Production Ready
+:class-card: sd-rounded-3
+
+- 100% type coverage
+- 90%+ test coverage
+- Clean architecture
+:::
+
+::::
+
+---
+
+## Quick Example
+
+::::{tab-set}
+
+:::{tab-item} SQLAlchemy
 ```python
 from pypaginate import PageParams, paginate_entities
 from sqlalchemy import select
@@ -34,103 +135,9 @@ async def list_users(session, page: int = 1, limit: int = 20):
         "pages": result.pages,
     }
 ```
+:::
 
----
-
-## Key Features
-
-<div class="feature-grid" markdown>
-
-<div class="feature-card" markdown>
-
-### Multiple Pagination Strategies
-
-- **Offset-based** pagination (page/limit)
-- **Cursor-based** (keyset) pagination for large datasets
-- **In-memory** pagination for collections
-
-</div>
-
-<div class="feature-card" markdown>
-
-### Advanced Filtering
-
-- JSON Logic filtering with 20+ operators
-- JMESPath for nested field access
-- Type-safe filtering with mypy strict mode
-
-</div>
-
-<div class="feature-card" markdown>
-
-### Powerful Text Search
-
-- Full-text search with fuzzy matching (RapidFuzz)
-- Accent-insensitive search
-- SQL and in-memory search engines
-
-</div>
-
-<div class="feature-card" markdown>
-
-### Flexible Sorting
-
-- Multi-column sorting
-- Custom sort key functions
-- SQL and in-memory sorting
-
-</div>
-
-<div class="feature-card" markdown>
-
-### Framework Integration
-
-- Native FastAPI support with dependency injection
-- SQLAlchemy 2.0+ (async and sync)
-- Framework-agnostic core
-
-</div>
-
-<div class="feature-card" markdown>
-
-### Production Ready
-
-- 100% type coverage (mypy --strict)
-- Comprehensive test suite (90%+ coverage)
-- Zero cyclomatic complexity issues
-
-</div>
-
-</div>
-
----
-
-## Quick Installation
-
-=== "Basic (in-memory only)"
-
-    ```bash
-    pip install pypaginate
-    ```
-
-=== "With SQLAlchemy"
-
-    ```bash
-    pip install pypaginate[sqlalchemy]
-    ```
-
-=== "With all features"
-
-    ```bash
-    pip install pypaginate[all]
-    ```
-
----
-
-## Quick Example
-
-### In-Memory Pagination
-
+:::{tab-item} In-Memory
 ```python
 from pypaginate import PageParams
 from pypaginate.engines import MemoryPaginator
@@ -145,12 +152,12 @@ paginator = MemoryPaginator()
 params = PageParams(page=1, limit=2)
 
 page = paginator.paginate(users, params).to_page()
-print(page.items)  # [{"name": "Alice", ...}, {"name": "Bob", ...}]
+print(page.items)  # [Alice, Bob]
 print(page.total)  # 3
 ```
+:::
 
-### Filtering with JSON Logic
-
+:::{tab-item} Filtering
 ```python
 from pypaginate.filters.predicates import FilterEngine
 
@@ -171,42 +178,142 @@ filtered = engine.filter(users, {
 })
 # Result: [Alice, Charlie]
 ```
+:::
+
+::::
 
 ---
 
-## Documentation Sections
+## Learn More
 
-| Section | Description |
-|---------|-------------|
-| [Getting Started](getting-started/index.md) | Installation and first steps |
-| [Pagination](user-guide/pagination/index.md) | Pagination strategies and usage |
-| [API Reference](api/index.md) | Complete API documentation |
-| [Examples](examples/index.md) | Practical code examples |
-| [Contributing](contributing/index.md) | How to contribute |
+::::{grid} 1 2 2 4
+:gutter: 3
 
----
+:::{grid-item-card} Pagination
+:link: pagination/index
+:link-type: doc
 
-## Why pypaginate?
+Learn offset, cursor, and in-memory pagination strategies.
+:::
 
-| Feature | pypaginate | fastapi-pagination | Comparison |
-|---------|------------|-------------------|------------|
-| Type Safety | mypy --strict | Basic types | Better |
-| Fuzzy Search | RapidFuzz | None | Unique |
-| JSON Logic | Full support | None | Better |
-| Architecture | Clean layers | Monolithic | Better |
-| Framework | Agnostic | FastAPI only | More flexible |
+:::{grid-item-card} Filtering
+:link: filtering/index
+:link-type: doc
 
----
+Filter data with JSON Logic operators.
+:::
 
-## License
+:::{grid-item-card} Search
+:link: search/index
+:link-type: doc
 
-pypaginate is released under the [MIT License](https://opensource.org/licenses/MIT).
+Add full-text and fuzzy search capabilities.
+:::
 
----
+:::{grid-item-card} API Reference
+:link: api/overview
+:link-type: doc
 
-<div style="text-align: center; margin-top: 2rem;" markdown>
+Complete API documentation.
+:::
 
-[Get Started](getting-started/index.md){ .md-button .md-button--primary }
-[View on GitHub](https://github.com/CybLow/pypaginate){ .md-button }
+::::
 
-</div>
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Getting Started
+
+getting-started/index
+getting-started/installation
+getting-started/quickstart
+getting-started/first-steps
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: User Guide
+
+pagination/index
+pagination/offset
+pagination/keyset
+pagination/memory
+filtering/index
+filtering/basic
+filtering/json-logic
+filtering/operators
+search/index
+search/text-search
+search/fuzzy
+sorting/index
+sorting/basic
+sorting/multi-column
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Integrations
+
+integrations/index
+integrations/fastapi
+integrations/sqlalchemy
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: API Reference
+
+api/overview
+api/pypaginate/index
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Examples
+
+examples/index
+examples/basic-pagination
+examples/filtering
+examples/fastapi
+examples/keyset
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Concepts
+
+concepts/index
+concepts/architecture
+concepts/pagination-strategies
+concepts/cursor-encoding
+concepts/filter-expressions
+concepts/search-relevance
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Contributing
+
+contributing/index
+contributing/development
+contributing/code-style
+contributing/testing
+contributing/architecture
+contributing/roadmap
+CODE_OF_CONDUCT
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Project
+
+comparison
+changelog
+```

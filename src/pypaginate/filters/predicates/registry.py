@@ -34,13 +34,7 @@ CandidateT_inv = TypeVar("CandidateT_inv")
 
 
 class OperatorRegistry(Generic[CandidateT_inv]):
-    """Mapping of operator names to predicate factories.
-
-    Methods:
-        register: Associate one or more names with a factory.
-        build: Build a predicate from a registered name and argument.
-        default: Create a registry pre-populated with standard operators.
-    """
+    """Mapping of operator names to predicate factories."""
 
     def __init__(self) -> None:
         """Initialize an empty operator registry."""

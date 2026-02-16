@@ -21,15 +21,13 @@ ItemT = TypeVar("ItemT")
 
 @dataclass(frozen=True)
 class CompiledFilter(Generic[ItemT]):
-    """Pair a field accessor with its predicate.
-
-    Attributes:
-        accessor: Accessor resolving field values on items.
-        predicate: Callable evaluating the resolved value.
-    """
+    """Pair a field accessor with its predicate."""
 
     accessor: FieldAccessor
+    """Accessor resolving field values on items."""
+
     predicate: FilterPredicate[object]
+    """Callable evaluating the resolved value."""
 
     def matches(self, item: ItemT) -> bool:
         """Return True when item matches the predicate.

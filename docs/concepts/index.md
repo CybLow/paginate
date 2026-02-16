@@ -15,53 +15,49 @@ understanding the underlying concepts will help you:
 
 ## Topics
 
-<div class="grid cards" markdown>
+::::{grid} 1 2 2 2
+:gutter: 3
 
--   :material-book-open-page-variant:{ .lg .middle } **Pagination Strategies**
+:::{grid-item-card} Pagination Strategies
+:link: pagination-strategies
+:link-type: doc
 
-    ---
+Understand offset vs keyset pagination, their trade-offs, and when to use each.
+:::
 
-    Understand offset vs keyset pagination, their trade-offs, and when to use each.
+:::{grid-item-card} Cursor Encoding
+:link: cursor-encoding
+:link-type: doc
 
-    [:octicons-arrow-right-24: Learn more](pagination-strategies.md)
+How cursors work, what they contain, and how they enable stateless pagination.
+:::
 
--   :material-cursor-default:{ .lg .middle } **Cursor Encoding**
+:::{grid-item-card} Filter Expressions
+:link: filter-expressions
+:link-type: doc
 
-    ---
+The filter engine architecture, operators, and how expressions are evaluated.
+:::
 
-    How cursors work, what they contain, and how they enable stateless pagination.
+:::{grid-item-card} Search & Relevance
+:link: search-relevance
+:link-type: doc
 
-    [:octicons-arrow-right-24: Learn more](cursor-encoding.md)
+How text search works, relevance scoring, and fuzzy matching algorithms.
+:::
 
--   :material-filter:{ .lg .middle } **Filter Expressions**
+:::{grid-item-card} Architecture
+:link: architecture
+:link-type: doc
 
-    ---
+Overall library design, component relationships, and extension points.
+:::
 
-    The filter engine architecture, operators, and how expressions are evaluated.
-
-    [:octicons-arrow-right-24: Learn more](filter-expressions.md)
-
--   :material-magnify:{ .lg .middle } **Search & Relevance**
-
-    ---
-
-    How text search works, relevance scoring, and fuzzy matching algorithms.
-
-    [:octicons-arrow-right-24: Learn more](search-relevance.md)
-
--   :material-sitemap:{ .lg .middle } **Architecture**
-
-    ---
-
-    Overall library design, component relationships, and extension points.
-
-    [:octicons-arrow-right-24: Learn more](architecture.md)
-
-</div>
+::::
 
 ## Quick Concept Overview
 
-```mermaid
+```{mermaid}
 graph TB
     subgraph "pypaginate Components"
         direction TB

@@ -5,7 +5,7 @@ This page explains how search works and how relevance is calculated.
 
 ## Search Overview
 
-```mermaid
+```{mermaid}
 graph LR
     subgraph "Search Pipeline"
         Q[Query] --> T[Tokenizer]
@@ -59,7 +59,7 @@ results = await search(query, search="jonh", fuzzy=True)
 
 ### Scoring Factors
 
-```mermaid
+```{mermaid}
 graph TB
     subgraph "Relevance Score Components"
         TF[Term Frequency<br/>How often term appears]
@@ -104,7 +104,7 @@ score highest.
 
 When searching across multiple fields, weights determine relative importance:
 
-```mermaid
+```{mermaid}
 graph LR
     subgraph "Field Weights"
         T["Title (weight: 3.0)"] --> S[Combined Score]
@@ -145,7 +145,7 @@ total_score = sum(field_score × field_weight) / sum(field_weights)
 Fuzzy matching uses Levenshtein distance - the minimum number of single-character
 edits (insertions, deletions, substitutions) to transform one string into another:
 
-```mermaid
+```{mermaid}
 graph LR
     subgraph "Levenshtein Distance Examples"
         E1["'cat' → 'hat' = 1"]
@@ -174,7 +174,7 @@ options = FuzzyOptions(
 )
 ```
 
-```mermaid
+```{mermaid}
 graph TB
     subgraph "Threshold Examples (0.7)"
         M1["'john' vs 'jon'<br/>Similarity: 0.86 ✓"]
@@ -185,7 +185,7 @@ graph TB
 
 ### Fuzzy Algorithm
 
-```mermaid
+```{mermaid}
 flowchart TD
     Q[Query: 'jonh'] --> T[Tokenize]
     T --> C{Candidates}
@@ -240,7 +240,7 @@ ORDER BY sim DESC;
 
 For in-memory data sources, search uses Python implementations:
 
-```mermaid
+```{mermaid}
 flowchart LR
     subgraph "In-Memory Search"
         D[Data] --> I[Build Index]
@@ -391,7 +391,7 @@ def cached_search(query_hash, search_term):
 
 ## Further Reading
 
-- [User Guide: Text Search](../user-guide/search/text-search.md) - Basic usage
-- [User Guide: Fuzzy Matching](../user-guide/search/fuzzy.md) - Fuzzy search
+- [User Guide: Text Search](../search/text-search.md) - Basic usage
+- [User Guide: Fuzzy Matching](../search/fuzzy.md) - Fuzzy search
 - [Filter Expressions](filter-expressions.md) - Combine search with filters
 - [Architecture](architecture.md) - Overall library design

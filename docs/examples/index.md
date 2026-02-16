@@ -16,7 +16,7 @@ This section provides complete, runnable examples demonstrating pypaginate featu
 All examples assume you have pypaginate installed:
 
 ```bash
-pip install pypaginate[all]
+uv add pypaginate[all]
 ```
 
 ## Database Setup
@@ -62,7 +62,7 @@ git clone https://github.com/CybLow/pypaginate.git
 cd pypaginate
 
 # Install dependencies
-pip install -e ".[all]"
+uv add -e ".[all]"
 
 # Run an example
 python examples/basic_pagination.py

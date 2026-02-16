@@ -168,6 +168,8 @@ build = [
     "twine>=6.0.1",
 ]
 # Documentation (Sphinx + RTD theme)
+# Note: sphinx-autodoc-typehints>=3.6.2 requires Python 3.12+
+# Build docs with Python 3.12+ for best results
 docs = [
     # Core Sphinx (latest version)
     "sphinx>=9.0",
@@ -176,7 +178,10 @@ docs = [
     # Modern UX extensions
     "sphinx-design>=0.6",              # Cards, grids, tabs, dropdowns
     "sphinx-copybutton>=0.5",          # Copy button on code blocks
-    "sphinx-autodoc-typehints>=3.0",   # Type hints in API docs
+    # Use version with deprecation fixes on Python 3.12+, older on 3.11
+    "sphinx-autodoc-typehints>=3.6.2; python_version >= '3.12'",
+    "sphinx-autodoc-typehints>=3.6.1,<3.6.2; python_version < '3.12'",
+    "sphinx-autoapi>=3.6.0",            # Auto-generate API docs from source
     
     # Markdown support
     "myst-parser>=4.0",                # Full Markdown support
@@ -214,7 +219,7 @@ mcp = [
 # ==========================
 [tool.uv]
 package = true
-default-groups = ["dev", "docs"]  # mcp group is optional (heavy ML deps)
+default-groups = ["dev"]  # docs group requires Python 3.12+, mcp is optional (heavy ML deps)
 
 # Cache optimization
 cache-keys = [{ file = "pyproject.toml" }, { file = "uv.lock" }]

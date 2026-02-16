@@ -14,21 +14,32 @@ pypaginate is a modern, framework-agnostic pagination library for Python that pr
 
 ## Quick Navigation
 
-<div class="grid cards" markdown>
+::::{grid} 1 1 3 3
+:gutter: 3
 
--   :material-download: **[Installation](installation.md)**
+:::{grid-item-card} Installation
+:link: installation
+:link-type: doc
 
-    Install pypaginate and optional dependencies
+Install pypaginate and optional dependencies
+:::
 
--   :material-rocket-launch: **[Quick Start](quickstart.md)**
+:::{grid-item-card} Quick Start
+:link: quickstart
+:link-type: doc
 
-    Get paginating in 5 minutes
+Get paginating in 5 minutes
+:::
 
--   :material-shoe-print: **[First Steps](first-steps.md)**
+:::{grid-item-card} First Steps
+:link: first-steps
+:link-type: doc
 
-    Build your first paginated API
+Build your first paginated API
+:::
 
-</div>
+::::
+
 
 ## Minimum Requirements
 

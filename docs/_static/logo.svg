@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" width="200" height="50">
+  <!-- 
+    pypaginate Logo - "Ocean Blue" Color Scheme
+    Concept: Stacked pages (pagination) with navigation arrow (moving through data)
+  -->
+  
+  <!-- Stacked pages (3 layers showing depth/pagination) -->
+  <rect x="8" y="12" width="28" height="34" rx="3" fill="#E3F2FD" stroke="#4A7C9B" stroke-width="1.5"/>
+  <rect x="14" y="6" width="28" height="34" rx="3" fill="#B8D4E8" stroke="#4A7C9B" stroke-width="1.5"/>
+  <rect x="20" y="0" width="28" height="34" rx="3" fill="white" stroke="#4A7C9B" stroke-width="2"/>
+  
+  <!-- Lines on front page (representing data rows) -->
+  <line x1="25" y1="7" x2="43" y2="7" stroke="#4A7C9B" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="25" y1="13" x2="40" y2="13" stroke="#6B9AB8" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="25" y1="18" x2="43" y2="18" stroke="#6B9AB8" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="25" y1="23" x2="38" y2="23" stroke="#6B9AB8" stroke-width="1.5" stroke-linecap="round"/>
+  
+  <!-- Navigation arrow (pagination action - moving to next page) -->
+  <path d="M54 17 L64 17 L64 12 L74 20 L64 28 L64 23 L54 23 Z" fill="#00BCD4"/>
+  
+  <!-- Text: pypaginate -->
+  <text x="82" y="28" font-family="'Inter', 'Segoe UI', 'Roboto', sans-serif" font-size="22" font-weight="600" fill="#2D5A7B">pypaginate</text>
+</svg>

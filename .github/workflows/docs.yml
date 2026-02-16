@@ -14,7 +14,7 @@ on:
     tags:
       - 'v*.*.*'  # Trigger on version tags
     paths:
-      - 'docs-sphinx/**'
+      - 'docs/**'
       - 'src/pypaginate/**'
       - '.github/workflows/docs.yml'
       - 'pyproject.toml'
@@ -23,7 +23,7 @@ on:
     branches:
       - main
     paths:
-      - 'docs-sphinx/**'
+      - 'docs/**'
       - 'src/pypaginate/**'
 
   workflow_dispatch:
@@ -38,7 +38,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: '3.13'
 
 jobs:
   build:
@@ -65,19 +65,18 @@ jobs:
       - name: 🏗️ Build documentation
         run: |
           # Try multi-version build first
-          if uv run sphinx-polyversion docs-sphinx/poly.py 2>/dev/null; then
+          if uv run sphinx-polyversion docs/poly.py 2>/dev/null; then
             echo "Multi-version build successful"
           else
             echo "No matching refs found or polyversion failed, building single version..."
-            cd docs-sphinx
-            uv run sphinx-build -b html . ../_build/html
+            uv run sphinx-build -b html docs site
           fi
 
       - name: 📄 Create root index.html redirect
         run: |
           # Create redirect from root to main (or latest tag)
-          if [ -d "_build/html/main" ]; then
-            cat > _build/html/index.html << 'EOF'
+          if [ -d "site/main" ]; then
+            cat > site/index.html << 'EOF'
           <!DOCTYPE html>
           <html>
           <head>
@@ -94,12 +93,12 @@ jobs:
           fi
 
       - name: 📄 Create .nojekyll
-        run: touch _build/html/.nojekyll
+        run: touch site/.nojekyll
 
       - name: 📤 Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: _build/html/
+          path: site/
 
   deploy:
     name: Deploy to GitHub Pages

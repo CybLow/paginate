@@ -7,7 +7,7 @@ with the facade policy.
 
 from __future__ import annotations
 
-from typing import TypeAlias, TypeVar
+from typing import TypeAlias, TypeVar, Union
 
 from sqlalchemy import Select
 from sqlalchemy.engine import Result as SAResult, ScalarResult as SAScalarResult
@@ -34,7 +34,7 @@ Result: TypeAlias = SAResult[ItemT]
 ScalarResult: TypeAlias = SAScalarResult[ItemT]
 """Concrete alias for SQLAlchemy ScalarResult over ItemT payloads."""
 
-ResultSequence: TypeAlias = Result[ItemT] | ScalarResult[ItemT]
+ResultSequence: TypeAlias = Union[Result[ItemT], ScalarResult[ItemT]]
 """Union of Result and ScalarResult used during materialization."""
 
 
