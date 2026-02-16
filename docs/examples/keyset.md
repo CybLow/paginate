@@ -293,5 +293,5 @@ async def list_events(
 
 ## Next Steps
 
-- [Offset Pagination](../user-guide/pagination/offset.md) - Standard pagination
-- [Performance Guide](../user-guide/pagination/index.md) - Optimization tips
+- [Offset Pagination](../pagination/offset.md) - Standard pagination
+- [Performance Guide](../pagination/index.md) - Optimization tips

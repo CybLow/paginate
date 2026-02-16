@@ -1,35 +1,43 @@
 # Documentation Workflow
 
-Build and serve documentation using MkDocs.
+Build and serve documentation using Sphinx.
 
 ## Commands
 
 ```bash
-# Serve docs locally (with hot reload)
-uv run mkdocs serve
+# Build HTML docs
+uv run sphinx-build -b html docs docs/_build/html
 
-# Build static docs
-uv run mkdocs build
+# Build with strict mode (warnings as errors)
+uv run sphinx-build -W -b html docs docs/_build/html
 
-# Build with strict mode (fail on warnings)
-uv run mkdocs build --strict
+# Serve docs locally (with auto-rebuild)
+uv run sphinx-autobuild docs docs/_build/html
 
-# Deploy to GitHub Pages
-uv run mkdocs gh-deploy
+# Build multi-version docs
+uv run sphinx-polyversion docs/poly.py
 
-# Check for broken links
-uv run mkdocs build --strict 2>&1 | grep -i "warning"
+# Quick build (incremental, faster)
+uv run sphinx-build -b html docs docs/_build/html
+
+# Check for issues
+uv run sphinx-build -W -n -b html docs docs/_build/html
 ```
 
 ## Project Structure
 
 ```
 docs/
-├── index.md              # Home page
+├── index.md              # Home page (MyST Markdown)
+├── conf.py               # Sphinx configuration
+├── poly.py               # Multi-version build config
 ├── getting-started/      # Quick start guides
-├── user-guide/           # Detailed usage
-├── api/                  # API reference (auto-generated)
-└── examples/             # Code examples
+├── concepts/             # Core concepts
+├── filtering/            # Filter documentation
+├── api/                  # API reference (autodoc)
+├── examples/             # Code examples
+├── _static/              # Static assets (CSS, images)
+└── _templates/           # Custom Jinja templates
 ```
 
 ## Writing Documentation
@@ -56,16 +64,33 @@ def paginate(items: list[T], page: int = 1) -> Page[T]:
     """
 ```
 
-### Cross-references
+### Cross-references (MyST Markdown)
 
 ```markdown
-See [Paginator][pypaginate.Paginator] for details.
-Check the [API Reference](../api/paginator.md).
+See {py:class}`pypaginate.Paginator` for details.
+Check the {doc}`/api/index` reference.
+```
+
+### Admonitions
+
+```markdown
+:::{note}
+This is a note.
+:::
+
+:::{warning}
+This is a warning.
+:::
+
+:::{tip}
+This is a tip.
+:::
 ```
 
 ## Configuration
 
-Documentation configured in `mkdocs.yml`:
-- Theme: Material for MkDocs
-- API docs: mkdocstrings (auto-generated from docstrings)
-- Code highlighting: Pygments
+Documentation configured in `docs/conf.py`:
+- Theme: Read the Docs (sphinx-rtd-theme)
+- Markdown: MyST Parser
+- API docs: sphinx-autodoc with typehints
+- Extensions: sphinx-design, sphinx-copybutton, mermaid

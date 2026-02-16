@@ -9,18 +9,18 @@ This guide covers all installation options for pypaginate.
 
 ## Basic Installation
 
-### Using pip
-
-```bash
-pip install pypaginate
-```
-
 ### Using uv (Recommended)
 
 [uv](https://docs.astral.sh/uv/) is a fast Python package manager:
 
 ```bash
 uv add pypaginate
+```
+
+### Using pip
+
+```bash
+pip install pypaginate
 ```
 
 ## Installation with Optional Features
@@ -31,17 +31,21 @@ pypaginate uses optional dependencies to keep the core package lightweight. Inst
 
 For database pagination with SQLAlchemy 2.0+:
 
-=== "pip"
+::::{tab-set}
 
-    ```bash
-    pip install pypaginate[sqlalchemy]
-    ```
+:::{tab-item} uv
+```bash
+uv add pypaginate[sqlalchemy]
+```
+:::
 
-=== "uv"
+:::{tab-item} pip
+```bash
+pip install pypaginate[sqlalchemy]
+```
+:::
 
-    ```bash
-    uv add pypaginate[sqlalchemy]
-    ```
+::::
 
 This includes:
 
@@ -52,17 +56,21 @@ This includes:
 
 For full-text search with fuzzy matching:
 
-=== "pip"
+::::{tab-set}
 
-    ```bash
-    pip install pypaginate[search]
-    ```
+:::{tab-item} uv
+```bash
+uv add pypaginate[search]
+```
+:::
 
-=== "uv"
+:::{tab-item} pip
+```bash
+pip install pypaginate[search]
+```
+:::
 
-    ```bash
-    uv add pypaginate[search]
-    ```
+::::
 
 This includes:
 
@@ -73,17 +81,21 @@ This includes:
 
 For advanced JSON Logic filtering:
 
-=== "pip"
+::::{tab-set}
 
-    ```bash
-    pip install pypaginate[filters]
-    ```
+:::{tab-item} uv
+```bash
+uv add pypaginate[filters]
+```
+:::
 
-=== "uv"
+:::{tab-item} pip
+```bash
+pip install pypaginate[filters]
+```
+:::
 
-    ```bash
-    uv add pypaginate[filters]
-    ```
+::::
 
 This includes:
 
@@ -94,17 +106,21 @@ This includes:
 
 For text normalization (accent removal, etc.):
 
-=== "pip"
+::::{tab-set}
 
-    ```bash
-    pip install pypaginate[text]
-    ```
+:::{tab-item} uv
+```bash
+uv add pypaginate[text]
+```
+:::
 
-=== "uv"
+:::{tab-item} pip
+```bash
+pip install pypaginate[text]
+```
+:::
 
-    ```bash
-    uv add pypaginate[text]
-    ```
+::::
 
 This includes:
 
@@ -114,17 +130,21 @@ This includes:
 
 For FastAPI dependency injection:
 
-=== "pip"
+::::{tab-set}
 
-    ```bash
-    pip install pypaginate[fastapi]
-    ```
+:::{tab-item} uv
+```bash
+uv add pypaginate[fastapi]
+```
+:::
 
-=== "uv"
+:::{tab-item} pip
+```bash
+pip install pypaginate[fastapi]
+```
+:::
 
-    ```bash
-    uv add pypaginate[fastapi]
-    ```
+::::
 
 This includes:
 
@@ -134,17 +154,21 @@ This includes:
 
 Install everything at once:
 
-=== "pip"
+::::{tab-set}
 
-    ```bash
-    pip install pypaginate[all]
-    ```
+:::{tab-item} uv
+```bash
+uv add pypaginate[all]
+```
+:::
 
-=== "uv"
+:::{tab-item} pip
+```bash
+pip install pypaginate[all]
+```
+:::
 
-    ```bash
-    uv add pypaginate[all]
-    ```
+::::
 
 ## Development Installation
 
@@ -164,7 +188,7 @@ This installs:
 - All optional dependencies
 - Testing tools (pytest, coverage)
 - Linting tools (ruff, mypy)
-- Documentation tools (mkdocs)
+- Documentation tools (Sphinx)
 
 ## Verifying Installation
 
@@ -204,13 +228,13 @@ After installation, verify everything works:
 If you see:
 
 ```
-ImportError: SQLAlchemy features require installation: pip install pypaginate[sqlalchemy]
+ImportError: SQLAlchemy features require installation: uv add pypaginate[sqlalchemy]
 ```
 
 Solution: Install the SQLAlchemy extra:
 
 ```bash
-pip install pypaginate[sqlalchemy]
+uv add pypaginate[sqlalchemy]
 ```
 
 ### ImportError: rapidfuzz
@@ -218,7 +242,7 @@ pip install pypaginate[sqlalchemy]
 If you see errors about `rapidfuzz`:
 
 ```bash
-pip install pypaginate[search]
+uv add pypaginate[search]
 ```
 
 ### Version Conflicts
@@ -226,14 +250,14 @@ pip install pypaginate[search]
 If you have version conflicts with existing packages:
 
 ```bash
-# Create a fresh virtual environment
-python -m venv .venv
+# Create a fresh virtual environment with uv
+uv venv
 source .venv/bin/activate  # Linux/Mac
 # or
 .venv\Scripts\activate  # Windows
 
 # Install pypaginate
-pip install pypaginate[all]
+uv add pypaginate[all]
 ```
 
 ## Next Steps

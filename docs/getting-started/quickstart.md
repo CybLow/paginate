@@ -5,7 +5,7 @@ Get up and running with pypaginate in 5 minutes.
 ## Installation
 
 ```bash
-pip install pypaginate[all]
+uv add pypaginate[all]
 ```
 
 ## Basic Usage
@@ -251,6 +251,6 @@ except PaginationConfigurationError as e:
 ## Next Steps
 
 - [First Steps Tutorial](first-steps.md) - Build a complete paginated API
-- [Pagination Guide](../user-guide/pagination/index.md) - Learn all pagination strategies
-- [Filtering Guide](../user-guide/filtering/index.md) - Master filtering with JSON Logic
-- [API Reference](../api/index.md) - Complete API documentation
+- [Pagination Guide](../pagination/index.md) - Learn all pagination strategies
+- [Filtering Guide](../filtering/index.md) - Master filtering with JSON Logic
+- [API Reference](../api/overview.md) - Complete API documentation

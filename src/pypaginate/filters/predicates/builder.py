@@ -126,13 +126,10 @@ def _rule_from_collection(
 
 @dataclass(frozen=True)
 class JsonLogicPredicateBuilder:
-    """Compile filter specifications into predicates using JSON Logic semantics.
-
-    Attributes:
-        registry: Operator registry used to instantiate predicates.
-    """
+    """Compile filter specifications into predicates using JSON Logic semantics."""
 
     registry: OperatorRegistry[object]
+    """Operator registry used to instantiate predicates."""
 
     def build(self, spec: object) -> FilterPredicate[object]:
         """Compile spec into a single predicate callable.

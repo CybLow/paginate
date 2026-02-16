@@ -6,7 +6,7 @@ choosing the right approach for your application.
 
 ## The Two Strategies
 
-```mermaid
+```{mermaid}
 graph LR
     subgraph "Offset Pagination"
         O1[Page 1<br/>OFFSET 0] --> O2[Page 2<br/>OFFSET 10]
@@ -15,7 +15,7 @@ graph LR
     end
 ```
 
-```mermaid
+```{mermaid}
 graph LR
     subgraph "Keyset Pagination"
         K1[First Page<br/>No cursor] --> K2[Next Page<br/>after: id=10]
@@ -61,7 +61,7 @@ SELECT * FROM items ORDER BY id LIMIT 10 OFFSET 20;
 
 ### Performance Characteristics
 
-```mermaid
+```{mermaid}
 graph TB
     subgraph "Offset Performance"
         direction LR
@@ -137,7 +137,7 @@ SELECT * FROM items WHERE id > 20 ORDER BY id LIMIT 10;
 
 ### Performance Characteristics
 
-```mermaid
+```{mermaid}
 graph TB
     subgraph "Keyset Performance"
         direction LR
@@ -171,7 +171,7 @@ With proper indexing, every "page" has the same performance because:
 
 ## Side-by-Side Comparison
 
-```mermaid
+```{mermaid}
 graph TB
     subgraph "Offset: Page 1000"
         direction TB
@@ -201,7 +201,7 @@ graph TB
 
 Keyset pagination becomes more complex with multiple sort columns:
 
-```mermaid
+```{mermaid}
 graph TD
     subgraph "Single Column Sort"
         S1["ORDER BY id"] --> S2["Cursor: id > 10"]
@@ -222,14 +222,15 @@ params = KeysetPageParams(size=10, sort=["id"])
 params = KeysetPageParams(size=10, sort=["created_at", "id"])
 ```
 
-!!! tip "Always include a unique column"
-    When using keyset pagination with non-unique columns (like `created_at`),
-    always include a unique column (like `id`) as a tiebreaker to ensure
-    deterministic ordering.
+:::{tip} Always include a unique column
+When using keyset pagination with non-unique columns (like `created_at`),
+always include a unique column (like `id`) as a tiebreaker to ensure
+deterministic ordering.
+:::
 
 ## Choosing a Strategy
 
-```mermaid
+```{mermaid}
 flowchart TD
     Start([Need Pagination?]) --> Size{Dataset Size?}
     
@@ -261,40 +262,44 @@ flowchart TD
 
 ## Implementation in pypaginate
 
-=== "Offset Pagination"
+::::{tab-set}
 
-    ```python
-    from pypaginate import paginate, PageParams
+:::{tab-item} Offset Pagination
+```python
+from pypaginate import paginate, PageParams
 
-    # Create offset parameters
-    params = PageParams(page=1, size=20)
-    
-    # Paginate
-    page = await paginate(query, params)
-    
-    # Access results
-    print(f"Page {page.page} of {page.total_pages}")
-    print(f"Showing {len(page.items)} of {page.total} items")
-    ```
+# Create offset parameters
+params = PageParams(page=1, size=20)
 
-=== "Keyset Pagination"
+# Paginate
+page = await paginate(query, params)
 
-    ```python
-    from pypaginate import paginate, KeysetPageParams
+# Access results
+print(f"Page {page.page} of {page.total_pages}")
+print(f"Showing {len(page.items)} of {page.total} items")
+```
+:::
 
-    # First page - no cursor
-    params = KeysetPageParams(size=20)
-    page = await paginate(query, params)
-    
-    # Next page - use cursor from previous response
-    if page.next_cursor:
-        params = KeysetPageParams(size=20, after=page.next_cursor)
-        next_page = await paginate(query, params)
-    ```
+:::{tab-item} Keyset Pagination
+```python
+from pypaginate import paginate, KeysetPageParams
+
+# First page - no cursor
+params = KeysetPageParams(size=20)
+page = await paginate(query, params)
+
+# Next page - use cursor from previous response
+if page.next_cursor:
+    params = KeysetPageParams(size=20, after=page.next_cursor)
+    next_page = await paginate(query, params)
+```
+:::
+
+::::
 
 ## Further Reading
 
 - [Cursor Encoding](cursor-encoding.md) - How cursors are encoded and decoded
-- [User Guide: Offset Pagination](../user-guide/pagination/offset.md) - Practical usage
-- [User Guide: Keyset Pagination](../user-guide/pagination/keyset.md) - Practical usage
+- [User Guide: Offset Pagination](../pagination/offset.md) - Practical usage
+- [User Guide: Keyset Pagination](../pagination/keyset.md) - Practical usage
 - [Architecture](architecture.md) - How pagination engines work internally

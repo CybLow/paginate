@@ -7,12 +7,13 @@ other ORMs.
 
 Quick Start
 -----------
-```python
-from pypaginate import PageParams, paginate_entities
 
-params = PageParams(page=1, limit=20)
-page = await paginate_entities(session, select(User), params)
-```
+.. code-block:: python
+
+    from pypaginate import PageParams, paginate_entities
+
+    params = PageParams(page=1, limit=20)
+    page = await paginate_entities(session, select(User), params)
 
 Architecture
 ------------
@@ -39,7 +40,8 @@ From exceptions:
     PaginatorException, PaginationConfigurationError, FilterException,
     SearchException, SortException, ValidationException
 
-For advanced usage, import from submodules:
+For advanced usage, import from submodules::
+
     from pypaginate.engines import MemoryPaginator
     from pypaginate.filters.predicates import FilterEngine
     from pypaginate.filters.search import SqlSearchService

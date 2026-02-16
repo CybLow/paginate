@@ -1,0 +1,122 @@
+/* pypaginate Documentation - Custom CSS
+   Selective overrides: logo, cards, tables, dropdowns, print. */
+
+/* Ensure SVG logo renders in sidebar */
+.wy-side-nav-search .logo {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+}
+
+/* =============================================================================
+   SPHINX-DESIGN CARDS
+   ============================================================================= */
+
+.sd-card {
+    border: 1px solid #e1e4e5 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+    transition: all 0.2s ease !important;
+    overflow: hidden;
+}
+
+.sd-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+}
+
+.sd-card-header {
+    background-color: #f8f9fa !important;
+    border-bottom: 1px solid #e1e4e5 !important;
+    font-weight: 600;
+}
+
+.sd-card-title {
+    font-weight: 600 !important;
+}
+
+.sd-card-body {
+    padding: 1rem !important;
+}
+
+.sd-card-footer {
+    background-color: #f8f9fa !important;
+    border-top: 1px solid #e1e4e5 !important;
+}
+
+/* =============================================================================
+   SPHINX-DESIGN DROPDOWNS
+   ============================================================================= */
+
+details.sd-dropdown {
+    border: 1px solid #e1e4e5 !important;
+    border-radius: 6px !important;
+    margin-bottom: 1rem;
+}
+
+details.sd-dropdown > summary {
+    background-color: #f8f9fa !important;
+    border-radius: 6px 6px 0 0;
+    font-weight: 500;
+}
+
+details.sd-dropdown[open] > summary {
+    border-bottom: 1px solid #e1e4e5 !important;
+}
+
+/* =============================================================================
+   TABLES
+   ============================================================================= */
+
+table.docutils {
+    border-collapse: collapse !important;
+    border: 1px solid #e1e4e5 !important;
+    border-radius: 6px !important;
+    overflow: hidden;
+    width: 100%;
+    margin-bottom: 1.5rem;
+}
+
+table.docutils th {
+    background-color: #f8f9fa !important;
+    border: 1px solid #e1e4e5 !important;
+    padding: 0.75rem 1rem !important;
+    font-weight: 600;
+    text-align: left;
+}
+
+table.docutils td {
+    border: 1px solid #e1e4e5 !important;
+    padding: 0.75rem 1rem !important;
+}
+
+table.docutils tr:nth-child(even) {
+    background-color: #f8f9fa !important;
+}
+
+/* =============================================================================
+   RESPONSIVE
+   ============================================================================= */
+
+@media screen and (max-width: 768px) {
+    .sd-card {
+        margin-bottom: 1rem !important;
+    }
+}
+
+/* =============================================================================
+   PRINT
+   ============================================================================= */
+
+@media print {
+    .wy-nav-side,
+    .rst-versions,
+    button.copybtn {
+        display: none !important;
+    }
+
+    .wy-nav-content {
+        margin-left: 0 !important;
+    }
+}

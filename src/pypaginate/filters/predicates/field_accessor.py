@@ -173,13 +173,10 @@ def _to_data(value: object) -> object:
 
 @dataclass(frozen=True)
 class FieldAccessor:
-    """Resolve dotted paths on heterogeneous containers.
-
-    Attributes:
-        expression: Compiled :mod:`jmespath` expression.
-    """
+    """Resolve dotted paths on heterogeneous containers."""
 
     expression: CompiledExpression
+    """Compiled :mod:`jmespath` expression."""
 
     @classmethod
     def from_string(cls, raw_path: str) -> FieldAccessor:

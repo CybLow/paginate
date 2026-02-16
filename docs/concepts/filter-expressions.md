@@ -5,7 +5,7 @@ expression format. This page explains how filter expressions work and how they'r
 
 ## Overview
 
-```mermaid
+```{mermaid}
 graph LR
     subgraph "Filter Pipeline"
         E[Expression] --> P[Parser]
@@ -57,7 +57,7 @@ filters = {
 
 ## Filter Engine Architecture
 
-```mermaid
+```{mermaid}
 classDiagram
     class FilterEngine {
         +registry: OperatorRegistry
@@ -135,7 +135,7 @@ classDiagram
 
 ### Dictionary Format Parsing
 
-```mermaid
+```{mermaid}
 flowchart TD
     D["{'status': 'active', 'age__gte': 18}"] --> P[Parse]
     P --> E1["field='status', op='eq', value='active'"]
@@ -155,7 +155,7 @@ The double-underscore (`__`) separates field names from operators:
 
 ### JSONLogic Evaluation
 
-```mermaid
+```{mermaid}
 flowchart TD
     J[JSONLogic Expression] --> R[Recursive Evaluator]
     R --> L{Logical Op?}
@@ -178,7 +178,7 @@ JSONLogic expressions are evaluated recursively:
 
 Filter expressions are converted to SQLAlchemy WHERE clauses:
 
-```mermaid
+```{mermaid}
 flowchart LR
     subgraph "Filter to SQL"
         F["age__gte: 18"] --> B[Builder]
@@ -218,7 +218,7 @@ flowchart LR
 
 For in-memory data sources, expressions become Python predicates:
 
-```mermaid
+```{mermaid}
 flowchart LR
     subgraph "Filter to Predicate"
         F["age__gte: 18"] --> B[Builder]
@@ -246,7 +246,7 @@ filtered = [item for item in items if predicate(item)]
 
 The filter engine supports nested field access:
 
-```mermaid
+```{mermaid}
 graph TB
     subgraph "Field Access Patterns"
         S["user.address.city"] --> N[Nested object access]
@@ -268,7 +268,7 @@ graph TB
 
 Filter expressions are validated before execution:
 
-```mermaid
+```{mermaid}
 flowchart TD
     F[Filter Expression] --> V1{Known fields?}
     V1 -->|No| E1[Error: Unknown field]
@@ -308,7 +308,7 @@ The engine can automatically coerce values:
 
 Filter expressions should use indexed columns for best performance:
 
-```mermaid
+```{mermaid}
 graph TB
     subgraph "Good: Uses Index"
         G1["status = 'active'"] --> GI[Index seek]
@@ -369,7 +369,7 @@ except FilterError as e:
 
 ## Further Reading
 
-- [User Guide: Filtering](../user-guide/filtering/index.md) - Practical usage
-- [User Guide: JSONLogic](../user-guide/filtering/json-logic.md) - JSONLogic syntax
-- [Operators Reference](../user-guide/filtering/operators.md) - All operators
+- [User Guide: Filtering](../filtering/index.md) - Practical usage
+- [User Guide: JSONLogic](../filtering/json-logic.md) - JSONLogic syntax
+- [Operators Reference](../filtering/operators.md) - All operators
 - [Architecture](architecture.md) - Overall library design

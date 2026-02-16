@@ -96,10 +96,9 @@ def _entities_page(
     Returns:
         A Page object containing items, total, and pagination metadata.
 
-    Example:
-        ```python
+    Example::
+
         page = await paginate_entities_to_page(session, select(User), PageParams(page=1, limit=20))
-        ```
     """
     return Page.create(snapshot.items, snapshot.total, snapshot.params)
 
@@ -195,10 +194,9 @@ async def paginate_entities(
     Returns:
         Tuple (items, total) where items are ORM entities.
 
-    Example:
-        ```python
+    Example::
+
         items, total = await paginate_entities(session, select(User), PageParams(page=1, limit=20))
-        ```
     """
     options = _make_options(kwargs, True)
     return await _collect(session, query, params, _entities, options)
@@ -221,10 +219,9 @@ async def paginate_entities_to_page(
     Returns:
         A Page object containing items, total, and pagination metadata.
 
-    Example:
-        ```python
+    Example::
+
         page = await paginate_entities_to_page(session, select(User), PageParams(page=1, limit=20))
-        ```
     """
     options = _make_options(kwargs, True)
     return await _collect(session, query, params, _entities_page, options)
@@ -247,12 +244,11 @@ async def paginate_rows(
     Returns:
         Tuple (items, total) where items are raw row tuples.
 
-    Example:
-        ```python
+    Example::
+
         rows, total = await paginate_rows(
             session, select(User.id, User.name), PageParams(page=1, limit=20)
         )
-        ```
     """
     options = _make_options(kwargs, False)
     return await _collect(session, query, params, _rows, options)
@@ -275,12 +271,11 @@ async def paginate_rows_to_page(
     Returns:
         A Page object containing raw rows, total, and pagination metadata.
 
-    Example:
-        ```python
+    Example::
+
         page = await paginate_rows_to_page(
             session, select(User.id, User.name), PageParams(page=1, limit=20)
         )
-        ```
     """
     options = _make_options(kwargs, False)
     return await _collect(session, query, params, _rows_page, options)

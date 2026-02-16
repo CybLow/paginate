@@ -12,20 +12,27 @@ This guide covers setting up your development environment for pypaginate.
 
 UV is a fast, modern Python package manager that we use for development.
 
-=== "macOS/Linux"
-    ```bash
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    ```
+::::{tab-set}
 
-=== "Windows"
-    ```powershell
-    powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-    ```
+:::{tab-item} macOS/Linux
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+:::
 
-=== "pip"
-    ```bash
-    pip install uv
-    ```
+:::{tab-item} Windows
+```powershell
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+:::
+
+:::{tab-item} pip
+```bash
+pip install uv
+```
+:::
+
+::::
 
 ## Setting Up the Project
 
@@ -49,7 +56,7 @@ uv sync
 # This installs:
 # - Production dependencies
 # - Development tools (pytest, mypy, ruff)
-# - Documentation tools (mkdocs)
+# - Documentation tools (Sphinx)
 ```
 
 ### 3. Install Pre-commit Hooks (Optional)
@@ -87,7 +94,7 @@ pypaginate/
 ├── docs/                  # Documentation
 ├── examples/              # Example scripts
 ├── pyproject.toml         # Project configuration
-└── mkdocs.yml            # Documentation config
+└── docs/                 # Documentation (Sphinx)
 ```
 
 ## Development Commands
@@ -203,11 +210,12 @@ uv run pytest --cov=pypaginate --cov-report=html
 ## Building Documentation
 
 ```bash
-# Serve locally with hot reload
-uv run mkdocs serve
+# Build documentation
+cd docs
+uv run sphinx-build -b html . _build/html
 
-# Build static site
-uv run mkdocs build
+# Serve locally
+cd _build/html && python -m http.server 8000
 ```
 
 Visit http://127.0.0.1:8000 to preview documentation.

@@ -14,7 +14,7 @@ A user management API with:
 ## Prerequisites
 
 ```bash
-pip install pypaginate[all] fastapi uvicorn aiosqlite
+uv add pypaginate[all] fastapi uvicorn aiosqlite
 ```
 
 ## Step 1: Project Setup
@@ -381,10 +381,10 @@ async def search_users(
 
 You now have a fully functional paginated API! Here's what to explore next:
 
-- [Pagination Guide](../user-guide/pagination/index.md) - Learn cursor-based pagination for large datasets
-- [Filtering Guide](../user-guide/filtering/index.md) - Use JSON Logic for complex filters
-- [SQLAlchemy Integration](../user-guide/integrations/sqlalchemy.md) - Advanced database patterns
-- [FastAPI Integration](../user-guide/integrations/fastapi.md) - Custom dependencies and response models
+- [Pagination Guide](../pagination/index.md) - Learn cursor-based pagination for large datasets
+- [Filtering Guide](../filtering/index.md) - Use JSON Logic for complex filters
+- [SQLAlchemy Integration](../integrations/sqlalchemy.md) - Advanced database patterns
+- [FastAPI Integration](../integrations/fastapi.md) - Custom dependencies and response models
 
 ## Complete Source Code
 

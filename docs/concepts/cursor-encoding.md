@@ -13,7 +13,7 @@ pagination from a specific position. It's designed to be:
 - **Tamper-resistant** - Invalid cursors are rejected gracefully
 - **Compact** - Efficient to transmit in URLs or JSON
 
-```mermaid
+```{mermaid}
 graph LR
     subgraph "Cursor Lifecycle"
         D[Data Values] --> E[Encode]
@@ -29,7 +29,7 @@ graph LR
 
 A cursor in pypaginate contains:
 
-```mermaid
+```{mermaid}
 graph TB
     subgraph "Cursor Contents"
         direction TB
@@ -63,7 +63,7 @@ eyJ2YWx1ZXMiOiBbIjIwMjQtMDEtMTVUMTA6MzA6MDBaIiwgNDJdLCAiZGlyZWN0aW9uIjog...
 
 ## Encoding Process
 
-```mermaid
+```{mermaid}
 flowchart LR
     subgraph "Encoding"
         D[Dict] --> J[JSON]
@@ -86,7 +86,7 @@ flowchart LR
 
 ## Decoding Process
 
-```mermaid
+```{mermaid}
 flowchart LR
     subgraph "Decoding"
         U[URL-Safe] --> B[Base64]
@@ -105,7 +105,7 @@ flowchart LR
 
 Cursors are validated to prevent attacks and catch bugs:
 
-```mermaid
+```{mermaid}
 flowchart TD
     C[Cursor] --> V1{Valid Base64?}
     V1 -->|No| E1[Reject: Invalid format]
@@ -131,7 +131,7 @@ flowchart TD
 
 When sorting by multiple columns, the cursor contains values for all sort columns:
 
-```mermaid
+```{mermaid}
 graph TB
     subgraph "Single Column"
         S1["Sort: id"] --> SC["Cursor: {id: 42}"]
@@ -162,7 +162,7 @@ pypaginate handles this complexity automatically.
 
 Cursors support both forward and backward navigation:
 
-```mermaid
+```{mermaid}
 graph LR
     P1[Page 1] -->|next_cursor| P2[Page 2]
     P2 -->|next_cursor| P3[Page 3]
@@ -189,13 +189,14 @@ Cursors contain actual data values from your database:
 }
 ```
 
-!!! warning "Sensitive Data"
-    If you sort by sensitive columns (email, name, etc.), those values
-    will be visible in the cursor. Consider:
-    
-    - Sorting by non-sensitive columns (id, created_at)
-    - Encrypting cursors for sensitive applications
-    - Using opaque IDs instead of sensitive values
+:::{warning} Sensitive Data
+If you sort by sensitive columns (email, name, etc.), those values
+will be visible in the cursor. Consider:
+
+- Sorting by non-sensitive columns (id, created_at)
+- Encrypting cursors for sensitive applications
+- Using opaque IDs instead of sensitive values
+:::
 
 ### Cursor Tampering
 
@@ -239,14 +240,15 @@ print(data)
 # {'values': [42], 'sort': [{'column': 'id', 'desc': False}], ...}
 ```
 
-!!! note
-    Cursor internals may change between versions. Only use decode for debugging.
+:::{note}
+Cursor internals may change between versions. Only use decode for debugging.
+:::
 
 ## Implementation Details
 
 For those interested in the internals:
 
-```mermaid
+```{mermaid}
 classDiagram
     class CursorData {
         +values: list
@@ -272,5 +274,5 @@ classDiagram
 ## Further Reading
 
 - [Pagination Strategies](pagination-strategies.md) - When to use keyset pagination
-- [User Guide: Keyset Pagination](../user-guide/pagination/keyset.md) - Practical usage
+- [User Guide: Keyset Pagination](../pagination/keyset.md) - Practical usage
 - [Architecture](architecture.md) - Overall library design
