@@ -55,24 +55,28 @@ Before diving into phases, understand the **structural problems** in the current
 | FastAPI deps | `dependencies.py` (root) + `integrations/fastapi.py` | **DUPLICATED** `PagedResponse`! |
 | SQL adapters | `filters/sql_adapter.py`, `sorting/sql_adapter.py` | Scattered, not in `adapters/` |
 
-### Problem 3: Missing Hexagonal Structure
+### Problem 3: Unclear Separation of Concerns
 
-Current structure mixes all layers. Per `arch-hexagonal` skill:
+Current structure mixes pure logic with database-specific code. SQL concerns are
+scattered across 6+ packages (`engines/`, `filters/`, `sorting/`, `database/`,
+`query/`), while `database/` is a near-empty 2-file orphan. The `query/` package
+is a thin async wrapper that could live with its engine. The `core/` name is vague
+and `snapshots.py` inside it depends on `sqlakeyset` — violating the principle that
+core models should be dependency-free.
 
 ```
-CURRENT (problematic):              TARGET (clean):
+CURRENT (scattered SQL):            TARGET (consolidated):
 pypaginate/                         pypaginate/
-├── types.py (protocols)            ├── domain/           # Pure business logic
-├── core/ (domain?)                 │   ├── models/       # Page, PageParams, enums
-├── engines/ (infra?)               │   ├── protocols/    # All Protocol definitions
-├── filters/ (mixed)                │   └── services/     # FilterEngine, SortEngine
-├── query/ (application?)           ├── application/      # Use cases
-├── database/ (infra)               │   └── pagination.py # paginate_*, orchestration
-├── sorting/ (domain?)              ├── adapters/         # Infrastructure
-├── text/ (utility)                 │   ├── sqlalchemy/   # SQL pagination, filters, sorting
-├── integrations/ (infra)           │   ├── memory/       # In-memory pagination
-└── dependencies.py (infra)         │   └── fastapi/      # FastAPI integration
-                                    └── _internal/        # Utilities (text, etc.)
+├── types.py (protocols+sql)        ├── protocols.py      # All Protocol definitions
+├── core/ (models+sql dep)          ├── core/             # Pure models (no I/O deps)
+├── engines/ (sql+memory)           ├── engines/          # Pagination strategies
+├── filters/ (logic+sql)            │   ├── sql/          # SQLAlchemy backend
+├── query/ (thin sql wrapper)       │   └── memory.py     # In-memory backend
+├── database/ (orphan)              ├── filters/          # Filtering (keep as-is, clean)
+├── sorting/ (logic+sql)            ├── sorting/          # Sorting (keep as-is, clean)
+├── text/ (utility)                 ├── text/             # Text utilities (keep as-is)
+├── integrations/ (duplicate)       └── integrations/     # Framework support (deduplicated)
+└── dependencies.py (duplicate)
 ```
 
 ### Problem 4: Duplicate Code
@@ -314,406 +318,525 @@ omit = ["src/pypaginate/_cli.py"]
 ## Phase 1.5: Directory Architecture Restructure
 
 > **Rationale:** Before adding protocols and fixing SOLID violations, we must have a
-> coherent directory structure that reflects proper architectural layers. Moving files
-> AFTER adding protocols would require updating many more imports. Per `arch-hexagonal`
-> and `arch-principles` skills.
+> coherent directory structure. Moving files AFTER adding protocols would require
+> updating many more imports.
+>
+> **Design principles:**
+> 1. Keep folder names that already describe their purpose well (`engines/`, `filters/`, `sorting/`, `text/`)
+> 2. Fix the actual problems: duplicate files, scattered SQL, orphan packages
+> 3. Consolidate SQL code under `engines/sql/` — the natural home for all SQLAlchemy concerns
+> 4. Keep the structure flat enough to be navigable, deep enough to separate concerns
+> 5. Plan for future backends (Tortoise, Beanie) as siblings alongside `engines/sql/`
 
 ### Task 1.5.1: Design Target Directory Structure
 
-**Skill reference:** `arch-hexagonal`, `arch-principles`
-
-**Objective:** Define the target hexagonal architecture structure.
+**Objective:** Define the target structure that fixes all structural problems.
 
 **Target structure:**
 
 ```
 src/pypaginate/
-├── __init__.py              # Public API (re-exports from domain + application)
+├── __init__.py              # Public API (unchanged surface)
 ├── py.typed                 # PEP 561 marker
-├── exceptions.py            # Exception hierarchy (stays at root)
+├── exceptions.py            # Exception hierarchy (stays at root — used everywhere)
+├── protocols.py             # All Protocol definitions (was types.py — renamed for clarity)
 │
-├── domain/                  # CORE BUSINESS LOGIC (no external deps)
-│   ├── __init__.py
-│   ├── models/              # Pure data types
-│   │   ├── __init__.py
-│   │   ├── pages.py         # Page, PageParams, KeysetPageParams
-│   │   ├── enums.py         # NEW: OverflowStrategy, ResultMode, etc.
-│   │   └── context.py       # PaginationContext
-│   ├── protocols/           # All Protocol definitions
-│   │   ├── __init__.py
-│   │   ├── pagination.py    # PaginationBackend, PageParamsProtocol, PageProtocol
-│   │   ├── filtering.py     # FilterBackend, predicates protocols
-│   │   └── sorting.py       # SortBackend, SupportsTotalOrdering
-│   └── services/            # Pure domain services (no I/O)
+├── core/                    # PURE MODELS — no I/O, no SQLAlchemy, no external deps
+│   ├── __init__.py          # Re-exports: Page, PageParams, KeysetPageParams, etc.
+│   ├── pages.py             # Page[T], PageParams, KeysetPageParams (stays — clean)
+│   ├── context.py           # PaginationContext, clamp_page_params (stays — clean)
+│   └── enums.py             # NEW: OverflowStrategy, ResultMode, etc. (Phase 3)
+│
+├── engines/                 # PAGINATION STRATEGIES — one sub-package per backend
+│   ├── __init__.py          # Re-exports public engines
+│   ├── memory.py            # MemoryPaginator (stays — already clean, no SQL deps)
+│   └── sql/                 # ALL SQLAlchemy code consolidated here
+│       ├── __init__.py      # Re-exports: SqlPaginator, paginate_entities, etc.
+│       ├── paginator.py     # SqlPaginator (was engines/sql.py)
+│       ├── keyset.py        # select_keyset_page (was engines/keyset.py)
+│       ├── snapshots.py     # PaginationSnapshot, KeysetPaginationSnapshot (was core/snapshots.py)
+│       ├── count.py         # build_count_statement, fetch_count (was query/builders/count_builder.py)
+│       ├── executor.py      # Execution, gather_snapshot (was query/execution/async_executor.py)
+│       ├── api.py           # paginate_entities, paginate_scalars, etc. (was query/async_api.py)
+│       ├── filters.py       # SqlFilterAdapter (was filters/sql_adapter.py)
+│       ├── sorting.py       # SqlSortAdapter (was sorting/sql_adapter.py)
+│       ├── search.py        # SqlSearchService (was filters/search/sql_search.py)
+│       ├── collations.py    # Database collation provisioning (was database/collations.py)
+│       └── types.py         # SQLAlchemy type aliases (was database/types.py)
+│
+├── filters/                 # FILTERING SUBSYSTEM (keep — well-organized, large enough)
+│   ├── __init__.py          # Public API
+│   └── predicates/          # JSON Logic predicate engine (keep as-is — self-contained)
 │       ├── __init__.py
-│       ├── filter_engine.py # FilterEngine (predicate evaluation)
-│       ├── sort_engine.py   # SortEngine (in-memory sorting)
-│       └── text/            # Text processing utilities
+│       ├── builder.py
+│       ├── engine.py
+│       ├── field_accessor.py
+│       ├── jsonlogic_evaluator.py
+│       ├── operator_arguments.py
+│       ├── registry.py
+│       └── operators/
 │           ├── __init__.py
-│           ├── utf8.py
+│           ├── comparison.py
 │           ├── patterns.py
-│           └── pipelines.py
+│           ├── range.py
+│           ├── simple.py
+│           └── text.py
 │
-├── application/             # USE CASES (orchestration layer)
+├── search/                  # TEXT SEARCH SUBSYSTEM (promoted from filters/search/)
+│   ├── __init__.py          # Public API
+│   ├── conditions.py        # Search condition builders
+│   ├── factories.py         # Service factories
+│   ├── fuzzy.py             # Fuzzy matching
+│   ├── helpers.py           # SQL clause helpers
+│   ├── memory_search.py     # MemorySearchService (pure Python, stays here)
+│   ├── options.py           # Search configuration
+│   ├── parser.py            # Query parser
+│   └── strategies.py        # Search strategies
+│
+├── sorting/                 # SORTING SUBSYSTEM (keep — clean separation)
 │   ├── __init__.py
-│   ├── paginate.py          # paginate_entities, paginate_scalars, paginate_keyset
-│   └── search.py            # Search orchestration (if needed)
+│   └── engine.py            # SortEngine — in-memory sorting (pure Python)
 │
-├── adapters/                # INFRASTRUCTURE (external dependencies)
+├── text/                    # TEXT UTILITIES (keep as-is — clean, self-contained)
 │   ├── __init__.py
-│   ├── sqlalchemy/          # SQLAlchemy-specific implementations
-│   │   ├── __init__.py
-│   │   ├── paginator.py     # SqlPaginator (was engines/sql.py)
-│   │   ├── keyset.py        # KeysetPaginator (was engines/keyset.py)
-│   │   ├── filters.py       # SqlFilterAdapter (was filters/sql_adapter.py)
-│   │   ├── sorting.py       # SqlSortingAdapter (was sorting/sql_adapter.py)
-│   │   ├── search.py        # SqlSearchService (was filters/search/sql_search.py)
-│   │   ├── types.py         # SQLAlchemy type aliases (was database/types.py)
-│   │   ├── builders/        # Query builders
-│   │   │   ├── __init__.py
-│   │   │   └── count.py     # CountBuilder
-│   │   └── execution/       # Async executors
-│   │       ├── __init__.py
-│   │       └── async_executor.py
-│   ├── memory/              # In-memory implementations
-│   │   ├── __init__.py
-│   │   ├── paginator.py     # MemoryPaginator (was engines/memory.py)
-│   │   └── search.py        # MemorySearchService (was filters/search/memory_search.py)
-│   └── fastapi/             # FastAPI integration
-│       ├── __init__.py
-│       ├── dependencies.py  # get_pagination_params (SINGLE source, eliminates duplicate)
-│       └── responses.py     # PagedResponse → REMOVED when Page becomes Pydantic
+│   ├── api.py
+│   ├── utf8.py
+│   ├── patterns.py
+│   └── pipelines.py
 │
-├── filters/                 # KEEP: Complex enough to warrant own package
+├── integrations/            # FRAMEWORK SUPPORT (keep — single source of truth)
 │   ├── __init__.py
-│   ├── predicates/          # JSON Logic predicate engine
-│   │   ├── __init__.py
-│   │   ├── builder.py
-│   │   ├── engine.py        # Rename to evaluator.py for clarity
-│   │   ├── field_accessor.py
-│   │   ├── jsonlogic.py     # Rename from jsonlogic_evaluator.py
-│   │   ├── registry.py
-│   │   └── operators/       # Keep operator modules
-│   │       ├── __init__.py
-│   │       ├── comparison.py
-│   │       ├── patterns.py
-│   │       ├── range.py
-│   │       ├── simple.py
-│   │       └── text.py
-│   └── search/              # Search-specific (non-SQL parts)
-│       ├── __init__.py
-│       ├── options.py
-│       ├── parser.py
-│       ├── fuzzy.py
-│       ├── strategies.py
-│       └── conditions.py    # Rename to clause_builder.py
+│   └── fastapi.py           # PagedResponse + get_pagination_params (DEDUPLICATED)
 │
-└── _cli/                    # CLI (internal, split from _cli.py)
+└── _cli/                    # CLI (split from _cli.py in Phase 4)
     ├── __init__.py
     ├── commands.py
     ├── runner.py
     └── output.py
 ```
 
-**Key changes from current structure:**
+**Key design decisions:**
 
-| Current | Target | Reason |
-|---------|--------|--------|
-| `types.py` (root) | `domain/protocols/` | Clear protocol location |
-| `database/types.py` | `adapters/sqlalchemy/types.py` | With other SQLAlchemy code |
-| `engines/sql.py` | `adapters/sqlalchemy/paginator.py` | Infrastructure layer |
-| `engines/memory.py` | `adapters/memory/paginator.py` | Infrastructure layer |
-| `filters/sql_adapter.py` | `adapters/sqlalchemy/filters.py` | Infrastructure layer |
-| `sorting/sql_adapter.py` | `adapters/sqlalchemy/sorting.py` | Infrastructure layer |
-| `dependencies.py` | `adapters/fastapi/dependencies.py` | Infrastructure layer |
-| `integrations/fastapi.py` | `adapters/fastapi/` | Merge with dependencies.py |
-| `query/async_api.py` | `application/paginate.py` | Application layer |
-| `core/` | `domain/models/` | Clearer naming |
-| `text/` | `domain/services/text/` | Domain utility |
-| `sorting/engine.py` | `domain/services/sort_engine.py` | Domain service |
+| Decision | Rationale |
+|----------|-----------|
+| Rename `types.py` → `protocols.py` | Fixes duplicate name, describes actual content |
+| Move `snapshots.py` from `core/` → `engines/sql/` | It depends on `sqlakeyset` — not pure, belongs with SQL |
+| Consolidate all SQL in `engines/sql/` | Fixes scattered concerns — single place for all SQLAlchemy code |
+| Absorb `database/` into `engines/sql/` | `database/` was an orphan (2 files) — its content is SQL-specific |
+| Absorb `query/` into `engines/sql/` | `query/` was a thin async wrapper over `engines/sql` — same concern |
+| Promote `filters/search/` → `search/` | Search is a top-level concern, not a sub-concern of filtering |
+| Remove `filters/sql_adapter.py` | SQL filtering belongs in `engines/sql/filters.py` |
+| Remove `sorting/sql_adapter.py` | SQL sorting belongs in `engines/sql/sorting.py` |
+| Delete `dependencies.py` | Duplicate of `integrations/fastapi.py` — keep one source |
+| Keep `engines/memory.py` flat | Single file, no sub-package needed |
+| Keep `filters/predicates/` as-is | Well-organized, self-contained, no changes needed |
+| Keep `text/` as-is | Clean, no external deps, no issues |
+| Keep `sorting/engine.py` | Pure Python sorting — no SQL deps |
+
+**What this solves:**
+
+| Problem | Solution |
+|---------|----------|
+| Duplicate `types.py` | Root renamed to `protocols.py`, SQL aliases in `engines/sql/types.py` |
+| Duplicate `engine.py` | `filters/predicates/engine.py` stays, `sorting/engine.py` stays — different packages |
+| Duplicate `PagedResponse` | Delete `dependencies.py`, keep `integrations/fastapi.py` |
+| Scattered SQL concerns | All consolidated under `engines/sql/` |
+| Orphan `database/` package | Absorbed into `engines/sql/` |
+| Thin `query/` wrapper | Absorbed into `engines/sql/` |
+| `snapshots.py` in pure `core/` | Moved to `engines/sql/` where its `sqlakeyset` dep belongs |
+| No clear layers | Pure core → engines (backends) → integrations (frameworks) |
+
+**Future evolution (v0.2.0+):**
+
+```
+engines/
+├── memory.py              # Existing in-memory backend
+├── sql/                   # Existing SQLAlchemy backend
+│   └── ...
+├── tortoise/              # NEW: Tortoise ORM backend
+│   ├── __init__.py
+│   ├── paginator.py
+│   ├── filters.py
+│   └── sorting.py
+└── beanie/                # NEW: Beanie/MongoDB backend
+    ├── __init__.py
+    ├── paginator.py
+    └── filters.py
+```
+
+New backends become sibling packages under `engines/`. Each backend contains
+its own paginator, filters, sorting, and search — no scattered concerns.
 
 **Verification:**
-- Directory structure matches target
-- Document created for team review
+- Target structure documented and reviewed
+- No `domain/`, `application/`, `adapters/`, or `_internal/` directories
 
 ---
 
-### Task 1.5.2: Create New Directory Structure
+### Task 1.5.2: Create New Directories
 
-**Objective:** Create the new directories (empty `__init__.py` files).
+**Objective:** Create the new directory structure.
 
 ```bash
-# Create domain layer
-mkdir -p src/pypaginate/domain/{models,protocols,services/text}
+# engines/sql/ — the main new package
+mkdir -p src/pypaginate/engines/sql
 
-# Create application layer
-mkdir -p src/pypaginate/application
+# search/ — promoted from filters/search/
+mkdir -p src/pypaginate/search
 
-# Create adapters layer
-mkdir -p src/pypaginate/adapters/{sqlalchemy/{builders,execution},memory,fastapi}
-
-# Create CLI package
+# _cli/ — will be used in Phase 4 (Task 4.1), create now for consistency
 mkdir -p src/pypaginate/_cli
 ```
 
-**Verification:**
-- All directories exist
-- Each has `__init__.py`
+**Create `__init__.py` for each new package:**
 
----
-
-### Task 1.5.3: Move Domain Models
-
-**Technique:** Move Method/Class (`guru-refactor-moving`)
-
-**Files to move:**
-
-| Source | Target |
-|--------|--------|
-| `core/pages.py` | `domain/models/pages.py` |
-| `core/context.py` | `domain/models/context.py` |
-| `core/snapshots.py` | `domain/models/snapshots.py` |
-
-**Process:**
-1. Copy file to new location
-2. Update internal imports
-3. Add re-export in old location for backward compatibility
-4. Run tests
-5. After all moves complete, update all imports to new locations
-6. Remove old re-exports
-
-**Backward compatibility stub (temporary):**
 ```python
-# core/pages.py (after move)
-"""Deprecated: Import from pypaginate.domain.models.pages instead."""
-from pypaginate.domain.models.pages import Page, PageParams, KeysetPageParams
+# engines/sql/__init__.py
+"""SQLAlchemy pagination backend."""
+from __future__ import annotations
 
-__all__ = ["Page", "PageParams", "KeysetPageParams"]
+# search/__init__.py
+"""Text search subsystem."""
+from __future__ import annotations
+
+# _cli/__init__.py
+"""CLI commands for pypaginate."""
+from __future__ import annotations
 ```
 
 **Verification:**
-- Tests pass after each move
-- `from pypaginate import Page` still works
+- All new directories exist with `__init__.py`
+- Existing directories untouched
 
 ---
 
-### Task 1.5.4: Move Protocols
+### Task 1.5.3: Rename `types.py` → `protocols.py`
 
-**Technique:** Move Method/Class (`guru-refactor-moving`)
+**Technique:** Rename Method/Class (`guru-refactor-calls`) — applied to module
 
-**Files to move/split:**
-
-| Source | Target |
-|--------|--------|
-| `types.py` (protocols) | `domain/protocols/pagination.py` |
-| `types.py` (SQL abstractions) | `domain/protocols/sql.py` |
-
-**Split `types.py` into:**
-- `domain/protocols/pagination.py` — `PageParamsProtocol`, `PageProtocol`
-- `domain/protocols/sql.py` — `SqlClause`, `SqlStringExpression`
-- `domain/protocols/ordering.py` — `SupportsTotalOrdering`
-
-**Verification:**
-- Original `types.py` becomes thin re-export
-- All imports still work
-
----
-
-### Task 1.5.5: Move SQLAlchemy Adapters
-
-**Technique:** Move Method/Class (`guru-refactor-moving`)
-
-**Files to move:**
-
-| Source | Target |
-|--------|--------|
-| `engines/sql.py` | `adapters/sqlalchemy/paginator.py` |
-| `engines/keyset.py` | `adapters/sqlalchemy/keyset.py` |
-| `filters/sql_adapter.py` | `adapters/sqlalchemy/filters.py` |
-| `sorting/sql_adapter.py` | `adapters/sqlalchemy/sorting.py` |
-| `filters/search/sql_search.py` | `adapters/sqlalchemy/search.py` |
-| `database/types.py` | `adapters/sqlalchemy/types.py` |
-| `database/collations.py` | `adapters/sqlalchemy/collations.py` |
-| `query/builders/count_builder.py` | `adapters/sqlalchemy/builders/count.py` |
-| `query/execution/async_executor.py` | `adapters/sqlalchemy/execution/async_executor.py` |
-
-**Verification:**
-- All SQLAlchemy code is under `adapters/sqlalchemy/`
-- Tests pass
-
----
-
-### Task 1.5.6: Move Memory Adapters
-
-**Technique:** Move Method/Class (`guru-refactor-moving`)
-
-**Files to move:**
-
-| Source | Target |
-|--------|--------|
-| `engines/memory.py` | `adapters/memory/paginator.py` |
-| `filters/search/memory_search.py` | `adapters/memory/search.py` |
-
-**Verification:**
-- All in-memory implementations are under `adapters/memory/`
-- Tests pass
-
----
-
-### Task 1.5.7: Consolidate FastAPI Integration
-
-**Technique:** Inline Class (`guru-refactor-moving`) — merge duplicates
-**Smell:** Duplicate Code (`PagedResponse` in two files)
-
-**Problem:** `PagedResponse` is defined in both:
-- `dependencies.py:24-48`
-- `integrations/fastapi.py:31+`
-
-**Solution:**
-1. Create `adapters/fastapi/dependencies.py` with canonical `PagedResponse`
-2. Create `adapters/fastapi/params.py` with `get_pagination_params`
-3. Delete `dependencies.py` (root level)
-4. Delete `integrations/fastapi.py`
-5. Update `adapters/fastapi/__init__.py` to export public API
-
-**Verification:**
-- Single `PagedResponse` definition
-- All FastAPI tests pass
-- `from pypaginate.adapters.fastapi import PagedResponse` works
-
----
-
-### Task 1.5.8: Move Application Layer
-
-**Technique:** Move Method/Class (`guru-refactor-moving`)
-
-**Files to move:**
-
-| Source | Target |
-|--------|--------|
-| `query/async_api.py` | `application/paginate.py` |
-
-**Verification:**
-- `paginate_entities`, `paginate_scalars`, `paginate_keyset` accessible
-- Tests pass
-
----
-
-### Task 1.5.9: Move Domain Services
-
-**Technique:** Move Method/Class (`guru-refactor-moving`)
-
-**Files to move:**
-
-| Source | Target |
-|--------|--------|
-| `sorting/engine.py` | `domain/services/sort_engine.py` |
-| `filters/predicates/engine.py` | `domain/services/filter_engine.py` |
-| `text/*.py` | `domain/services/text/*.py` |
-
-**Note:** Keep `text/api.py` content but rename to `domain/services/text/__init__.py`.
-
-**Verification:**
-- All pure domain services are in `domain/services/`
-- No SQLAlchemy imports in domain layer
-
----
-
-### Task 1.5.10: Update All Imports
-
-**Technique:** Rename Method (`guru-refactor-calls`) — applied to imports
+**Problem:** `types.py` at root collides with `database/types.py`. The root file
+contains Protocol definitions, not type aliases. Name should reflect content.
 
 **Process:**
-1. Use IDE/tooling to find all imports of moved modules
-2. Update to new locations
-3. Remove backward compatibility stubs
-4. Run full test suite
+1. Copy `types.py` → `protocols.py`
+2. Update all imports: `from pypaginate.types import ...` → `from pypaginate.protocols import ...`
+3. Add backward-compatible re-export in `types.py` temporarily
+4. Verify all tests pass
+5. Remove `types.py` after all imports updated
+
+**Files to update (imports):**
+- `__init__.py`
+- `engines/sql.py`
+- `filters/sql_adapter.py`
+- `sorting/engine.py`
+- `sorting/sql_adapter.py`
+- Any test files importing from `types`
 
 **Verification:**
-- `rg "from pypaginate.engines" src/` returns 0 results
-- `rg "from pypaginate.database" src/` returns 0 results
-- `rg "from pypaginate.query" src/` returns 0 results (except re-exports)
+- `protocols.py` contains all Protocol definitions
+- No import errors
+- `rg "from pypaginate.types" src/` returns only the re-export stub
+
+---
+
+### Task 1.5.4: Move SQL Code into `engines/sql/`
+
+**Technique:** Move Method/Class (`guru-refactor-moving`)
+
+**This is the core consolidation step.** All SQLAlchemy-dependent code moves here.
+
+**Files to move:**
+
+| Source | Target | Notes |
+|--------|--------|-------|
+| `engines/sql.py` | `engines/sql/paginator.py` | Rename for clarity |
+| `engines/keyset.py` | `engines/sql/keyset.py` | Same name, new home |
+| `core/snapshots.py` | `engines/sql/snapshots.py` | Depends on `sqlakeyset` — not pure core |
+| `database/types.py` | `engines/sql/types.py` | SQLAlchemy type aliases |
+| `database/collations.py` | `engines/sql/collations.py` | Database-specific |
+| `query/builders/count_builder.py` | `engines/sql/count.py` | SQL count building |
+| `query/execution/async_executor.py` | `engines/sql/executor.py` | SQL execution |
+| `query/async_api.py` | `engines/sql/api.py` | Async API over SQL engine |
+| `filters/sql_adapter.py` | `engines/sql/filters.py` | SQL filter building |
+| `sorting/sql_adapter.py` | `engines/sql/sorting.py` | SQL ORDER BY building |
+| `filters/search/sql_search.py` | `engines/sql/search.py` | SQL text search |
+
+**Process for each file:**
+1. Copy to new location
+2. Update internal imports (relative paths change)
+3. Add temporary re-export in old location
+4. Run `uv run pytest` after each move
+5. After all moves, update external imports
+6. Remove re-export stubs
+
+**Backward compatibility stub example:**
+```python
+# engines/sql.py (after move, temporary)
+"""Deprecated: Import from pypaginate.engines.sql.paginator instead."""
+from pypaginate.engines.sql.paginator import SqlPaginator  # noqa: F401
+```
+
+**Import update strategy:**
+- Internal imports (within the moved files) — fix relative paths immediately
+- External imports (from other packages) — update after all moves complete
+- Public API (`__init__.py`) — update last to maintain compatibility during migration
+
+**Verification:**
+- `engines/sql/` contains 11 files + `__init__.py`
+- All SQLAlchemy imports are within `engines/sql/`
+- `rg "from sqlalchemy" src/ --files-with-matches` shows only files in `engines/sql/` and `integrations/`
 - All tests pass
 
 ---
 
-### Task 1.5.11: Clean Up Empty Directories
+### Task 1.5.5: Promote `filters/search/` → `search/`
+
+**Technique:** Move Method/Class (`guru-refactor-moving`)
+
+**Rationale:** Search is a significant subsystem (8 files, ~1500 lines) that handles
+its own concerns: parsing, fuzzy matching, strategies, memory search. It deserves
+top-level visibility rather than being nested under `filters/`.
+
+The SQL search service (`sql_search.py`) already moved to `engines/sql/search.py`
+in Task 1.5.4. The remaining files are pure Python or memory-based.
+
+**Files to move:**
+
+| Source | Target |
+|--------|--------|
+| `filters/search/conditions.py` | `search/conditions.py` |
+| `filters/search/factories.py` | `search/factories.py` |
+| `filters/search/fuzzy.py` | `search/fuzzy.py` |
+| `filters/search/helpers.py` | `search/helpers.py` |
+| `filters/search/memory_search.py` | `search/memory_search.py` |
+| `filters/search/options.py` | `search/options.py` |
+| `filters/search/parser.py` | `search/parser.py` |
+| `filters/search/strategies.py` | `search/strategies.py` |
+| `filters/search/__init__.py` | `search/__init__.py` |
+
+**Process:**
+1. Move all files at once (they're self-contained)
+2. Update internal imports between search files
+3. Update imports from other packages that reference `filters.search`
+4. Remove `filters/search/` directory
+5. Run tests
+
+**Verification:**
+- `search/` exists as top-level package
+- `filters/search/` removed
+- `rg "from.*filters.search" src/` returns 0 results
+- All search tests pass
+
+---
+
+### Task 1.5.6: Delete Duplicate FastAPI Code
+
+**Technique:** Inline Class (`guru-refactor-moving`) — merge duplicates
+**Smell:** Duplicate Code
+
+**Problem:** `PagedResponse` defined in both:
+- `dependencies.py:24-48` (unconditional `fastapi` import — breaks if fastapi missing)
+- `integrations/fastapi.py:31-65` (proper try/except — graceful fallback)
+
+**Solution:**
+1. Keep `integrations/fastapi.py` as the single source of truth (it has proper error handling)
+2. Delete `dependencies.py` entirely
+3. Update `__init__.py` if it imports from `dependencies`
+4. Update any test files
+
+**Verification:**
+- `dependencies.py` deleted
+- `rg "from.*dependencies" src/` returns 0 results
+- `from pypaginate.integrations.fastapi import PagedResponse` works
+- `PagedResponse` definition exists in exactly 1 file
+
+---
+
+### Task 1.5.7: Clean Up Empty Packages
 
 **After all moves complete:**
 
 ```bash
-# Remove old directories (now empty or just re-exports)
-rm -rf src/pypaginate/engines/
-rm -rf src/pypaginate/database/
-rm -rf src/pypaginate/integrations/
-rm -rf src/pypaginate/query/
-rm -rf src/pypaginate/core/
-rm -rf src/pypaginate/sorting/  # Keep only if sql_adapter.py stays
-rm src/pypaginate/dependencies.py
-rm src/pypaginate/types.py  # Replaced by domain/protocols/
+# Remove absorbed packages
+rm -rf src/pypaginate/database/          # Absorbed into engines/sql/
+rm -rf src/pypaginate/query/             # Absorbed into engines/sql/
+rm -rf src/pypaginate/filters/search/    # Promoted to search/
+rm src/pypaginate/dependencies.py        # Duplicate deleted
+rm src/pypaginate/types.py               # Renamed to protocols.py
+
+# Remove old engine files (now in engines/sql/)
+rm src/pypaginate/engines/sql.py         # Now engines/sql/paginator.py
+rm src/pypaginate/engines/keyset.py      # Now engines/sql/keyset.py
+
+# Remove moved adapters
+rm src/pypaginate/filters/sql_adapter.py # Now engines/sql/filters.py
+rm src/pypaginate/sorting/sql_adapter.py # Now engines/sql/sorting.py
+
+# Remove snapshots from core (now in engines/sql/)
+rm src/pypaginate/core/snapshots.py      # Now engines/sql/snapshots.py
 ```
 
 **Verification:**
-- No orphan directories
-- Clean structure matches target
-- All tests pass
+- No orphan directories remain
+- No empty `__init__.py`-only packages
+- `find src/pypaginate -type d -empty` returns nothing
 
 ---
 
-### Task 1.5.12: Update Public API Exports
+### Task 1.5.8: Update `engines/sql/__init__.py` Public API
+
+**Objective:** Make `engines/sql/` a clean public package with well-defined exports.
+
+```python
+# engines/sql/__init__.py
+"""SQLAlchemy pagination backend.
+
+This package provides all SQLAlchemy-specific pagination functionality:
+- SqlPaginator: Offset and keyset pagination orchestrator
+- Async API: paginate_entities, paginate_scalars, paginate_keyset
+- Filters: SqlFilterAdapter for WHERE clause building
+- Sorting: SqlSortAdapter for ORDER BY building
+- Search: SqlSearchService for text search
+"""
+from __future__ import annotations
+
+from .api import paginate_entities, paginate_keyset, paginate_scalars
+from .paginator import SqlPaginator
+
+__all__ = [
+    "SqlPaginator",
+    "paginate_entities",
+    "paginate_keyset",
+    "paginate_scalars",
+]
+```
+
+**Verification:**
+- `from pypaginate.engines.sql import SqlPaginator` works
+- `from pypaginate.engines.sql import paginate_entities` works
+
+---
+
+### Task 1.5.9: Update Root `__init__.py` Public API
 
 **File:** `src/pypaginate/__init__.py`
 
-**Update exports to use new locations:**
+**Update imports to use new locations:**
 
 ```python
-# New public API
-from pypaginate.domain.models.pages import Page, PageParams, KeysetPageParams
-from pypaginate.domain.protocols.pagination import (
+# Models (from core — unchanged)
+from pypaginate.core.pages import Page, PageParams, KeysetPageParams
+
+# Protocols (renamed module)
+from pypaginate.protocols import (
     PageParamsProtocol,
     PageProtocol,
-    PaginationBackend,
+    SupportsTotalOrdering,
 )
-from pypaginate.application.paginate import (
+
+# Engines
+from pypaginate.engines.sql import SqlPaginator
+from pypaginate.engines.memory import MemoryPaginator
+
+# Async API (new location)
+from pypaginate.engines.sql.api import (
     paginate_entities,
     paginate_scalars,
     paginate_keyset,
 )
-from pypaginate.adapters.sqlalchemy.paginator import SqlPaginator
-from pypaginate.adapters.memory.paginator import MemoryPaginator
+
+# Exceptions (unchanged)
 from pypaginate.exceptions import (
     PaginationError,
     PageOutOfRangeError,
     # ... all exceptions
 )
+```
 
-__all__ = [
-    # Models
-    "Page",
-    "PageParams",
-    "KeysetPageParams",
-    # Protocols
-    "PageParamsProtocol",
-    "PageProtocol",
-    "PaginationBackend",
-    # Functions
-    "paginate_entities",
-    "paginate_scalars",
-    "paginate_keyset",
-    # Classes
-    "SqlPaginator",
-    "MemoryPaginator",
-    # Exceptions
-    "PaginationError",
-    "PageOutOfRangeError",
-    # ...
-]
+**Key constraint:** The *public* API surface must not change. Users who do
+`from pypaginate import Page, paginate_entities` must not break.
+
+**Verification:**
+- `from pypaginate import Page, paginate_entities, SqlPaginator` works
+- `python -c "from pypaginate import *; print(dir())"` shows expected names
+- All existing tests pass without import changes in test files
+
+---
+
+### Task 1.5.10: Update All Internal Imports
+
+**Technique:** Rename Method (`guru-refactor-calls`) — applied to imports
+
+**Systematic process:**
+1. Search for all imports of moved modules
+2. Update to new locations
+3. Remove all backward compatibility stubs
+4. Run full test suite
+
+**Search patterns:**
+```bash
+rg "from pypaginate.database" src/          # → engines/sql/types, engines/sql/collations
+rg "from pypaginate.query" src/             # → engines/sql/api, engines/sql/executor, engines/sql/count
+rg "from pypaginate.engines.sql import" src/  # → engines/sql/paginator (if referencing old sql.py)
+rg "from pypaginate.engines.keyset" src/    # → engines/sql/keyset
+rg "from pypaginate.types" src/             # → protocols
+rg "from pypaginate.dependencies" src/      # → integrations/fastapi
+rg "from pypaginate.core.snapshots" src/    # → engines/sql/snapshots
+rg "from.*filters.sql_adapter" src/         # → engines/sql/filters
+rg "from.*sorting.sql_adapter" src/         # → engines/sql/sorting
+rg "from.*filters.search" src/              # → search/
+```
+
+**Also update test files:**
+```bash
+rg "from pypaginate" tests/                 # Check all test imports
 ```
 
 **Verification:**
-- `from pypaginate import Page, paginate_entities` works
-- Public API unchanged for users
-- `python -c "from pypaginate import *; print(dir())"` shows expected names
+- All `rg` patterns above return 0 results (or only `__init__.py` re-exports)
+- `uv run pytest` passes with 0 failures
+- `uv run mypy src/` passes
+- `uv run ruff check src/` passes
+
+---
+
+### Phase 1.5 Summary
+
+**Before → After file count:**
+
+| Package | Before | After | Change |
+|---------|--------|-------|--------|
+| Root modules | 5 (`__init__`, `types`, `exceptions`, `dependencies`, `_cli`) | 4 (`__init__`, `protocols`, `exceptions`, `_cli`) | -1 (deleted duplicate) |
+| `core/` | 4 (`__init__`, `pages`, `context`, `snapshots`) | 3 (`__init__`, `pages`, `context`) | -1 (snapshots moved to sql) |
+| `engines/` | 4 (`__init__`, `sql`, `keyset`, `memory`) | 2+12 (`__init__`, `memory` + `sql/` package) | Consolidated |
+| `engines/sql/` | — | 12 | New (consolidated from 5 packages) |
+| `database/` | 3 | 0 | Absorbed into `engines/sql/` |
+| `query/` | 6 | 0 | Absorbed into `engines/sql/` |
+| `filters/` | 2 (`__init__`, `sql_adapter`) + search + predicates | 1 (`__init__`) + predicates only | SQL moved, search promoted |
+| `search/` | — | 9 | Promoted from `filters/search/` |
+| `sorting/` | 3 (`__init__`, `engine`, `sql_adapter`) | 2 (`__init__`, `engine`) | SQL moved |
+| `text/` | 5 | 5 | Unchanged |
+| `integrations/` | 3 | 3 | Unchanged (duplicate deleted elsewhere) |
+| **Total** | 57 | ~57 | Same count, better organization |
+
+**Dependency flow after restructure:**
+
+```
+pypaginate/
+├── protocols.py           ← depends on: nothing (pure Protocol definitions)
+├── exceptions.py          ← depends on: nothing
+├── core/                  ← depends on: exceptions (pure models)
+├── text/                  ← depends on: nothing (pure utilities)
+├── filters/predicates/    ← depends on: nothing (pure logic)
+├── search/                ← depends on: text/ (pure + memory)
+├── sorting/               ← depends on: protocols (pure logic)
+├── engines/memory.py      ← depends on: core/ (no SQL)
+├── engines/sql/           ← depends on: core/, protocols, sqlalchemy, sqlakeyset
+└── integrations/fastapi   ← depends on: core/, fastapi, pydantic
+```
+
+Each layer only depends on layers above it. SQL is fully contained.
+Pure logic has zero external dependencies. Clean separation.
 
 ---
 
@@ -724,7 +847,7 @@ __all__ = [
 
 ### Task 2.1: Add Backend Protocol Interfaces
 
-**File:** `src/pypaginate/types.py`
+**File:** `src/pypaginate/protocols.py` (was `types.py`, renamed in Phase 1.5)
 **Smell:** Alternative Classes with Different Interfaces
 **Principle:** Dependency Inversion Principle (DIP)
 **Technique:** Extract Superclass (`guru-refactor-generalization`)
@@ -766,14 +889,14 @@ class SortBackend(Protocol):
 ```
 
 **Verification:**
-- `uv run mypy src/pypaginate/types.py` passes
-- Protocols are exported in `types.py.__all__`
+- `uv run mypy src/pypaginate/protocols.py` passes
+- Protocols are exported in `protocols.py.__all__`
 
 ---
 
 ### Task 2.2: Implement PaginationBackend for SqlPaginator
 
-**File:** `src/pypaginate/engines/sql.py`
+**File:** `src/pypaginate/engines/sql/paginator.py` (was `engines/sql.py`)
 **Technique:** Adapt existing class to Protocol
 
 **Action:**
@@ -804,7 +927,7 @@ class SortBackend(Protocol):
 
 ### Task 2.4: Implement FilterBackend for SqlFilterAdapter
 
-**File:** `src/pypaginate/filters/sql_adapter.py`
+**File:** `src/pypaginate/engines/sql/filters.py` (was `filters/sql_adapter.py`)
 **Technique:** Adapt existing class to Protocol
 
 **Action:**
@@ -819,7 +942,7 @@ class SortBackend(Protocol):
 
 ### Task 2.5: Implement SortBackend for SqlSortingAdapter
 
-**File:** `src/pypaginate/sorting/sql_adapter.py`
+**File:** `src/pypaginate/engines/sql/sorting.py` (was `sorting/sql_adapter.py`)
 **Technique:** Adapt existing class to Protocol
 
 **Action:**
@@ -968,10 +1091,10 @@ class MatchPosition(Enum):
 ### Task 3.2: Replace Boolean Parameters — Batch 1 (prefix, 10 occurrences)
 
 **Files:**
-- `filters/search/conditions.py`
-- `filters/search/fuzzy.py`
-- `filters/search/helpers.py`
-- `filters/search/memory_search.py`
+- `search/conditions.py`
+- `search/fuzzy.py`
+- `search/helpers.py`
+- `search/memory_search.py`
 
 **Technique:** Replace Parameter with Explicit Methods (`guru-refactor-calls`)
 
@@ -1001,10 +1124,10 @@ def build_condition(field, term, mode: SearchFieldMode = SearchFieldMode.PREFIX)
 ### Task 3.3: Replace Boolean Parameters — Batch 2 (unique, 9 occurrences)
 
 **Files:**
-- `engines/keyset.py`
-- `engines/sql.py`
-- `query/builders/count_builder.py`
-- `query/execution/async_executor.py`
+- `engines/sql/keyset.py`
+- `engines/sql/paginator.py`
+- `engines/sql/count.py`
+- `engines/sql/executor.py`
 
 **Technique:** Replace Parameter with Explicit Methods (`guru-refactor-calls`)
 
@@ -1027,10 +1150,10 @@ def fetch(self, query, mode: ResultMode = ResultMode.UNIQUE): ...
 ### Task 3.4: Replace Boolean Parameters — Batch 3 (scalars, 8 occurrences)
 
 **Files:**
-- `core/snapshots.py`
-- `engines/sql.py`
-- `query/async_api.py`
-- `query/execution/async_executor.py`
+- `engines/sql/snapshots.py`
+- `engines/sql/paginator.py`
+- `engines/sql/api.py`
+- `engines/sql/executor.py`
 
 **Technique:** Replace Parameter with Explicit Methods (`guru-refactor-calls`)
 
@@ -1080,7 +1203,7 @@ def sort_descending(self, items, field): ...
 
 ### Task 3.7: Refactor SqlFilterAdapter.build_condition (35 lines)
 
-**File:** `src/pypaginate/filters/sql_adapter.py`
+**File:** `src/pypaginate/engines/sql/filters.py` (was `filters/sql_adapter.py`)
 **Smell:** Long Method + Switch Statements
 **Technique:** Replace Conditional with Polymorphism (`guru-refactor-conditionals`)
 
@@ -1135,7 +1258,7 @@ def build_condition(column: Column, operator: str, value: Any) -> ClauseElement:
 
 ### Task 3.8: Add Missing SQL Adapter Operators (10 operators)
 
-**File:** `src/pypaginate/filters/sql_adapter.py`
+**File:** `src/pypaginate/engines/sql/filters.py` (was `filters/sql_adapter.py`)
 **Smell:** Incomplete Library Class
 **Technique:** Introduce Foreign Method (`guru-refactor-moving`)
 
@@ -1202,7 +1325,7 @@ src/pypaginate/_cli/
 
 **Target structure:**
 ```
-src/pypaginate/filters/search/
+src/pypaginate/search/
 ├── memory_engine.py    # Core MemorySearchService (~150 lines)
 ├── memory_scoring.py   # Scoring/ranking logic (~150 lines)
 ├── memory_matching.py  # Pattern matching (~150 lines)
@@ -1218,12 +1341,12 @@ src/pypaginate/filters/search/
 
 ### Task 4.3: Split `helpers.py` (302 lines → 2 files)
 
-**File:** `src/pypaginate/filters/search/helpers.py`
+**File:** `src/pypaginate/search/helpers.py` (was `filters/search/helpers.py`)
 **Technique:** Extract Class (`guru-refactor-moving`)
 
 **Target structure:**
 ```
-src/pypaginate/filters/search/
+src/pypaginate/search/
 ├── sql_helpers.py    # SQL clause building (~150 lines)
 ├── field_helpers.py  # Field expression building (~150 lines)
 └── helpers.py        # Re-exports for backward compatibility
@@ -1241,11 +1364,11 @@ src/pypaginate/filters/search/
 
 | File | Lines | Target Structure |
 |------|-------|-----------------|
-| `options.py` | 298 | `config.py` + `validation.py` |
-| `async_api.py` | 289 | Extract `options.py` |
-| `engines/sql.py` | 287 | `sql_count.py` + `sql_fetch.py` |
+| `search/options.py` | 298 | `config.py` + `validation.py` |
+| `engines/sql/api.py` | 289 | Extract `options.py` |
+| `engines/sql/paginator.py` | 287 | Extract count/fetch helpers |
 | `parser.py` | 245 | Extract `tokens.py` |
-| `snapshots.py` | 228 | Extract `serialization.py` |
+| `engines/sql/snapshots.py` | 228 | Extract `serialization.py` |
 | `sorting/engine.py` | 217 | Extract `null_handling.py` |
 | `field_accessor.py` | 206 | Extract `path_resolver.py` |
 
@@ -1317,7 +1440,7 @@ def _patched_json_logic_env():
 
 ### Task 4.7: Extract `_coerce_mode_option` (13 lines)
 
-**File:** `src/pypaginate/filters/search/options.py` (or `validation.py` after split)
+**File:** `src/pypaginate/search/options.py` (or `validation.py` after split)
 **Technique:** Extract Method (`guru-refactor-methods`)
 
 **Verification:**
@@ -1339,9 +1462,9 @@ def _patched_json_logic_env():
 |------|-------|--------|
 | `sorting/engine.py` | 27, 174, 175, 185, 214 | Delete (changelog-style comments) |
 | `filters/predicates/jsonlogic_evaluator.py` | 3–4, 99, 131, 150 | Translate docstrings to English |
-| `filters/search/__init__.py` | 21, 27, 29, 33 | Translate to English |
+| `search/__init__.py` | 21, 27, 29, 33 | Translate to English |
 | `filters/__init__.py` | 24, 36, 54, 65 | Translate to English |
-| `filters/search/helpers.py` | 85 | Translate to English |
+| `search/helpers.py` | 85 | Translate to English |
 
 **Verification:**
 - `rg "[àâäéèêëîïôùûüç]" src/` returns 0 results (no French characters)
@@ -1379,8 +1502,8 @@ uv run vulture src/ --min-confidence 80
 ```
 
 **Current known false positives:**
-- `types.py:121` — `other` in Protocol method (ignore)
-- `types.py:132` — `other` in Protocol method (ignore)
+- `protocols.py:121` — `other` in Protocol method (ignore)
+- `protocols.py:132` — `other` in Protocol method (ignore)
 
 **Process:**
 1. Run vulture
@@ -1436,7 +1559,7 @@ uv run bandit -r src/ -f txt
 ```
 
 **Expected results:**
-- Only known low-severity subprocess issues in `_cli.py`
+- Only known low-severity subprocess issues in `_cli/`
 - No medium or high severity issues
 
 **Verification:**
@@ -1519,17 +1642,17 @@ Copy this checklist and check off items as you complete them:
 
 ### Phase 1.5: Directory Architecture
 - [ ] Target directory structure designed and documented
-- [ ] New directories created (`domain/`, `application/`, `adapters/`)
-- [ ] Domain models moved (`pages.py`, `context.py`, `snapshots.py`)
-- [ ] Protocols extracted from `types.py` to `domain/protocols/`
-- [ ] SQLAlchemy adapters consolidated in `adapters/sqlalchemy/`
-- [ ] Memory adapters consolidated in `adapters/memory/`
-- [ ] FastAPI integration consolidated (duplicate `PagedResponse` eliminated)
-- [ ] Application layer created (`application/paginate.py`)
-- [ ] Domain services moved (`sort_engine.py`, `filter_engine.py`, `text/`)
-- [ ] All imports updated to new locations
-- [ ] Old directories cleaned up
-- [ ] Public API exports updated in `__init__.py`
+- [ ] New directories created (`engines/sql/`, `search/`, `_cli/`)
+- [ ] `types.py` renamed to `protocols.py`
+- [ ] All SQL code consolidated in `engines/sql/` (11 files moved)
+- [ ] `filters/search/` promoted to top-level `search/`
+- [ ] Duplicate `dependencies.py` deleted
+- [ ] Empty packages cleaned up (`database/`, `query/`)
+- [ ] `engines/sql/__init__.py` exports configured
+- [ ] Root `__init__.py` exports updated to new locations
+- [ ] All internal imports updated
+- [ ] `rg "from sqlalchemy" src/ --files-with-matches` shows only `engines/sql/` and `integrations/`
+- [ ] Public API surface unchanged for users
 
 ### Phase 2: Architecture
 - [ ] `PaginationBackend` protocol added
