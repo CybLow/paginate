@@ -96,19 +96,19 @@ jobs:
           uv run cyclonedx-py environment -o sbom.xml --format xml
 
       - name: 🔏 Generate build attestation
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/*
 
       - name: 📤 Upload dist
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
           retention-days: 5
 
       - name: 📤 Upload SBOM
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: sbom
           path: |
@@ -135,7 +135,7 @@ jobs:
 
     steps:
       - name: 📥 Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
@@ -166,7 +166,7 @@ jobs:
 
     steps:
       - name: 📥 Download artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
@@ -189,13 +189,13 @@ jobs:
 
     steps:
       - name: 📥 Download dist
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
 
       - name: 📥 Download SBOM
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: sbom
           path: sbom/
