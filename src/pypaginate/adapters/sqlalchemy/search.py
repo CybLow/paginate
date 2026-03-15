@@ -26,8 +26,8 @@ class SQLAlchemySearchBackend:
     and matches each token against all specified fields.
     """
 
+    @staticmethod
     def apply_search(
-        self,
         query: object,
         spec: SearchSpec,
     ) -> object:

@@ -26,8 +26,21 @@ def _source_files() -> list[Path]:
 
 
 def _count_lines(filepath: Path) -> int:
-    """Count non-empty lines in a file."""
-    return len(filepath.read_text(encoding="utf-8").splitlines())
+    """Count lines of code (excluding comments, docstrings, and blanks)."""
+    lines = filepath.read_text(encoding="utf-8").splitlines()
+    in_docstring = False
+    count = 0
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith('"""') or stripped.startswith("'''"):
+            if stripped.count('"""') >= 2 or stripped.count("'''") >= 2:
+                continue
+            in_docstring = not in_docstring
+            continue
+        if in_docstring or not stripped or stripped.startswith("#"):
+            continue
+        count += 1
+    return count
 
 
 def _file_label(filepath: Path) -> str:

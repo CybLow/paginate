@@ -26,8 +26,8 @@ class MemorySearchBackend:
     against item fields using text normalization.
     """
 
+    @staticmethod
     def apply_search(
-        self,
         query: object,
         spec: SearchSpec,
     ) -> object:

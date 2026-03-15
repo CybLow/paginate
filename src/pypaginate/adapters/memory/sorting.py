@@ -24,8 +24,8 @@ class MemorySortBackend:
     sort keys from SortSpec instances and applying them.
     """
 
+    @staticmethod
     def apply_sorting(
-        self,
         query: object,
         sorting: Sequence[SortSpec],
     ) -> object:
@@ -40,18 +40,18 @@ class MemorySortBackend:
         """
         items = list(query)  # type: ignore[call-overload]
         for spec in reversed(sorting):
-            items = self._sort_by_spec(items, spec)
+            items = _sort_by_spec(items, spec)
         return items
 
-    def _sort_by_spec(self, items: list[object], spec: SortSpec) -> list[object]:
-        """Sort items by a single sort specification."""
 
-        reverse = spec.direction is SortDirection.DESC
-        return sorted(
-            items,
-            key=lambda item: _sort_key(item, spec.field),
-            reverse=reverse,
-        )
+def _sort_by_spec(items: list[object], spec: SortSpec) -> list[object]:
+    """Sort items by a single sort specification."""
+    reverse = spec.direction is SortDirection.DESC
+    return sorted(
+        items,
+        key=lambda item: _sort_key(item, spec.field),
+        reverse=reverse,
+    )
 
 
 def _sort_key(item: object, field: str) -> tuple[bool, object]:

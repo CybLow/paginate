@@ -88,8 +88,8 @@ class FilterBackend(Protocol):
 class SortBackend(Protocol):
     """Translates sort specs to backend query ordering."""
 
+    @staticmethod
     def apply_sorting(
-        self,
         query: object,
         sorting: Sequence[SortSpec],
     ) -> object:
@@ -101,8 +101,8 @@ class SortBackend(Protocol):
 class SearchBackend(Protocol):
     """Translates search specs to backend query conditions."""
 
+    @staticmethod
     def apply_search(
-        self,
         query: object,
         spec: SearchSpec,
     ) -> object:

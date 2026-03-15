@@ -25,8 +25,8 @@ class SQLAlchemySortBackend:
     Satisfies ``SortBackend`` protocol.
     """
 
+    @staticmethod
     def apply_sorting(
-        self,
         query: object,
         sorting: Sequence[SortSpec],
     ) -> object:
