@@ -334,13 +334,12 @@ def _build_raw_pipeline_app(data: list[dict[str, Any]]) -> FastAPI:
 # -- SA apps (module-level, sync for benchmark simplicity) ---------
 
 
-def _build_pp_sa_app() -> tuple[FastAPI, Any]:
-    """pypaginate + sync SQLAlchemy through HTTP."""
-    from sqlalchemy import create_engine, select
+def _make_sa_engine_and_factory() -> tuple[Any, Any]:
+    """Create a sync SA engine + sessionmaker with 10K users."""
+    from sqlalchemy import create_engine
     from sqlalchemy.orm import Session, sessionmaker
     from sqlalchemy.pool import StaticPool
 
-    from pypaginate.adapters.sqlalchemy import SyncSQLAlchemyBackend
     from tests.fixtures.models import Base, User
 
     engine = create_engine(
@@ -350,13 +349,22 @@ def _build_pp_sa_app() -> tuple[FastAPI, Any]:
     )
     Base.metadata.create_all(engine)
     factory = sessionmaker(engine, class_=Session, expire_on_commit=False)
-
     with factory() as s:
         s.add_all(
             [User(id=i, name=f"User_{i}", email=f"u{i}@test.com") for i in range(10_000)],
         )
         s.commit()
+    return engine, factory
 
+
+def _build_pp_sa_app() -> tuple[FastAPI, Any]:
+    """pypaginate + sync SQLAlchemy through HTTP."""
+    from sqlalchemy import select
+
+    from pypaginate.adapters.sqlalchemy import SyncSQLAlchemyBackend
+    from tests.fixtures.models import User
+
+    engine, factory = _make_sa_engine_and_factory()
     app = FastAPI()
 
     @app.get("/users")
@@ -375,28 +383,136 @@ def _build_pp_sa_app() -> tuple[FastAPI, Any]:
     return app, engine
 
 
+def _build_pp_sa_filter_app() -> tuple[FastAPI, Any]:
+    """pypaginate + SA filter through HTTP."""
+    from sqlalchemy import select
+
+    from pypaginate.adapters.sqlalchemy import SyncSQLAlchemyBackend
+    from pypaginate.adapters.sqlalchemy.filters import SQLAlchemyFilterBackend
+    from pypaginate.adapters.sqlalchemy.sorting import SQLAlchemySortBackend
+    from pypaginate.engine.pipeline import SyncPipeline
+    from tests.fixtures.models import User
+
+    engine, factory = _make_sa_engine_and_factory()
+    app = FastAPI()
+
+    @app.get("/filter")
+    def filter_users(
+        params: OffsetDep,
+        name_prefix: str = Query("User_5"),
+    ) -> dict[str, object]:
+        with factory() as s:
+            backend = SyncSQLAlchemyBackend(s)
+            fb = SQLAlchemyFilterBackend()
+            sb = SQLAlchemySortBackend()
+            pag: Paginator[Any] = Paginator(backend)  # type: ignore[arg-type]
+            pipe: SyncPipeline[Any] = SyncPipeline(pag, filter_backend=fb, sort_backend=sb)
+            specs = [FilterSpec(field="name", operator="starts_with", value=name_prefix)]
+            page = pipe.execute(select(User), params, filters=specs)
+            items = [{"id": u.id, "name": u.name, "email": u.email} for u in page.items]
+            return {"items": items, "total": page.total}
+
+    return app, engine
+
+
+def _build_pp_sa_sort_app() -> tuple[FastAPI, Any]:
+    """pypaginate + SA sort through HTTP."""
+    from sqlalchemy import select
+
+    from pypaginate.adapters.sqlalchemy import SyncSQLAlchemyBackend
+    from pypaginate.adapters.sqlalchemy.sorting import SQLAlchemySortBackend
+    from pypaginate.engine.pipeline import SyncPipeline
+    from tests.fixtures.models import User
+
+    engine, factory = _make_sa_engine_and_factory()
+    app = FastAPI()
+
+    @app.get("/sort")
+    def sort_users(params: OffsetDep) -> dict[str, object]:
+        with factory() as s:
+            backend = SyncSQLAlchemyBackend(s)
+            sb = SQLAlchemySortBackend()
+            pag: Paginator[Any] = Paginator(backend)  # type: ignore[arg-type]
+            pipe: SyncPipeline[Any] = SyncPipeline(pag, sort_backend=sb)
+            specs = [SortSpec(field="name", direction=SortDirection.ASC)]
+            page = pipe.execute(select(User), params, sorting=specs)
+            items = [{"id": u.id, "name": u.name, "email": u.email} for u in page.items]
+            return {"items": items, "total": page.total}
+
+    return app, engine
+
+
+def _build_pp_sa_search_app() -> tuple[FastAPI, Any]:
+    """pypaginate + SA search through HTTP."""
+    from sqlalchemy import select
+
+    from pypaginate.adapters.sqlalchemy import SyncSQLAlchemyBackend
+    from pypaginate.adapters.sqlalchemy.search import SQLAlchemySearchBackend
+    from pypaginate.engine.pipeline import SyncPipeline
+    from tests.fixtures.models import User
+
+    engine, factory = _make_sa_engine_and_factory()
+    app = FastAPI()
+
+    @app.get("/search")
+    def search_users(params: OffsetDep) -> dict[str, object]:
+        with factory() as s:
+            backend = SyncSQLAlchemyBackend(s)
+            srch = SQLAlchemySearchBackend()
+            pag: Paginator[Any] = Paginator(backend)  # type: ignore[arg-type]
+            pipe: SyncPipeline[Any] = SyncPipeline(pag, search_backend=srch)
+            spec = SearchSpec(query="User_5", fields=("name",))
+            page = pipe.execute(select(User), params, search=spec)
+            items = [{"id": u.id, "name": u.name, "email": u.email} for u in page.items]
+            return {"items": items, "total": page.total}
+
+    return app, engine
+
+
+def _build_pp_sa_pipeline_app() -> tuple[FastAPI, Any]:
+    """pypaginate + SA full pipeline through HTTP."""
+    from sqlalchemy import select
+
+    from pypaginate.adapters.sqlalchemy import SyncSQLAlchemyBackend
+    from pypaginate.adapters.sqlalchemy.filters import SQLAlchemyFilterBackend
+    from pypaginate.adapters.sqlalchemy.search import SQLAlchemySearchBackend
+    from pypaginate.adapters.sqlalchemy.sorting import SQLAlchemySortBackend
+    from pypaginate.engine.pipeline import SyncPipeline
+    from tests.fixtures.models import User
+
+    engine, factory = _make_sa_engine_and_factory()
+    app = FastAPI()
+
+    @app.get("/pipeline")
+    def pipeline_users(params: OffsetDep) -> dict[str, object]:
+        with factory() as s:
+            backend = SyncSQLAlchemyBackend(s)
+            fb = SQLAlchemyFilterBackend()
+            sb = SQLAlchemySortBackend()
+            srch = SQLAlchemySearchBackend()
+            pag: Paginator[Any] = Paginator(backend)  # type: ignore[arg-type]
+            pipe: SyncPipeline[Any] = SyncPipeline(
+                pag,
+                filter_backend=fb,
+                sort_backend=sb,
+                search_backend=srch,
+            )
+            filters = [FilterSpec(field="name", operator="starts_with", value="User_5")]
+            sorting = [SortSpec(field="email", direction=SortDirection.ASC)]
+            page = pipe.execute(select(User), params, filters=filters, sorting=sorting)
+            items = [{"id": u.id, "name": u.name, "email": u.email} for u in page.items]
+            return {"items": items, "total": page.total}
+
+    return app, engine
+
+
 def _build_raw_sa_app() -> tuple[FastAPI, Any]:
     """Raw FastAPI + raw SQLAlchemy."""
-    from sqlalchemy import create_engine, func, select
-    from sqlalchemy.orm import Session, sessionmaker
-    from sqlalchemy.pool import StaticPool
+    from sqlalchemy import func, select
 
-    from tests.fixtures.models import Base, User
+    from tests.fixtures.models import User
 
-    engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    Base.metadata.create_all(engine)
-    factory = sessionmaker(engine, class_=Session, expire_on_commit=False)
-
-    with factory() as s:
-        s.add_all(
-            [User(id=i, name=f"User_{i}", email=f"u{i}@test.com") for i in range(10_000)],
-        )
-        s.commit()
-
+    engine, factory = _make_sa_engine_and_factory()
     app = FastAPI()
 
     @app.get("/users")
@@ -421,6 +537,119 @@ def _build_raw_sa_app() -> tuple[FastAPI, Any]:
                 "page": page,
                 "limit": limit,
             }
+
+    return app, engine
+
+
+def _build_raw_sa_filter_app() -> tuple[FastAPI, Any]:
+    """Raw SA WHERE filter through HTTP."""
+    from sqlalchemy import func, select
+
+    from tests.fixtures.models import User
+
+    engine, factory = _make_sa_engine_and_factory()
+    app = FastAPI()
+
+    @app.get("/filter")
+    def filter_users(
+        page: int = Query(1, ge=1),
+        limit: int = Query(20, ge=1),
+    ) -> dict[str, object]:
+        with factory() as s:
+            base = select(User).where(User.name.startswith("User_5"))
+            total = s.execute(
+                select(func.count()).select_from(base.subquery()),
+            ).scalar_one()
+            offset = (page - 1) * limit
+            items = [
+                {"id": u.id, "name": u.name, "email": u.email}
+                for u in s.execute(base.offset(offset).limit(limit)).scalars()
+            ]
+            return {"items": items, "total": total}
+
+    return app, engine
+
+
+def _build_raw_sa_sort_app() -> tuple[FastAPI, Any]:
+    """Raw SA ORDER BY through HTTP."""
+    from sqlalchemy import select
+
+    from tests.fixtures.models import User
+
+    engine, factory = _make_sa_engine_and_factory()
+    app = FastAPI()
+
+    @app.get("/sort")
+    def sort_users(
+        page: int = Query(1, ge=1),
+        limit: int = Query(20, ge=1),
+    ) -> dict[str, object]:
+        with factory() as s:
+            base = select(User).order_by(User.name)
+            offset = (page - 1) * limit
+            items = [
+                {"id": u.id, "name": u.name, "email": u.email}
+                for u in s.execute(base.offset(offset).limit(limit)).scalars()
+            ]
+            return {"items": items, "total": 10_000}
+
+    return app, engine
+
+
+def _build_raw_sa_search_app() -> tuple[FastAPI, Any]:
+    """Raw SA LIKE search through HTTP."""
+    from sqlalchemy import func, select
+
+    from tests.fixtures.models import User
+
+    engine, factory = _make_sa_engine_and_factory()
+    app = FastAPI()
+
+    @app.get("/search")
+    def search_users(
+        page: int = Query(1, ge=1),
+        limit: int = Query(20, ge=1),
+    ) -> dict[str, object]:
+        with factory() as s:
+            base = select(User).where(User.name.contains("User_5"))
+            total = s.execute(
+                select(func.count()).select_from(base.subquery()),
+            ).scalar_one()
+            offset = (page - 1) * limit
+            items = [
+                {"id": u.id, "name": u.name, "email": u.email}
+                for u in s.execute(base.offset(offset).limit(limit)).scalars()
+            ]
+            return {"items": items, "total": total}
+
+    return app, engine
+
+
+def _build_raw_sa_pipeline_app() -> tuple[FastAPI, Any]:
+    """Raw SA WHERE + ORDER BY + OFFSET/LIMIT through HTTP."""
+    from sqlalchemy import func, select
+
+    from tests.fixtures.models import User
+
+    engine, factory = _make_sa_engine_and_factory()
+    app = FastAPI()
+
+    @app.get("/pipeline")
+    def pipeline_users(
+        page: int = Query(1, ge=1),
+        limit: int = Query(20, ge=1),
+    ) -> dict[str, object]:
+        with factory() as s:
+            base = select(User).where(User.name.startswith("User_5")).order_by(User.email)
+            total = s.execute(
+                select(func.count()).select_from(base.subquery()),
+            ).scalar_one()
+            offset = (page - 1) * limit
+            items = [
+                {"id": u.id, "name": u.name, "email": u.email}
+                for u in s.execute(base.offset(offset).limit(limit)).scalars()
+            ]
+            return {"items": items, "total": total}
 
     return app, engine
 
@@ -483,12 +712,37 @@ _raw_sort_client = TestClient(_build_raw_sort_app(_DATA_10K))
 _raw_search_client = TestClient(_build_raw_search_app(_DATA_10K))
 _raw_pipeline_client = TestClient(_build_raw_pipeline_app(_DATA_10K))
 
-# Group 6: SA-backed clients
+# Group 6: SA-backed clients (paginate)
 _pp_sa_app, _pp_sa_engine = _build_pp_sa_app()
 _pp_sa_client = TestClient(_pp_sa_app)
 
 _raw_sa_app, _raw_sa_engine = _build_raw_sa_app()
 _raw_sa_client = TestClient(_raw_sa_app)
+
+# Group 6b-6e: SA-backed clients (filter, sort, search, pipeline)
+_pp_sa_filter_app, _pp_sa_filter_engine = _build_pp_sa_filter_app()
+_pp_sa_filter_client = TestClient(_pp_sa_filter_app)
+
+_raw_sa_filter_app, _raw_sa_filter_engine = _build_raw_sa_filter_app()
+_raw_sa_filter_client = TestClient(_raw_sa_filter_app)
+
+_pp_sa_sort_app, _pp_sa_sort_engine = _build_pp_sa_sort_app()
+_pp_sa_sort_client = TestClient(_pp_sa_sort_app)
+
+_raw_sa_sort_app, _raw_sa_sort_engine = _build_raw_sa_sort_app()
+_raw_sa_sort_client = TestClient(_raw_sa_sort_app)
+
+_pp_sa_search_app, _pp_sa_search_engine = _build_pp_sa_search_app()
+_pp_sa_search_client = TestClient(_pp_sa_search_app)
+
+_raw_sa_search_app, _raw_sa_search_engine = _build_raw_sa_search_app()
+_raw_sa_search_client = TestClient(_raw_sa_search_app)
+
+_pp_sa_pipeline_app, _pp_sa_pipeline_engine = _build_pp_sa_pipeline_app()
+_pp_sa_pipeline_client = TestClient(_pp_sa_pipeline_app)
+
+_raw_sa_pipeline_app, _raw_sa_pipeline_engine = _build_raw_sa_pipeline_app()
+_raw_sa_pipeline_client = TestClient(_raw_sa_pipeline_app)
 
 # Group 7: scaling clients
 _pp_1k_client = TestClient(_build_pp_paginate_app(_DATA_1K))
@@ -719,6 +973,114 @@ def test_fp_fastapi_sa_10k(benchmark: Any) -> None:
 
     def run() -> None:
         resp = _fp_sa_client.get("/users?page=50&size=20")
+        assert resp.status_code == 200
+
+    benchmark(run)
+
+
+# ================================================================
+# Group 6b: fastapi-sa-filter — SA filter through HTTP
+# ================================================================
+
+
+@pytest.mark.benchmark(group="fastapi-sa-filter")
+def test_pypaginate_fastapi_sa_filter_10k(benchmark: Any) -> None:
+    """pypaginate + SA filter through full HTTP cycle."""
+
+    def run() -> None:
+        resp = _pp_sa_filter_client.get("/filter?page=1&limit=20")
+        assert resp.status_code == 200
+
+    benchmark(run)
+
+
+@pytest.mark.benchmark(group="fastapi-sa-filter")
+def test_raw_fastapi_sa_filter_10k(benchmark: Any) -> None:
+    """Raw SA WHERE filter through full HTTP cycle."""
+
+    def run() -> None:
+        resp = _raw_sa_filter_client.get("/filter?page=1&limit=20")
+        assert resp.status_code == 200
+
+    benchmark(run)
+
+
+# ================================================================
+# Group 6c: fastapi-sa-sort — SA sort through HTTP
+# ================================================================
+
+
+@pytest.mark.benchmark(group="fastapi-sa-sort")
+def test_pypaginate_fastapi_sa_sort_10k(benchmark: Any) -> None:
+    """pypaginate + SA sort through full HTTP cycle."""
+
+    def run() -> None:
+        resp = _pp_sa_sort_client.get("/sort?page=1&limit=20")
+        assert resp.status_code == 200
+
+    benchmark(run)
+
+
+@pytest.mark.benchmark(group="fastapi-sa-sort")
+def test_raw_fastapi_sa_sort_10k(benchmark: Any) -> None:
+    """Raw SA ORDER BY through full HTTP cycle."""
+
+    def run() -> None:
+        resp = _raw_sa_sort_client.get("/sort?page=1&limit=20")
+        assert resp.status_code == 200
+
+    benchmark(run)
+
+
+# ================================================================
+# Group 6d: fastapi-sa-search — SA search through HTTP
+# ================================================================
+
+
+@pytest.mark.benchmark(group="fastapi-sa-search")
+def test_pypaginate_fastapi_sa_search_10k(benchmark: Any) -> None:
+    """pypaginate + SA search through full HTTP cycle."""
+
+    def run() -> None:
+        resp = _pp_sa_search_client.get("/search?page=1&limit=20")
+        assert resp.status_code == 200
+
+    benchmark(run)
+
+
+@pytest.mark.benchmark(group="fastapi-sa-search")
+def test_raw_fastapi_sa_search_10k(benchmark: Any) -> None:
+    """Raw SA LIKE search through full HTTP cycle."""
+
+    def run() -> None:
+        resp = _raw_sa_search_client.get("/search?page=1&limit=20")
+        assert resp.status_code == 200
+
+    benchmark(run)
+
+
+# ================================================================
+# Group 6e: fastapi-sa-pipeline — SA pipeline through HTTP
+# ================================================================
+
+
+@pytest.mark.benchmark(group="fastapi-sa-pipeline")
+def test_pypaginate_fastapi_sa_pipeline_10k(benchmark: Any) -> None:
+    """pypaginate + SA pipeline through full HTTP cycle."""
+
+    def run() -> None:
+        resp = _pp_sa_pipeline_client.get("/pipeline?page=1&limit=20")
+        assert resp.status_code == 200
+
+    benchmark(run)
+
+
+@pytest.mark.benchmark(group="fastapi-sa-pipeline")
+def test_raw_fastapi_sa_pipeline_10k(benchmark: Any) -> None:
+    """Raw SA pipeline through full HTTP cycle."""
+
+    def run() -> None:
+        resp = _raw_sa_pipeline_client.get("/pipeline?page=1&limit=20")
         assert resp.status_code == 200
 
     benchmark(run)

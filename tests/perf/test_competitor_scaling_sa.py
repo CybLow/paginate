@@ -4,11 +4,14 @@ Side-by-side comparison of pypaginate vs SQLAlchemy competitors
 across dataset sizes.  Uses identical benchmark group names so
 output merges with test_scaling.py results.
 
+Covers both sync and async SA competitors.
+
 Run: uv run pytest tests/perf/test_competitor_scaling_sa.py --benchmark-enable -v
 """
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import pytest
@@ -369,3 +372,228 @@ def test_raw_sa_pipeline_scaling(
     result = benchmark(run)
     assert result["total"] > 0
     engine.dispose()
+
+
+# -- Async helpers ---------------------------------------------------
+
+
+def _make_async_engine_and_loop(
+    size: int,
+) -> tuple[asyncio.AbstractEventLoop, Any, Any]:
+    """Seed an async SQLite engine with *size* users.
+
+    Returns (loop, engine, sessionmaker).
+    """
+    from sqlalchemy.ext.asyncio import (
+        AsyncSession,
+        async_sessionmaker,
+        create_async_engine,
+    )
+
+    from tests.fixtures.models import Base, User
+
+    loop = asyncio.new_event_loop()
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+
+    async def _seed() -> async_sessionmaker[AsyncSession]:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        factory = async_sessionmaker(
+            engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+        )
+        async with factory() as s:
+            s.add_all(
+                [User(id=i, name=f"User_{i}", email=f"u{i}@test.com") for i in range(size)],
+            )
+            await s.commit()
+        return factory
+
+    factory = loop.run_until_complete(_seed())
+    return loop, engine, factory
+
+
+# ===================================================================
+# 6. SA PAGINATE scaling -- async competitors
+# ===================================================================
+
+
+@pytest.mark.benchmark(group="scale-paginate-sa-async")
+@pytest.mark.parametrize("size", _SA_SIZES)
+def test_raw_sa_async_paginate_scaling(
+    benchmark: Any,
+    size: int,
+) -> None:
+    """Raw async SA COUNT + OFFSET/LIMIT across sizes."""
+    from sqlalchemy import func, select
+
+    from tests.fixtures.models import User
+
+    loop, engine, factory = _make_async_engine_and_loop(size)
+
+    async def _bench() -> int:
+        async with factory() as session:
+            total = (
+                await session.execute(
+                    select(func.count()).select_from(User),
+                )
+            ).scalar_one()
+            list(
+                (
+                    await session.execute(
+                        select(User).offset(80).limit(20),
+                    )
+                ).scalars(),
+            )
+            return total  # type: ignore[return-value]
+
+    result = benchmark(lambda: loop.run_until_complete(_bench()))
+    assert result == size
+    loop.run_until_complete(engine.dispose())
+    loop.close()
+
+
+# ===================================================================
+# 7. SA FILTER scaling -- async competitors
+# ===================================================================
+
+
+@pytest.mark.benchmark(group="scale-filter-sa-async")
+@pytest.mark.parametrize("size", _SA_SIZES)
+def test_raw_sa_async_filter_scaling(
+    benchmark: Any,
+    size: int,
+) -> None:
+    """Raw async SA WHERE + COUNT + OFFSET/LIMIT across sizes."""
+    from sqlalchemy import func, select
+
+    from tests.fixtures.models import User
+
+    loop, engine, factory = _make_async_engine_and_loop(size)
+
+    async def _bench() -> int:
+        async with factory() as session:
+            base = select(User).where(
+                User.name.startswith("User_5"),
+            )
+            total = (
+                await session.execute(
+                    select(func.count()).select_from(base.subquery()),
+                )
+            ).scalar_one()
+            list(
+                (await session.execute(base.offset(0).limit(20))).scalars(),
+            )
+            return total  # type: ignore[return-value]
+
+    result = benchmark(lambda: loop.run_until_complete(_bench()))
+    assert result > 0
+    loop.run_until_complete(engine.dispose())
+    loop.close()
+
+
+# ===================================================================
+# 8. SA SORT scaling -- async competitors
+# ===================================================================
+
+
+@pytest.mark.benchmark(group="scale-sort-sa-async")
+@pytest.mark.parametrize("size", _SA_SIZES)
+def test_raw_sa_async_sort_scaling(
+    benchmark: Any,
+    size: int,
+) -> None:
+    """Raw async SA ORDER BY + OFFSET/LIMIT across sizes."""
+    from sqlalchemy import select
+
+    from tests.fixtures.models import User
+
+    loop, engine, factory = _make_async_engine_and_loop(size)
+
+    async def _bench() -> int:
+        async with factory() as session:
+            base = select(User).order_by(User.name)
+            list(
+                (await session.execute(base.offset(0).limit(20))).scalars(),
+            )
+            return size
+
+    result = benchmark(lambda: loop.run_until_complete(_bench()))
+    assert result == size
+    loop.run_until_complete(engine.dispose())
+    loop.close()
+
+
+# ===================================================================
+# 9. SA SEARCH scaling -- async competitors
+# ===================================================================
+
+
+@pytest.mark.benchmark(group="scale-search-sa-async")
+@pytest.mark.parametrize("size", _SA_SIZES)
+def test_raw_sa_async_search_scaling(
+    benchmark: Any,
+    size: int,
+) -> None:
+    """Raw async SA LIKE search + COUNT + OFFSET/LIMIT across sizes."""
+    from sqlalchemy import func, select
+
+    from tests.fixtures.models import User
+
+    loop, engine, factory = _make_async_engine_and_loop(size)
+
+    async def _bench() -> int:
+        async with factory() as session:
+            base = select(User).where(User.name.contains("User_5"))
+            total = (
+                await session.execute(
+                    select(func.count()).select_from(base.subquery()),
+                )
+            ).scalar_one()
+            list(
+                (await session.execute(base.offset(0).limit(20))).scalars(),
+            )
+            return total  # type: ignore[return-value]
+
+    result = benchmark(lambda: loop.run_until_complete(_bench()))
+    assert result >= 0
+    loop.run_until_complete(engine.dispose())
+    loop.close()
+
+
+# ===================================================================
+# 10. SA PIPELINE scaling -- async competitors
+# ===================================================================
+
+
+@pytest.mark.benchmark(group="scale-pipeline-sa-async")
+@pytest.mark.parametrize("size", _SA_SIZES)
+def test_raw_sa_async_pipeline_scaling(
+    benchmark: Any,
+    size: int,
+) -> None:
+    """Raw async SA WHERE + ORDER BY + OFFSET/LIMIT across sizes."""
+    from sqlalchemy import func, select
+
+    from tests.fixtures.models import User
+
+    loop, engine, factory = _make_async_engine_and_loop(size)
+
+    async def _bench() -> int:
+        async with factory() as session:
+            base = select(User).where(User.name.startswith("User_5")).order_by(User.email)
+            total = (
+                await session.execute(
+                    select(func.count()).select_from(base.subquery()),
+                )
+            ).scalar_one()
+            list(
+                (await session.execute(base.offset(0).limit(20))).scalars(),
+            )
+            return total  # type: ignore[return-value]
+
+    result = benchmark(lambda: loop.run_until_complete(_bench()))
+    assert result > 0
+    loop.run_until_complete(engine.dispose())
+    loop.close()
