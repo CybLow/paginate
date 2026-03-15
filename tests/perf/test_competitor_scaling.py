@@ -160,3 +160,47 @@ def test_raw_python_sort_scaling(
 
     result = benchmark(run)
     assert len(result) == size
+
+
+# ═══════════════════════════════════════════════════════════
+# 4. SEARCH scaling — in-memory competitors
+# ═══════════════════════════════════════════════════════════
+
+
+@pytest.mark.benchmark(group="scale-search-memory")
+@pytest.mark.parametrize("size", _MEM_SIZES)
+def test_raw_python_search_scaling(
+    benchmark: Any,
+    size: int,
+) -> None:
+    """Raw string matching search across dataset sizes."""
+    data = make_users(size)
+
+    def run() -> list[dict[str, Any]]:
+        return [u for u in data if "user_5" in u["name"].lower()]
+
+    result = benchmark(run)
+    assert len(result) <= size
+
+
+# ═══════════════════════════════════════════════════════════
+# 5. PIPELINE scaling — in-memory competitors
+# ═══════════════════════════════════════════════════════════
+
+
+@pytest.mark.benchmark(group="scale-pipeline-memory")
+@pytest.mark.parametrize("size", _MEM_SIZES)
+def test_raw_python_pipeline_scaling(
+    benchmark: Any,
+    size: int,
+) -> None:
+    """Raw filter + sort + slice pipeline across dataset sizes."""
+    data = make_users(size)
+
+    def run() -> dict[str, Any]:
+        filtered = [u for u in data if u["age"] >= 30]
+        sorted_items = sorted(filtered, key=lambda u: u["name"])
+        return {"items": sorted_items[0:20], "total": len(sorted_items)}
+
+    result = benchmark(run)
+    assert result["total"] > 0
