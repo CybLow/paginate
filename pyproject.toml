@@ -97,8 +97,12 @@ dev = [
     { include-group = "type" },
     { include-group = "security" },
     { include-group = "build" },
+    "fastapi-filter>=2.0.1",
+    "fastapi-pagination>=0.15.10",
+    "paginate>=0.5.7",
     "pip-audit>=2.10.0",
     "radon>=6.0.1",
+    "sqlalchemy-pagination>=0.0.2",
     "vulture>=2.14",
 ]
 # Testing - Core

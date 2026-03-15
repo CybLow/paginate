@@ -637,6 +637,33 @@ wheels = [
 ]
 
 [[package]]
+name = "fastapi-filter"
+version = "2.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/43/ed/c36cfcd849519fd2d23051ad81a91fc5e8cfa7109496fc8a10ad565a5fe9/fastapi_filter-2.0.1.tar.gz", hash = "sha256:cffda370097af7e404f1eb188aca58b199084bfaf7cec881e40b404adf12566e", size = 9857, upload-time = "2024-12-07T17:30:06.343Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5e/88/afc022ad64d12f730141fc50758ecf9d60de5fed11335dc16e3127617f05/fastapi_filter-2.0.1-py3-none-any.whl", hash = "sha256:711d48707ec62f7c9e12a7713fc0f6a99858a9e3741b4d108102d5599e77197d", size = 11586, upload-time = "2024-12-07T17:30:05.375Z" },
+]
+
+[[package]]
+name = "fastapi-pagination"
+version = "0.15.10"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "pydantic" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/09/36/4314836683bec1b33195bbaf2d74e1515cfcbb7e7ef5431ef515b864a5d0/fastapi_pagination-0.15.10.tar.gz", hash = "sha256:0ba7d4f795059a91a9e89358af129f2114876452c1defaf198ea8e3419e9a3cd", size = 575160, upload-time = "2026-02-08T13:13:40.312Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/91/95/cce73569317fdba138c315b980c39c6a035baa0ea5867d12276f1d312cff/fastapi_pagination-0.15.10-py3-none-any.whl", hash = "sha256:d50071ebc93b519391f16ff6c3ba9e3603bd659963fe6774ba2f4d5037e17fd8", size = 60798, upload-time = "2026-02-08T13:13:41.972Z" },
+]
+
+[[package]]
 name = "filelock"
 version = "3.20.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1738,6 +1765,15 @@ wheels = [
 ]
 
 [[package]]
+name = "paginate"
+version = "0.5.7"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/46/68dde5b6bc00c1296ec6466ab27dddede6aec9af1b99090e1107091b3b84/paginate-0.5.7.tar.gz", hash = "sha256:22bd083ab41e1a8b4f3690544afb2c60c25e5c9a63a30fa2f483f6c60c8e5945", size = 19252, upload-time = "2024-08-25T14:17:24.139Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/90/96/04b8e52da071d28f5e21a805b19cb9390aa17a47462ac87f5e2696b9566d/paginate-0.5.7-py2.py3-none-any.whl", hash = "sha256:b885e2af73abcf01d9559fd5216b57ef722f8c42affbb63942377668e35c7591", size = 13746, upload-time = "2024-08-25T14:17:22.55Z" },
+]
+
+[[package]]
 name = "pathspec"
 version = "1.0.4"
 source = { registry = "https://pypi.org/simple" }
@@ -2192,37 +2228,28 @@ crypto = [
 
 [[package]]
 name = "pypaginate"
-version = "0.1.0"
+version = "0.2.0"
 source = { editable = "." }
+dependencies = [
+    { name = "pydantic" },
+]
 
 [package.optional-dependencies]
 all = [
     { name = "fastapi" },
-    { name = "jmespath" },
-    { name = "json-logic-qubit" },
-    { name = "pyparsing" },
     { name = "rapidfuzz" },
     { name = "sqlakeyset" },
-    { name = "sqlalchemy" },
-    { name = "text-unidecode" },
+    { name = "sqlalchemy", extra = ["asyncio"] },
 ]
 fastapi = [
     { name = "fastapi" },
 ]
-filters = [
-    { name = "jmespath" },
-    { name = "json-logic-qubit" },
-]
 search = [
-    { name = "pyparsing" },
     { name = "rapidfuzz" },
 ]
 sqlalchemy = [
     { name = "sqlakeyset" },
-    { name = "sqlalchemy" },
-]
-text = [
-    { name = "text-unidecode" },
+    { name = "sqlalchemy", extra = ["asyncio"] },
 ]
 
 [package.dev-dependencies]
@@ -2238,11 +2265,14 @@ dev = [
     { name = "coverage", extra = ["toml"] },
     { name = "factory-boy" },
     { name = "faker" },
+    { name = "fastapi-filter" },
+    { name = "fastapi-pagination" },
     { name = "greenlet" },
     { name = "httpx" },
     { name = "hypothesis" },
     { name = "mutmut" },
     { name = "mypy" },
+    { name = "paginate" },
     { name = "pip-audit" },
     { name = "pre-commit" },
     { name = "pytest" },
@@ -2255,6 +2285,7 @@ dev = [
     { name = "pytest-xdist" },
     { name = "radon" },
     { name = "ruff" },
+    { name = "sqlalchemy-pagination" },
     { name = "syrupy" },
     { name = "twine" },
     { name = "vulture" },
@@ -2323,17 +2354,14 @@ type = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.127.0" },
-    { name = "jmespath", marker = "extra == 'filters'", specifier = ">=1.0.1" },
-    { name = "json-logic-qubit", marker = "extra == 'filters'", specifier = ">=0.9.1" },
-    { name = "pypaginate", extras = ["sqlalchemy", "search", "filters", "text", "fastapi"], marker = "extra == 'all'" },
-    { name = "pyparsing", marker = "extra == 'search'", specifier = ">=3.3.1" },
-    { name = "rapidfuzz", marker = "extra == 'search'", specifier = ">=3.14.3" },
-    { name = "sqlakeyset", marker = "extra == 'sqlalchemy'", specifier = ">=2.0.1762907931" },
-    { name = "sqlalchemy", marker = "extra == 'sqlalchemy'", specifier = ">=2.0.45" },
-    { name = "text-unidecode", marker = "extra == 'text'", specifier = ">=1.3" },
+    { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.95.0" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "pypaginate", extras = ["sqlalchemy", "search", "fastapi"], marker = "extra == 'all'" },
+    { name = "rapidfuzz", marker = "extra == 'search'", specifier = ">=3.0.0" },
+    { name = "sqlakeyset", marker = "extra == 'sqlalchemy'", specifier = ">=2.0" },
+    { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'sqlalchemy'", specifier = ">=2.0.0" },
 ]
-provides-extras = ["sqlalchemy", "search", "filters", "text", "fastapi", "all"]
+provides-extras = ["sqlalchemy", "search", "fastapi", "all"]
 
 [package.metadata.requires-dev]
 build = [
@@ -2348,11 +2376,14 @@ dev = [
     { name = "coverage", extras = ["toml"], specifier = ">=7.6.0" },
     { name = "factory-boy", specifier = ">=3.3.0" },
     { name = "faker", specifier = ">=28.0.0" },
+    { name = "fastapi-filter", specifier = ">=2.0.1" },
+    { name = "fastapi-pagination", specifier = ">=0.15.10" },
     { name = "greenlet", specifier = ">=3.0.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "hypothesis", specifier = ">=6.100.0" },
     { name = "mutmut", specifier = ">=3.0.0" },
     { name = "mypy", specifier = ">=1.13.0" },
+    { name = "paginate", specifier = ">=0.5.7" },
     { name = "pip-audit", specifier = ">=2.10.0" },
     { name = "pre-commit", specifier = ">=4.0.0" },
     { name = "pytest", specifier = ">=8.3.0" },
@@ -2365,6 +2396,7 @@ dev = [
     { name = "pytest-xdist", specifier = ">=3.6.1" },
     { name = "radon", specifier = ">=6.0.1" },
     { name = "ruff", specifier = ">=0.8.0" },
+    { name = "sqlalchemy-pagination", specifier = ">=0.0.2" },
     { name = "syrupy", specifier = ">=4.6.0" },
     { name = "twine", specifier = ">=6.0.1" },
     { name = "vulture", specifier = ">=2.14" },
@@ -3729,6 +3761,23 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/fc/a1/9c4efa03300926601c19c18582531b45aededfb961ab3c3585f1e24f120b/sqlalchemy-2.0.46-py3-none-any.whl", hash = "sha256:f9c11766e7e7c0a2767dda5acb006a118640c9fc0a4104214b96269bfb78399e", size = 1937882, upload-time = "2026-01-21T18:22:10.456Z" },
 ]
 
+[package.optional-dependencies]
+asyncio = [
+    { name = "greenlet" },
+]
+
+[[package]]
+name = "sqlalchemy-pagination"
+version = "0.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "sqlalchemy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/35/bf/d33f1f15c7057e3e03bca26755e50b70eadc5be45babe6952c8c6a952335/sqlalchemy-pagination-0.0.2.tar.gz", hash = "sha256:b199942239ac25aee7bb77fa5f1dd7a8cf3558a1d26e174cdd9463cfda45feec", size = 3015, upload-time = "2018-04-17T17:02:14.804Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/54/ac/3f301fe941e4616cf58c1cb8ce09564d63aced5608835639603e5840d9b7/sqlalchemy_pagination-0.0.2-py2.py3-none-any.whl", hash = "sha256:89141cf3ea132c2713be882e22e42b3224570c8a5a62c0d76ef34647073f9655", size = 2194, upload-time = "2018-04-17T19:53:11.581Z" },
+]
+
 [[package]]
 name = "sse-starlette"
 version = "3.2.0"
@@ -3786,15 +3835,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/2e/b0/24bca682d6a6337854be37f242d116cceeda9942571d5804c44bc1bdd427/syrupy-5.1.0.tar.gz", hash = "sha256:df543c7aa50d3cf1246e83d58fe490afe5f7dab7b41e74ecc0d8d23ae19bd4b8", size = 50495, upload-time = "2026-01-25T14:53:06.2Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/de/70/cf880c3b95a6034ef673e74b369941b42315c01f1554a5637a4f8b911009/syrupy-5.1.0-py3-none-any.whl", hash = "sha256:95162d2b05e61ed3e13f117b88dfab7c58bd6f90e66ebbf918e8a77114ad51c5", size = 51658, upload-time = "2026-01-25T14:53:05.105Z" },
-]
-
-[[package]]
-name = "text-unidecode"
-version = "1.3"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ab/e2/e9a00f0ccb71718418230718b3d900e71a5d16e701a3dae079a21e9cd8f8/text-unidecode-1.3.tar.gz", hash = "sha256:bad6603bb14d279193107714b288be206cac565dfa49aa5b105294dd5c4aab93", size = 76885, upload-time = "2019-08-30T21:36:45.405Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a6/a5/c0b6468d3824fe3fde30dbb5e1f687b291608f9473681bbf7dabbf5a87d7/text_unidecode-1.3-py2.py3-none-any.whl", hash = "sha256:1311f10e8b895935241623731c2ba64f4c455287888b18189350b67134a822e8", size = 78154, upload-time = "2019-08-30T21:37:03.543Z" },
 ]
 
 [[package]]
@@ -3946,6 +3986,12 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0f/8b/4b61d6e13f7108f36910df9ab4b58fd389cc2520d54d81b88660804aad99/torch-2.10.0-2-cp311-none-macosx_11_0_arm64.whl", hash = "sha256:418997cb02d0a0f1497cf6a09f63166f9f5df9f3e16c8a716ab76a72127c714f", size = 79423467, upload-time = "2026-02-10T21:44:48.711Z" },
     { url = "https://files.pythonhosted.org/packages/d3/54/a2ba279afcca44bbd320d4e73675b282fcee3d81400ea1b53934efca6462/torch-2.10.0-2-cp312-none-macosx_11_0_arm64.whl", hash = "sha256:13ec4add8c3faaed8d13e0574f5cd4a323c11655546f91fbe6afa77b57423574", size = 79498202, upload-time = "2026-02-10T21:44:52.603Z" },
     { url = "https://files.pythonhosted.org/packages/ec/23/2c9fe0c9c27f7f6cb865abcea8a4568f29f00acaeadfc6a37f6801f84cb4/torch-2.10.0-2-cp313-none-macosx_11_0_arm64.whl", hash = "sha256:e521c9f030a3774ed770a9c011751fb47c4d12029a3d6522116e48431f2ff89e", size = 79498254, upload-time = "2026-02-10T21:44:44.095Z" },
+    { url = "https://files.pythonhosted.org/packages/36/ab/7b562f1808d3f65414cd80a4f7d4bb00979d9355616c034c171249e1a303/torch-2.10.0-3-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:ac5bdcbb074384c66fa160c15b1ead77839e3fe7ed117d667249afce0acabfac", size = 915518691, upload-time = "2026-03-11T14:15:43.147Z" },
+    { url = "https://files.pythonhosted.org/packages/b3/7a/abada41517ce0011775f0f4eacc79659bc9bc6c361e6bfe6f7052a6b9363/torch-2.10.0-3-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:98c01b8bb5e3240426dcde1446eed6f40c778091c8544767ef1168fc663a05a6", size = 915622781, upload-time = "2026-03-11T14:17:11.354Z" },
+    { url = "https://files.pythonhosted.org/packages/ab/c6/4dfe238342ffdcec5aef1c96c457548762d33c40b45a1ab7033bb26d2ff2/torch-2.10.0-3-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:80b1b5bfe38eb0e9f5ff09f206dcac0a87aadd084230d4a36eea5ec5232c115b", size = 915627275, upload-time = "2026-03-11T14:16:11.325Z" },
+    { url = "https://files.pythonhosted.org/packages/d8/f0/72bf18847f58f877a6a8acf60614b14935e2f156d942483af1ffc081aea0/torch-2.10.0-3-cp313-cp313t-manylinux_2_28_x86_64.whl", hash = "sha256:46b3574d93a2a8134b3f5475cfb98e2eb46771794c57015f6ad1fb795ec25e49", size = 915523474, upload-time = "2026-03-11T14:17:44.422Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/39/590742415c3030551944edc2ddc273ea1fdfe8ffb2780992e824f1ebee98/torch-2.10.0-3-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:b1d5e2aba4eb7f8e87fbe04f86442887f9167a35f092afe4c237dfcaaef6e328", size = 915632474, upload-time = "2026-03-11T14:15:13.666Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/8e/34949484f764dde5b222b7fe3fede43e4a6f0da9d7f8c370bb617d629ee2/torch-2.10.0-3-cp314-cp314t-manylinux_2_28_x86_64.whl", hash = "sha256:0228d20b06701c05a8f978357f657817a4a63984b0c90745def81c18aedfa591", size = 915523882, upload-time = "2026-03-11T14:14:46.311Z" },
     { url = "https://files.pythonhosted.org/packages/78/89/f5554b13ebd71e05c0b002f95148033e730d3f7067f67423026cc9c69410/torch-2.10.0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:3282d9febd1e4e476630a099692b44fdc214ee9bf8ee5377732d9d9dfe5712e4", size = 145992610, upload-time = "2026-01-21T16:25:26.327Z" },
     { url = "https://files.pythonhosted.org/packages/ae/30/a3a2120621bf9c17779b169fc17e3dc29b230c29d0f8222f499f5e159aa8/torch-2.10.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:a2f9edd8dbc99f62bc4dfb78af7bf89499bca3d753423ac1b4e06592e467b763", size = 915607863, upload-time = "2026-01-21T16:25:06.696Z" },
     { url = "https://files.pythonhosted.org/packages/6f/3d/c87b33c5f260a2a8ad68da7147e105f05868c281c63d65ed85aa4da98c66/torch-2.10.0-cp311-cp311-win_amd64.whl", hash = "sha256:29b7009dba4b7a1c960260fc8ac85022c784250af43af9fb0ebafc9883782ebd", size = 113723116, upload-time = "2026-01-21T16:25:21.916Z" },
