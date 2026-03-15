@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from pypaginate.domain.exceptions import FilterValidationError
-from pypaginate.filtering.operators import Between
+from pypaginate.domain.exceptions import FilterError, FilterValidationError
+from pypaginate.filtering.operators import Between, Regex
 from pypaginate.filtering.registry import OperatorRegistry
 
 
@@ -169,6 +169,18 @@ def test_between_operator(
 def test_between_with_invalid_pair_raises() -> None:
     with pytest.raises(FilterValidationError, match="2 elements"):
         Between().evaluate(5, [1, 2, 3])
+
+
+def test_between_with_non_iterable_raises() -> None:
+    """Non-iterable value triggers _unpack_pair validation."""
+    with pytest.raises(FilterValidationError, match="two-element sequence"):
+        Between().evaluate(5, 42)
+
+
+def test_regex_with_invalid_pattern_raises() -> None:
+    """Invalid regex pattern raises FilterError."""
+    with pytest.raises(FilterError, match="Invalid regex"):
+        Regex.evaluate("abc", "[invalid")
 
 
 # -- Null operators ----------------------------------------------------------

@@ -105,6 +105,20 @@ class TestSpecialOperators:
 
     @patch("pypaginate.adapters.sqlalchemy.filters._apply_conditions")
     @patch("pypaginate.adapters.sqlalchemy.filters.resolve_column")
+    def test_between_with_non_indexable_raises(
+        self,
+        mock_resolve: MagicMock,
+        _mock_apply: MagicMock,
+    ) -> None:
+        """BETWEEN with a non-sequence value raises FilterError."""
+        mock_resolve.return_value = MagicMock()
+        spec = FilterSpec(field="x", operator="between", value=42)
+
+        with pytest.raises(FilterError, match="two-element sequence"):
+            SQLAlchemyFilterBackend().apply_filters(MagicMock(), [spec])
+
+    @patch("pypaginate.adapters.sqlalchemy.filters._apply_conditions")
+    @patch("pypaginate.adapters.sqlalchemy.filters.resolve_column")
     def test_is_null_calls_is_none(
         self,
         mock_resolve: MagicMock,

@@ -202,3 +202,15 @@ class TestSearchNoMatchRealDB:
         rows = await _fetch_searched(seeded_session, spec)
 
         assert rows == []
+
+
+class TestSearchExactModeRealDB:
+    @pytest.mark.asyncio()
+    async def test_search_exact_alice(self, seeded_session: AsyncSession) -> None:
+        """EXACT mode builds pattern without wildcards."""
+        spec = SearchSpec(query="Alice", fields=("name",), mode=SearchFieldMode.EXACT)
+
+        rows = await _fetch_searched(seeded_session, spec)
+
+        assert len(rows) == 1
+        assert rows[0].name == "Alice"

@@ -115,6 +115,15 @@ class TestPaginateErrors:
         with pytest.raises(TypeError, match="Cannot auto-detect"):
             paginate("hello", OffsetParams())
 
+    def test_backend_with_no_methods_raises(self) -> None:
+        """Backend with no count/fetch/fetch_page hits _has_async_methods return False."""
+
+        class _EmptyBackend:
+            pass
+
+        with pytest.raises(AttributeError):
+            paginate(object(), OffsetParams(), backend=_EmptyBackend())
+
 
 class TestPaginateEdgeCases:
     def test_empty_list_returns_empty_page(self) -> None:
