@@ -53,7 +53,10 @@ def _extract_entity(query: Select[Any]) -> type:
         if entity is not None:
             return entity
     msg = "No ORM entity found in query column_descriptions"
-    raise ConfigurationError(msg)
+    raise ConfigurationError(
+        msg,
+        details={"descriptions": [d.get("name") for d in descriptions]},
+    )
 
 
 def _get_column_attr(entity: type, field: str) -> Any:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from pypaginate.domain.exceptions import FilterValidationError
 from pypaginate.filtering.operators import Between
 from pypaginate.filtering.registry import OperatorRegistry
 
@@ -166,7 +167,7 @@ def test_between_operator(
 
 
 def test_between_with_invalid_pair_raises() -> None:
-    with pytest.raises(ValueError, match="two-element"):
+    with pytest.raises(FilterValidationError, match="2 elements"):
         Between().evaluate(5, [1, 2, 3])
 
 

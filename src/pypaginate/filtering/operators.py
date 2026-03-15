@@ -11,6 +11,8 @@ from collections.abc import Iterable
 from fnmatch import fnmatch
 from typing import Any, Protocol, runtime_checkable
 
+from pypaginate.domain.exceptions import FilterError, FilterValidationError
+
 
 @runtime_checkable
 class Operator(Protocol):
@@ -148,7 +150,14 @@ class Regex:
     """Regular expression match."""
 
     def evaluate(self, field_value: object, spec_value: object) -> bool:
-        return bool(re.search(str(spec_value), str(field_value)))
+        pattern = str(spec_value)
+        try:
+            return bool(re.search(pattern, str(field_value)))
+        except re.error as exc:
+            raise FilterError(
+                f"Invalid regex pattern: '{pattern}'",
+                details={"pattern": pattern, "error": str(exc)},
+            ) from exc
 
 
 # -- helpers -----------------------------------------------------------------
@@ -162,12 +171,16 @@ def _like_to_glob(pattern: str) -> str:
 def _unpack_pair(value: object) -> tuple[Any, Any]:
     """Unpack a two-element sequence for Between."""
     if not isinstance(value, Iterable):
-        msg = "Between operator requires a two-element sequence"
-        raise TypeError(msg)
+        raise FilterValidationError(
+            "Between operator requires a two-element sequence",
+            details={"value": repr(value), "type": type(value).__name__},
+        )
     seq = list(value)
     if len(seq) != 2:
-        msg = "Between operator requires a two-element sequence"
-        raise ValueError(msg)
+        raise FilterValidationError(
+            "Between operator requires exactly 2 elements",
+            details={"value": repr(value), "length": len(seq)},
+        )
     return seq[0], seq[1]
 
 

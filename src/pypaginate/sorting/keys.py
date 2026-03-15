@@ -55,7 +55,7 @@ def _safe_get(item: object, field: str) -> Any:
     """
     try:
         return get_value(item, field)
-    except (TypeError, AttributeError, KeyError, IndexError, PaginationError):
+    except PaginationError:
         return None
 
 

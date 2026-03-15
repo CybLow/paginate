@@ -52,7 +52,14 @@ def _build_operator_map() -> dict[str, OperatorFn]:
 
 def _apply_between(column: Any, value: Any) -> Any:
     """Apply BETWEEN with a two-element sequence."""
-    return column.between(value[0], value[1])
+    try:
+        low, high = value[0], value[1]
+    except (TypeError, IndexError, KeyError) as exc:
+        raise FilterError(
+            "BETWEEN requires a two-element sequence",
+            details={"value": repr(value)},
+        ) from exc
+    return column.between(low, high)
 
 
 def _apply_is_null(column: Any, _value: Any) -> Any:
@@ -145,7 +152,11 @@ def _build_condition(
     operator_fn = operators.get(spec.operator)
     if operator_fn is None:
         msg = f"Unsupported filter operator: '{spec.operator}'"
-        raise FilterError(msg, field=spec.field)
+        raise FilterError(
+            msg,
+            field=spec.field,
+            details={"operator": spec.operator, "supported": list(operators)},
+        )
     return operator_fn(column, spec.value)
 
 
