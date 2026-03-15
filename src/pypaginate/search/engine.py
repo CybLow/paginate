@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from typing import TypeVar
 
 from pypaginate.domain.enums import FuzzyMode, SearchFieldMode
+from pypaginate.domain.exceptions import FilterError
 from pypaginate.domain.specs import SearchSpec
 from pypaginate.filtering.accessor import get_value
 from pypaginate.search.matching import fuzzy_score, matches_field
@@ -133,7 +134,7 @@ def _field_score(
     """
     try:
         value = get_value(item, field)
-    except Exception:
+    except (KeyError, AttributeError, TypeError, FilterError):
         return 0
     if not isinstance(value, str):
         return 0
