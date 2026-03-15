@@ -1,0 +1,63 @@
+"""Tests for text normalization."""
+
+from __future__ import annotations
+
+import pytest
+
+from pypaginate.text.normalize import normalize_text
+
+
+@pytest.mark.parametrize(
+    ("input_text", "expected"),
+    [
+        ("cafe\u0301", "cafe"),
+        ("\u00e9", "e"),
+        ("\u00f1", "n"),
+    ],
+    ids=["combining_accent", "precomposed_e_acute", "precomposed_n_tilde"],
+)
+def test_accent_removal(input_text: str, expected: str) -> None:
+    result = normalize_text(input_text)
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("input_text", "expected"),
+    [
+        ("HELLO", "hello"),
+        ("HeLLo WoRLd", "hello world"),
+    ],
+    ids=["all_upper", "mixed_case"],
+)
+def test_case_folding(input_text: str, expected: str) -> None:
+    result = normalize_text(input_text)
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("input_text", "expected"),
+    [
+        ("  hello  ", "hello"),
+        ("  hello   world  ", "hello world"),
+        ("\thello\n", "hello"),
+    ],
+    ids=["leading_trailing", "multiple_spaces", "tabs_newlines"],
+)
+def test_whitespace_collapse(input_text: str, expected: str) -> None:
+    result = normalize_text(input_text)
+
+    assert result == expected
+
+
+class TestCombined:
+    def test_accent_and_case_normalized(self) -> None:
+        result = normalize_text("Caf\u00e9 R\u00e9sum\u00e9")
+
+        assert result == "cafe resume"
+
+    def test_empty_string_returns_empty(self) -> None:
+        result = normalize_text("")
+
+        assert result == ""

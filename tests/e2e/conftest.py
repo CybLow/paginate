@@ -1,7 +1,6 @@
-"""E2E test configuration.
+"""E2E test configuration and shared fixtures.
 
-This conftest is for tests in the e2e/ directory.
-End-to-end tests simulate real usage scenarios.
+Provides reusable datasets for end-to-end pagination scenarios.
 """
 
 from __future__ import annotations
@@ -9,5 +8,19 @@ from __future__ import annotations
 import pytest
 
 
-# Auto-apply e2e marker to all tests in this directory
-pytestmark = pytest.mark.e2e
+@pytest.fixture()
+def large_dataset() -> list[dict[str, object]]:
+    """100 items with name, age, email, active fields.
+
+    Overrides root conftest large_dataset (1000 simpler dicts).
+    """
+    return [
+        {
+            "id": i,
+            "name": f"User_{i}",
+            "age": 20 + (i % 50),
+            "email": f"user{i}@test.com",
+            "active": i % 3 != 0,
+        }
+        for i in range(100)
+    ]

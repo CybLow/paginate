@@ -7,8 +7,8 @@ build-backend = "hatchling.build"
 # ==========================
 [project]
 name = "pypaginate"
-version = "0.1.0"
-description = "Advanced pagination, filtering, and search toolkit for Python with SQLAlchemy support"
+version = "0.2.0"
+description = "Universal pagination toolkit for Python — one function, any backend, auto-detects sync/async"
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { text = "MIT" }
 requires-python = ">=3.11"
@@ -44,8 +44,10 @@ classifiers = [
     "Environment :: Web Environment",
 ]
 
-# Core package has no runtime dependencies
-dependencies = []
+# Core: only pydantic (models, validation, serialization)
+dependencies = [
+    "pydantic>=2.0.0",
+]
 
 # ==========================
 # OPTIONAL DEPENDENCIES (extras)
@@ -53,27 +55,19 @@ dependencies = []
 [project.optional-dependencies]
 # Individual features
 sqlalchemy = [
-    "SQLAlchemy>=2.0.45",
-    "sqlakeyset>=2.0.1762907931",
+    "SQLAlchemy[asyncio]>=2.0.0",
+    "sqlakeyset>=2.0",
 ]
 search = [
-    "rapidfuzz>=3.14.3",
-    "pyparsing>=3.3.1",
-]
-filters = [
-    "json-logic-qubit>=0.9.1",
-    "jmespath>=1.0.1",
-]
-text = [
-    "text-unidecode>=1.3",
+    "rapidfuzz>=3.0.0",
 ]
 fastapi = [
-    "fastapi>=0.127.0",
+    "fastapi>=0.95.0",
 ]
 
-# Combo extras (using self-references for DRY)
+# Combo extras
 all = [
-    "pypaginate[sqlalchemy,search,filters,text,fastapi]",
+    "pypaginate[sqlalchemy,search,fastapi]",
 ]
 
 # ==========================
@@ -343,6 +337,10 @@ module = [
     "fastapi.*",
     "pydantic.*",
     "pyparsing.*",
+    "pypaginate.core",
+    "pypaginate.core.*",
+    "pypaginate.query",
+    "pypaginate.query.*",
 ]
 ignore_missing_imports = true
 
@@ -353,8 +351,9 @@ module = [
     "pypaginate.integrations.fastapi",
     "pypaginate.text.pipelines",
     "pypaginate.filters.search.helpers",
+    "pypaginate",
 ]
-disable_error_code = ["misc", "no-any-return"]
+disable_error_code = ["misc", "no-any-return", "import-untyped"]
 
 # ==========================
 # PYTEST CONFIGURATION
@@ -409,6 +408,7 @@ markers = [
 
     # Execution hints
     "slow: Slow running tests (>1s)",
+    "stress: Stress tests with large datasets",
     "flaky: Known flaky tests requiring retry",
     "skip_ci: Skip in CI (local only)",
 ]
@@ -440,7 +440,7 @@ omit = [
     "*/__pycache__/*",
     "*/tests/*",
     "*/migrations/*",
-    "*/_cli.py",
+    "*/_cli/*",
 ]
 
 [tool.coverage.paths]
@@ -489,5 +489,5 @@ dict_synonyms = ["Struct", "NamedTuple"]
 # ==========================
 [tool.bandit]
 targets = ["src"]
-exclude_dirs = ["tests", "docs", "examples", ".opencode"]
+exclude_dirs = ["tests", "docs", "examples", ".opencode", ".claude"]
 skips = ["B101", "B404", "B603"]  # B101: assert, B404/B603: subprocess in _cli.py
