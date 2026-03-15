@@ -128,6 +128,7 @@ def _sync_offset(
     params: OffsetParams,
     overflow: OverflowStrategy,
 ) -> OffsetPage[Any]:
+    """Execute sync offset pagination."""
     paginator: Paginator[Any] = Paginator(backend, overflow=overflow)
     return paginator.paginate(source, params)
 
@@ -138,6 +139,7 @@ async def _async_offset(
     params: OffsetParams,
     overflow: OverflowStrategy,
 ) -> OffsetPage[Any]:
+    """Execute async offset pagination."""
     paginator: AsyncPaginator[Any] = AsyncPaginator(backend, overflow=overflow)
     return await paginator.paginate(source, params)
 
@@ -147,6 +149,7 @@ async def _cursor_paginate(
     source: object,
     params: CursorParams,
 ) -> CursorPage[Any]:
+    """Execute async cursor pagination."""
     from pypaginate.engine.cursor import AsyncCursorPaginator
 
     paginator: AsyncCursorPaginator[Any] = AsyncCursorPaginator(backend)
