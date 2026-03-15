@@ -1,11 +1,11 @@
 """Side-by-side adapter comparison benchmarks.
 
-Compares memory backend against raw Python baselines
-to quantify pypaginate overhead.
+Compares memory, SA sync, SA async, and raw baselines in the same groups.
 """
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import pytest
@@ -13,24 +13,55 @@ import pytest
 from pypaginate.domain.enums import SortDirection
 from pypaginate.domain.models import OffsetParams
 from pypaginate.domain.specs import FilterSpec, SearchSpec, SortSpec
-from tests.perf.conftest import _setup_memory_sync
+from tests.fixtures.backends import BackendEnv
+from tests.perf.conftest import _run_in_loop
 
 
-# -- Paginate: pypaginate vs raw baseline -----------------------------------
+# -- Paginate --------------------------------------------------
 
 
 @pytest.mark.benchmark(group="compare-paginate-10k")
 def test_memory_paginate_10k(
     benchmark: Any,
-    dataset_10k: list[dict[str, Any]],
+    memory_env_10k: BackendEnv,
 ) -> None:
     """pypaginate memory paginate on 10K."""
-    env = _setup_memory_sync(dataset_10k)
     result = benchmark(
-        env.do_paginate,
-        env.query,
-        OffsetParams(page=5, limit=20),
+        memory_env_10k.do_paginate,
+        memory_env_10k.query,
+        OffsetParams(page=50, limit=20),
     )
+    assert result.total == 10_000
+
+
+@pytest.mark.benchmark(group="compare-paginate-10k")
+def test_sa_sync_paginate_10k(
+    benchmark: Any,
+    sa_sync_env_10k: BackendEnv,
+) -> None:
+    """pypaginate SA sync paginate on 10K."""
+    result = benchmark(
+        sa_sync_env_10k.do_paginate,
+        sa_sync_env_10k.query,
+        OffsetParams(page=50, limit=20),
+    )
+    assert result.total == 10_000
+
+
+@pytest.mark.benchmark(group="compare-paginate-10k")
+def test_sa_async_paginate_10k(
+    benchmark: Any,
+    sa_async_env_10k: BackendEnv,
+    sa_async_loop_10k: asyncio.AbstractEventLoop,
+) -> None:
+    """pypaginate SA async paginate on 10K."""
+    params = OffsetParams(page=50, limit=20)
+    coro_fn = sa_async_env_10k.do_paginate
+
+    def _do() -> Any:
+        return _run_in_loop(sa_async_loop_10k, coro_fn(sa_async_env_10k.query, params))
+
+    result = benchmark(_do)
     assert result.total == 10_000
 
 
@@ -40,27 +71,21 @@ def test_raw_list_slice_10k(
     dataset_10k: list[dict[str, Any]],
 ) -> None:
     """Baseline: raw Python list slicing (no pypaginate)."""
-
-    def raw_paginate() -> list[dict[str, Any]]:
-        offset, limit = 80, 20
-        return dataset_10k[offset : offset + limit]
-
-    result = benchmark(raw_paginate)
-    assert len(result) == 20
+    result = benchmark(lambda: {"items": dataset_10k[980:1000], "total": len(dataset_10k)})
+    assert result["total"] == 10_000
 
 
-# -- Filter: pypaginate vs raw baseline -------------------------------------
+# -- Filter ----------------------------------------------------
 
 
 @pytest.mark.benchmark(group="compare-filter-10k")
 def test_memory_filter_10k(
     benchmark: Any,
-    dataset_10k: list[dict[str, Any]],
+    memory_env_10k: BackendEnv,
 ) -> None:
     """pypaginate memory filter on 10K."""
-    env = _setup_memory_sync(dataset_10k)
     specs = [FilterSpec(field="age", operator="gte", value=30)]
-    result = benchmark(env.do_filter, env.query, specs)
+    result = benchmark(memory_env_10k.do_filter, memory_env_10k.query, specs)
     assert len(result) <= 10_000
 
 
@@ -78,18 +103,17 @@ def test_raw_list_filter_10k(
     assert len(result) <= 10_000
 
 
-# -- Sort: pypaginate vs raw baseline ---------------------------------------
+# -- Sort ------------------------------------------------------
 
 
 @pytest.mark.benchmark(group="compare-sort-10k")
 def test_memory_sort_10k(
     benchmark: Any,
-    dataset_10k: list[dict[str, Any]],
+    memory_env_10k: BackendEnv,
 ) -> None:
     """pypaginate memory sort on 10K."""
-    env = _setup_memory_sync(dataset_10k)
     specs = [SortSpec(field="age", direction=SortDirection.ASC)]
-    result = benchmark(env.do_sort, env.query, specs)
+    result = benchmark(memory_env_10k.do_sort, memory_env_10k.query, specs)
     assert len(result) == 10_000
 
 
@@ -107,18 +131,17 @@ def test_raw_list_sort_10k(
     assert len(result) == 10_000
 
 
-# -- Search: pypaginate vs raw baseline -------------------------------------
+# -- Search ----------------------------------------------------
 
 
 @pytest.mark.benchmark(group="compare-search-10k")
 def test_memory_search_10k(
     benchmark: Any,
-    dataset_10k: list[dict[str, Any]],
+    memory_env_10k: BackendEnv,
 ) -> None:
     """pypaginate memory search on 10K."""
-    env = _setup_memory_sync(dataset_10k)
     spec = SearchSpec(query="User_5", fields=("name",))
-    result = benchmark(env.do_search, env.query, spec)
+    result = benchmark(memory_env_10k.do_search, memory_env_10k.query, spec)
     assert len(result) >= 0
 
 
@@ -135,3 +158,40 @@ def test_raw_list_search_10k(
 
     result = benchmark(raw_search)
     assert len(result) >= 0
+
+
+# -- Pipeline --------------------------------------------------
+
+
+@pytest.mark.benchmark(group="compare-pipeline-10k")
+def test_memory_pipeline_10k(
+    benchmark: Any,
+    memory_env_10k: BackendEnv,
+) -> None:
+    """pypaginate memory pipeline on 10K."""
+    filters = [FilterSpec(field="age", operator="gte", value=30)]
+    sorting = [SortSpec(field="age", direction=SortDirection.ASC)]
+    result = benchmark(
+        memory_env_10k.do_pipeline,
+        memory_env_10k.query,
+        OffsetParams(page=1, limit=20),
+        filters=filters,
+        sorting=sorting,
+    )
+    assert result.total > 0
+
+
+@pytest.mark.benchmark(group="compare-pipeline-10k")
+def test_raw_pipeline_10k(
+    benchmark: Any,
+    dataset_10k: list[dict[str, Any]],
+) -> None:
+    """Baseline: raw Python filter + sort + slice."""
+
+    def raw_pipeline() -> dict[str, Any]:
+        filtered = [u for u in dataset_10k if u["age"] >= 30]
+        sorted_items = sorted(filtered, key=lambda u: u["name"])
+        return {"items": sorted_items[0:20], "total": len(sorted_items)}
+
+    result = benchmark(raw_pipeline)
+    assert result["total"] > 0

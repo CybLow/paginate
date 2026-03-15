@@ -6,7 +6,7 @@ from typing import Any
 
 from hypothesis import settings
 
-from pypaginate._dispatch import paginate
+from pypaginate import paginate
 from pypaginate.adapters.memory.backend import MemoryBackend
 from pypaginate.adapters.memory.filters import MemoryFilterBackend
 from pypaginate.adapters.memory.search import MemorySearchBackend
