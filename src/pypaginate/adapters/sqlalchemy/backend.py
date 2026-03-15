@@ -1,7 +1,7 @@
-"""Async offset pagination backend for SQLAlchemy.
+"""Offset pagination backends for SQLAlchemy (async and sync).
 
-Implements ``PaginationBackend[T]`` protocol using SELECT COUNT(*)
-for counting and OFFSET/LIMIT for fetching.
+Implements ``PaginationBackend[T]`` and ``SyncPaginationBackend[T]``
+protocols using SELECT COUNT(*) for counting and OFFSET/LIMIT for fetching.
 """
 
 from __future__ import annotations
@@ -14,7 +14,44 @@ ItemT = TypeVar("ItemT")
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
+    from sqlalchemy.orm import Session
     from sqlalchemy.sql import Select
+
+
+# -- Shared query builders ---------------------------------------------------
+
+
+def _build_count_query(query: object) -> Any:
+    """Build ``SELECT COUNT(*) FROM (subquery)``.
+
+    Args:
+        query: A SQLAlchemy Select statement.
+
+    Returns:
+        A count select statement.
+    """
+    from sqlalchemy import func, select
+
+    stmt: Select[Any] = query  # type: ignore[assignment]
+    return select(func.count()).select_from(stmt.subquery())
+
+
+def _build_fetch_query(query: object, offset: int, limit: int) -> Any:
+    """Apply OFFSET/LIMIT to a query.
+
+    Args:
+        query: A SQLAlchemy Select statement.
+        offset: Rows to skip.
+        limit: Maximum rows.
+
+    Returns:
+        The query with offset and limit applied.
+    """
+    stmt: Select[Any] = query  # type: ignore[assignment]
+    return stmt.offset(offset).limit(limit)
+
+
+# -- Async backend -----------------------------------------------------------
 
 
 class SQLAlchemyBackend(Generic[ItemT]):
@@ -38,7 +75,8 @@ class SQLAlchemyBackend(Generic[ItemT]):
         Returns:
             Total number of matching rows.
         """
-        return await _execute_count(self._session, query)
+        result = await self._session.execute(_build_count_query(query))
+        return result.scalar_one()  # type: ignore[no-any-return]
 
     async def fetch(
         self,
@@ -56,47 +94,59 @@ class SQLAlchemyBackend(Generic[ItemT]):
         Returns:
             List of ORM entities for the requested slice.
         """
-        return await _execute_fetch(self._session, query, offset, limit)
+        result = await self._session.execute(
+            _build_fetch_query(query, offset, limit),
+        )
+        return list(result.scalars().all())
 
 
-async def _execute_count(session: AsyncSession, query: object) -> int:
-    """Build and execute a count subquery.
-
-    Args:
-        session: The async session.
-        query: A SQLAlchemy Select statement.
-
-    Returns:
-        The scalar count result.
-    """
-    from sqlalchemy import func, select
-
-    stmt: Select[Any] = query  # type: ignore[assignment]
-    count_stmt = select(func.count()).select_from(stmt.subquery())
-    result = await session.execute(count_stmt)
-    return result.scalar_one()
+# -- Sync backend ------------------------------------------------------------
 
 
-async def _execute_fetch(
-    session: AsyncSession,
-    query: object,
-    offset: int,
-    limit: int,
-) -> list[Any]:
-    """Apply offset/limit and execute the query.
+class SyncSQLAlchemyBackend(Generic[ItemT]):
+    """Sync offset pagination backend for SQLAlchemy.
+
+    Satisfies ``SyncPaginationBackend[ItemT]`` protocol.
 
     Args:
-        session: The async session.
-        query: A SQLAlchemy Select statement.
-        offset: Rows to skip.
-        limit: Maximum rows.
-
-    Returns:
-        List of scalar results (ORM entities).
+        session: A synchronous SQLAlchemy session.
     """
-    stmt: Select[Any] = query  # type: ignore[assignment]
-    result = await session.execute(stmt.offset(offset).limit(limit))
-    return list(result.scalars().all())
+
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def count(self, query: object) -> int:
+        """Count rows using ``SELECT COUNT(*) FROM (subquery)``.
+
+        Args:
+            query: A SQLAlchemy Select statement.
+
+        Returns:
+            Total number of matching rows.
+        """
+        result = self._session.execute(_build_count_query(query))
+        return result.scalar_one()  # type: ignore[no-any-return]
+
+    def fetch(
+        self,
+        query: object,
+        offset: int,
+        limit: int,
+    ) -> list[ItemT]:
+        """Fetch rows with OFFSET/LIMIT.
+
+        Args:
+            query: A SQLAlchemy Select statement.
+            offset: Number of rows to skip.
+            limit: Maximum rows to return.
+
+        Returns:
+            List of ORM entities for the requested slice.
+        """
+        result = self._session.execute(
+            _build_fetch_query(query, offset, limit),
+        )
+        return list(result.scalars().all())
 
 
-__all__ = ["SQLAlchemyBackend"]
+__all__ = ["SQLAlchemyBackend", "SyncSQLAlchemyBackend"]

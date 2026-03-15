@@ -6,6 +6,7 @@ and fixtures available to all test categories.
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -15,6 +16,7 @@ from pypaginate.filtering.registry import OperatorRegistry, create_default_regis
 from pypaginate.search.engine import SearchEngine
 from pypaginate.sorting.engine import SortEngine
 from tests.factories.data import make_users
+from tests.fixtures.backends import BACKEND_REGISTRY, BackendEnv
 
 
 if TYPE_CHECKING:
@@ -61,6 +63,7 @@ _MARKER_MAP: dict[str, str] = {
     "/e2e/": "e2e",
     "/property/": "property",
     "/benchmarks/": "benchmark",
+    "/perf/": "benchmark",
 }
 
 
@@ -102,6 +105,21 @@ def _apply_directory_markers(items: list[Item]) -> None:
             if fragment in path:
                 item.add_marker(getattr(pytest.mark, name))
                 break
+
+
+# -- Fixtures: backend_env --------------------------------------------------
+
+
+@pytest.fixture(params=list(BACKEND_REGISTRY.keys()))
+async def backend_env(
+    request: pytest.FixtureRequest,
+) -> AsyncGenerator[BackendEnv, None]:
+    """Yield a BackendEnv for every registered backend (8 items)."""
+    setup_fn = BACKEND_REGISTRY[request.param]
+    env = await setup_fn()
+    yield env
+    if env.cleanup:
+        await env.cleanup()
 
 
 # -- Fixtures: engines -------------------------------------------------------

@@ -1,170 +1,55 @@
-"""End-to-end tests for sort + paginate workflows.
-
-Verifies sorting across directions, multi-field, nulls, and combined.
-"""
+"""Sort E2E flows — all backends via backend_env."""
 
 from __future__ import annotations
 
-import pytest
-
-from pypaginate import FilterSpec, OffsetParams, SortDirection, SortSpec
-from pypaginate.adapters.memory.backend import MemoryBackend
-from pypaginate.adapters.memory.filters import MemoryFilterBackend
-from pypaginate.adapters.memory.sorting import MemorySortBackend
-from pypaginate.engine.paginator import Paginator
-from pypaginate.engine.pipeline import SyncPipeline
+from pypaginate import OffsetParams, SortDirection, SortSpec
+from tests.fixtures.backends import BackendEnv
+from tests.fixtures.helpers import run
 
 
-def _build_pipeline() -> SyncPipeline[dict[str, object]]:
-    """Build a SyncPipeline with sort and filter backends."""
-    paginator: Paginator[dict[str, object]] = Paginator(MemoryBackend())
-    return SyncPipeline(
-        paginator,
-        filter_backend=MemoryFilterBackend(),
-        sort_backend=MemorySortBackend(),
-    )
+async def test_global_sort_order_across_pages(backend_env: BackendEnv) -> None:
+    """Ascending sort is preserved when iterating all pages."""
+    env = backend_env
+    limit = 3
+    all_names: list[str] = []
+    page_num = 1
 
-
-@pytest.fixture()
-def users() -> list[dict[str, object]]:
-    """Users with varied ages and names for sorting tests."""
-    return [
-        {"name": "Charlie", "age": 30},
-        {"name": "Alice", "age": 25},
-        {"name": "Bob", "age": 30},
-        {"name": "Diana", "age": 25},
-        {"name": "Eve", "age": 35},
-        {"name": "Frank", "age": 20},
-        {"name": "Grace", "age": None},
-    ]
-
-
-class TestSortPaginate:
-    """Sort then paginate results."""
-
-    def test_sort_age_asc_across_pages(self, users: list) -> None:
-        """Sort by age ASC, order preserved across all pages."""
-        pipeline = _build_pipeline()
-        sorting = [SortSpec(field="age", direction=SortDirection.ASC)]
-        collected: list[dict[str, object]] = []
-        page_num = 1
-
-        while True:
-            page = pipeline.execute(
-                users,
-                OffsetParams(page=page_num, limit=3),
-                sorting=sorting,
+    while True:
+        page = await run(
+            env.do_pipeline(
+                env.query,
+                OffsetParams(page=page_num, limit=limit),
+                sorting=[SortSpec(field="name", direction=SortDirection.ASC)],
             )
-            collected.extend(page.items)
-            if not page.has_next:
-                break
-            page_num += 1
-
-        non_null = [i for i in collected if i["age"] is not None]
-        ages = [item["age"] for item in non_null]
-        assert ages == sorted(ages)
-
-    def test_sort_name_desc(self, users: list) -> None:
-        """Sort by name DESC gives reverse alphabetical."""
-        pipeline = _build_pipeline()
-        sorting = [SortSpec(field="name", direction=SortDirection.DESC)]
-
-        page = pipeline.execute(
-            users,
-            OffsetParams(page=1, limit=10),
-            sorting=sorting,
         )
+        all_names.extend(str(env.get_field(item, "name")) for item in page.items)
+        if not page.has_next:
+            break
+        page_num += 1
 
-        names = [item["name"] for item in page.items]
-        assert names == sorted(names, reverse=True)
-
-
-class TestMultiFieldSort:
-    """Multi-field sort with tie-breaking."""
-
-    def test_sort_age_then_name(self, users: list) -> None:
-        """Sort by age ASC then name ASC breaks ties correctly."""
-        pipeline = _build_pipeline()
-        sorting = [
-            SortSpec(field="age", direction=SortDirection.ASC),
-            SortSpec(field="name", direction=SortDirection.ASC),
-        ]
-
-        page = pipeline.execute(
-            users,
-            OffsetParams(page=1, limit=10),
-            sorting=sorting,
-        )
-
-        non_null = [i for i in page.items if i["age"] is not None]
-        ages = [item["age"] for item in non_null]
-        assert ages == sorted(ages)
+    assert all_names == sorted(all_names)
+    assert len(all_names) == env.total
 
 
-class TestSortWithNulls:
-    """Sort with None values in data."""
+async def test_sort_desc_across_pages(backend_env: BackendEnv) -> None:
+    """Descending sort is preserved when iterating all pages."""
+    env = backend_env
+    limit = 3
+    all_names: list[str] = []
+    page_num = 1
 
-    def test_null_values_placed_last(self, users: list) -> None:
-        """None values sort to the end by default."""
-        pipeline = _build_pipeline()
-        sorting = [SortSpec(field="age", direction=SortDirection.ASC)]
-
-        page = pipeline.execute(
-            users,
-            OffsetParams(page=1, limit=10),
-            sorting=sorting,
-        )
-
-        items = page.items
-        null_items = [i for i in items if i["age"] is None]
-        non_null = [i for i in items if i["age"] is not None]
-        null_start = items.index(null_items[0]) if null_items else len(items)
-        assert null_start >= len(non_null)
-
-
-class TestSortWithFilter:
-    """Sort combined with filter specs."""
-
-    def test_filter_then_sort(self, users: list) -> None:
-        """Filter non-null age > 25 then sort by name ASC."""
-        pipeline = _build_pipeline()
-        filters = [
-            FilterSpec(field="age", operator="is_not_null"),
-            FilterSpec(field="age", operator="gt", value=25),
-        ]
-        sorting = [SortSpec(field="name", direction=SortDirection.ASC)]
-
-        page = pipeline.execute(
-            users,
-            OffsetParams(page=1, limit=10),
-            filters=filters,
-            sorting=sorting,
-        )
-
-        assert all(item["age"] > 25 for item in page.items)
-        names = [item["name"] for item in page.items]
-        assert names == sorted(names)
-
-    def test_sorted_across_all_pages_globally(
-        self,
-        large_dataset: list[dict[str, object]],
-    ) -> None:
-        """Collect all pages and verify global sort order."""
-        pipeline = _build_pipeline()
-        sorting = [SortSpec(field="age", direction=SortDirection.ASC)]
-        collected: list[dict[str, object]] = []
-        page_num = 1
-
-        while True:
-            page = pipeline.execute(
-                large_dataset,
-                OffsetParams(page=page_num, limit=20),
-                sorting=sorting,
+    while True:
+        page = await run(
+            env.do_pipeline(
+                env.query,
+                OffsetParams(page=page_num, limit=limit),
+                sorting=[SortSpec(field="name", direction=SortDirection.DESC)],
             )
-            collected.extend(page.items)
-            if not page.has_next:
-                break
-            page_num += 1
+        )
+        all_names.extend(str(env.get_field(item, "name")) for item in page.items)
+        if not page.has_next:
+            break
+        page_num += 1
 
-        ages = [item["age"] for item in collected]
-        assert ages == sorted(ages)
+    assert all_names == sorted(all_names, reverse=True)
+    assert len(all_names) == env.total

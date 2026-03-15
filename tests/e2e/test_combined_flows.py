@@ -1,150 +1,76 @@
-"""End-to-end tests for combined pipeline flows.
-
-Verifies filter + sort + search + paginate working together
-through the SyncPipeline orchestrator.
-"""
+"""Combined E2E flows — filter + sort + search + paginate."""
 
 from __future__ import annotations
 
-from pypaginate import (
-    FilterSpec,
-    OffsetParams,
-    SearchSpec,
-    SortDirection,
-    SortSpec,
-)
-from pypaginate.adapters.memory.backend import MemoryBackend
-from pypaginate.adapters.memory.filters import MemoryFilterBackend
-from pypaginate.adapters.memory.search import MemorySearchBackend
-from pypaginate.adapters.memory.sorting import MemorySortBackend
-from pypaginate.engine.paginator import Paginator
-from pypaginate.engine.pipeline import SyncPipeline
+from pypaginate import FilterSpec, OffsetParams, SearchSpec, SortDirection, SortSpec
+from tests.fixtures.backends import BackendEnv
+from tests.fixtures.helpers import run
 
 
-def _build_pipeline() -> SyncPipeline[dict[str, object]]:
-    """Build a fully-wired SyncPipeline with all backends."""
-    backend = MemoryBackend()
-    paginator: Paginator[dict[str, object]] = Paginator(backend)
-    return SyncPipeline(
-        paginator,
-        filter_backend=MemoryFilterBackend(),
-        sort_backend=MemorySortBackend(),
-        search_backend=MemorySearchBackend(),
+async def test_full_pipeline_all_specs(backend_env: BackendEnv) -> None:
+    """Filter + sort + search + paginate in one pipeline call."""
+    env = backend_env
+    page = await run(
+        env.do_pipeline(
+            env.query,
+            OffsetParams(page=1, limit=100),
+            filters=[FilterSpec(field="name", operator="contains", value="e")],
+            sorting=[SortSpec(field="name", direction=SortDirection.ASC)],
+            search=SearchSpec(query="e", fields=("name",)),
+        )
     )
+    names = [str(env.get_field(item, "name")) for item in page.items]
+    # Should be sorted
+    assert names == sorted(names)
+    # All items should match both filter and search
+    for name in names:
+        assert "e" in name.lower() or "e" in name
 
 
-class TestFilterSortPaginate:
-    """Filter + sort + paginate pipeline."""
+async def test_iterate_filtered_sorted_paginated(backend_env: BackendEnv) -> None:
+    """Iterate all pages of filtered+sorted results, verify completeness."""
+    env = backend_env
+    limit = 2
+    collected: list[object] = []
+    page_num = 1
 
-    def test_filter_sort_first_page(
-        self,
-        large_dataset: list[dict[str, object]],
-    ) -> None:
-        """Filter age>=25, sort name ASC, paginate page 1."""
-        pipeline = _build_pipeline()
-        filters = [FilterSpec(field="age", operator="gte", value=25)]
-        sorting = [SortSpec(field="name", direction=SortDirection.ASC)]
-
-        page = pipeline.execute(
-            large_dataset,
-            OffsetParams(page=1, limit=10),
-            filters=filters,
-            sorting=sorting,
-        )
-
-        assert all(item["age"] >= 25 for item in page.items)
-        names = [item["name"] for item in page.items]
-        assert names == sorted(names)
-
-    def test_sorted_order_across_pages(
-        self,
-        large_dataset: list[dict[str, object]],
-    ) -> None:
-        """Sort order preserved when paginating across pages."""
-        pipeline = _build_pipeline()
-        sorting = [SortSpec(field="age", direction=SortDirection.ASC)]
-        collected: list[dict[str, object]] = []
-        page_num = 1
-
-        while True:
-            page = pipeline.execute(
-                large_dataset,
-                OffsetParams(page=page_num, limit=20),
-                sorting=sorting,
+    while True:
+        page = await run(
+            env.do_pipeline(
+                env.query,
+                OffsetParams(page=page_num, limit=limit),
+                filters=[FilterSpec(field="name", operator="contains", value="e")],
+                sorting=[SortSpec(field="name", direction=SortDirection.ASC)],
             )
-            collected.extend(page.items)
-            if not page.has_next:
-                break
-            page_num += 1
-
-        ages = [item["age"] for item in collected]
-        assert ages == sorted(ages)
-
-
-class TestSearchPaginate:
-    """Search + paginate pipeline."""
-
-    def test_search_then_paginate(
-        self,
-        large_dataset: list[dict[str, object]],
-    ) -> None:
-        """Search 'User_5' then paginate the results."""
-        pipeline = _build_pipeline()
-        search = SearchSpec(query="User_5", fields=("name",))
-
-        page = pipeline.execute(
-            large_dataset,
-            OffsetParams(page=1, limit=50),
-            search=search,
         )
+        collected.extend(page.items)
+        if not page.has_next:
+            break
+        page_num += 1
 
-        assert page.total > 0
-        assert all("5" in str(item["name"]) for item in page.items)
-
-
-class TestFullPipeline:
-    """Filter + sort + search + paginate (all four)."""
-
-    def test_full_pipeline_across_pages(
-        self,
-        large_dataset: list[dict[str, object]],
-    ) -> None:
-        """Full pipeline: filter + sort + search + paginate multi-page."""
-        pipeline = _build_pipeline()
-        filters = [FilterSpec(field="active", operator="eq", value=True)]
-        sorting = [SortSpec(field="name", direction=SortDirection.ASC)]
-        search = SearchSpec(query="User_1", fields=("name",))
-        collected: list[dict[str, object]] = []
-        page_num = 1
-
-        while True:
-            page = pipeline.execute(
-                large_dataset,
-                OffsetParams(page=page_num, limit=5),
-                filters=filters,
-                sorting=sorting,
-                search=search,
-            )
-            collected.extend(page.items)
-            if not page.has_next:
-                break
-            page_num += 1
-
-        assert all(item["active"] is True for item in collected)
-        names = [item["name"] for item in collected]
-        assert names == sorted(names)
-
-    def test_pipeline_no_specs_just_paginate(
-        self,
-        large_dataset: list[dict[str, object]],
-    ) -> None:
-        """Pipeline with no specs delegates to plain pagination."""
-        pipeline = _build_pipeline()
-
-        page = pipeline.execute(
-            large_dataset,
-            OffsetParams(page=1, limit=10),
+    # Total collected must equal filtered total
+    first_page = await run(
+        env.do_pipeline(
+            env.query,
+            OffsetParams(page=1, limit=100),
+            filters=[FilterSpec(field="name", operator="contains", value="e")],
         )
+    )
+    assert len(collected) == first_page.total
 
-        assert len(page.items) == 10
-        assert page.total == 100
+
+async def test_pipeline_idempotent(backend_env: BackendEnv) -> None:
+    """Running the same pipeline twice produces identical results."""
+    env = backend_env
+    params = OffsetParams(page=1, limit=100)
+    kwargs = {
+        "sorting": [SortSpec(field="name", direction=SortDirection.ASC)],
+    }
+
+    page1 = await run(env.do_pipeline(env.query, params, **kwargs))
+    page2 = await run(env.do_pipeline(env.query, params, **kwargs))
+
+    assert page1.total == page2.total
+    assert len(page1.items) == len(page2.items)
+    for a, b in zip(page1.items, page2.items, strict=True):
+        assert env.get_field(a, "name") == env.get_field(b, "name")

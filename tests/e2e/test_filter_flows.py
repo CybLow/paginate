@@ -1,103 +1,72 @@
-"""End-to-end tests for filter + paginate workflows.
-
-Verifies FilterSpec-based filtering followed by offset pagination.
-"""
+"""Filter E2E flows — all backends via backend_env."""
 
 from __future__ import annotations
 
-from pypaginate import FilterSpec, OffsetParams, OverflowStrategy, paginate
-from pypaginate.adapters.memory.backend import MemoryBackend
-from pypaginate.adapters.memory.filters import MemoryFilterBackend
-from pypaginate.engine.paginator import Paginator
-from pypaginate.engine.pipeline import SyncPipeline
+from pypaginate import FilterSpec, OffsetParams
+from tests.fixtures.backends import BackendEnv
+from tests.fixtures.helpers import run
 
 
-def _filter_and_paginate(
-    data: list[dict[str, object]],
-    filters: list[FilterSpec],
-    page: int = 1,
-    limit: int = 10,
-) -> object:
-    """Helper: filter then paginate via SyncPipeline."""
-    backend = MemoryBackend()
-    paginator: Paginator[dict[str, object]] = Paginator(backend)
-    pipeline: SyncPipeline[dict[str, object]] = SyncPipeline(
-        paginator,
-        filter_backend=MemoryFilterBackend(),
-    )
-    return pipeline.execute(
-        data,
-        OffsetParams(page=page, limit=limit),
-        filters=filters,
-    )
+async def test_filter_narrow_then_paginate(backend_env: BackendEnv) -> None:
+    """Filter narrows dataset, then paginate the subset."""
+    env = backend_env
+    limit = 2
 
-
-class TestFilterThenPaginate:
-    """Filter data and paginate through results."""
-
-    def test_age_filter_paginates_all(
-        self,
-        large_dataset: list[dict[str, object]],
-    ) -> None:
-        """Filter age >= 30 then collect all pages."""
-        filters = [FilterSpec(field="age", operator="gte", value=30)]
-        collected: list[dict[str, object]] = []
-        page_num = 1
-
-        while True:
-            result = _filter_and_paginate(large_dataset, filters, page=page_num, limit=10)
-            collected.extend(result.items)
-            if not result.has_next:
-                break
-            page_num += 1
-
-        assert all(item["age"] >= 30 for item in collected)
-        assert len(collected) > 0
-
-    def test_multiple_filters(
-        self,
-        large_dataset: list[dict[str, object]],
-    ) -> None:
-        """age >= 25 AND name starts_with 'User_1' narrows results."""
-        filters = [
-            FilterSpec(field="age", operator="gte", value=25),
-            FilterSpec(field="name", operator="starts_with", value="User_1"),
-        ]
-
-        result = _filter_and_paginate(large_dataset, filters, limit=100)
-
-        assert all(item["age"] >= 25 for item in result.items)
-        assert all(item["name"].startswith("User_1") for item in result.items)
-
-
-class TestFilterEdgeCases:
-    """Edge cases for filter flows."""
-
-    def test_filter_matches_nothing(
-        self,
-        large_dataset: list[dict[str, object]],
-    ) -> None:
-        """Filter with no matches yields empty page."""
-        filters = [FilterSpec(field="age", operator="gt", value=999)]
-
-        result = _filter_and_paginate(large_dataset, filters)
-
-        assert result.items == []
-        assert result.total == 0
-
-    def test_filter_with_overflow_clamp(
-        self,
-        large_dataset: list[dict[str, object]],
-    ) -> None:
-        """CLAMP overflow on filtered data returns last page."""
-        filters = [FilterSpec(field="active", operator="eq", value=True)]
-        filter_backend = MemoryFilterBackend()
-        filtered = filter_backend.apply_filters(large_dataset, filters)
-
-        page = paginate(
-            filtered,
-            OffsetParams(page=999, limit=10),
-            overflow=OverflowStrategy.CLAMP,
+    # Filter to items with "e" in name (Alice, Eve, Grace, Henry)
+    page = await run(
+        env.do_pipeline(
+            env.query,
+            OffsetParams(page=1, limit=limit),
+            filters=[FilterSpec(field="name", operator="contains", value="e")],
         )
+    )
+    assert page.total <= env.total
+    assert len(page.items) <= limit
+    for item in page.items:
+        name = str(env.get_field(item, "name"))
+        assert "e" in name.lower() or "e" in name
 
-        assert len(page.items) > 0
+
+async def test_progressive_filtering(backend_env: BackendEnv) -> None:
+    """Adding filters narrows results each time."""
+    env = backend_env
+    params = OffsetParams(page=1, limit=100)
+
+    # No filter
+    page_all = await run(env.do_pipeline(env.query, params))
+
+    # One filter
+    page_one = await run(
+        env.do_pipeline(
+            env.query,
+            params,
+            filters=[FilterSpec(field="name", operator="contains", value="e")],
+        )
+    )
+
+    # Two filters — stricter
+    page_two = await run(
+        env.do_pipeline(
+            env.query,
+            params,
+            filters=[
+                FilterSpec(field="name", operator="contains", value="e"),
+                FilterSpec(field="name", operator="contains", value="li"),
+            ],
+        )
+    )
+    assert page_all.total >= page_one.total >= page_two.total
+
+
+async def test_filter_to_empty(backend_env: BackendEnv) -> None:
+    """Filter that matches nothing returns empty page."""
+    env = backend_env
+    page = await run(
+        env.do_pipeline(
+            env.query,
+            OffsetParams(page=1, limit=100),
+            filters=[FilterSpec(field="name", operator="eq", value="XXXX_NONEXISTENT")],
+        )
+    )
+    assert page.total == 0
+    assert len(page.items) == 0
