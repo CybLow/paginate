@@ -45,10 +45,21 @@ _SKIP_PAGINATE = pytest.mark.skipif(
     reason="paginate not installed",
 )
 
-_MEM_SIZES = [1_000, 10_000, 100_000]
-_MEM_IDS = ["1K", "10K", "100K"]
-_PAG_SIZES = [1_000, 10_000, 100_000, 500_000, 1_000_000]
-_PAG_IDS = ["1K", "10K", "100K", "500K", "1M"]
+_slow = pytest.mark.slow
+_MEM_SIZES = [
+    pytest.param(1_000, id="1K"),
+    pytest.param(10_000, id="10K"),
+    pytest.param(100_000, id="100K"),
+    pytest.param(500_000, marks=_slow, id="500K"),
+    pytest.param(1_000_000, marks=_slow, id="1M"),
+]
+_PAG_SIZES = [
+    pytest.param(1_000, id="1K"),
+    pytest.param(10_000, id="10K"),
+    pytest.param(100_000, id="100K"),
+    pytest.param(500_000, marks=_slow, id="500K"),
+    pytest.param(1_000_000, marks=_slow, id="1M"),
+]
 
 
 # ═══════════════════════════════════════════════════════════
@@ -57,7 +68,7 @@ _PAG_IDS = ["1K", "10K", "100K", "500K", "1M"]
 
 
 @pytest.mark.benchmark(group="scale-paginate-memory")
-@pytest.mark.parametrize("size", _PAG_SIZES, ids=_PAG_IDS)
+@pytest.mark.parametrize("size", _PAG_SIZES)
 def test_raw_python_paginate_scaling(
     benchmark: Any,
     size: int,
@@ -75,7 +86,7 @@ def test_raw_python_paginate_scaling(
 
 @_SKIP_FP
 @pytest.mark.benchmark(group="scale-paginate-memory")
-@pytest.mark.parametrize("size", _MEM_SIZES, ids=_MEM_IDS)
+@pytest.mark.parametrize("size", _MEM_SIZES)
 def test_fp_paginate_scaling(
     benchmark: Any,
     size: int,
@@ -94,7 +105,7 @@ def test_fp_paginate_scaling(
 
 @_SKIP_PAGINATE
 @pytest.mark.benchmark(group="scale-paginate-memory")
-@pytest.mark.parametrize("size", _MEM_SIZES, ids=_MEM_IDS)
+@pytest.mark.parametrize("size", _MEM_SIZES)
 def test_paginate_lib_scaling(
     benchmark: Any,
     size: int,
@@ -115,7 +126,7 @@ def test_paginate_lib_scaling(
 
 
 @pytest.mark.benchmark(group="scale-filter-memory")
-@pytest.mark.parametrize("size", _MEM_SIZES, ids=_MEM_IDS)
+@pytest.mark.parametrize("size", _MEM_SIZES)
 def test_raw_python_filter_scaling(
     benchmark: Any,
     size: int,
@@ -136,7 +147,7 @@ def test_raw_python_filter_scaling(
 
 
 @pytest.mark.benchmark(group="scale-sort-memory")
-@pytest.mark.parametrize("size", _MEM_SIZES, ids=_MEM_IDS)
+@pytest.mark.parametrize("size", _MEM_SIZES)
 def test_raw_python_sort_scaling(
     benchmark: Any,
     size: int,

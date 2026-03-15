@@ -1,7 +1,7 @@
 """Scaling curve benchmarks -- how perf degrades with size.
 
 Parametrized benchmarks across dataset sizes for all 3 backends:
-- Memory: 1K to 1M (paginate), 1K to 100K (filter/sort/search/pipeline)
+- Memory: 1K to 1M (all operations)
 - SA sync: 1K to 100K (all operations)
 - SA async: 1K to 100K (all operations)
 
@@ -31,10 +31,21 @@ from tests.perf.conftest import (
 
 _SA_SIZES = [1_000, 10_000, 100_000]
 _SA_IDS = ["1K", "10K", "100K"]
-_MEM_SIZES = [1_000, 10_000, 100_000]
-_MEM_IDS = ["1K", "10K", "100K"]
-_PAG_SIZES = [1_000, 10_000, 100_000, 500_000, 1_000_000]
-_PAG_IDS = ["1K", "10K", "100K", "500K", "1M"]
+_slow = pytest.mark.slow
+_MEM_SIZES = [
+    pytest.param(1_000, id="1K"),
+    pytest.param(10_000, id="10K"),
+    pytest.param(100_000, id="100K"),
+    pytest.param(500_000, marks=_slow, id="500K"),
+    pytest.param(1_000_000, marks=_slow, id="1M"),
+]
+_PAG_SIZES = [
+    pytest.param(1_000, id="1K"),
+    pytest.param(10_000, id="10K"),
+    pytest.param(100_000, id="100K"),
+    pytest.param(500_000, marks=_slow, id="500K"),
+    pytest.param(1_000_000, marks=_slow, id="1M"),
+]
 _DEFAULT_PARAMS = OffsetParams(page=1, limit=20)
 
 
@@ -56,7 +67,7 @@ def _sa_sync_env(data: list[dict[str, Any]]) -> Any:
 
 
 @pytest.mark.benchmark(group="scale-paginate-memory")
-@pytest.mark.parametrize("size", _PAG_SIZES, ids=_PAG_IDS)
+@pytest.mark.parametrize("size", _PAG_SIZES)
 def test_memory_paginate_scaling(benchmark: Any, size: int) -> None:
     """Memory paginate latency across dataset sizes."""
     env = _setup_memory_sync(make_users(size))
@@ -93,7 +104,7 @@ def test_sa_async_paginate_scaling(benchmark: Any, size: int) -> None:
 
 
 @pytest.mark.benchmark(group="scale-filter-memory")
-@pytest.mark.parametrize("size", _MEM_SIZES, ids=_MEM_IDS)
+@pytest.mark.parametrize("size", _MEM_SIZES)
 def test_memory_filter_scaling(benchmark: Any, size: int) -> None:
     """Memory filter latency across dataset sizes."""
     env = _setup_memory_sync(make_users(size))
@@ -141,7 +152,7 @@ def test_sa_async_filter_scaling(benchmark: Any, size: int) -> None:
 
 
 @pytest.mark.benchmark(group="scale-sort-memory")
-@pytest.mark.parametrize("size", _MEM_SIZES, ids=_MEM_IDS)
+@pytest.mark.parametrize("size", _MEM_SIZES)
 def test_memory_sort_scaling(benchmark: Any, size: int) -> None:
     """Memory sort latency across dataset sizes."""
     env = _setup_memory_sync(make_users(size))
@@ -189,7 +200,7 @@ def test_sa_async_sort_scaling(benchmark: Any, size: int) -> None:
 
 
 @pytest.mark.benchmark(group="scale-search-memory")
-@pytest.mark.parametrize("size", _MEM_SIZES, ids=_MEM_IDS)
+@pytest.mark.parametrize("size", _MEM_SIZES)
 def test_memory_search_scaling(benchmark: Any, size: int) -> None:
     """Memory search latency across dataset sizes."""
     env = _setup_memory_sync(make_users(size))
@@ -242,7 +253,7 @@ def test_sa_async_search_scaling(benchmark: Any, size: int) -> None:
 
 
 @pytest.mark.benchmark(group="scale-pipeline-memory")
-@pytest.mark.parametrize("size", _MEM_SIZES, ids=_MEM_IDS)
+@pytest.mark.parametrize("size", _MEM_SIZES)
 def test_memory_pipeline_scaling(benchmark: Any, size: int) -> None:
     """Memory pipeline (filter+sort) latency across sizes."""
     env = _setup_memory_sync(make_users(size))
