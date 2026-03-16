@@ -419,6 +419,7 @@ markers = [
     "keyset: Tests for keyset pagination",
 
     # Execution hints
+    "postgresql: Tests requiring a running PostgreSQL instance",
     "slow: Slow running tests (>1s)",
     "stress: Stress tests with large datasets",
     "flaky: Known flaky tests requiring retry",
