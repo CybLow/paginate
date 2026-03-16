@@ -22,7 +22,7 @@ _ENUM_MEMBERS = [
     (NullsPosition, {"FIRST", "LAST"}),
     (FilterLogic, {"AND", "OR"}),
     (SearchFieldMode, {"PREFIX", "CONTAINS", "EXACT"}),
-    (FuzzyMode, {"EXACT", "FUZZY"}),
+    (FuzzyMode, {"EXACT", "FUZZY", "TOKEN_SORT"}),
 ]
 
 

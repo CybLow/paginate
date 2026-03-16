@@ -46,10 +46,11 @@ class SearchFieldMode(Enum):
 
 
 class FuzzyMode(Enum):
-    """Whether matching uses fuzzy or exact comparison."""
+    """Fuzzy matching strategy for search."""
 
     EXACT = auto()
     FUZZY = auto()
+    TOKEN_SORT = auto()
 
 
 __all__ = [

@@ -37,6 +37,9 @@ FilterOperator = Literal[
     "is_null",
     "is_not_null",
     "regex",
+    "empty",
+    "not_empty",
+    "exists",
 ]
 """Supported filter operator names (type-checked at definition time)."""
 
@@ -81,15 +84,63 @@ class SearchSpec(BaseModel):
 
         SearchSpec(query="john doe", fields=("name", "email"))
         SearchSpec(query="jhn", fields=("name",), fuzzy=FuzzyMode.FUZZY)
+        SearchSpec(query="alice", fields=("name", "bio"), weights={"name": 2.0})
     """
 
     model_config = ConfigDict(frozen=True)
 
     query: str
     fields: tuple[str, ...]
+    weights: dict[str, float] | None = None
     mode: SearchFieldMode = SearchFieldMode.CONTAINS
     fuzzy: FuzzyMode = FuzzyMode.EXACT
     threshold: int = 75
+    min_length: int = 1
+    max_results: int | None = None
 
 
-__all__ = ["FilterOperator", "FilterSpec", "SearchSpec", "SortSpec"]
+class FilterGroup(BaseModel):
+    """Composite filter for nested AND/OR expressions.
+
+    Use ``And()`` and ``Or()`` builder functions instead of
+    constructing directly.
+
+    Example::
+
+        And(
+            Or(FilterSpec(field="a", value=1), FilterSpec(field="b", value=2)),
+            Or(FilterSpec(field="c", value=3), FilterSpec(field="d", value=4)),
+        )
+        # = (a=1 OR b=2) AND (c=3 OR d=4)
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    logic: FilterLogic = FilterLogic.AND
+    conditions: tuple[FilterSpec | FilterGroup, ...]
+
+
+def And(*conditions: FilterSpec | FilterGroup) -> FilterGroup:  # noqa: N802
+    """Create an AND group of filter conditions."""
+    return FilterGroup(logic=FilterLogic.AND, conditions=conditions)
+
+
+def Or(*conditions: FilterSpec | FilterGroup) -> FilterGroup:  # noqa: N802
+    """Create an OR group of filter conditions."""
+    return FilterGroup(logic=FilterLogic.OR, conditions=conditions)
+
+
+FilterInput = list[FilterSpec] | FilterGroup
+"""Type alias for filter input accepted by engines and pipelines."""
+
+
+__all__ = [
+    "And",
+    "FilterGroup",
+    "FilterInput",
+    "FilterOperator",
+    "FilterSpec",
+    "Or",
+    "SearchSpec",
+    "SortSpec",
+]

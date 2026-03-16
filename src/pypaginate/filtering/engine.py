@@ -11,7 +11,7 @@ from fnmatch import fnmatch
 from typing import TypeVar
 
 from pypaginate.domain.enums import FilterLogic
-from pypaginate.domain.specs import FilterSpec
+from pypaginate.domain.specs import FilterGroup, FilterSpec
 from pypaginate.filtering.accessor import compile_accessor
 from pypaginate.filtering.like import classify_like, like_to_glob
 from pypaginate.filtering.regex import compile_pattern
@@ -38,17 +38,20 @@ class FilterEngine:
     def apply(
         self,
         items: Sequence[T],
-        filters: Sequence[FilterSpec],
+        filters: Sequence[FilterSpec] | FilterGroup,
     ) -> list[T]:
-        """Apply all filters to items.
+        """Apply filters to items. Accepts flat list or nested FilterGroup.
 
         Args:
             items: Source sequence to filter.
-            filters: Filter specifications to apply.
+            filters: FilterSpec list or FilterGroup (via And/Or builders).
 
         Returns:
             Filtered list of items matching all specs.
         """
+        if isinstance(filters, FilterGroup):
+            pred = _compile_group(filters, self._registry)
+            return [item for item in items if pred(item)]
         if not filters:
             return list(items)
         and_preds, or_preds = _compile_all(filters, self._registry)
@@ -169,6 +172,37 @@ def _matches(
         if p(item):
             return True
     return False
+
+
+def _compile_group(
+    group: FilterGroup,
+    registry: OperatorRegistry,
+) -> Callable[[object], bool]:
+    """Compile a nested FilterGroup into a recursive predicate."""
+    child_preds = []
+    for condition in group.conditions:
+        if isinstance(condition, FilterGroup):
+            child_preds.append(_compile_group(condition, registry))
+        else:
+            child_preds.append(_compile_predicate(condition, registry))
+
+    if group.logic is FilterLogic.AND:
+
+        def _and(item: object) -> bool:
+            for p in child_preds:  # noqa: SIM110
+                if not p(item):
+                    return False
+            return True
+
+        return _and
+
+    def _or(item: object) -> bool:
+        for p in child_preds:  # noqa: SIM110
+            if p(item):
+                return True
+        return False
+
+    return _or
 
 
 __all__ = ["FilterEngine"]

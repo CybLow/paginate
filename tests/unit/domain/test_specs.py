@@ -33,6 +33,9 @@ ALL_OPERATORS: list[FilterOperator] = [
     "is_null",
     "is_not_null",
     "regex",
+    "empty",
+    "not_empty",
+    "exists",
 ]
 
 

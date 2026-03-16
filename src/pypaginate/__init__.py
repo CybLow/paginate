@@ -40,16 +40,18 @@ from pypaginate.domain.models import (
     OffsetPage,
     OffsetParams,
 )
-from pypaginate.domain.specs import FilterSpec, SearchSpec, SortSpec
+from pypaginate.domain.specs import And, FilterGroup, FilterSpec, Or, SearchSpec, SortSpec
 
 
 __version__ = "0.2.0"
 
 __all__ = [
+    "And",
     "ConfigurationError",
     "CursorPage",
     "CursorParams",
     "FilterError",
+    "FilterGroup",
     "FilterLogic",
     "FilterSpec",
     "FilterValidationError",
@@ -57,6 +59,7 @@ __all__ = [
     "NullsPosition",
     "OffsetPage",
     "OffsetParams",
+    "Or",
     "OverflowStrategy",
     "PaginationError",
     "SearchError",

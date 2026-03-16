@@ -10,8 +10,10 @@ from pypaginate.domain.exceptions import FilterError
 from pypaginate.filtering.operators import (
     Between,
     Contains,
+    Empty,
     EndsWith,
     Eq,
+    Exists,
     Gt,
     Gte,
     ILike,
@@ -22,6 +24,7 @@ from pypaginate.filtering.operators import (
     Lt,
     Lte,
     Ne,
+    NotEmpty,
     NotIn,
     Operator,
     Regex,
@@ -100,6 +103,9 @@ _BUILTINS: dict[str, Operator] = {
     "is_null": IsNull(),
     "is_not_null": IsNotNull(),
     "regex": Regex(),
+    "empty": Empty(),
+    "not_empty": NotEmpty(),
+    "exists": Exists(),
 }
 
 

@@ -163,6 +163,30 @@ class Regex:
             ) from exc
 
 
+class Empty:
+    __slots__ = ()
+
+    @staticmethod
+    def evaluate(field_value: object, _spec_value: object) -> bool:
+        return field_value is None or field_value in ("", [])
+
+
+class NotEmpty:
+    __slots__ = ()
+
+    @staticmethod
+    def evaluate(field_value: object, _spec_value: object) -> bool:
+        return field_value is not None and field_value not in ("", [])
+
+
+class Exists:
+    __slots__ = ()
+
+    @staticmethod
+    def evaluate(_field_value: object, _spec_value: object) -> bool:
+        return True
+
+
 def _unpack_pair(value: object) -> tuple[Any, Any]:
     """Unpack a two-element sequence for Between."""
     if not isinstance(value, Iterable):
@@ -181,8 +205,10 @@ def _unpack_pair(value: object) -> tuple[Any, Any]:
 __all__ = [
     "Between",
     "Contains",
+    "Empty",
     "EndsWith",
     "Eq",
+    "Exists",
     "Gt",
     "Gte",
     "ILike",
@@ -193,6 +219,7 @@ __all__ = [
     "Lt",
     "Lte",
     "Ne",
+    "NotEmpty",
     "NotIn",
     "Operator",
     "Regex",
