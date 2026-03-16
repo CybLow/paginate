@@ -1,4 +1,4 @@
-"""Tests for field accessor (get_value)."""
+"""Tests for compiled field accessor."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import pytest
 
 from pypaginate.domain.exceptions import FilterError
-from pypaginate.filtering.accessor import get_value
+from pypaginate.filtering.accessor import compile_accessor
 
 
 @dataclass
@@ -16,72 +16,90 @@ class _User:
     age: int = 0
 
 
-class TestDictAccess:
+class TestSingleSegmentDict:
     def test_simple_key_returns_value(self) -> None:
-        item = {"name": "Alice"}
+        accessor = compile_accessor("name")
 
-        result = get_value(item, "name")
-
-        assert result == "Alice"
+        assert accessor({"name": "Alice"}) == "Alice"
 
     def test_integer_value_returns_value(self) -> None:
-        item = {"age": 30}
+        accessor = compile_accessor("age")
 
-        result = get_value(item, "age")
-
-        assert result == 30
+        assert accessor({"age": 30}) == 30
 
 
-class TestObjectAccess:
+class TestSingleSegmentObject:
     def test_attribute_returns_value(self) -> None:
-        user = _User(name="Bob")
+        accessor = compile_accessor("name")
 
-        result = get_value(user, "name")
-
-        assert result == "Bob"
+        assert accessor(_User(name="Bob")) == "Bob"
 
 
-class TestNestedAccess:
+class TestMultiSegmentDict:
     def test_nested_dict_path_returns_value(self) -> None:
-        data = {"user": {"name": "Alice"}}
+        accessor = compile_accessor("user.name")
 
-        result = get_value(data, "user.name")
-
-        assert result == "Alice"
+        assert accessor({"user": {"name": "Alice"}}) == "Alice"
 
     def test_deep_nested_path_returns_value(self) -> None:
-        data = {"a": {"b": {"c": 42}}}
+        accessor = compile_accessor("a.b.c")
 
-        result = get_value(data, "a.b.c")
-
-        assert result == 42
+        assert accessor({"a": {"b": {"c": 42}}}) == 42
 
 
 class TestMissingField:
     def test_missing_dict_key_raises_filter_error(self) -> None:
+        accessor = compile_accessor("missing")
+
         with pytest.raises(FilterError, match="Cannot resolve"):
-            get_value({"name": "Alice"}, "missing")
+            accessor({"name": "Alice"})
 
     def test_missing_nested_key_raises_filter_error(self) -> None:
+        accessor = compile_accessor("user.email")
+
         with pytest.raises(FilterError, match="Cannot resolve"):
-            get_value({"user": {"name": "Alice"}}, "user.email")
+            accessor({"user": {"name": "Alice"}})
 
     def test_missing_attribute_raises_filter_error(self) -> None:
+        accessor = compile_accessor("email")
+
         with pytest.raises(FilterError, match="Cannot resolve"):
-            get_value(_User(name="Alice"), "email")
+            accessor(_User(name="Alice"))
 
 
 class TestEdgeCases:
     def test_none_field_value_returns_none(self) -> None:
-        item = {"score": None}
+        accessor = compile_accessor("score")
 
-        result = get_value(item, "score")
-
-        assert result is None
+        assert accessor({"score": None}) is None
 
     def test_empty_string_value_returns_empty(self) -> None:
-        item = {"name": ""}
+        accessor = compile_accessor("name")
 
-        result = get_value(item, "name")
+        assert accessor({"name": ""}) == ""
 
-        assert result == ""
+
+class TestReusability:
+    def test_compiled_accessor_reusable_across_items(self) -> None:
+        accessor = compile_accessor("age")
+        items = [{"age": 10}, {"age": 20}, {"age": 30}]
+
+        results = [accessor(item) for item in items]
+
+        assert results == [10, 20, 30]
+
+    def test_compiled_multi_reusable_across_items(self) -> None:
+        accessor = compile_accessor("profile.score")
+        items = [
+            {"profile": {"score": 80}},
+            {"profile": {"score": 90}},
+        ]
+
+        results = [accessor(item) for item in items]
+
+        assert results == [80, 90]
+
+    def test_nested_none_value_returned(self) -> None:
+        accessor = compile_accessor("user.score")
+
+        assert accessor({"user": {"score": None}}) is None

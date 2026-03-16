@@ -20,6 +20,8 @@ class MemoryBackend(Generic[ItemT]):
     Satisfies ``SyncPaginationBackend[ItemT]`` protocol.
     """
 
+    __slots__ = ()
+
     def count(self, query: object) -> int:
         """Count items in a sequence.
 

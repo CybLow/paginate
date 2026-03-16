@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from pypaginate.text.normalize import normalize_text
+from pypaginate.text.normalize import clear_normalize_cache, normalize_text
 
 
 @pytest.mark.parametrize(
@@ -61,3 +61,17 @@ class TestCombined:
         result = normalize_text("")
 
         assert result == ""
+
+
+class TestCache:
+    def test_clear_cache_is_callable(self) -> None:
+        normalize_text("cached_value")
+
+        clear_normalize_cache()
+
+    def test_cached_result_matches_fresh(self) -> None:
+        clear_normalize_cache()
+        first = normalize_text("Hello World")
+        second = normalize_text("Hello World")
+
+        assert first == second == "hello world"

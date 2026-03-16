@@ -5,7 +5,7 @@ Each paginator owns the pipeline: count -> clamp -> fetch -> OffsetPage.
 
 from __future__ import annotations
 
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pypaginate.domain.enums import OverflowStrategy
 from pypaginate.domain.models import OffsetPage, OffsetParams
@@ -33,7 +33,7 @@ class Paginator(Generic[ItemT]):
         self,
         query: object,
         params: OffsetParams,
-    ) -> OffsetPage[ItemT]:
+    ) -> Any:
         """Execute the sync pagination pipeline.
 
         Args:
@@ -41,7 +41,7 @@ class Paginator(Generic[ItemT]):
             params: Offset pagination parameters.
 
         Returns:
-            OffsetPage with items and metadata.
+            OffsetPage (or FastOffsetPage if msgspec installed).
         """
         total = self._backend.count(query)
         effective = self._apply_overflow(params, total)
@@ -78,7 +78,7 @@ class AsyncPaginator(Generic[ItemT]):
         self,
         query: object,
         params: OffsetParams,
-    ) -> OffsetPage[ItemT]:
+    ) -> Any:
         """Execute the async pagination pipeline.
 
         Args:
@@ -86,7 +86,7 @@ class AsyncPaginator(Generic[ItemT]):
             params: Offset pagination parameters.
 
         Returns:
-            OffsetPage with items and metadata.
+            OffsetPage (or FastOffsetPage if msgspec installed).
         """
         total = await self._backend.count(query)
         effective = self._apply_overflow(params, total)

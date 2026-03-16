@@ -78,6 +78,8 @@ class SQLAlchemyFilterBackend:
     Satisfies ``FilterBackend`` protocol.
     """
 
+    __slots__ = ("_operators",)
+
     def __init__(self) -> None:
         self._operators = _build_operator_map()
 

@@ -32,6 +32,8 @@ from pypaginate.filtering.operators import (
 class OperatorRegistry:
     """Registry mapping operator names to Operator instances."""
 
+    __slots__ = ("_operators",)
+
     def __init__(self) -> None:
         self._operators: dict[str, Operator] = {}
 

@@ -26,6 +26,8 @@ class SortEngine:
     so the first spec has highest priority.
     """
 
+    __slots__ = ()
+
     def apply(self, items: Sequence[T], sorting: Sequence[SortSpec]) -> list[T]:
         """Sort items according to the given sort specifications.
 

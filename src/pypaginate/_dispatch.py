@@ -82,7 +82,7 @@ def paginate(
     *,
     backend: object | None = None,
     overflow: OverflowStrategy = OverflowStrategy.EMPTY,
-) -> OffsetPage[Any] | Awaitable[OffsetPage[Any]] | Awaitable[CursorPage[Any]]:
+) -> Any:
     """Universal pagination entry point.
 
     The return type is automatically inferred from the params type:
@@ -102,6 +102,14 @@ def paginate(
         TypeError: If source is not a Sequence and no backend given.
         TypeError: If cursor params used with a sync backend.
     """
+    if (
+        backend is None
+        and isinstance(params, OffsetParams)
+        and isinstance(source, Sequence)
+        and not isinstance(source, (str, bytes))
+    ):
+        return _fast_memory_offset(source, params, overflow)
+
     resolved = _resolve_backend(source, backend)
 
     if isinstance(params, CursorParams):
@@ -114,7 +122,8 @@ def paginate(
         return _cursor_paginate(resolved, source, params)
 
     if _has_async_methods(resolved):
-        return _async_offset(resolved, source, params, overflow)
+        paginator: AsyncPaginator[Any] = AsyncPaginator(resolved, overflow=overflow)  # type: ignore[arg-type]
+        return paginator.paginate(source, params)
 
     return _sync_offset(resolved, source, params, overflow)
 
@@ -122,33 +131,36 @@ def paginate(
 # ── Internal paths (clean, no branching) ─────────────────
 
 
+def _fast_memory_offset(
+    source: Sequence[Any],
+    params: OffsetParams,
+    overflow: OverflowStrategy,
+) -> Any:
+    """Fast path for in-memory offset pagination (no backend alloc)."""
+    total = len(source)
+    effective = params.clamp(total) if overflow is OverflowStrategy.CLAMP else params
+    if total <= 0 or effective.offset >= total:
+        return OffsetPage.create([], total, effective)
+    items = list(source[effective.offset : effective.offset + effective.limit])
+    return OffsetPage.create(items, total, effective)
+
+
 def _sync_offset(
     backend: Any,
     source: object,
     params: OffsetParams,
     overflow: OverflowStrategy,
-) -> OffsetPage[Any]:
+) -> Any:
     """Execute sync offset pagination."""
     paginator: Paginator[Any] = Paginator(backend, overflow=overflow)
     return paginator.paginate(source, params)
-
-
-async def _async_offset(
-    backend: Any,
-    source: object,
-    params: OffsetParams,
-    overflow: OverflowStrategy,
-) -> OffsetPage[Any]:
-    """Execute async offset pagination."""
-    paginator: AsyncPaginator[Any] = AsyncPaginator(backend, overflow=overflow)
-    return await paginator.paginate(source, params)
 
 
 async def _cursor_paginate(
     backend: Any,
     source: object,
     params: CursorParams,
-) -> CursorPage[Any]:
+) -> Any:
     """Execute async cursor pagination."""
     from pypaginate.engine.cursor import AsyncCursorPaginator
 
@@ -174,8 +186,22 @@ def _resolve_backend(source: object, backend: object | None) -> object:
     raise TypeError(msg)
 
 
+_ASYNC_CACHE: dict[type, bool] = {}
+
+
 def _has_async_methods(backend: object) -> bool:
-    """Check if a backend has async methods."""
+    """Check if a backend has async methods (cached per class)."""
+    cls = type(backend)
+    cached = _ASYNC_CACHE.get(cls)
+    if cached is not None:
+        return cached
+    result = _detect_async(backend)
+    _ASYNC_CACHE[cls] = result
+    return result
+
+
+def _detect_async(backend: object) -> bool:
+    """Introspect backend for async methods."""
     for attr in ("count", "fetch", "fetch_page"):
         method = getattr(backend, attr, None)
         if method is not None:

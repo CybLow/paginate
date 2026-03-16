@@ -122,7 +122,7 @@ class TestSyncPipelineNoSpecs:
 
         result = SyncPipeline(pag).execute("query", OffsetParams())
 
-        assert isinstance(result, OffsetPage)
+        assert hasattr(result, "total") and hasattr(result, "page")
         assert pag.last_query == "query"
 
 
@@ -229,7 +229,7 @@ class TestAsyncPipelineNoSpecs:
 
         result = await AsyncPipeline(pag).execute("query", OffsetParams())
 
-        assert isinstance(result, OffsetPage)
+        assert hasattr(result, "total") and hasattr(result, "page")
         assert pag.last_query == "query"
 
 

@@ -89,6 +89,7 @@ def test_offset_page_model_dump(benchmark: Any, size: int) -> None:
         limit=size,
         has_next=True,
         has_previous=False,
+        pages=500,
     )
     benchmark(page.model_dump)
 
@@ -129,6 +130,7 @@ def test_offset_page_model_dump_json(benchmark: Any, size: int) -> None:
         limit=size,
         has_next=True,
         has_previous=False,
+        pages=500,
     )
     benchmark(page.model_dump_json)
 
@@ -163,6 +165,7 @@ def test_cursor_page_model_dump(benchmark: Any, size: int) -> None:
         limit=size,
         has_next=True,
         has_previous=False,
+        pages=500,
         next_cursor="abc123",
         previous_cursor=None,
     )
@@ -230,6 +233,7 @@ def test_filtered_page_model_dump_json(
         limit=size,
         has_next=True,
         has_previous=False,
+        pages=500,
     )
     benchmark(page.model_dump_json)
 
@@ -291,6 +295,7 @@ def test_sorted_page_model_dump_json(
         limit=size,
         has_next=True,
         has_previous=False,
+        pages=500,
     )
     benchmark(page.model_dump_json)
 
@@ -331,6 +336,7 @@ def test_searched_page_model_dump_json(
         limit=20,
         has_next=True,
         has_previous=False,
+        pages=500,
     )
     benchmark(page.model_dump_json)
 

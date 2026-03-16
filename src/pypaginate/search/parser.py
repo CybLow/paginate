@@ -16,6 +16,8 @@ class TokenParser:
     unquoted text on whitespace.
     """
 
+    __slots__ = ()
+
     def parse(self, query: str) -> list[str]:
         """Split a query string into search tokens.
 

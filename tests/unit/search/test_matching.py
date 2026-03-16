@@ -1,4 +1,4 @@
-"""Tests for search matching utilities."""
+"""Tests for search matching utilities (pre-normalized inputs)."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import pytest
 
 from pypaginate.domain.enums import SearchFieldMode
 from pypaginate.search.matching import fuzzy_score, matches_field
+from pypaginate.text.normalize import normalize_text
 
 
 class TestMatchesFieldContains:
@@ -46,36 +47,48 @@ class TestMatchesFieldExact:
         assert result is False
 
 
-class TestMatchesFieldCaseInsensitive:
+class TestMatchesFieldNormalized:
     @pytest.mark.parametrize(
         ("value", "token"),
         [("HELLO", "hello"), ("Hello", "HELLO"), ("hElLo", "HeLlO")],
         ids=["upper-lower", "mixed-upper", "mixed-mixed"],
     )
-    def test_case_insensitive_match(self, value: str, token: str) -> None:
-        result = matches_field(value, token, SearchFieldMode.EXACT)
+    def test_case_insensitive_after_normalize(self, value: str, token: str) -> None:
+        result = matches_field(
+            normalize_text(value),
+            normalize_text(token),
+            SearchFieldMode.EXACT,
+        )
 
         assert result is True
 
 
 class TestFuzzyScore:
     def test_similar_strings_return_positive_score(self) -> None:
-        score = fuzzy_score("hello", "helo", threshold=50)
+        score = fuzzy_score(
+            normalize_text("hello"),
+            normalize_text("helo"),
+            threshold=50,
+        )
 
         assert score > 0
 
     def test_dissimilar_strings_return_zero(self) -> None:
-        score = fuzzy_score("hello", "zzzzz", threshold=90)
+        score = fuzzy_score(
+            normalize_text("hello"),
+            normalize_text("zzzzz"),
+            threshold=90,
+        )
 
         assert score == 0
 
     def test_empty_value_returns_zero(self) -> None:
-        score = fuzzy_score("", "hello", threshold=50)
+        score = fuzzy_score("", normalize_text("hello"), threshold=50)
 
         assert score == 0
 
     def test_empty_token_returns_zero(self) -> None:
-        score = fuzzy_score("hello", "", threshold=50)
+        score = fuzzy_score(normalize_text("hello"), "", threshold=50)
 
         assert score == 0
 
@@ -83,12 +96,20 @@ class TestFuzzyScore:
 class TestComputeScoreFallback:
     def test_fallback_returns_high_score_for_substring(self) -> None:
         with patch("pypaginate.search.matching._HAS_RAPIDFUZZ", False):
-            score = fuzzy_score("hello world", "hello", threshold=50)
+            score = fuzzy_score(
+                normalize_text("hello world"),
+                normalize_text("hello"),
+                threshold=50,
+            )
 
             assert score == 100
 
     def test_fallback_returns_zero_for_no_match(self) -> None:
         with patch("pypaginate.search.matching._HAS_RAPIDFUZZ", False):
-            score = fuzzy_score("hello", "xyz", threshold=50)
+            score = fuzzy_score(
+                normalize_text("hello"),
+                normalize_text("xyz"),
+                threshold=50,
+            )
 
             assert score == 0

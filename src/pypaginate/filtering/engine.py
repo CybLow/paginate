@@ -1,21 +1,26 @@
 """Filter engine applying filter specs to in-memory sequences.
 
-Stateless engine that receives an OperatorRegistry via constructor
-and evaluates FilterSpec predicates against items.
+Compiles filter specs into fast predicate closures ONCE,
+then applies them N times without per-item overhead.
 """
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from fnmatch import fnmatch
 from typing import TypeVar
 
 from pypaginate.domain.enums import FilterLogic
 from pypaginate.domain.specs import FilterSpec
-from pypaginate.filtering import accessor
+from pypaginate.filtering.accessor import compile_accessor
+from pypaginate.filtering.like import classify_like, like_to_glob
+from pypaginate.filtering.regex import compile_pattern
 from pypaginate.filtering.registry import OperatorRegistry
 
 
 T = TypeVar("T")
+
+_STRING_OPS = frozenset({"contains", "starts_with", "ends_with"})
 
 
 class FilterEngine:
@@ -24,6 +29,8 @@ class FilterEngine:
     Args:
         registry: Operator registry for looking up operators.
     """
+
+    __slots__ = ("_registry",)
 
     def __init__(self, registry: OperatorRegistry) -> None:
         self._registry = registry
@@ -44,43 +51,124 @@ class FilterEngine:
         """
         if not filters:
             return list(items)
-        and_specs, or_specs = _partition_specs(filters)
-        return [item for item in items if _item_matches(item, and_specs, or_specs, self._registry)]
+        and_preds, or_preds = _compile_all(filters, self._registry)
+        return [item for item in items if _matches(item, and_preds, or_preds)]
 
 
-def _partition_specs(
+def _compile_all(
     filters: Sequence[FilterSpec],
-) -> tuple[list[FilterSpec], list[FilterSpec]]:
-    """Split filters into AND and OR groups."""
-    and_specs = [f for f in filters if f.logic == FilterLogic.AND]
-    or_specs = [f for f in filters if f.logic == FilterLogic.OR]
-    return and_specs, or_specs
-
-
-def _item_matches(
-    item: object,
-    and_specs: list[FilterSpec],
-    or_specs: list[FilterSpec],
     registry: OperatorRegistry,
-) -> bool:
-    """Check whether a single item satisfies all filter groups."""
-    and_pass = all(_evaluate_spec(item, s, registry) for s in and_specs)
-    if not and_pass:
-        return False
-    if not or_specs:
-        return True
-    return any(_evaluate_spec(item, s, registry) for s in or_specs)
+) -> tuple[list[Callable[[object], bool]], list[Callable[[object], bool]]]:
+    """Partition and compile all filter specs."""
+    and_preds: list[Callable[[object], bool]] = []
+    or_preds: list[Callable[[object], bool]] = []
+    for spec in filters:
+        pred = _compile_predicate(spec, registry)
+        if spec.logic == FilterLogic.AND:
+            and_preds.append(pred)
+        else:
+            or_preds.append(pred)
+    return and_preds, or_preds
 
 
-def _evaluate_spec(
-    item: object,
+def _compile_predicate(
     spec: FilterSpec,
     registry: OperatorRegistry,
+) -> Callable[[object], bool]:
+    """Compile a FilterSpec into a fast predicate closure."""
+    accessor = compile_accessor(spec.field)
+    op_name = spec.operator
+    value = spec.value
+
+    if op_name == "regex":
+        return _compile_regex(accessor, value)
+    if op_name == "like":
+        return _compile_like(accessor, value)
+    if op_name == "ilike":
+        return _compile_ilike(accessor, value)
+    if op_name in _STRING_OPS:
+        value = str(value)
+
+    operator = registry.get(op_name)
+
+    def _predicate(item: object) -> bool:
+        return operator.evaluate(accessor(item), value)
+
+    return _predicate
+
+
+def _compile_regex(
+    accessor: Callable[[object], object],
+    value: object,
+) -> Callable[[object], bool]:
+    """Compile a regex predicate with pre-compiled pattern."""
+    from pypaginate.domain.exceptions import FilterError
+
+    pattern_str = str(value)
+    try:
+        compiled = compile_pattern(pattern_str)
+    except Exception as exc:
+        raise FilterError(
+            f"Invalid regex pattern: '{pattern_str}'",
+            details={"pattern": pattern_str, "error": str(exc)},
+        ) from exc
+
+    def _pred(item: object) -> bool:
+        return bool(compiled.search(str(accessor(item))))
+
+    return _pred
+
+
+def _compile_like(
+    accessor: Callable[[object], object],
+    value: object,
+) -> Callable[[object], bool]:
+    """Compile LIKE using string methods when possible."""
+    pattern = str(value)
+    kind, inner = classify_like(pattern)
+    if kind == "contains":
+        return lambda item: inner in str(accessor(item))
+    if kind == "startswith":
+        return lambda item: str(accessor(item)).startswith(inner)
+    if kind == "endswith":
+        return lambda item: str(accessor(item)).endswith(inner)
+    glob = like_to_glob(pattern)
+    return lambda item: fnmatch(str(accessor(item)), glob)
+
+
+def _compile_ilike(
+    accessor: Callable[[object], object],
+    value: object,
+) -> Callable[[object], bool]:
+    """Compile case-insensitive LIKE using string methods."""
+    pattern = str(value)
+    kind, inner = classify_like(pattern)
+    lower_inner = inner.lower()
+    if kind == "contains":
+        return lambda item: lower_inner in str(accessor(item)).lower()
+    if kind == "startswith":
+        return lambda item: str(accessor(item)).lower().startswith(lower_inner)
+    if kind == "endswith":
+        return lambda item: str(accessor(item)).lower().endswith(lower_inner)
+    glob = like_to_glob(pattern).lower()
+    return lambda item: fnmatch(str(accessor(item)).lower(), glob)
+
+
+def _matches(
+    item: object,
+    and_preds: list[Callable[[object], bool]],
+    or_preds: list[Callable[[object], bool]],
 ) -> bool:
-    """Evaluate a single FilterSpec against an item."""
-    field_value = accessor.get_value(item, spec.field)
-    operator = registry.get(spec.operator)
-    return operator.evaluate(field_value, spec.value)
+    """Check whether a single item satisfies all predicate groups."""
+    for p in and_preds:
+        if not p(item):
+            return False
+    if not or_preds:
+        return True
+    for p in or_preds:  # noqa: SIM110
+        if p(item):
+            return True
+    return False
 
 
 __all__ = ["FilterEngine"]

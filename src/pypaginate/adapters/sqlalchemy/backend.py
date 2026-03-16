@@ -63,6 +63,8 @@ class SQLAlchemyBackend(Generic[ItemT]):
         session: An async SQLAlchemy session.
     """
 
+    __slots__ = ("_session",)
+
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
@@ -111,6 +113,8 @@ class SyncSQLAlchemyBackend(Generic[ItemT]):
     Args:
         session: A synchronous SQLAlchemy session.
     """
+
+    __slots__ = ("_session",)
 
     def __init__(self, session: Session) -> None:
         self._session = session

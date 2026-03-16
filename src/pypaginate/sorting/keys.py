@@ -2,6 +2,8 @@
 
 Constructs callable sort keys that handle null placement and
 direction for use with Python's built-in ``sorted()``.
+
+Uses compiled field accessors to avoid per-item string splitting.
 """
 
 from __future__ import annotations
@@ -11,7 +13,7 @@ from typing import Any
 
 from pypaginate.domain.enums import NullsPosition, SortDirection
 from pypaginate.domain.exceptions import PaginationError
-from pypaginate.filtering.accessor import get_value
+from pypaginate.filtering.accessor import compile_accessor
 
 
 def build_sort_key(
@@ -33,9 +35,10 @@ def build_sort_key(
         A callable that produces a sortable tuple from an item.
     """
     null_first = _null_sorts_first(direction, nulls)
+    accessor = compile_accessor(field)
 
     def _key(item: object) -> tuple[bool, Any]:
-        value = _safe_get(item, field)
+        value = _safe_get(item, accessor)
         if value is None:
             return not null_first, ""
         return null_first, value
@@ -43,18 +46,13 @@ def build_sort_key(
     return _key
 
 
-def _safe_get(item: object, field: str) -> Any:
-    """Extract a field value, returning None on failure.
-
-    Args:
-        item: The item to extract from.
-        field: Dotted field path.
-
-    Returns:
-        The field value, or None if not found.
-    """
+def _safe_get(
+    item: object,
+    accessor: Callable[[object], object],
+) -> Any:
+    """Extract a field value, returning None on failure."""
     try:
-        return get_value(item, field)
+        return accessor(item)
     except PaginationError:
         return None
 
@@ -63,18 +61,7 @@ def _null_sorts_first(
     direction: SortDirection,
     nulls: NullsPosition,
 ) -> bool:
-    """Determine whether nulls sort before non-null values.
-
-    For DESC with LAST, nulls go to the logical end (sort first
-    in reversed order). This function accounts for that inversion.
-
-    Args:
-        direction: Current sort direction.
-        nulls: Requested null placement.
-
-    Returns:
-        True if nulls should appear first in the raw sort order.
-    """
+    """Determine whether nulls sort before non-null values."""
     wants_first = nulls is NullsPosition.FIRST
     is_desc = direction is SortDirection.DESC
     return wants_first != is_desc

@@ -5,7 +5,7 @@ Delegates fetch_page to a CursorBackend and builds a CursorPage.
 
 from __future__ import annotations
 
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pypaginate.domain.models import CursorPage, CursorParams
 from pypaginate.domain.protocols import CursorBackend
@@ -26,7 +26,7 @@ class AsyncCursorPaginator(Generic[ItemT]):
         self,
         query: object,
         params: CursorParams,
-    ) -> CursorPage[ItemT]:
+    ) -> Any:
         """Execute cursor pagination.
 
         Args:

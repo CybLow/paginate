@@ -45,6 +45,8 @@ def make_offset_page(
 ) -> OffsetPage[Any]:
     """Build OffsetPage with computed navigation flags."""
     items = items if items is not None else list(range(limit))
+    import math
+
     return OffsetPage(
         items=items,
         total=total,
@@ -52,6 +54,7 @@ def make_offset_page(
         limit=limit,
         has_next=page * limit < total,
         has_previous=page > 1,
+        pages=math.ceil(total / limit),
     )
 
 

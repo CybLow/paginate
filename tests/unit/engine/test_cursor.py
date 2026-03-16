@@ -51,7 +51,7 @@ class TestCursorPaginatorReturnsPage:
 
         page = await paginator.paginate(object(), CursorParams(limit=3))
 
-        assert isinstance(page, CursorPage)
+        assert hasattr(page, "next_cursor")
         assert page.items == [1, 2, 3]
 
     @pytest.mark.asyncio

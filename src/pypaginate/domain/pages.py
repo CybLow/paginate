@@ -2,19 +2,30 @@
 
 OffsetPage and CursorPage are separate types with clean schemas.
 No null leakage — each page has only the fields for its mode.
+
+When msgspec is installed (``pypaginate[fast]``), page construction
+uses msgspec.Struct for near-zero overhead. The returned object
+duck-types as a Pydantic model with ``.model_dump()`` support.
 """
 
 from __future__ import annotations
 
 import math
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
-from pydantic import BaseModel, ConfigDict, computed_field
+from pydantic import BaseModel, ConfigDict
 
 from pypaginate.domain.params import CursorParams, OffsetParams
 
 
 ItemT = TypeVar("ItemT")
+
+try:
+    from pypaginate.domain.fast_pages import FastCursorPage, FastOffsetPage
+
+    _HAS_MSGSPEC = True
+except ImportError:
+    _HAS_MSGSPEC = False
 
 
 class BasePage(BaseModel, Generic[ItemT]):
@@ -36,6 +47,7 @@ class OffsetPage(BasePage[ItemT]):
 
     total: int
     page: int
+    pages: int
 
     @classmethod
     def create(
@@ -43,15 +55,28 @@ class OffsetPage(BasePage[ItemT]):
         items: list[ItemT],
         total: int,
         params: OffsetParams,
-    ) -> OffsetPage[ItemT]:
+    ) -> Any:
         """Build from offset pagination results.
 
         Args:
             items: Items for this page.
             total: Total item count across all pages.
             params: Offset parameters used.
+
+        Returns:
+            OffsetPage or FastOffsetPage (if msgspec installed).
         """
         max_pages = math.ceil(total / params.limit)
+        if _HAS_MSGSPEC:
+            return FastOffsetPage(
+                items=items,
+                limit=params.limit,
+                has_next=params.page < max_pages,
+                has_previous=params.page > 1,
+                total=total,
+                page=params.page,
+                pages=max_pages,
+            )
         return cls(
             items=items,
             limit=params.limit,
@@ -59,13 +84,8 @@ class OffsetPage(BasePage[ItemT]):
             has_previous=params.page > 1,
             total=total,
             page=params.page,
+            pages=max_pages,
         )
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def pages(self) -> int:
-        """Total number of pages."""
-        return math.ceil(self.total / self.limit)
 
 
 class CursorPage(BasePage[ItemT]):
@@ -85,7 +105,7 @@ class CursorPage(BasePage[ItemT]):
         *,
         next_cursor: str | None = None,
         previous_cursor: str | None = None,
-    ) -> CursorPage[ItemT]:
+    ) -> Any:
         """Build from cursor pagination results.
 
         Args:
@@ -93,7 +113,19 @@ class CursorPage(BasePage[ItemT]):
             params: Cursor parameters used.
             next_cursor: Cursor for the next page.
             previous_cursor: Cursor for the previous page.
+
+        Returns:
+            CursorPage or FastCursorPage (if msgspec installed).
         """
+        if _HAS_MSGSPEC:
+            return FastCursorPage(
+                items=items,
+                limit=params.limit,
+                has_next=next_cursor is not None,
+                has_previous=previous_cursor is not None,
+                next_cursor=next_cursor,
+                previous_cursor=previous_cursor,
+            )
         return cls(
             items=items,
             limit=params.limit,
