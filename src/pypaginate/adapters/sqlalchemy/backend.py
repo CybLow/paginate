@@ -63,21 +63,23 @@ class SQLAlchemyBackend(Generic[ItemT]):
         session: An async SQLAlchemy session.
     """
 
-    __slots__ = ("_session",)
+    __slots__ = ("_count_query", "_session", "_unique")
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        *,
+        count_query: object | None = None,
+        unique: bool = False,
+    ) -> None:
         self._session = session
+        self._count_query = count_query
+        self._unique = unique
 
     async def count(self, query: object) -> int:
-        """Count rows using ``SELECT COUNT(*) FROM (subquery)``.
-
-        Args:
-            query: A SQLAlchemy Select statement.
-
-        Returns:
-            Total number of matching rows.
-        """
-        result = await self._session.execute(_build_count_query(query))
+        """Count rows. Uses custom count query if provided."""
+        stmt = self._count_query if self._count_query is not None else _build_count_query(query)
+        result = await self._session.execute(stmt)  # type: ignore[arg-type]
         return result.scalar_one()  # type: ignore[no-any-return]
 
     async def fetch(
@@ -86,20 +88,12 @@ class SQLAlchemyBackend(Generic[ItemT]):
         offset: int,
         limit: int,
     ) -> list[ItemT]:
-        """Fetch rows with OFFSET/LIMIT.
-
-        Args:
-            query: A SQLAlchemy Select statement.
-            offset: Number of rows to skip.
-            limit: Maximum rows to return.
-
-        Returns:
-            List of ORM entities for the requested slice.
-        """
+        """Fetch rows with OFFSET/LIMIT. Deduplicates if unique=True."""
         result = await self._session.execute(
             _build_fetch_query(query, offset, limit),
         )
-        return list(result.scalars().all())
+        scalars = result.unique().scalars() if self._unique else result.scalars()
+        return list(scalars.all())
 
 
 # -- Sync backend ------------------------------------------------------------
@@ -114,21 +108,23 @@ class SyncSQLAlchemyBackend(Generic[ItemT]):
         session: A synchronous SQLAlchemy session.
     """
 
-    __slots__ = ("_session",)
+    __slots__ = ("_count_query", "_session", "_unique")
 
-    def __init__(self, session: Session) -> None:
+    def __init__(
+        self,
+        session: Session,
+        *,
+        count_query: object | None = None,
+        unique: bool = False,
+    ) -> None:
         self._session = session
+        self._count_query = count_query
+        self._unique = unique
 
     def count(self, query: object) -> int:
-        """Count rows using ``SELECT COUNT(*) FROM (subquery)``.
-
-        Args:
-            query: A SQLAlchemy Select statement.
-
-        Returns:
-            Total number of matching rows.
-        """
-        result = self._session.execute(_build_count_query(query))
+        """Count rows. Uses custom count query if provided."""
+        stmt = self._count_query if self._count_query is not None else _build_count_query(query)
+        result = self._session.execute(stmt)  # type: ignore[arg-type]
         return result.scalar_one()  # type: ignore[no-any-return]
 
     def fetch(
@@ -137,20 +133,12 @@ class SyncSQLAlchemyBackend(Generic[ItemT]):
         offset: int,
         limit: int,
     ) -> list[ItemT]:
-        """Fetch rows with OFFSET/LIMIT.
-
-        Args:
-            query: A SQLAlchemy Select statement.
-            offset: Number of rows to skip.
-            limit: Maximum rows to return.
-
-        Returns:
-            List of ORM entities for the requested slice.
-        """
+        """Fetch rows with OFFSET/LIMIT. Deduplicates if unique=True."""
         result = self._session.execute(
             _build_fetch_query(query, offset, limit),
         )
-        return list(result.scalars().all())
+        scalars = result.unique().scalars() if self._unique else result.scalars()
+        return list(scalars.all())
 
 
 __all__ = ["SQLAlchemyBackend", "SyncSQLAlchemyBackend"]
