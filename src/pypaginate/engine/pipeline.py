@@ -23,34 +23,43 @@ ItemT = TypeVar("ItemT")
 
 def _apply_specs(
     query: object,
-    filters: Sequence[FilterSpec],
-    sorting: Sequence[SortSpec],
-    search: SearchSpec | None,
+    filters: object,
+    sorting: object,
+    search: object | None,
     filter_backend: FilterBackend | None,
     sort_backend: SortBackend | None,
     search_backend: SearchBackend | None,
 ) -> object:
     """Apply filter, sort, and search specs to a query.
 
-    Args:
-        query: Data source or query object.
-        filters: Filter specifications.
-        sorting: Sort specifications.
-        search: Search specification.
-        filter_backend: Optional filter backend.
-        sort_backend: Optional sort backend.
-        search_backend: Optional search backend.
-
-    Returns:
-        Modified query with all specs applied.
+    Auto-converts FilterDep/SortDep/SearchDep via protocol detection.
+    Accepts both raw spec lists and FastAPI dependency objects.
     """
-    if filters and filter_backend is not None:
-        query = filter_backend.apply_filters(query, filters)
-    if sorting and sort_backend is not None:
-        query = sort_backend.apply_sorting(query, sorting)
-    if search is not None and search_backend is not None:
-        query = search_backend.apply_search(query, search)
+    resolved_filters = _resolve_input(filters, "to_specs")
+    resolved_sorting = _resolve_input(sorting, "to_specs")
+    resolved_search = _resolve_search(search)
+
+    if resolved_filters and filter_backend is not None:
+        query = filter_backend.apply_filters(query, resolved_filters)  # type: ignore[arg-type]
+    if resolved_sorting and sort_backend is not None:
+        query = sort_backend.apply_sorting(query, resolved_sorting)  # type: ignore[arg-type]
+    if resolved_search is not None and search_backend is not None:
+        query = search_backend.apply_search(query, resolved_search)  # type: ignore[arg-type]
     return query
+
+
+def _resolve_input(value: object, method: str) -> object:
+    """Auto-convert objects with to_specs() to spec lists."""
+    if hasattr(value, method):
+        return getattr(value, method)()  # type: ignore[no-any-return]
+    return value
+
+
+def _resolve_search(value: object | None) -> object | None:
+    """Auto-convert SearchDep to SearchSpec via to_spec()."""
+    if value is not None and hasattr(value, "to_spec"):
+        return value.to_spec()  # type: ignore[union-attr,no-any-return]
+    return value
 
 
 class SyncPipeline(Generic[ItemT]):
