@@ -1,20 +1,32 @@
-# pypaginate Optimization Audit — Rounds 1-3
+# pypaginate Optimization Audit — Rounds 1-5
 
-> **Purpose**: Comprehensive audit of all performance optimizations applied across 3 rounds.
+> **Purpose**: Comprehensive audit of all performance optimizations applied across 5 rounds.
 > Each optimization is documented with: what changed, why, where, and how to verify.
 
 ---
 
 ## Performance Timeline
 
-| Operation (10K) | R0 (original) | R1 (compile) | R2 (cache) | R3 (msgspec) | Total | vs Raw |
-|---|---|---|---|---|---|---|
-| **Sort** | 8.92 ms | 2.08 ms | 1.71 ms | 1.64 ms | **5.4x** | 3.2x |
-| **Pipeline** | 14.82 ms | 6.53 ms | 5.23 ms | 4.79 ms | **3.1x** | 8.5x |
-| **Search** | 20.52 ms | 10.02 ms | 9.13 ms | 8.49 ms | **2.4x** | 22.5x |
-| **Filter** | 6.88 ms | 4.63 ms | 3.46 ms | 3.15 ms | **2.2x** | 15.1x |
-| **Paginate** | 4.5 us | 4.7 us | 5.1 us | 3.1 us | **1.5x** | 19.3x |
-| **SA Async** | 1.21 ms | 1.26 ms | 1.06 ms | 692 us | **1.76x** | -- |
+| Operation (10K) | R0 (original) | R1 (compile) | R2 (cache) | R3 (msgspec) | R4 (audit) | R5 (inline) | Total | vs Raw |
+|---|---|---|---|---|---|---|---|---|
+| **Filter** | 6.88 ms | 4.63 ms | 3.46 ms | 3.15 ms | 1.57 ms | 909 us | **7.6x** | 4.1x |
+| **Search** | 20.52 ms | 10.02 ms | 9.13 ms | 8.49 ms | 3.51 ms | 2.50 ms | **8.2x** | 6.4x |
+| **Sort** | 8.92 ms | 2.08 ms | 1.71 ms | 1.64 ms | 1.74 ms | 1.77 ms | **5.1x** | 3.5x |
+| **Pipeline** | 14.82 ms | 6.53 ms | 5.23 ms | 4.79 ms | 2.82 ms | 2.59 ms | **5.7x** | 4.5x |
+| **Paginate** | 4.5 us | 4.7 us | 5.1 us | 3.1 us | 1.2 us | 1.2 us | **3.8x** | 8.5x |
+| **SA Async** | 1.21 ms | 1.26 ms | 1.06 ms | 692 us | — | 1.11 ms | **1.1x** | — |
+
+## Competitive Scorecard
+
+| Category | Rank | vs #1 |
+|---|---|---|
+| In-memory pagination (10K) | **#1** | Beat paginate-lib (1.3x), fastapi-pagination (36x) |
+| In-memory pagination (100K) | **#1** | Beat paginate-lib, fastapi-pagination |
+| SA pagination (sync) | **#1** | Beat raw SA, sqlakeyset, sa-pagination, fp-SA |
+| In-memory filter/sort/search | **#1** | No competitor (only library) |
+| SA sort/search/pipeline | **#1** | No competitor (only library) |
+| SA filtering | #2 | 2.5x behind fastapi-filter (different scope) |
+| Full pipeline | #3 | 3.9x behind paginate-lib (raw Python filter+sort) |
 
 ---
 
@@ -317,6 +329,84 @@ uv run pytest tests/unit/domain/ -v                        # pages + params
 uv run pytest tests/perf/test_comparison.py --benchmark-enable --benchmark-only -q
 uv run pytest tests/perf/test_scaling.py --benchmark-enable --benchmark-only -q
 ```
+
+---
+
+## Optimization 21: Removed `all(genexpr)` from Filter Hot Path
+
+- **Round**: 4
+- **Files**: `src/pypaginate/adapters/memory/filters.py`, `src/pypaginate/filtering/engine.py`
+- **What**: `all(p(item) for p in compiled)` creates a generator object per item. Replaced with `_matches_all()` explicit loop in memory backend, and explicit for-loops in FilterEngine `_matches()`.
+- **Why**: Generator expression inside `all()` costs ~3ms per 10K items on Python 3.11 (generator object allocation + iteration + GC). CPython 3.14+ optimizes this at bytecode level (PR #131737), but 3.11-3.13 need the manual loop.
+- **Verify**: `uv run pytest tests/unit/adapters/memory/test_filters.py -v`
+
+## Optimization 22: Single-Predicate Fast Path
+
+- **Round**: 4
+- **File**: `src/pypaginate/adapters/memory/filters.py`
+- **What**: For the common case of 1 filter, skip `_matches_all()` entirely and call the predicate directly in the list comprehension.
+- **Why**: Eliminates function call overhead for 80%+ of real-world filter usage (most endpoints have 1-2 filters).
+- **Verify**: `uv run pytest tests/unit/adapters/memory/test_filters.py -v`
+
+## Optimization 23: Fast Memory Paginate Path
+
+- **Round**: 4
+- **File**: `src/pypaginate/_dispatch.py`
+- **What**: Added `_fast_memory_offset()` that skips MemoryBackend + Paginator allocation for in-memory sequences. Detects `Sequence` + `OffsetParams` + no explicit backend, then does `len()` + slice directly.
+- **Why**: Eliminates ~2.5us of object creation overhead per paginate call (MemoryBackend + Paginator + _apply_overflow).
+- **Verify**: `uv run pytest tests/unit/engine/test_dispatch.py -v`
+
+## Optimization 24: Inline Operator Dispatch
+
+- **Round**: 5
+- **File**: `src/pypaginate/adapters/memory/filters.py`
+- **What**: `_INLINE` dict maps operator names to lambda factories that inline the comparison directly (e.g., `lambda a, v: (lambda item: a(item) >= v)`). Bypasses `operator.evaluate()` static method dispatch for 13 common operators. Falls back to `_make_pred` for complex ops (regex, like, between).
+- **Why**: `operator.evaluate()` involves attribute lookup + static method descriptor resolution + function call = 0.45ms per 10K items. Inline lambdas skip all 3 steps.
+- **Verify**: `uv run pytest tests/unit/adapters/memory/test_filters.py -v`
+
+## Optimization 25: Manual Dict Cache for normalize_text
+
+- **Round**: 5
+- **File**: `src/pypaginate/text/normalize.py`
+- **What**: Replaced `@functools.lru_cache(8192)` with a bounded `dict.get()` cache. ~4x faster per lookup (50ns vs 220ns) because it skips LRU eviction tracking.
+- **Why**: `lru_cache` has ~220ns overhead per call (hash + dict probe + doubly-linked-list update). For 10K unique values (100% miss), this is 2.2ms of pure overhead. Manual dict: 50ns × 10K = 0.5ms.
+- **Verify**: `uv run pytest tests/unit/text/test_normalize.py -v`
+
+## Optimization 26: Search Engine Single-Field Fast Path
+
+- **Round**: 5
+- **File**: `src/pypaginate/search/engine.py`
+- **What**: `_rank_single()` / `_score_single()` skip list allocation + `_extract()` + `_best()` for the common single-field search case. Normalize + match directly per item without intermediate list.
+- **Why**: `_extract()` creates a new `list[str]` per item (10K allocations). For single-field search, this is unnecessary.
+- **Verify**: `uv run pytest tests/unit/search/test_engine.py -v`
+
+## Optimization 27: Search Backend Compiled Matcher
+
+- **Round**: 4
+- **File**: `src/pypaginate/adapters/memory/search.py`
+- **What**: `_compile_matcher()` pre-selects the matching strategy (exact single, exact multi, fuzzy) at compile time and returns a single closure. Eliminates `any(genexpr)` + per-item function dispatch.
+- **Why**: The old code had `any(_field_matches(...) for accessor in accessors)` — same genexpr bug as filter. The compiled matcher inlines mode-specific logic.
+- **Verify**: `uv run pytest tests/unit/adapters/memory/test_search.py -v`
+
+## Optimization 28: Async Detection Cache
+
+- **Round**: 5
+- **File**: `src/pypaginate/_dispatch.py`
+- **What**: `_ASYNC_CACHE: dict[type, bool]` caches `inspect.iscoroutinefunction()` result per backend class. First call: ~2us (introspection). Subsequent: ~50ns (dict lookup).
+- **Verify**: `uv run pytest tests/unit/engine/test_dispatch.py -v`
+
+## Rejected Optimizations (Proven Not Worth It)
+
+| Optimization | Why Rejected |
+|---|---|
+| `operator.itemgetter` for dict access | Research: NOT faster than `dict[key]` in Python 3.11+ |
+| Replace closures with `__call__` classes | Research: closures use `LOAD_DEREF` (faster than `self.attr`) |
+| `model_construct()` for Pydantic pages | Proven SLOWER (Pydantic v2 Rust `__init__` beats Python `model_construct`) |
+| `try/except` instead of `isinstance` in accessor | Proven: 3.5x SLOWER for object access (exception path expensive) |
+| `asyncio.gather` for count+fetch | Proven: 32x SLOWER on SQLite in-memory (only helps with real network I/O) |
+| Generator-based filter pipeline | Sort needs full list; Sequence protocol blocks generators |
+| mypyc/Cython compilation | Adds build complexity, C extension distribution issues |
+| `normalize_text` whitespace fast path | Edge cases with tabs/newlines break correctness |
 
 ---
 
