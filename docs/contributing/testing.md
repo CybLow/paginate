@@ -1,328 +1,183 @@
 # Testing Guide
 
-This guide explains how to write and run tests for pypaginate.
+> How to write, run, and benchmark tests for pypaginate.
+
+---
 
 ## Running Tests
 
-### All Tests
+### All Tests (excluding benchmarks)
 
 ```bash
-# Simple execution
-uv run pytest
-
-# Verbose output
-uv run pytest -v
-
-# Parallel execution (faster)
-uv run pytest -n auto
+uv run pytest tests/ --ignore=tests/perf -q
 ```
 
-### Specific Tests
+### By Category
 
 ```bash
-# Single file
-uv run pytest tests/test_pages.py
+# Unit (fastest, ~700 tests)
+uv run pytest tests/unit/ -q
 
-# Single class
-uv run pytest tests/test_pages.py::TestPage
+# Integration (cross-module + DB)
+uv run pytest tests/integration/ -q
 
-# Single test
-uv run pytest tests/test_pages.py::TestPage::test_creation
+# E2E (full workflows)
+uv run pytest tests/e2e/ -q
 
-# By marker
-uv run pytest -m unit
-uv run pytest -m integration
+# Property-based (Hypothesis)
+uv run pytest tests/property/ -q
+
+# Architecture enforcement
+uv run pytest tests/architecture/ -q
 ```
 
-### Useful Options
+### Specific Module
 
 ```bash
-# Stop on first failure
-uv run pytest -x
+# All filtering tests
+uv run pytest tests/unit/filtering/ -v
 
-# Show print statements
-uv run pytest -s
+# Single test class
+uv run pytest tests/unit/filtering/test_engine.py::TestFilterEngineSingle -v
 
-# Re-run failed tests only
-uv run pytest --lf
-
-# Quiet mode
-uv run pytest -q
+# Single test method
+uv run pytest tests/unit/filtering/test_engine.py::TestFilterEngineSingle::test_eq_filter_returns_matching_item -v
 ```
 
-## Test Coverage
-
-### Generate Reports
+### With Coverage
 
 ```bash
-# Terminal report
-uv run pytest --cov=pypaginate --cov-report=term-missing
-
-# HTML report (recommended)
-uv run pytest --cov=pypaginate --cov-report=html
-# Open htmlcov/index.html in browser
-
-# Fail if below threshold
-uv run pytest --cov=pypaginate --cov-fail-under=80
+uv run pytest tests/unit/ --cov=pypaginate --cov-config=pyproject.toml --cov-report=term-missing
 ```
 
-### Coverage for Specific Module
-
-```bash
-uv run pytest tests/test_filters.py \
-    --cov=pypaginate.filters \
-    --cov-report=term-missing
-```
-
-## Test Structure
-
-```
-tests/
-├── conftest.py                 # Shared fixtures
-├── test_core.py               # Core types tests
-├── test_pages.py              # Pagination tests
-├── test_filter_engine.py      # Filter tests
-├── test_search.py             # Search tests
-├── test_sorting.py            # Sorting tests
-├── test_sql_filter_adapter.py # SQL adapter tests
-├── test_fastapi_integration.py # FastAPI tests
-└── ...
-```
-
-### Naming Conventions
-
-- **Files:** `test_<module>.py`
-- **Classes:** `Test<ClassName>`
-- **Methods:** `test_<description_snake_case>`
-- **Fixtures:** `<resource_name>` (no `test_` prefix)
+---
 
 ## Writing Tests
 
-### Basic Test Template
+### File Naming
+
+Each source file maps to a test file:
+
+```
+src/pypaginate/filtering/engine.py  →  tests/unit/filtering/test_engine.py
+src/pypaginate/search/matching.py   →  tests/unit/search/test_matching.py
+src/pypaginate/domain/pages.py      →  tests/unit/domain/test_pages.py
+```
+
+### Test Structure
+
+Use classes for grouping, AAA (Arrange-Act-Assert) pattern:
 
 ```python
-"""Tests for module X."""
+"""Tests for FilterEngine."""
+
 from __future__ import annotations
 
-import pytest
-from pypaginate.module import ClassToTest
+from pypaginate.domain.specs import FilterSpec
+from pypaginate.filtering.engine import FilterEngine
 
 
-class TestClassName:
-    """Tests for ClassName."""
+class TestFilterEngineSingle:
+    def test_eq_filter_returns_matching_item(
+        self,
+        filter_engine: FilterEngine,
+        sample_users: list[dict[str, object]],
+    ) -> None:
+        filters = [FilterSpec(field="name", operator="eq", value="Alice")]
 
-    def test_basic_functionality(self) -> None:
-        """Test basic functionality works correctly."""
-        # Arrange
-        obj = ClassToTest()
-        
-        # Act
-        result = obj.method()
-        
-        # Assert
-        assert result == expected_value
+        result = filter_engine.apply(sample_users, filters)
 
-    def test_edge_case(self) -> None:
-        """Test edge case handling."""
-        obj = ClassToTest()
-        
-        with pytest.raises(ValueError):
-            obj.method_that_raises()
+        assert len(result) == 1
+        assert result[0]["name"] == "Alice"
 ```
 
-### Using Fixtures
+### Fixtures
+
+Use fixtures from `conftest.py` — don't create objects inline when a fixture exists:
 
 ```python
-@pytest.fixture
-def sample_data():
-    """Provide sample data for tests."""
-    return [1, 2, 3, 4, 5]
+# GOOD — uses shared fixture
+def test_filter(self, filter_engine: FilterEngine) -> None: ...
 
-
-class TestWithFixture:
-    def test_using_fixture(self, sample_data):
-        """Test using a fixture."""
-        assert len(sample_data) == 5
+# BAD — creates inline (duplicated setup)
+def test_filter(self) -> None:
+    engine = FilterEngine(create_default_registry())
 ```
 
-### Parametrized Tests
+Available fixtures (from `tests/conftest.py`):
+- `filter_engine` — FilterEngine with default registry
+- `sort_engine` — SortEngine
+- `search_engine` — SearchEngine
+- `filter_registry` — OperatorRegistry
+- `sample_users` — 4 users (unit) or 8 users (root)
+
+### Parametrize for Coverage
 
 ```python
-@pytest.mark.parametrize("input,expected", [
-    (1, 2),
-    (2, 4),
-    (3, 6),
-])
-def test_double(input, expected):
-    """Test doubling values."""
-    assert double(input) == expected
+@pytest.mark.parametrize(
+    ("direction", "nulls", "expected_first"),
+    [
+        (SortDirection.ASC, NullsPosition.FIRST, None),
+        (SortDirection.ASC, NullsPosition.LAST, 1),
+    ],
+    ids=["asc-nulls-first", "asc-nulls-last"],
+)
+def test_null_position(self, direction, nulls, expected_first) -> None: ...
 ```
 
-### Async Tests
+---
 
-```python
-import pytest
+## Benchmarking
 
-
-@pytest.mark.asyncio
-async def test_async_function():
-    """Test async function."""
-    result = await async_function()
-    assert result == expected
-```
-
-### Database Tests
-
-```python
-@pytest.fixture
-def db_session():
-    """Create a database session."""
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    
-    yield session
-    
-    session.close()
-
-
-def test_with_database(db_session):
-    """Test database operations."""
-    user = User(name="Alice")
-    db_session.add(user)
-    db_session.commit()
-    
-    assert db_session.query(User).count() == 1
-```
-
-## Test Markers
-
-Available markers:
-
-| Marker | Description |
-|--------|-------------|
-| `@pytest.mark.unit` | Fast unit tests |
-| `@pytest.mark.integration` | Integration tests |
-| `@pytest.mark.asyncio` | Async tests |
-| `@pytest.mark.sqlalchemy` | SQLAlchemy tests |
-| `@pytest.mark.search` | Search feature tests |
-| `@pytest.mark.filters` | Filter feature tests |
-
-## Best Practices
-
-### 1. Arrange-Act-Assert Pattern
-
-```python
-def test_user_creation():
-    # Arrange
-    name = "Alice"
-    email = "alice@example.com"
-    
-    # Act
-    user = User(name=name, email=email)
-    
-    # Assert
-    assert user.name == name
-    assert user.email == email
-```
-
-### 2. Test Edge Cases
-
-```python
-def test_edge_cases():
-    # Empty input
-    assert process([]) == []
-    
-    # Single item
-    assert process([1]) == [1]
-    
-    # None input
-    with pytest.raises(TypeError):
-        process(None)
-```
-
-### 3. Isolated Tests
-
-```python
-# GOOD: Each test creates its own state
-def test_addition():
-    calculator = Calculator()
-    assert calculator.add(2, 3) == 5
-
-# BAD: Shared state between tests
-calculator = Calculator()
-def test_addition():
-    assert calculator.add(2, 3) == 5
-```
-
-### 4. Descriptive Names
-
-```python
-# GOOD
-def test_paginate_returns_empty_page_for_empty_list():
-    ...
-
-# BAD
-def test_1():
-    ...
-```
-
-### 5. Mock External Dependencies
-
-```python
-def test_api_call(mocker):
-    mock_response = mocker.Mock()
-    mock_response.json.return_value = {"status": "ok"}
-    mocker.patch("requests.get", return_value=mock_response)
-    
-    result = fetch_data()
-    assert result["status"] == "ok"
-```
-
-## Troubleshooting
-
-### Tests Pass Locally But Fail in CI
-
-1. Check dependency versions
-2. Clear pytest cache: `pytest --cache-clear`
-3. Reinstall dependencies: `uv sync --reinstall`
-
-### Import Errors
+### Quick Start
 
 ```bash
-# Ensure package is installed in editable mode
-uv pip install -e .
+# Run comparison benchmarks
+uv run pytest tests/perf/test_comparison.py --benchmark-enable --benchmark-only -q
+
+# Save baseline before optimizing
+uv run pytest tests/perf/test_comparison.py --benchmark-enable --benchmark-save=before-change
+
+# Run after change and compare
+uv run pytest tests/perf/test_comparison.py --benchmark-enable --benchmark-compare=0001
 ```
 
-### Slow Tests
+### Writing Benchmarks
 
-```bash
-# Parallel execution
-pip install pytest-xdist
-pytest -n auto
-
-# Skip coverage during development
-pytest  # Without --cov
+```python
+@pytest.mark.benchmark(group="filter-memory")
+def test_bench_filter_10k(benchmark: Any, memory_env_10k: BackendEnv) -> None:
+    """Benchmark single filter on 10K items."""
+    specs = [FilterSpec(field="age", operator="gte", value=30)]
+    result = benchmark(memory_env_10k.do_filter, memory_env_10k.query, specs)
+    assert len(result) <= 10_000
 ```
 
-## Contributing Tests
+Key rules:
+1. Always use `@pytest.mark.benchmark(group="...")` for grouping
+2. Assert correctness inside the benchmark — don't just measure speed
+3. Use `benchmark()` callable — it handles warmup, calibration, rounds
+4. Use `memory_env_10k` / `memory_env_100k` fixtures for consistent data
 
-### Checklist
+### Benchmark Suites
 
-- [ ] Tests follow naming conventions
-- [ ] Clear docstrings
-- [ ] Isolated and independent
-- [ ] Edge cases covered
-- [ ] Error cases tested
-- [ ] Type hints added
-- [ ] Tests pass locally
-- [ ] Coverage verified
+| Suite | Purpose | Run Command |
+|---|---|---|
+| Comparison | pypaginate vs raw at 10K | `uv run pytest tests/perf/test_comparison.py --benchmark-enable -q` |
+| Scaling | 1K→1M across backends | `uv run pytest tests/perf/test_scaling.py --benchmark-enable -q` |
+| Competitors | vs paginate-lib, fp, sqlakeyset | `uv run pytest tests/perf/test_competitors.py --benchmark-enable -q` |
+| FastAPI HTTP | HTTP endpoint scaling | `uv run pytest tests/perf/test_fastapi_scaling.py --benchmark-enable -q` |
+| Overhead | ops → paginate → serialize → HTTP | `uv run pytest tests/perf/test_overhead.py --benchmark-enable -q` |
+| ALL perf | Everything | `uv run pytest tests/perf/ --benchmark-enable -q` |
 
-### Submitting
+### Reading Results
 
-1. Create branch: `git checkout -b test/module-name`
-2. Write tests
-3. Verify coverage: `pytest --cov`
-4. Commit: `git commit -m "test: add tests for module X"`
-5. Push and create PR
+Focus on **Median** (not Mean — Mean is skewed by outliers):
+
+```
+Name                         Min       Max       Mean      Median    OPS
+test_memory_filter_10k     2.5ms     6.7ms     3.8ms     3.5ms     263/s   ← use Median
+test_raw_list_filter_10k   159us     530us     257us     231us     3882/s
+```
+
+The ratio `3.5ms / 231us = 15.1x` is the overhead vs raw Python.
