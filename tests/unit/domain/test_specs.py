@@ -1,4 +1,4 @@
-"""Tests for FilterSpec, SortSpec, and SearchSpec."""
+"""Tests for FilterSpec, SortSpec, SearchSpec, and FilterGroup."""
 
 from __future__ import annotations
 
@@ -12,7 +12,13 @@ from pypaginate.domain.enums import (
     SearchFieldMode,
     SortDirection,
 )
-from pypaginate.domain.specs import FilterOperator, FilterSpec, SearchSpec, SortSpec
+from pypaginate.domain.specs import (
+    And,
+    FilterOperator,
+    FilterSpec,
+    SearchSpec,
+    SortSpec,
+)
 
 
 ALL_OPERATORS: list[FilterOperator] = [
@@ -109,3 +115,22 @@ class TestSearchSpec:
         spec = SearchSpec(query="hi", fields=("name",), threshold=90)
 
         assert spec.threshold == 90
+
+    def test_query_exceeding_500_chars_raises(self) -> None:
+        long_query = "a" * 501
+        with pytest.raises(ValidationError, match="500 characters"):
+            SearchSpec(query=long_query, fields=("name",))
+
+
+class TestFilterGroupNesting:
+    def test_depth_exceeding_5_levels_raises(self) -> None:
+        """Build a 6-deep FilterGroup tree; expect validation failure."""
+        leaf = FilterSpec(field="x", value=1)
+        # Build depth 5 (the maximum allowed)
+        group = And(leaf)  # depth 1
+        for _ in range(4):
+            group = And(group)  # depths 2, 3, 4, 5
+
+        # Wrapping once more creates depth 6, which exceeds 5
+        with pytest.raises(ValidationError, match="5 levels"):
+            And(group)

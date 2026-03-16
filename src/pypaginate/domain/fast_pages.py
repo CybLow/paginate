@@ -39,6 +39,18 @@ class FastOffsetPage(msgspec.Struct, frozen=True, gc=False):
 
         return OffsetPage(**asdict(self))
 
+    def __iter__(self):  # noqa: ANN204
+        """Iterate over items."""
+        return iter(self.items)
+
+    def __len__(self) -> int:
+        """Return number of items."""
+        return len(self.items)
+
+    def __getitem__(self, index: int) -> Any:
+        """Return item by index."""
+        return self.items[index]
+
 
 class FastCursorPage(msgspec.Struct, frozen=True, gc=False):
     """Lightweight cursor page — near-zero construction cost."""
@@ -63,6 +75,18 @@ class FastCursorPage(msgspec.Struct, frozen=True, gc=False):
         from pypaginate.domain.pages import CursorPage
 
         return CursorPage(**asdict(self))
+
+    def __iter__(self):  # noqa: ANN204
+        """Iterate over items."""
+        return iter(self.items)
+
+    def __len__(self) -> int:
+        """Return number of items."""
+        return len(self.items)
+
+    def __getitem__(self, index: int) -> Any:
+        """Return item by index."""
+        return self.items[index]
 
 
 __all__ = ["FastCursorPage", "FastOffsetPage"]

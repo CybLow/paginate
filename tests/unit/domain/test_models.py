@@ -1,42 +1,13 @@
-"""Tests for the models.py re-export hub.
+"""Tests for page and param model serialization.
 
-Verifies re-exports, model_dump serialization, and
-model_validate round-trips for params and page models.
+Verifies model_dump serialization and model_validate round-trips
+for params and page models.
 """
 
 from __future__ import annotations
 
-from pypaginate.domain import models
-from pypaginate.domain.pages import BasePage, CursorPage, OffsetPage
-from pypaginate.domain.params import (
-    MAX_LIMIT,
-    BaseParams,
-    CursorParams,
-    OffsetParams,
-)
-
-
-class TestReExports:
-    def test_offset_params_same_object(self) -> None:
-        assert models.OffsetParams is OffsetParams
-
-    def test_cursor_params_same_object(self) -> None:
-        assert models.CursorParams is CursorParams
-
-    def test_offset_page_same_object(self) -> None:
-        assert models.OffsetPage is OffsetPage
-
-    def test_cursor_page_same_object(self) -> None:
-        assert models.CursorPage is CursorPage
-
-    def test_base_page_same_object(self) -> None:
-        assert models.BasePage is BasePage
-
-    def test_base_params_same_object(self) -> None:
-        assert models.BaseParams is BaseParams
-
-    def test_max_limit_same_value(self) -> None:
-        assert models.MAX_LIMIT is MAX_LIMIT
+from pypaginate.domain.pages import CursorPage, OffsetPage
+from pypaginate.domain.params import CursorParams, OffsetParams
 
 
 class TestOffsetParamsDump:

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import pytest
+
 from pypaginate.domain.enums import FilterLogic
+from pypaginate.domain.exceptions import FilterError
 from pypaginate.domain.specs import FilterSpec
 from pypaginate.filtering.engine import FilterEngine
 
@@ -150,3 +153,41 @@ class TestFilterEngineEdgeCases:
         result = filter_engine.apply(items, filters)
 
         assert result == []
+
+
+class TestFilterEngineRegex:
+    """Regex operator through FilterEngine."""
+
+    def test_regex_happy_path(
+        self,
+        filter_engine: FilterEngine,
+    ) -> None:
+        items = [{"code": "abc123"}, {"code": "xyz"}, {"code": "99"}]
+        spec = FilterSpec(field="code", operator="regex", value=r"\d+")
+
+        result = filter_engine.apply(items, [spec])
+
+        assert len(result) == 2
+        assert result[0]["code"] == "abc123"
+        assert result[1]["code"] == "99"
+
+    def test_regex_invalid_pattern_raises_filter_error(
+        self,
+        filter_engine: FilterEngine,
+    ) -> None:
+        items = [{"code": "abc"}]
+        spec = FilterSpec(field="code", operator="regex", value="[invalid")
+
+        with pytest.raises(FilterError, match="Invalid regex"):
+            filter_engine.apply(items, [spec])
+
+    def test_regex_too_long_raises_filter_error(
+        self,
+        filter_engine: FilterEngine,
+    ) -> None:
+        items = [{"code": "abc"}]
+        long_pattern = "a" * 201
+        spec = FilterSpec(field="code", operator="regex", value=long_pattern)
+
+        with pytest.raises(FilterError, match="Invalid regex"):
+            filter_engine.apply(items, [spec])

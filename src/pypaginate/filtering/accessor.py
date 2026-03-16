@@ -18,6 +18,14 @@ from pypaginate.domain.exceptions import FilterError
 _SENTINEL = object()
 
 
+def _validate_segments(segments: list[str], field_path: str) -> None:
+    """Reject field path segments starting with underscore."""
+    for seg in segments:
+        if seg.startswith("_"):
+            msg = f"Field path segment '{seg}' must not start with '_'"
+            raise FilterError(msg, field=field_path)
+
+
 def compile_accessor(field_path: str) -> Callable[[object], object]:
     """Compile a field path into a fast accessor function.
 
@@ -30,6 +38,7 @@ def compile_accessor(field_path: str) -> Callable[[object], object]:
         A callable that resolves the path on any item.
     """
     segments = field_path.split(".")
+    _validate_segments(segments, field_path)
 
     if len(segments) == 1:
         return _single_accessor(segments[0], field_path)
@@ -101,4 +110,21 @@ def _raise_not_found(
     )
 
 
-__all__ = ["compile_accessor"]
+def compile_dict_accessor(field_path: str) -> Callable[[object], object]:
+    """Compile accessor optimized for dict items (skips isinstance)."""
+    segments = field_path.split(".")
+    _validate_segments(segments, field_path)
+    if len(segments) == 1:
+        key = segments[0]
+
+        def _access(item: object) -> object:
+            v = item.get(key, _SENTINEL)  # type: ignore[union-attr]
+            if v is not _SENTINEL:
+                return v
+            return _raise_not_found(key, field_path, item)
+
+        return _access
+    return _multi_accessor(tuple(segments), field_path)
+
+
+__all__ = ["compile_accessor", "compile_dict_accessor"]

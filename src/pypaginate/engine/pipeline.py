@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-from pypaginate.domain.models import OffsetParams
+from pypaginate.domain.params import OffsetParams
 from pypaginate.engine.paginator import AsyncPaginator, Paginator
 
 

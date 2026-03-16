@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from pypaginate._dispatch import paginate
-from pypaginate.domain.models import OffsetParams
+from pypaginate.domain.params import OffsetParams
 from pypaginate.engine.paginator import AsyncPaginator, Paginator
 from pypaginate.engine.pipeline import AsyncPipeline, SyncPipeline
 

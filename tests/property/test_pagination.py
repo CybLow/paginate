@@ -10,7 +10,7 @@ import math
 
 from hypothesis import given
 
-from pypaginate.domain.models import OffsetParams
+from pypaginate.domain.params import OffsetParams
 from tests.property.conftest import setup_memory_sync
 from tests.property.strategies import datasets, offset_params
 

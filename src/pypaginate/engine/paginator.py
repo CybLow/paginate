@@ -8,7 +8,8 @@ from __future__ import annotations
 from typing import Any, Generic, TypeVar
 
 from pypaginate.domain.enums import OverflowStrategy
-from pypaginate.domain.models import OffsetPage, OffsetParams
+from pypaginate.domain.pages import OffsetPage
+from pypaginate.domain.params import OffsetParams
 from pypaginate.domain.protocols import PaginationBackend, SyncPaginationBackend
 
 

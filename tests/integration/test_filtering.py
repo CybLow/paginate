@@ -17,9 +17,9 @@ async def test_eq_filter_returns_match(backend_env: BackendEnv) -> None:
             filters=[FilterSpec(field="name", operator="eq", value="Alice")],
         )
     )
-    assert page.total >= 1
-    for item in page.items:
-        assert env.get_field(item, "name") == "Alice"
+    assert page.total == 1
+    assert len(page.items) == 1
+    assert env.get_field(page.items[0], "name") == "Alice"
 
 
 async def test_contains_filter(backend_env: BackendEnv) -> None:

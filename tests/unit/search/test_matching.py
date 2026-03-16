@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from pypaginate.domain.enums import SearchFieldMode
+from pypaginate.domain.enums import FuzzyMode, SearchFieldMode
 from pypaginate.search.matching import fuzzy_score, matches_field
 from pypaginate.text.normalize import normalize_text
 
@@ -113,3 +113,25 @@ class TestComputeScoreFallback:
             )
 
             assert score == 0
+
+
+class TestFuzzyScoreTokenSort:
+    def test_token_sort_returns_positive_for_reordered(self) -> None:
+        score = fuzzy_score(
+            normalize_text("alice johnson"),
+            normalize_text("johnson alice"),
+            threshold=50,
+            fuzzy_mode=FuzzyMode.TOKEN_SORT,
+        )
+
+        assert score > 0
+
+    def test_token_sort_returns_zero_for_dissimilar(self) -> None:
+        score = fuzzy_score(
+            normalize_text("hello"),
+            normalize_text("zzzzz"),
+            threshold=90,
+            fuzzy_mode=FuzzyMode.TOKEN_SORT,
+        )
+
+        assert score == 0

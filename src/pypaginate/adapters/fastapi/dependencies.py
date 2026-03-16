@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Annotated
 
-from pypaginate.domain.models import CursorParams, OffsetParams
+from pypaginate.domain.params import CursorParams, OffsetParams
 
 
 if TYPE_CHECKING:

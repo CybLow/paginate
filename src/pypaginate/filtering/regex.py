@@ -10,6 +10,8 @@ import re as _stdlib_re
 from typing import Any
 
 
+from pypaginate.domain.exceptions import FilterError
+
 try:
     import re2 as _re_mod  # type: ignore[import-untyped,import-not-found]
 
@@ -17,6 +19,8 @@ try:
 except ImportError:
     _re_mod = _stdlib_re  # type: ignore[assignment]
     _HAS_RE2 = False
+
+MAX_REGEX_LENGTH = 200
 
 
 def compile_pattern(pattern: str) -> Any:
@@ -29,8 +33,11 @@ def compile_pattern(pattern: str) -> Any:
         A compiled pattern object with a ``.search()`` method.
 
     Raises:
-        re.error: If the pattern is invalid.
+        FilterError: If the pattern is too long or invalid.
     """
+    if len(pattern) > MAX_REGEX_LENGTH:
+        msg = f"Invalid regex: exceeds {MAX_REGEX_LENGTH} characters"
+        raise FilterError(msg)
     return _re_mod.compile(pattern)
 
 

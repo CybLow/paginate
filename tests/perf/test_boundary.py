@@ -14,7 +14,7 @@ import pytest
 
 from pypaginate._dispatch import paginate
 from pypaginate.domain.enums import OverflowStrategy
-from pypaginate.domain.models import OffsetParams
+from pypaginate.domain.params import OffsetParams
 from tests.fixtures.backends import BackendEnv
 from tests.perf.conftest import (
     _run_in_loop,

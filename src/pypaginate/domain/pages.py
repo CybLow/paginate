@@ -38,6 +38,18 @@ class BasePage(BaseModel, Generic[ItemT]):
     has_next: bool
     has_previous: bool
 
+    def __iter__(self):  # type: ignore[override]  # noqa: ANN204
+        """Iterate over items."""
+        return iter(self.items)
+
+    def __len__(self) -> int:
+        """Return number of items."""
+        return len(self.items)
+
+    def __getitem__(self, index: int) -> ItemT:
+        """Return item by index."""
+        return self.items[index]
+
 
 class OffsetPage(BasePage[ItemT]):
     """Offset pagination result.

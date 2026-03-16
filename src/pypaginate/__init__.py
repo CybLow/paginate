@@ -34,12 +34,8 @@ from pypaginate.domain.exceptions import (
     SortError,
     ValidationError,
 )
-from pypaginate.domain.models import (
-    CursorPage,
-    CursorParams,
-    OffsetPage,
-    OffsetParams,
-)
+from pypaginate.domain.pages import CursorPage, OffsetPage
+from pypaginate.domain.params import CursorParams, OffsetParams
 from pypaginate.domain.specs import And, FilterGroup, FilterSpec, Or, SearchSpec, SortSpec
 
 

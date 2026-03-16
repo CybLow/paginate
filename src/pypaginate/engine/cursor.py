@@ -7,7 +7,8 @@ from __future__ import annotations
 
 from typing import Any, Generic, TypeVar
 
-from pypaginate.domain.models import CursorPage, CursorParams
+from pypaginate.domain.pages import CursorPage
+from pypaginate.domain.params import CursorParams
 from pypaginate.domain.protocols import CursorBackend
 
 

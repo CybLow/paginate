@@ -15,12 +15,8 @@ from collections.abc import Awaitable, Sequence
 from typing import Any, TypeVar, overload
 
 from pypaginate.domain.enums import OverflowStrategy
-from pypaginate.domain.models import (
-    CursorPage,
-    CursorParams,
-    OffsetPage,
-    OffsetParams,
-)
+from pypaginate.domain.pages import CursorPage, OffsetPage
+from pypaginate.domain.params import CursorParams, OffsetParams
 from pypaginate.domain.protocols import (
     CursorBackend,
     PaginationBackend,

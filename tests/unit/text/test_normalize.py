@@ -75,3 +75,14 @@ class TestCache:
         second = normalize_text("Hello World")
 
         assert first == second == "hello world"
+
+    def test_cache_eviction_after_max_entries(self) -> None:
+        """Fill cache past 8192 entries; verify normalize still works."""
+        clear_normalize_cache()
+
+        for i in range(8200):
+            normalize_text(f"entry_{i}")
+
+        result = normalize_text("Post Eviction")
+
+        assert result == "post eviction"

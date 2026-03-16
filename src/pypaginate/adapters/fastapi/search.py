@@ -26,13 +26,15 @@ class SearchDep(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     q: str | None = None
-    search_fields: str = "name"
+    search_fields: str = ""
 
     def to_spec(self) -> SearchSpec | None:
         """Convert to SearchSpec, or None if no query."""
         if not self.q:
             return None
         fields = tuple(f.strip() for f in self.search_fields.split(",") if f.strip())
+        if not fields:
+            return None
         return SearchSpec(query=self.q, fields=fields)
 
 

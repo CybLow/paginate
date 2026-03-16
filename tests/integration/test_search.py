@@ -17,10 +17,9 @@ async def test_search_contains(backend_env: BackendEnv) -> None:
             search=SearchSpec(query="ali", fields=("name",)),
         )
     )
-    assert page.total >= 1
-    for item in page.items:
-        name = str(env.get_field(item, "name")).lower()
-        assert "ali" in name
+    assert page.total == 1
+    assert len(page.items) == 1
+    assert "ali" in str(env.get_field(page.items[0], "name")).lower()
 
 
 async def test_search_no_match(backend_env: BackendEnv) -> None:
@@ -49,5 +48,5 @@ async def test_search_then_paginate(backend_env: BackendEnv) -> None:
         )
     )
     assert len(page.items) <= limit
-    # Search for "e" should match multiple items via email
-    assert page.total >= 1
+    # Search for "e" matches all 8 users (all emails contain 'e')
+    assert page.total == 8

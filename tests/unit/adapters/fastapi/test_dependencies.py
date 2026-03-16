@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from pypaginate.adapters.fastapi import CursorDep, OffsetDep
-from pypaginate.domain.models import CursorParams, OffsetParams
+from pypaginate.domain.params import CursorParams, OffsetParams
 
 
 class TestOffsetDependency:

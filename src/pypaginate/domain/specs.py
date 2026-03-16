@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from pypaginate.domain.enums import (
     FilterLogic,
@@ -98,6 +98,14 @@ class SearchSpec(BaseModel):
     min_length: int = 1
     max_results: int | None = None
 
+    @field_validator("query")
+    @classmethod
+    def _check_query_length(cls, v: str) -> str:
+        if len(v) > 500:  # noqa: PLR2004
+            msg = "Query must not exceed 500 characters"
+            raise ValueError(msg)
+        return v
+
 
 class FilterGroup(BaseModel):
     """Composite filter for nested AND/OR expressions.
@@ -118,6 +126,23 @@ class FilterGroup(BaseModel):
 
     logic: FilterLogic = FilterLogic.AND
     conditions: tuple[FilterSpec | FilterGroup, ...]
+
+    @model_validator(mode="after")
+    def _check_depth(self) -> FilterGroup:
+        depth = _measure_depth(self)
+        if depth > 5:  # noqa: PLR2004
+            msg = "FilterGroup nesting must not exceed 5 levels"
+            raise ValueError(msg)
+        return self
+
+
+def _measure_depth(group: FilterGroup) -> int:
+    """Return the nesting depth of a FilterGroup tree."""
+    max_child = 0
+    for c in group.conditions:
+        if isinstance(c, FilterGroup):
+            max_child = max(max_child, _measure_depth(c))
+    return 1 + max_child
 
 
 def And(*conditions: FilterSpec | FilterGroup) -> FilterGroup:  # noqa: N802

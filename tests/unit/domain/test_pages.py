@@ -138,3 +138,66 @@ class TestEmptyPage:
         assert page.items == []
         assert page.has_next is False
         assert page.has_previous is False
+
+
+class TestPydanticBasePageProtocol:
+    """Test BasePage dunder methods on Pydantic instances directly.
+
+    The .create() factories return FastPage (msgspec) objects when
+    msgspec is installed. These tests cover the Pydantic fallback
+    by constructing pages via the Pydantic constructor.
+    """
+
+    def test_iter_yields_items(self) -> None:
+        page = OffsetPage(
+            items=["a", "b"],
+            limit=5,
+            has_next=False,
+            has_previous=False,
+            total=2,
+            page=1,
+            pages=1,
+        )
+
+        assert list(page) == ["a", "b"]
+
+    def test_len_returns_count(self) -> None:
+        page = OffsetPage(
+            items=["a", "b", "c"],
+            limit=5,
+            has_next=False,
+            has_previous=False,
+            total=3,
+            page=1,
+            pages=1,
+        )
+
+        assert len(page) == 3
+
+    def test_getitem_by_index(self) -> None:
+        page = OffsetPage(
+            items=["x", "y", "z"],
+            limit=5,
+            has_next=False,
+            has_previous=False,
+            total=3,
+            page=1,
+            pages=1,
+        )
+
+        assert page[0] == "x"
+        assert page[2] == "z"
+
+    def test_cursor_page_pydantic_protocol(self) -> None:
+        page = CursorPage(
+            items=["a"],
+            limit=5,
+            has_next=True,
+            has_previous=False,
+            next_cursor="nxt",
+            previous_cursor=None,
+        )
+
+        assert list(page) == ["a"]
+        assert len(page) == 1
+        assert page[0] == "a"

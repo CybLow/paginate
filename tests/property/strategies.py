@@ -11,7 +11,7 @@ from typing import Any
 from hypothesis import strategies as st
 
 from pypaginate.domain.enums import SortDirection
-from pypaginate.domain.models import OffsetParams
+from pypaginate.domain.params import OffsetParams
 from pypaginate.domain.specs import FilterSpec, SortSpec
 from tests.factories.data import make_users
 

@@ -141,3 +141,47 @@ class TestSearchEdgeCases:
 
         assert len(result) == 1
         assert result[0]["name"] == "Alice"
+
+
+class TestSearchTokenSort:
+    def test_token_sort_matches_reordered_words(
+        self,
+        search_engine: SearchEngine,
+    ) -> None:
+        items = [
+            {"name": "Alice Johnson"},
+            {"name": "Bob Smith"},
+        ]
+        spec = SearchSpec(
+            query="johnson alice",
+            fields=("name",),
+            fuzzy=FuzzyMode.TOKEN_SORT,
+            threshold=50,
+        )
+
+        result = search_engine.apply(items, spec)
+
+        assert len(result) == 1
+        assert result[0]["name"] == "Alice Johnson"
+
+
+class TestSearchFuzzyMultiField:
+    def test_fuzzy_multi_field_returns_matches(
+        self,
+        search_engine: SearchEngine,
+    ) -> None:
+        items = [
+            {"name": "Alice", "bio": "Developer"},
+            {"name": "Bob", "bio": "Designer"},
+        ]
+        spec = SearchSpec(
+            query="alice",
+            fields=("name", "bio"),
+            fuzzy=FuzzyMode.FUZZY,
+            threshold=50,
+        )
+
+        result = search_engine.apply(items, spec)
+
+        assert len(result) >= 1
+        assert result[0]["name"] == "Alice"

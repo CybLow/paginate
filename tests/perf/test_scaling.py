@@ -18,7 +18,7 @@ from typing import Any
 import pytest
 
 from pypaginate.domain.enums import SortDirection
-from pypaginate.domain.models import OffsetParams
+from pypaginate.domain.params import OffsetParams
 from pypaginate.domain.specs import FilterSpec, SearchSpec, SortSpec
 from tests.factories.data import make_users
 from tests.fixtures.backends import setup_sa_async, setup_sa_sync
