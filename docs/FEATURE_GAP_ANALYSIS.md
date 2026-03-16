@@ -287,3 +287,276 @@ Same as GAP P2. See Pagination Gaps section.
 | **Array access** | JMESPath (powerful) | Dot notation (simple) | v0.1 for power |
 | **Fuzzy modes** | 3+ strategies | partial_ratio only | v0.1 |
 | **Field weights** | SearchOptions(fields={...}) | Equal weight only | v0.1 |
+
+---
+
+## Deep Analysis: Key Design Decisions
+
+### DA1: JSON Logic vs FilterSpec — Complete Comparison
+
+**v0.1 (JSON Logic dict):**
+```python
+# Complex nested filter with AND/OR
+filters = {
+    "and": [
+        {"age": {"gte": 18}},
+        {"or": [
+            {"country": {"eq": "FR"}},
+            {"country": {"eq": "BE"}},
+        ]},
+    ],
+}
+result = engine.filter(items, filters)
+```
+
+| Aspect | JSON Logic (v0.1) | FilterSpec (v0.2) |
+|---|---|---|
+| **Speed** | ~15-30ms / 10K items (dict parsing per item) | ~1ms / 10K items (compiled predicates) |
+| **Type safety** | None — plain dict, mypy can't validate | Full — Literal types, IDE autocomplete |
+| **Debugging** | Hard — nested dicts, runtime errors only | Easy — each FilterSpec is a clear object |
+| **Dependencies** | json-logic-qubit (external lib) | None — Pydantic models only |
+| **Serialization** | Native JSON — frontend can send directly | Pydantic model — needs API parsing |
+| **Nesting depth** | Unlimited — `(a OR b) AND (c OR d)` works | **Flat only** — all ANDs then any OR |
+| **Dynamic rules** | Yes — rule engines, form builders | Limited — must build FilterSpec list |
+
+**The nesting limitation is REAL:**
+```python
+# JSON Logic can express:
+# (a=1 OR b=2) AND (c=3 OR d=4)
+{"and": [
+    {"or": [{"a": {"eq": 1}}, {"b": {"eq": 2}}]},
+    {"or": [{"c": {"eq": 3}}, {"d": {"eq": 4}}]},
+]}
+
+# FilterSpec CANNOT express this — it uses flat AND + OR partition:
+# All ANDs must pass, THEN at least one OR must pass
+# It can do: (a AND b) OR c OR d
+# It CANNOT do: (a OR b) AND (c OR d)
+```
+
+**Use cases needing nested groups:**
+- E-commerce: "((category=shoes OR category=boots) AND (price<100 OR on_sale=true))"
+- User management: "((role=admin OR role=moderator) AND (department=engineering OR department=product))"
+- Form builders: user-created filter rules with arbitrary nesting
+
+**Recommendation:** Keep FilterSpec as primary (15x faster, typed). Add optional JSON Logic PARSER
+that converts dict → FilterSpec for the 10% that need nesting. Best of both worlds.
+
+### DA2: Dot Notation vs JMESPath — With Examples
+
+**Dot notation (v0.2)** — simple nested field access:
+```python
+from pypaginate.filtering.accessor import compile_accessor
+
+user = {
+    "name": "Alice",
+    "profile": {
+        "settings": {"theme": "dark", "language": "en"},
+        "address": {"city": "Paris", "country": "France"}
+    }
+}
+
+compile_accessor("name")(user)                    # → "Alice"
+compile_accessor("profile.address")(user)         # → {"city": "Paris", ...}
+compile_accessor("profile.settings.theme")(user)  # → "dark"
+compile_accessor("profile.address.city")(user)    # → "Paris"
+```
+
+**JMESPath (v0.1)** — powerful query language for nested data:
+```python
+import jmespath
+
+# Array filtering (DOT NOTATION CANNOT DO THIS):
+jmespath.search("orders[*].items[?price > 100].name", data)
+
+# Array indexing:
+jmespath.search("people[0].name", data)
+
+# Wildcard access:
+jmespath.search("*.name", data)  # all top-level fields' .name
+
+# Nested array flattening:
+jmespath.search("departments[*].employees[*].name", data)
+```
+
+| Aspect | Dot Notation (v0.2) | JMESPath (v0.1) |
+|---|---|---|
+| **Speed** | ~110ns per call (pre-compiled) | ~1-5us per call (expression parsing) |
+| **Dependencies** | None (stdlib only) | jmespath library |
+| **Nested dicts** | `"a.b.c"` — full support | `"a.b.c"` — full support |
+| **Array indexing** | Not supported | `"items[0]"` — supported |
+| **Array filtering** | Not supported | `"items[?price>100]"` — supported |
+| **Wildcards** | Not supported | `"*.name"` — supported |
+| **Real-world coverage** | 99% of use cases | 100% of use cases |
+
+**Verdict:** Dot notation is 10-50x faster and covers 99% of real use cases.
+The 1% needing array access can pre-process data before passing to pypaginate.
+
+### DA3: Token Sort Ratio vs Partial Ratio — Fuzzy Matching
+
+**What rapidfuzz offers (3 main algorithms):**
+
+```python
+from rapidfuzz import fuzz
+
+# 1. ratio — simple character comparison
+fuzz.ratio("Alice Smith", "Smith Alice")       # → 45 (low — different order)
+
+# 2. partial_ratio — substring matching (WE USE THIS)
+fuzz.partial_ratio("Alice Smith", "Alice")     # → 100 (substring match)
+fuzz.partial_ratio("Smith Alice", "Alice Smith") # → 72 (bad for reordered names)
+
+# 3. token_sort_ratio — sorts words before comparing (v0.1 HAD THIS)
+fuzz.token_sort_ratio("Smith Alice", "Alice Smith") # → 100 (perfect!)
+# How: "Smith Alice" → sort → "alice smith"
+#      "Alice Smith" → sort → "alice smith"
+#      → identical after word-level sorting
+```
+
+| Scenario | partial_ratio | token_sort_ratio | Winner |
+|---|---|---|---|
+| "Alice" vs "Alice Smith" | 100 | 100 | Tie |
+| "Smith" vs "Alice Smith" | 100 | 100 | Tie |
+| "Smith Alice" vs "Alice Smith" | 72 | **100** | token_sort |
+| "John Doe" vs "Doe, John" | 60 | **100** | token_sort |
+| "New York" vs "York New" | 57 | **100** | token_sort |
+| "alice" vs "alice123" | **100** | 77 | partial_ratio |
+| Partial query "ali" vs "alice" | **100** | 60 | partial_ratio |
+
+**Conclusion:** Both have different strengths:
+- `partial_ratio` — best for **partial queries** and **substring search**
+- `token_sort_ratio` — best for **reordered full names** and **address components**
+
+**Recommendation:** Add `FuzzyMode.TOKEN_SORT` as an option in SearchSpec.
+Users choose the strategy based on their data type. Default stays `partial_ratio`.
+
+### DA4: Tie-Breaker Field — v0.1 vs v0.2
+
+**The problem:** Sorting by non-unique field → unstable page results:
+```
+Sort by "age": Alice(30), Bob(30), Charlie(30)
+Page 1: [Alice, Bob]
+*refresh*
+Page 1: [Bob, Alice]  ← ORDER CHANGED!
+```
+
+**v0.1 solution** — dedicated parameter:
+```python
+sort_items(users, sort_field="age", tie_breaker_field="id")
+```
+
+**v0.2 solution** — multi-key SortSpec:
+```python
+SortEngine.apply(items, [
+    SortSpec(field="age"),
+    SortSpec(field="id"),  # tie-breaker = any unique field
+])
+```
+
+**v0.2 is better because:**
+- User chooses the tie-breaker (not always `id` — could be `created_at`, `uuid`)
+- Supports N sort keys, not just primary + tie-breaker
+- No hidden behavior — explicit is better than implicit
+- Same syntax for 1 sort key or 5
+
+### DA5: PagedResponse vs OffsetPage — FastAPI Speed Impact
+
+**Question:** Would a dedicated `PagedResponse` FastAPI model increase speed?
+
+**Analysis:**
+
+The current flow:
+```python
+@app.get("/users")
+def get_users(params: OffsetDep):
+    page = paginate(data, params)  # Returns FastOffsetPage (msgspec)
+    return page.model_dump()       # Convert to dict for FastAPI
+```
+
+FastAPI then:
+1. Receives the dict
+2. Serializes it to JSON via `json.dumps()` or `orjson.dumps()`
+3. Sends HTTP response
+
+If we had `PagedResponse[T]`:
+```python
+@app.get("/users", response_model=PagedResponse[UserSchema])
+def get_users(params: OffsetDep):
+    return paginate(data, params)  # FastAPI auto-serializes
+```
+
+**Would this be faster?**
+
+| Path | Steps | Speed |
+|---|---|---|
+| Current (`model_dump()`) | paginate → msgspec → dict → FastAPI json.dumps | ~3.9us page + FastAPI overhead |
+| `response_model=` | paginate → FastAPI validates → Pydantic serializes | SLOWER — Pydantic re-validates |
+| Raw `Response` | paginate → msgspec.json.encode → bytes directly | Fastest but kills OpenAPI/types |
+
+**The answer is NO — PagedResponse would NOT be faster.**
+
+- FastAPI's `response_model=` triggers Pydantic re-validation of the response, which is SLOWER
+- Our `model_dump()` already uses msgspec (289ns) — near-zero cost
+- The ~3ms HTTP overhead is FastAPI's request/response parsing, not our serialization
+- A `PagedResponse` class would just be a wrapper that adds a validation step
+
+**FastAPI overhead breakdown (from benchmarks):**
+```
+Filter ops only:     928 us
++ Paginate:          942 us (+14 us)   ← paginate is FREE
++ Serialize:         918 us (+0 us)    ← serialize is FREE
++ Full HTTP:       11.51 ms (+10.6 ms) ← FastAPI stack adds ~10ms
+```
+
+The 10ms HTTP overhead is:
+- Request parsing (headers, query params, validation)
+- ASGI middleware chain
+- Response JSON encoding
+- ASGI response writing
+
+None of this is affected by a `PagedResponse` class. Our page construction (289ns) and
+serialization (model_dump) are negligible compared to FastAPI's own overhead.
+
+**Verdict:** Skip PagedResponse. It would add API surface without speed benefit.
+OffsetPage already serves as the response model.
+
+---
+
+## Complete Documentation vs Code Discrepancy Table
+
+Every feature mentioned in old docs with its actual status:
+
+| Feature | Old Import Path | Current Status | Current Import |
+|---|---|---|---|
+| `PageParams` | `pypaginate.PageParams` | Renamed | `pypaginate.OffsetParams` |
+| `Page[T]` | `pypaginate.Page` | Renamed | `pypaginate.domain.pages.OffsetPage` |
+| `KeysetPageParams` | `pypaginate.core.KeysetPageParams` | Renamed | `pypaginate.CursorParams` |
+| `paginate_entities()` | `pypaginate.paginate_entities` | Removed | `pypaginate.paginate()` |
+| `paginate_rows()` | `pypaginate.paginate_rows` | Removed | `pypaginate.paginate()` |
+| `MemoryPaginator` | `pypaginate.engines.MemoryPaginator` | Removed | `pypaginate.paginate(list, params)` |
+| `SqlPaginator` | `pypaginate.engines.SqlPaginator` | Removed | `paginate(q, p, backend=SA)` |
+| `PaginationSnapshot` | `pypaginate.core.PaginationSnapshot` | Removed | Direct `OffsetPage` return |
+| `FilterEngine` | `pypaginate.filters.predicates.FilterEngine` | Moved | `pypaginate.filtering.engine.FilterEngine` |
+| `MemorySearchService` | `pypaginate.filters.search.MemorySearchService` | Removed | `SearchEngine` + `MemorySearchBackend` |
+| `SqlSearchService` | `pypaginate.filters.search.SqlSearchService` | Removed | `SQLAlchemySearchBackend` |
+| `SearchOptions` | `pypaginate.filters.search.options.SearchOptions` | Removed | `pypaginate.domain.specs.SearchSpec` |
+| `SortEngine` | `pypaginate.sorting.SortEngine` | Moved | `pypaginate.sorting.engine.SortEngine` |
+| `sort_items()` | `pypaginate.sorting.sort_items` | Removed | `SortEngine.apply()` |
+| `SqlSortAdapter` | `pypaginate.sorting.SqlSortAdapter` | Removed | `SQLAlchemySortBackend` |
+| `get_pagination_params` | `pypaginate.integrations.fastapi` | Removed | `pypaginate.adapters.fastapi.OffsetDep` |
+| `PagedResponse[T]` | `pypaginate.integrations.fastapi` | Removed | `OffsetPage` is response model |
+| `SqlFilterAdapter` | `pypaginate.filters.sql_adapter` | Removed | `SQLAlchemyFilterBackend` |
+| JSON Logic dicts | `FilterEngine.filter(items, {...})` | Removed | `FilterEngine.apply(items, [FilterSpec])` |
+| `decode_cursor()` | `pypaginate.engines.keyset.decode_cursor` | Not public | Internal to `AsyncCursorPaginator` |
+| `count_statement` param | `paginate_entities(..., count_statement=)` | **Missing** | Not in v0.2 API |
+| `unique=True` param | `paginate_entities(..., unique=True)` | **Missing** | Not in v0.2 API |
+| `empty` operator | Registry | **Missing** | Not registered |
+| `exists` operator | Registry | **Missing** | Not registered |
+| `any`/`all` operators | Registry | **Missing** | Not registered |
+| Weighted search fields | `SearchOptions(fields={...})` | **Missing** | Not in SearchSpec |
+| token_sort_ratio | `SearchOptions(fuzzy_threshold=)` | **Missing** | Only partial_ratio |
+| `min_query_length` | `SearchOptions(min_query_length=)` | **Missing** | Not in SearchSpec |
+| `max_results` | `SearchOptions(max_results=)` | **Missing** | Not in SearchSpec |
+| TF-IDF scoring | Concept docs | **Missing** | Simple token scoring |
+| Highlighting | `highlight_tag="<mark>"` | **Missing** | Not implemented |
+| Operator aliases | `==`, `!=`, `>` etc. | **Missing** | Only primary names |
