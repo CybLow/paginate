@@ -11,9 +11,11 @@ This configuration provides:
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
 from datetime import datetime
+
 
 # Add source path for autodoc
 sys.path.insert(0, os.path.abspath("../src"))
@@ -46,8 +48,8 @@ if os.environ.get("POLYVERSION_DATA"):
 project = "pypaginate"
 copyright = f"2024-{datetime.now().year} CybLow"
 author = "CybLow"
-version = "0.1"
-release = "0.1.0"
+version = "0.2"
+release = "0.2.0"
 
 # =============================================================================
 # GENERAL CONFIGURATION
@@ -92,6 +94,12 @@ exclude_patterns = [
     "includes",
     "_generated",
     "**/.ipynb_checkpoints",
+    # Internal planning/architecture docs not part of user-facing toctree
+    "ARCHITECTURE.md",
+    "FEATURE_GAP_ANALYSIS.md",
+    "OPTIMIZATION_AUDIT.md",
+    "TESTING.md",
+    "contributing/refactoring-plan-v0.1.1.md",
 ]
 
 # =============================================================================
@@ -155,7 +163,7 @@ autoapi_ignore = [
 ]
 
 
-def autoapi_skip_member(  # noqa: ARG001
+def autoapi_skip_member(
     app,
     what: str,
     name: str,
@@ -390,8 +398,24 @@ nitpicky = False
 # =============================================================================
 
 
+class _SuppressAutoApiPlaceholder(logging.Filter):
+    """Suppress AutoAPI 'Unknown type: placeholder' warnings.
+
+    AutoAPI emits this warning (without a type tag) when it encounters
+    TYPE_CHECKING imports that resolve to external packages not indexed
+    by AutoAPI.  The warning cannot be silenced via suppress_warnings
+    because the AutoAPI mapper intentionally omits the ``type=`` kwarg.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return "Unknown type: placeholder" not in record.getMessage()
+
+
 def setup(app) -> dict:
     """Sphinx application setup hook."""
+    import logging as _logging
+
+    _logging.getLogger("autoapi._mapper").addFilter(_SuppressAutoApiPlaceholder())
     app.connect("autoapi-skip-member", autoapi_skip_member)
     return {
         "version": release,

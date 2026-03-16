@@ -1,288 +1,198 @@
 # Basic Sorting
 
-This guide covers single-field sorting for both in-memory collections and SQL queries.
+This guide covers single-field sorting with `SortSpec` for both in-memory collections and SQLAlchemy queries.
+
+## SortSpec
+
+Create a `SortSpec` to describe how to sort:
+
+```python
+from pypaginate import SortSpec, SortDirection, NullsPosition
+
+# Sort by name ascending (defaults)
+SortSpec(field="name")
+
+# Sort by created_at descending, nulls last
+SortSpec(field="created_at", direction=SortDirection.DESC, nulls=NullsPosition.LAST)
+```
 
 ## In-Memory Sorting
 
-### Using `sort_items`
+### Using SortEngine
 
-The simplest way to sort a collection is using the `sort_items` function:
-
-```python
-from pypaginate.sorting import sort_items
-
-@dataclass
-class Product:
-    id: int
-    name: str
-    price: float
-    stock: int | None
-
-products = [
-    Product(1, "Widget", 29.99, 100),
-    Product(2, "Gadget", 49.99, None),
-    Product(3, "Gizmo", 19.99, 50),
-]
-
-# Sort by price (ascending)
-sorted_products = sort_items(
-    products,
-    sort_field="price",
-    reverse=False,
-    nulls_position="last",
-    tie_breaker_field="id",
-)
-# Result: [Gizmo, Widget, Gadget]
-
-# Sort by price (descending)
-sorted_products = sort_items(
-    products,
-    sort_field="price",
-    reverse=True,
-    nulls_position="last",
-    tie_breaker_field="id",
-)
-# Result: [Gadget, Widget, Gizmo]
-```
-
-### Using `SortEngine` Directly
-
-For repeated sorting operations, you can use the `SortEngine` class:
+`SortEngine` sorts Python sequences directly:
 
 ```python
-from pypaginate.sorting import SortEngine
+from pypaginate import SortSpec, SortDirection
+from pypaginate.sorting.engine import SortEngine
 
 engine = SortEngine()
 
-# Sort multiple collections with the same engine
-sorted_a = engine.sort(
-    products_a,
-    sort_field="name",
-    reverse=False,
-    nulls_position="last",
-    tie_breaker_field="id",
-)
+products = [
+    {"name": "Widget", "price": 29.99},
+    {"name": "Gadget", "price": 49.99},
+    {"name": "Gizmo", "price": 19.99},
+]
 
-sorted_b = engine.sort(
-    products_b,
-    sort_field="name",
-    reverse=False,
-    nulls_position="last",
-    tie_breaker_field="id",
-)
+# Sort by price ascending
+sorted_products = engine.apply(products, [
+    SortSpec(field="price"),
+])
+# [Gizmo(19.99), Widget(29.99), Gadget(49.99)]
+
+# Sort by price descending
+sorted_products = engine.apply(products, [
+    SortSpec(field="price", direction=SortDirection.DESC),
+])
+# [Gadget(49.99), Widget(29.99), Gizmo(19.99)]
 ```
 
-### Factory Function
+### Using MemorySortBackend
 
-Use `create_sort_service` for dependency injection scenarios:
+`MemorySortBackend` satisfies the `SortBackend` protocol for pipeline use:
 
 ```python
-from pypaginate.sorting import create_sort_service
+from pypaginate import SortSpec, SortDirection
+from pypaginate.adapters.memory import MemorySortBackend
 
-# Create a sort service instance
-sort_service = create_sort_service()
+backend = MemorySortBackend()
 
-# Use it to sort items
-sorted_items = sort_service.sort(
-    items,
-    sort_field="created_at",
-    reverse=True,
-    nulls_position="last",
-    tie_breaker_field="id",
-)
+sorted_items = backend.apply_sorting(products, [
+    SortSpec(field="price", direction=SortDirection.DESC),
+])
 ```
 
 ## Null Value Handling
 
-### Nulls First
-
-Place items with `None` values at the beginning:
+`NullsPosition` controls where `None` values appear in sorted results:
 
 ```python
+from pypaginate import SortSpec, SortDirection, NullsPosition
+from pypaginate.sorting.engine import SortEngine
+
+engine = SortEngine()
+
 products = [
-    Product(1, "Widget", 29.99, None),  # stock is None
-    Product(2, "Gadget", 49.99, 25),
-    Product(3, "Gizmo", 19.99, 50),
+    {"name": "Widget", "stock": None},
+    {"name": "Gadget", "stock": 25},
+    {"name": "Gizmo", "stock": 50},
 ]
 
-sorted_products = sort_items(
-    products,
-    sort_field="stock",
-    reverse=False,
-    nulls_position="first",
-    tie_breaker_field="id",
-)
-# Result: [Widget(None), Gadget(25), Gizmo(50)]
+# Nulls first
+sorted_products = engine.apply(products, [
+    SortSpec(field="stock", nulls=NullsPosition.FIRST),
+])
+# [Widget(None), Gadget(25), Gizmo(50)]
+
+# Nulls last (default)
+sorted_products = engine.apply(products, [
+    SortSpec(field="stock", nulls=NullsPosition.LAST),
+])
+# [Gadget(25), Gizmo(50), Widget(None)]
 ```
 
-### Nulls Last
-
-Place items with `None` values at the end:
-
-```python
-sorted_products = sort_items(
-    products,
-    sort_field="stock",
-    reverse=False,
-    nulls_position="last",
-    tie_breaker_field="id",
-)
-# Result: [Gadget(25), Gizmo(50), Widget(None)]
-```
-
-### Nulls with Reverse Sort
-
-When reversing, null positioning still follows your specification:
+Null positioning is independent of sort direction:
 
 ```python
 # Descending sort with nulls last
-sorted_products = sort_items(
-    products,
-    sort_field="stock",
-    reverse=True,
-    nulls_position="last",
-    tie_breaker_field="id",
-)
-# Result: [Gizmo(50), Gadget(25), Widget(None)]
+sorted_products = engine.apply(products, [
+    SortSpec(field="stock", direction=SortDirection.DESC, nulls=NullsPosition.LAST),
+])
+# [Gizmo(50), Gadget(25), Widget(None)]
 ```
 
-## SQL Sorting
+## SQLAlchemy Sorting
 
-### Basic ORDER BY
-
-Use `SqlSortAdapter` to build SQLAlchemy ORDER BY expressions:
+`SQLAlchemySortBackend` translates `SortSpec` to ORDER BY clauses:
 
 ```python
 from sqlalchemy import select
-from pypaginate.sorting import SqlSortAdapter
+from pypaginate import SortSpec, SortDirection, NullsPosition
+from pypaginate.adapters.sqlalchemy import SQLAlchemySortBackend
 
-# Ascending order
-order_expr = SqlSortAdapter.build_order_expression(
-    column=Product.price,
-    descending=False,
-)
-stmt = select(Product).order_by(order_expr)
-# SQL: SELECT * FROM product ORDER BY price ASC
+backend = SQLAlchemySortBackend()
 
-# Descending order
-order_expr = SqlSortAdapter.build_order_expression(
-    column=Product.price,
-    descending=True,
-)
-stmt = select(Product).order_by(order_expr)
-# SQL: SELECT * FROM product ORDER BY price DESC
+stmt = select(Product)
+sorted_stmt = backend.apply_sorting(stmt, [
+    SortSpec(field="price", direction=SortDirection.DESC, nulls=NullsPosition.LAST),
+])
+# SELECT * FROM product ORDER BY price DESC NULLS LAST
 ```
 
-### SQL Null Handling
+The backend generates proper SQLAlchemy expressions:
 
-PostgreSQL and other databases support explicit null positioning:
+- `SortDirection.ASC` -> `column.asc()`
+- `SortDirection.DESC` -> `column.desc()`
+- `NullsPosition.FIRST` -> `.nulls_first()`
+- `NullsPosition.LAST` -> `.nulls_last()`
+
+## Pipeline Usage
+
+Sort specs integrate with `SyncPipeline` and `AsyncPipeline`:
 
 ```python
-# Nulls first
-order_expr = SqlSortAdapter.build_order_expression(
-    column=Product.stock,
-    descending=False,
-    nulls_position="first",
-)
-# SQL: ORDER BY stock ASC NULLS FIRST
+from pypaginate import SortSpec, SortDirection, OffsetParams
+from pypaginate.adapters.memory import MemoryBackend, MemorySortBackend
+from pypaginate.engine.paginator import Paginator
+from pypaginate.engine.pipeline import SyncPipeline
 
-# Nulls last
-order_expr = SqlSortAdapter.build_order_expression(
-    column=Product.stock,
-    descending=True,
-    nulls_position="last",
+pipeline = SyncPipeline(
+    Paginator(MemoryBackend()),
+    sort_backend=MemorySortBackend(),
 )
-# SQL: ORDER BY stock DESC NULLS LAST
+
+page = pipeline.execute(
+    products,
+    OffsetParams(page=1, limit=10),
+    sorting=[SortSpec(field="price", direction=SortDirection.DESC)],
+)
 ```
 
 ## Common Patterns
 
-### Sorting by Date
+### Sort by Date
 
 ```python
+from pypaginate import SortSpec, SortDirection
+
 # Most recent first
-sorted_posts = sort_items(
-    posts,
-    sort_field="created_at",
-    reverse=True,  # Newest first
-    nulls_position="last",
-    tie_breaker_field="id",
-)
+SortSpec(field="created_at", direction=SortDirection.DESC)
+
+# Oldest first
+SortSpec(field="created_at", direction=SortDirection.ASC)
 ```
 
-### Alphabetical Sorting
+### Alphabetical Sort
 
 ```python
-# A-Z sorting
-sorted_users = sort_items(
-    users,
-    sort_field="name",
-    reverse=False,
-    nulls_position="last",
-    tie_breaker_field="id",
-)
+# A-Z
+SortSpec(field="name", direction=SortDirection.ASC)
+
+# Z-A
+SortSpec(field="name", direction=SortDirection.DESC)
 ```
 
-### Numeric Sorting
+### Numeric Sort
 
 ```python
 # Highest price first
-sorted_products = sort_items(
-    products,
-    sort_field="price",
-    reverse=True,
-    nulls_position="last",
-    tie_breaker_field="id",
-)
+SortSpec(field="price", direction=SortDirection.DESC)
+
+# Lowest score first
+SortSpec(field="score", direction=SortDirection.ASC)
 ```
 
-## Tie-Breaking
-
-### Why Tie-Breaking Matters
-
-Without a tie-breaker, items with the same sort value may appear in arbitrary order:
+## Error Handling
 
 ```python
-products = [
-    Product(1, "Widget A", 29.99, 100),
-    Product(2, "Widget B", 29.99, 100),  # Same price
-    Product(3, "Widget C", 29.99, 100),  # Same price
-]
+from pypaginate import SortError
 
-# Without tie-breaker: order is not guaranteed
-sorted_products = sort_items(
-    products,
-    sort_field="price",
-    reverse=False,
-    nulls_position="last",
-    tie_breaker_field=None,  # No tie-breaker!
-)
-# Result: Could be any order among equal items
+try:
+    result = engine.apply(items, [SortSpec(field="nonexistent")])
+except SortError as e:
+    print(f"Sort error: {e}")
 ```
-
-### Using ID as Tie-Breaker
-
-The most common pattern is using the primary key:
-
-```python
-sorted_products = sort_items(
-    products,
-    sort_field="price",
-    reverse=False,
-    nulls_position="last",
-    tie_breaker_field="id",  # Ensures consistent ordering
-)
-# Result: Always [Widget A, Widget B, Widget C]
-```
-
-## Best Practices
-
-1. **Always specify a tie-breaker** for deterministic results
-2. **Use `nulls_position`** explicitly rather than relying on defaults
-3. **Consider pagination** when sorting large datasets
-4. **Use SQL sorting** for database queries (more efficient)
-5. **Reserve in-memory sorting** for small collections or post-processing
 
 ## Next Steps
 
-- [Multi-Column Sorting](multi-column.md) - Sort by multiple fields
+- [Multi-Column Sorting](multi-column.md) -- Sort by multiple fields with priority

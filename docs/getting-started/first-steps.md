@@ -1,391 +1,214 @@
 # First Steps
 
-This tutorial walks you through building a complete paginated API with filtering and search using pypaginate and FastAPI.
+This guide walks through filtering, sorting, and search using the v0.2 API.
 
-## What You'll Build
+## Filtering with FilterSpec
 
-A user management API with:
-
-- Paginated user listing
-- Filtering by status and age
-- Full-text search
-- Sorting by multiple fields
-
-## Prerequisites
-
-```bash
-uv add pypaginate[all] fastapi uvicorn aiosqlite
-```
-
-## Step 1: Project Setup
-
-Create a new directory and file structure:
-
-```
-my_api/
-├── main.py
-├── models.py
-├── database.py
-└── schemas.py
-```
-
-## Step 2: Database Setup
-
-Create `database.py`:
+Use `FilterSpec` to declare filters, then apply them with a backend:
 
 ```python
-"""Database configuration with async SQLAlchemy."""
+from pypaginate import FilterSpec, paginate, OffsetParams
+from pypaginate.adapters.memory import MemoryFilterBackend, MemoryBackend
+from pypaginate.engine.pipeline import SyncPipeline
+from pypaginate.engine.paginator import Paginator
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+users = [
+    {"name": "Alice", "age": 30, "status": "active"},
+    {"name": "Bob", "age": 25, "status": "inactive"},
+    {"name": "Charlie", "age": 35, "status": "active"},
+    {"name": "Diana", "age": 28, "status": "active"},
+]
 
-# Using SQLite for simplicity (use PostgreSQL in production)
-DATABASE_URL = "sqlite+aiosqlite:///./users.db"
+# Define filter specs
+filters = [
+    FilterSpec(field="status", operator="eq", value="active"),
+    FilterSpec(field="age", operator="gte", value=28),
+]
 
-engine = create_async_engine(DATABASE_URL, echo=True)
-async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-
-class Base(DeclarativeBase):
-    """Base class for all models."""
-    pass
-
-
-async def get_session() -> AsyncSession:
-    """Dependency for getting database sessions."""
-    async with async_session() as session:
-        yield session
-
-
-async def init_db():
-    """Initialize database tables."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-```
-
-## Step 3: Define Models
-
-Create `models.py`:
-
-```python
-"""SQLAlchemy models."""
-
-from datetime import datetime
-from sqlalchemy import String, Integer, DateTime, Boolean
-from sqlalchemy.orm import Mapped, mapped_column
-
-from database import Base
-
-
-class User(Base):
-    """User model."""
-    
-    __tablename__ = "users"
-    
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(100))
-    email: Mapped[str] = mapped_column(String(255), unique=True)
-    age: Mapped[int] = mapped_column(Integer)
-    status: Mapped[str] = mapped_column(String(20), default="active")
-    is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow
-    )
-```
-
-## Step 4: Create Schemas
-
-Create `schemas.py`:
-
-```python
-"""Pydantic schemas for API responses."""
-
-from datetime import datetime
-from pydantic import BaseModel, EmailStr
-
-
-class UserResponse(BaseModel):
-    """User response schema."""
-    
-    id: int
-    name: str
-    email: EmailStr
-    age: int
-    status: str
-    is_verified: bool
-    created_at: datetime
-    
-    class Config:
-        from_attributes = True
-
-
-class PagedUserResponse(BaseModel):
-    """Paginated user response."""
-    
-    items: list[UserResponse]
-    total: int
-    page: int
-    limit: int
-    pages: int
-    has_next: bool
-    has_previous: bool
-```
-
-## Step 5: Build the API
-
-Create `main.py`:
-
-```python
-"""FastAPI application with pypaginate."""
-
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, Query
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from pypaginate import PageParams, paginate_entities
-from pypaginate.integrations.fastapi import get_pagination_params
-
-from database import get_session, init_db
-from models import User
-from schemas import PagedUserResponse, UserResponse
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Initialize database on startup."""
-    await init_db()
-    await seed_data()
-    yield
-
-
-app = FastAPI(
-    title="User API",
-    description="Paginated user management API",
-    lifespan=lifespan,
+# Build a pipeline with filter + pagination backends
+pipeline = SyncPipeline(
+    Paginator(MemoryBackend()),
+    filter_backend=MemoryFilterBackend(),
 )
 
+page = pipeline.execute(users, OffsetParams(page=1, limit=10), filters=filters)
 
-async def seed_data():
-    """Seed database with sample data."""
-    from database import async_session
-    
-    async with async_session() as session:
-        # Check if data exists
-        result = await session.execute(select(User).limit(1))
-        if result.scalar():
-            return
-        
-        # Create sample users
-        users = [
-            User(name="Alice Smith", email="alice@example.com", age=30, status="active", is_verified=True),
-            User(name="Bob Johnson", email="bob@example.com", age=25, status="active", is_verified=False),
-            User(name="Charlie Brown", email="charlie@example.com", age=35, status="inactive", is_verified=True),
-            User(name="Diana Ross", email="diana@example.com", age=28, status="active", is_verified=True),
-            User(name="Eve Wilson", email="eve@example.com", age=32, status="pending", is_verified=False),
-            User(name="Frank Miller", email="frank@example.com", age=40, status="active", is_verified=True),
-            User(name="Grace Lee", email="grace@example.com", age=22, status="active", is_verified=False),
-            User(name="Henry Davis", email="henry@example.com", age=45, status="inactive", is_verified=True),
-        ]
-        
-        session.add_all(users)
-        await session.commit()
-
-
-@app.get("/users", response_model=PagedUserResponse)
-async def list_users(
-    session: AsyncSession = Depends(get_session),
-    params: PageParams = Depends(get_pagination_params),
-    # Filters
-    status: str | None = Query(None, description="Filter by status"),
-    min_age: int | None = Query(None, description="Minimum age"),
-    max_age: int | None = Query(None, description="Maximum age"),
-    verified: bool | None = Query(None, description="Filter by verification status"),
-    # Sorting
-    sort_by: str = Query("created_at", description="Sort field"),
-    order: str = Query("desc", description="Sort order (asc/desc)"),
-):
-    """
-    List users with pagination, filtering, and sorting.
-    
-    **Query Parameters:**
-    
-    - `page`: Page number (default: 1)
-    - `limit`: Items per page (default: 20)
-    - `status`: Filter by status (active, inactive, pending)
-    - `min_age`: Minimum age filter
-    - `max_age`: Maximum age filter
-    - `verified`: Filter by verification status
-    - `sort_by`: Field to sort by (name, email, age, created_at)
-    - `order`: Sort order (asc, desc)
-    """
-    # Build base query
-    stmt = select(User)
-    
-    # Apply filters
-    if status:
-        stmt = stmt.where(User.status == status)
-    if min_age is not None:
-        stmt = stmt.where(User.age >= min_age)
-    if max_age is not None:
-        stmt = stmt.where(User.age <= max_age)
-    if verified is not None:
-        stmt = stmt.where(User.is_verified == verified)
-    
-    # Apply sorting
-    sort_column = getattr(User, sort_by, User.created_at)
-    if order == "desc":
-        stmt = stmt.order_by(sort_column.desc())
-    else:
-        stmt = stmt.order_by(sort_column.asc())
-    
-    # Paginate
-    page = await paginate_entities(session, stmt, params)
-    
-    return PagedUserResponse(
-        items=[UserResponse.model_validate(user) for user in page.items],
-        total=page.total,
-        page=page.page,
-        limit=page.limit,
-        pages=page.pages,
-        has_next=page.has_next,
-        has_previous=page.has_previous,
-    )
-
-
-@app.get("/users/{user_id}", response_model=UserResponse)
-async def get_user(
-    user_id: int,
-    session: AsyncSession = Depends(get_session),
-):
-    """Get a single user by ID."""
-    result = await session.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    
-    if not user:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return UserResponse.model_validate(user)
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+print(page.items)  # [{"name": "Alice", ...}, {"name": "Charlie", ...}, {"name": "Diana", ...}]
+print(page.total)  # 3
 ```
 
-## Step 6: Run and Test
+### Available Operators
 
-### Start the Server
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `eq` | Equals | `FilterSpec(field="status", operator="eq", value="active")` |
+| `ne` | Not equals | `FilterSpec(field="status", operator="ne", value="deleted")` |
+| `gt` | Greater than | `FilterSpec(field="age", operator="gt", value=18)` |
+| `gte` | Greater or equal | `FilterSpec(field="age", operator="gte", value=18)` |
+| `lt` | Less than | `FilterSpec(field="price", operator="lt", value=100)` |
+| `lte` | Less or equal | `FilterSpec(field="price", operator="lte", value=100)` |
+| `in` | In list | `FilterSpec(field="status", operator="in", value=["a", "b"])` |
+| `not_in` | Not in list | `FilterSpec(field="status", operator="not_in", value=["x"])` |
+| `contains` | Substring match | `FilterSpec(field="name", operator="contains", value="ali")` |
+| `starts_with` | Starts with | `FilterSpec(field="name", operator="starts_with", value="A")` |
+| `ends_with` | Ends with | `FilterSpec(field="email", operator="ends_with", value=".com")` |
+| `is_null` | Is None | `FilterSpec(field="deleted_at", operator="is_null")` |
+| `is_not_null` | Is not None | `FilterSpec(field="email", operator="is_not_null")` |
 
-```bash
-python main.py
-# or
-uvicorn main:app --reload
-```
+## Nested Filter Groups with And / Or
 
-### Test the API
-
-Open http://localhost:8000/docs for interactive Swagger UI.
-
-**Example requests:**
-
-```bash
-# Basic pagination
-curl "http://localhost:8000/users?page=1&limit=5"
-
-# Filter by status
-curl "http://localhost:8000/users?status=active"
-
-# Filter by age range
-curl "http://localhost:8000/users?min_age=25&max_age=35"
-
-# Combined filters with sorting
-curl "http://localhost:8000/users?status=active&min_age=25&sort_by=age&order=asc"
-```
-
-### Example Response
-
-```json
-{
-  "items": [
-    {
-      "id": 7,
-      "name": "Grace Lee",
-      "email": "grace@example.com",
-      "age": 22,
-      "status": "active",
-      "is_verified": false,
-      "created_at": "2024-01-15T10:30:00"
-    }
-  ],
-  "total": 5,
-  "page": 1,
-  "limit": 20,
-  "pages": 1,
-  "has_next": false,
-  "has_previous": false
-}
-```
-
-## Adding Search
-
-Enhance the API with full-text search:
+Compose complex boolean logic with `And()` and `Or()`:
 
 ```python
-from pypaginate.filters.search import MemorySearchService
-from pypaginate.filters.search.options import SearchOptions
+from pypaginate import And, Or, FilterSpec
 
-# Create search service
-search_service = MemorySearchService(
-    options=SearchOptions(
-        fields=["name", "email"],
-        fuzzy_threshold=0.7,
-    )
+# (status = "active" OR status = "pending") AND age >= 25
+group = And(
+    Or(
+        FilterSpec(field="status", operator="eq", value="active"),
+        FilterSpec(field="status", operator="eq", value="pending"),
+    ),
+    FilterSpec(field="age", operator="gte", value=25),
+)
+```
+
+Groups nest up to 5 levels deep for safety.
+
+## Sorting with SortSpec
+
+```python
+from pypaginate import SortSpec, SortDirection, OffsetParams
+from pypaginate.adapters.memory import MemorySortBackend, MemoryBackend
+from pypaginate.engine.pipeline import SyncPipeline
+from pypaginate.engine.paginator import Paginator
+
+users = [
+    {"name": "Charlie", "age": 35},
+    {"name": "Alice", "age": 30},
+    {"name": "Bob", "age": 25},
+]
+
+sorting = [
+    SortSpec(field="age", direction=SortDirection.DESC),
+]
+
+pipeline = SyncPipeline(
+    Paginator(MemoryBackend()),
+    sort_backend=MemorySortBackend(),
 )
 
-@app.get("/users/search")
-async def search_users(
-    q: str = Query(..., description="Search query"),
-    session: AsyncSession = Depends(get_session),
-    params: PageParams = Depends(get_pagination_params),
-):
-    """Search users by name or email."""
-    # Get all users (in production, use SQL-based search)
-    result = await session.execute(select(User))
-    users = result.scalars().all()
-    
-    # Convert to dicts for search
-    user_dicts = [
-        {"id": u.id, "name": u.name, "email": u.email, "age": u.age}
-        for u in users
-    ]
-    
-    # Search
-    matched = search_service.search(user_dicts, q)
-    
-    # Paginate results
-    from pypaginate.engines import MemoryPaginator
-    paginator = MemoryPaginator()
-    page = paginator.paginate(matched, params).to_page()
-    
-    return {
-        "items": page.items,
-        "total": page.total,
-        "page": page.page,
-        "pages": page.pages,
-    }
+page = pipeline.execute(users, OffsetParams(page=1, limit=10), sorting=sorting)
+
+print(page.items)  # [Charlie (35), Alice (30), Bob (25)]
+```
+
+### Multi-column sorting
+
+```python
+from pypaginate import SortSpec, SortDirection
+
+sorting = [
+    SortSpec(field="status"),                              # ASC by default
+    SortSpec(field="age", direction=SortDirection.DESC),   # then DESC by age
+]
+```
+
+## Search with SearchSpec
+
+```python
+from pypaginate import SearchSpec
+from pypaginate.adapters.memory import MemorySearchBackend, MemoryBackend
+from pypaginate.engine.pipeline import SyncPipeline
+from pypaginate.engine.paginator import Paginator
+
+users = [
+    {"name": "Alice Smith", "email": "alice@example.com"},
+    {"name": "Bob Johnson", "email": "bob@example.com"},
+    {"name": "Alicia Keys", "email": "alicia@example.com"},
+]
+
+search = SearchSpec(query="alice", fields=("name", "email"))
+
+pipeline = SyncPipeline(
+    Paginator(MemoryBackend()),
+    search_backend=MemorySearchBackend(),
+)
+
+page = pipeline.execute(users, OffsetParams(page=1, limit=10), search=search)
+
+print(page.items)  # [Alice Smith, Alicia Keys] (contains match)
+```
+
+### Fuzzy search
+
+```python
+from pypaginate import SearchSpec, FuzzyMode
+
+search = SearchSpec(
+    query="alic",
+    fields=("name",),
+    fuzzy=FuzzyMode.FUZZY,
+    threshold=75,
+)
+```
+
+## Combining Everything
+
+The pipeline composes filter, sort, search, and pagination in one call:
+
+```python
+from pypaginate import FilterSpec, SortSpec, SearchSpec, OffsetParams, SortDirection
+from pypaginate.adapters.memory import (
+    MemoryBackend,
+    MemoryFilterBackend,
+    MemorySortBackend,
+    MemorySearchBackend,
+)
+from pypaginate.engine.pipeline import SyncPipeline
+from pypaginate.engine.paginator import Paginator
+
+pipeline = SyncPipeline(
+    Paginator(MemoryBackend()),
+    filter_backend=MemoryFilterBackend(),
+    sort_backend=MemorySortBackend(),
+    search_backend=MemorySearchBackend(),
+)
+
+page = pipeline.execute(
+    users,
+    OffsetParams(page=1, limit=10),
+    filters=[FilterSpec(field="status", operator="eq", value="active")],
+    sorting=[SortSpec(field="name", direction=SortDirection.ASC)],
+    search=SearchSpec(query="smith", fields=("name",)),
+)
+```
+
+## Overflow Handling
+
+Control what happens when `page` exceeds the total pages:
+
+```python
+from pypaginate import paginate, OffsetParams, OverflowStrategy
+
+data = [1, 2, 3, 4, 5]
+
+# Default: return empty page
+page = paginate(data, OffsetParams(page=100, limit=2))
+print(page.items)  # []
+
+# Clamp: redirect to last valid page
+page = paginate(
+    data,
+    OffsetParams(page=100, limit=2),
+    overflow=OverflowStrategy.CLAMP,
+)
+print(page.page)   # 3 (clamped to last page)
+print(page.items)  # [5]
 ```
 
 ## What's Next?
 
-You now have a fully functional paginated API! Here's what to explore next:
-
-- [Pagination Guide](../pagination/index.md) - Learn cursor-based pagination for large datasets
-- [Filtering Guide](../filtering/index.md) - Use JSON Logic for complex filters
-- [SQLAlchemy Integration](../integrations/sqlalchemy.md) - Advanced database patterns
-- [FastAPI Integration](../integrations/fastapi.md) - Custom dependencies and response models
-
-## Complete Source Code
-
-Find the complete example in the [examples directory](https://github.com/CybLow/pypaginate/tree/main/examples/fastapi_integration.py).
+- [Examples: Basic Pagination](../examples/basic-pagination.md) -- In-memory and SQLAlchemy
+- [Examples: Filtering](../examples/filtering.md) -- FilterSpec, And/Or groups
+- [Examples: Keyset Pagination](../examples/keyset.md) -- CursorParams and CursorPage
+- [Examples: FastAPI](../examples/fastapi.md) -- Full app with dependencies

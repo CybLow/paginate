@@ -247,7 +247,7 @@ jobs:
             --cov-report=term-missing:skip-covered \
             --junitxml=junit-unit-${{ matrix.python }}.xml \
             -v \
-            --ignore=tests/benchmarks \
+            --ignore=tests/perf \
             --ignore=tests/e2e
 
       - name: Upload coverage to Codecov
@@ -298,7 +298,7 @@ jobs:
         run: uv sync --frozen --all-extras --group test
 
       - name: Run integration tests
-        run: uv run pytest tests/ --benchmark-disable --cov=pypaginate --cov-report=xml:coverage-integration-${{ matrix.os }}.xml --cov-report=term-missing:skip-covered --junitxml=junit-integration-${{ matrix.os }}.xml -v --ignore=tests/benchmarks --ignore=tests/e2e --reruns 2 --reruns-delay 1
+        run: uv run pytest tests/ --benchmark-disable --cov=pypaginate --cov-report=xml:coverage-integration-${{ matrix.os }}.xml --cov-report=term-missing:skip-covered --junitxml=junit-integration-${{ matrix.os }}.xml -v --ignore=tests/perf --ignore=tests/e2e --reruns 2 --reruns-delay 1
 
       - name: Upload coverage
         if: matrix.os == 'ubuntu-latest'
@@ -386,7 +386,7 @@ jobs:
 
       - name: Run benchmarks
         run: |
-          uv run pytest tests/benchmarks \
+          uv run pytest tests/perf \
             --run-benchmark \
             --benchmark-enable \
             --benchmark-json=benchmark-results.json \

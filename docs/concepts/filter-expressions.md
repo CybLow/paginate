@@ -1,375 +1,249 @@
 # Filter Expressions
 
-pypaginate's filter engine provides a powerful way to filter data using a structured
-expression format. This page explains how filter expressions work and how they're evaluated.
+pypaginate provides a type-safe filter system based on `FilterSpec` models,
+`And`/`Or` group builders, and a compile-once predicate engine. The same filter
+specs work for both in-memory and SQLAlchemy backends.
 
-## Overview
+---
 
-```{mermaid}
-graph LR
-    subgraph "Filter Pipeline"
-        E[Expression] --> P[Parser]
-        P --> V[Validator]
-        V --> B[Builder]
-        B --> Q[Query/Predicate]
-    end
-```
+## FilterSpec
 
-Filter expressions are processed in stages:
-
-1. **Parse** - Convert input format to internal representation
-2. **Validate** - Check field names, operators, and value types
-3. **Build** - Generate SQL WHERE clauses or Python predicates
-4. **Apply** - Execute against the data source
-
-## Expression Formats
-
-pypaginate supports two filter expression formats:
-
-### Dictionary Format
-
-Simple, Pythonic format for basic filtering:
+A `FilterSpec` is an immutable Pydantic model that describes a single filter condition:
 
 ```python
-filters = {
-    "status": "active",
-    "age__gte": 18,
-    "name__icontains": "john"
-}
+from pypaginate import FilterSpec
+
+# Equality (default operator)
+FilterSpec(field="status", value="active")
+
+# Comparison
+FilterSpec(field="age", operator="gte", value=18)
+
+# Pattern matching
+FilterSpec(field="name", operator="contains", value="john")
+
+# Null check
+FilterSpec(field="deleted_at", operator="is_null")
 ```
 
-### JSONLogic Format
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `field` | `str` | required | Field name (supports nested: `"address.city"`) |
+| `operator` | `FilterOperator` | `"eq"` | Operator name (Literal type, validated at definition) |
+| `value` | `Any` | `None` | Comparison value |
+| `logic` | `FilterLogic` | `FilterLogic.AND` | How to combine with other specs |
 
-Structured format for complex, nested logic:
-
-```python
-filters = {
-    "and": [
-        {"==": [{"var": "status"}, "active"]},
-        {">=": [{"var": "age"}, 18]},
-        {"or": [
-            {"in": [{"var": "role"}, ["admin", "moderator"]]},
-            {">=": [{"var": "experience"}, 5]}
-        ]}
-    ]
-}
-```
-
-## Filter Engine Architecture
-
-```{mermaid}
-classDiagram
-    class FilterEngine {
-        +registry: OperatorRegistry
-        +apply(data, expression) Result
-        +to_sql(expression) SQLClause
-    }
-    
-    class OperatorRegistry {
-        +operators: dict
-        +register(name, operator)
-        +get(name) Operator
-    }
-    
-    class Operator {
-        <<interface>>
-        +apply(field, value) bool
-        +to_sql(column, value) Clause
-    }
-    
-    class ComparisonOperator {
-        +apply(field, value) bool
-        +to_sql(column, value) Clause
-    }
-    
-    class PatternOperator {
-        +apply(field, value) bool
-        +to_sql(column, value) Clause
-    }
-    
-    FilterEngine --> OperatorRegistry
-    OperatorRegistry --> Operator
-    Operator <|-- ComparisonOperator
-    Operator <|-- PatternOperator
-```
+---
 
 ## Operators
 
-### Comparison Operators
+pypaginate supports 20 operators, all type-checked as `Literal` values:
 
-| Operator | SQL Equivalent | Description |
-|----------|---------------|-------------|
-| `eq` / `==` | `=` | Equal |
-| `ne` / `!=` | `!=` | Not equal |
-| `gt` / `>` | `>` | Greater than |
-| `gte` / `>=` | `>=` | Greater than or equal |
-| `lt` / `<` | `<` | Less than |
-| `lte` / `<=` | `<=` | Less than or equal |
+### Comparison
 
-### Membership Operators
+| Operator | SQL Equivalent | Example |
+|----------|---------------|---------|
+| `eq` | `=` | `FilterSpec(field="status", operator="eq", value="active")` |
+| `ne` | `!=` | `FilterSpec(field="status", operator="ne", value="deleted")` |
+| `gt` | `>` | `FilterSpec(field="age", operator="gt", value=18)` |
+| `gte` | `>=` | `FilterSpec(field="age", operator="gte", value=18)` |
+| `lt` | `<` | `FilterSpec(field="score", operator="lt", value=100)` |
+| `lte` | `<=` | `FilterSpec(field="score", operator="lte", value=100)` |
 
-| Operator | SQL Equivalent | Description |
-|----------|---------------|-------------|
-| `in` | `IN (...)` | Value in list |
-| `not_in` | `NOT IN (...)` | Value not in list |
-| `between` | `BETWEEN ... AND ...` | Value in range (inclusive) |
+### Membership
 
-### Pattern Operators
+| Operator | SQL Equivalent | Example |
+|----------|---------------|---------|
+| `in` | `IN (...)` | `FilterSpec(field="role", operator="in", value=["admin", "mod"])` |
+| `not_in` | `NOT IN (...)` | `FilterSpec(field="status", operator="not_in", value=["banned"])` |
+| `between` | `BETWEEN ... AND ...` | `FilterSpec(field="age", operator="between", value=[18, 65])` |
 
-| Operator | SQL Equivalent | Description |
-|----------|---------------|-------------|
-| `contains` | `LIKE '%...%'` | Contains substring (case-sensitive) |
-| `icontains` | `ILIKE '%...%'` | Contains substring (case-insensitive) |
-| `startswith` | `LIKE '...%'` | Starts with prefix |
-| `endswith` | `LIKE '%...'` | Ends with suffix |
-| `regex` | `~` / `REGEXP` | Matches regex pattern |
+### Text / Pattern
 
-### Null Operators
+| Operator | SQL Equivalent | Example |
+|----------|---------------|---------|
+| `contains` | `LIKE '%...%'` | `FilterSpec(field="name", operator="contains", value="john")` |
+| `starts_with` | `LIKE '...%'` | `FilterSpec(field="name", operator="starts_with", value="J")` |
+| `ends_with` | `LIKE '%...'` | `FilterSpec(field="email", operator="ends_with", value=".com")` |
+| `like` | `LIKE` | `FilterSpec(field="name", operator="like", value="%john%")` |
+| `ilike` | `ILIKE` | `FilterSpec(field="name", operator="ilike", value="%JOHN%")` |
+| `regex` | `~` / `REGEXP` | `FilterSpec(field="code", operator="regex", value=r"^[A-Z]{3}")` |
 
-| Operator | SQL Equivalent | Description |
-|----------|---------------|-------------|
-| `is_null` | `IS NULL` | Field is null |
-| `is_not_null` | `IS NOT NULL` | Field is not null |
+### Null / Existence
 
-## Expression Evaluation
+| Operator | SQL Equivalent | Example |
+|----------|---------------|---------|
+| `is_null` | `IS NULL` | `FilterSpec(field="deleted_at", operator="is_null")` |
+| `is_not_null` | `IS NOT NULL` | `FilterSpec(field="email", operator="is_not_null")` |
+| `empty` | `IS NULL OR = ''` | `FilterSpec(field="bio", operator="empty")` |
+| `not_empty` | `IS NOT NULL AND != ''` | `FilterSpec(field="bio", operator="not_empty")` |
+| `exists` | (always true) | `FilterSpec(field="id", operator="exists")` |
 
-### Dictionary Format Parsing
+---
 
-```{mermaid}
-flowchart TD
-    D["{'status': 'active', 'age__gte': 18}"] --> P[Parse]
-    P --> E1["field='status', op='eq', value='active'"]
-    P --> E2["field='age', op='gte', value=18"]
-    E1 --> AND[AND together]
-    E2 --> AND
-    AND --> R[Result]
-```
+## And/Or Groups (FilterGroup)
 
-The double-underscore (`__`) separates field names from operators:
-
-| Expression | Field | Operator | Value |
-|------------|-------|----------|-------|
-| `status: 'active'` | status | eq (default) | 'active' |
-| `age__gte: 18` | age | gte | 18 |
-| `name__icontains: 'john'` | name | icontains | 'john' |
-
-### JSONLogic Evaluation
-
-```{mermaid}
-flowchart TD
-    J[JSONLogic Expression] --> R[Recursive Evaluator]
-    R --> L{Logical Op?}
-    L -->|and/or/not| C[Combine children]
-    L -->|No| O{Comparison Op?}
-    O -->|Yes| E[Evaluate operator]
-    O -->|No| V[Get variable value]
-    C --> Result
-    E --> Result
-    V --> Result
-```
-
-JSONLogic expressions are evaluated recursively:
-
-1. **Logical operators** (`and`, `or`, `not`) combine child expressions
-2. **Comparison operators** (`==`, `>`, `in`, etc.) compare values
-3. **Variable references** (`{"var": "field"}`) extract field values
-
-## SQL Generation
-
-Filter expressions are converted to SQLAlchemy WHERE clauses:
-
-```{mermaid}
-flowchart LR
-    subgraph "Filter to SQL"
-        F["age__gte: 18"] --> B[Builder]
-        B --> S["table.c.age >= 18"]
-    end
-```
-
-### Example Transformations
-
-| Filter | SQL |
-|--------|-----|
-| `{"status": "active"}` | `WHERE status = 'active'` |
-| `{"age__gte": 18}` | `WHERE age >= 18` |
-| `{"name__icontains": "john"}` | `WHERE LOWER(name) LIKE '%john%'` |
-| `{"tags__in": ["a", "b"]}` | `WHERE tags IN ('a', 'b')` |
-
-### Complex JSONLogic to SQL
+For complex boolean logic, use the `And()` and `Or()` builder functions to create
+nested `FilterGroup` trees:
 
 ```python
-# JSONLogic
-{
-    "or": [
-        {"==": [{"var": "status"}, "active"]},
-        {"and": [
-            {"==": [{"var": "role"}, "admin"]},
-            {">=": [{"var": "level"}, 5]}
-        ]}
-    ]
-}
+from pypaginate import FilterSpec, And, Or
 
-# Generated SQL
-# WHERE status = 'active' 
-#    OR (role = 'admin' AND level >= 5)
-```
-
-## In-Memory Filtering
-
-For in-memory data sources, expressions become Python predicates:
-
-```{mermaid}
-flowchart LR
-    subgraph "Filter to Predicate"
-        F["age__gte: 18"] --> B[Builder]
-        B --> P["lambda item: item.age >= 18"]
-    end
-```
-
-The same filter expression works for both SQL and in-memory:
-
-```python
-from pypaginate import FilterEngine
-
-engine = FilterEngine()
-filters = {"age__gte": 18, "status": "active"}
-
-# SQL: Generates WHERE clause
-sql_clause = engine.to_sql(filters, model=User)
-
-# In-memory: Returns predicate function
-predicate = engine.to_predicate(filters)
-filtered = [item for item in items if predicate(item)]
-```
-
-## Field Access
-
-The filter engine supports nested field access:
-
-```{mermaid}
-graph TB
-    subgraph "Field Access Patterns"
-        S["user.address.city"] --> N[Nested object access]
-        A["tags[0]"] --> I[Array index access]
-        J["metadata.key"] --> JA[JSON field access]
-    end
-```
-
-### Access Patterns
-
-| Pattern | Description | Example |
-|---------|-------------|---------|
-| `field` | Direct attribute | `status` |
-| `field.nested` | Nested object | `address.city` |
-| `field[0]` | Array index | `tags[0]` |
-| `field.*.name` | Wildcard | `items.*.name` |
-
-## Validation
-
-Filter expressions are validated before execution:
-
-```{mermaid}
-flowchart TD
-    F[Filter Expression] --> V1{Known fields?}
-    V1 -->|No| E1[Error: Unknown field]
-    V1 -->|Yes| V2{Valid operators?}
-    V2 -->|No| E2[Error: Unknown operator]
-    V2 -->|Yes| V3{Value types match?}
-    V3 -->|No| E3[Error: Type mismatch]
-    V3 -->|Yes| OK[Valid]
-```
-
-### Configuring Allowed Fields
-
-```python
-from pypaginate import FilterEngine
-
-# Only allow specific fields
-engine = FilterEngine(
-    allowed_fields=["status", "age", "created_at"],
-    strict=True  # Reject unknown fields
+# (status = "active") AND (age >= 18 OR role = "admin")
+group = And(
+    FilterSpec(field="status", value="active"),
+    Or(
+        FilterSpec(field="age", operator="gte", value=18),
+        FilterSpec(field="role", value="admin"),
+    ),
 )
 ```
 
-### Type Coercion
-
-The engine can automatically coerce values:
-
-| Field Type | Input | Coerced |
-|------------|-------|---------|
-| Integer | `"42"` | `42` |
-| Date | `"2024-01-15"` | `date(2024, 1, 15)` |
-| Boolean | `"true"` | `True` |
-| UUID | `"550e8400-..."` | `UUID("550e8400-...")` |
-
-## Performance Considerations
-
-### Index Usage
-
-Filter expressions should use indexed columns for best performance:
-
-```{mermaid}
-graph TB
-    subgraph "Good: Uses Index"
-        G1["status = 'active'"] --> GI[Index seek]
-    end
-    
-    subgraph "Bad: Full Scan"
-        B1["LOWER(name) LIKE '%john%'"] --> BS[Full table scan]
-    end
-```
-
-### Optimization Tips
-
-| Tip | Description |
-|-----|-------------|
-| Filter on indexed columns | Use primary keys, foreign keys, indexed fields |
-| Avoid leading wildcards | `LIKE 'prefix%'` uses index, `LIKE '%suffix'` doesn't |
-| Use equality before range | `status = 'active' AND age > 18` |
-| Limit IN clause size | Large IN lists can be slow |
-
-## Custom Operators
-
-You can register custom operators:
+Groups can be nested up to 5 levels deep (validated by Pydantic):
 
 ```python
-from pypaginate import FilterEngine, Operator
-
-class FuzzyMatchOperator(Operator):
-    name = "fuzzy"
-    
-    def apply(self, field_value: str, pattern: str) -> bool:
-        # Custom fuzzy matching logic
-        return fuzzy_match(field_value, pattern)
-    
-    def to_sql(self, column, pattern):
-        # Custom SQL generation
-        return func.similarity(column, pattern) > 0.3
-
-engine = FilterEngine()
-engine.registry.register(FuzzyMatchOperator())
-
-# Now you can use: {"name__fuzzy": "john"}
+# Complex nested expression
+group = And(
+    Or(
+        FilterSpec(field="a", value=1),
+        FilterSpec(field="b", value=2),
+    ),
+    Or(
+        FilterSpec(field="c", value=3),
+        And(
+            FilterSpec(field="d", operator="gte", value=10),
+            FilterSpec(field="e", operator="lte", value=20),
+        ),
+    ),
+)
+# SQL: (a=1 OR b=2) AND (c=3 OR (d>=10 AND e<=20))
 ```
+
+---
+
+## How Filtering Works
+
+### In-Memory (FilterEngine)
+
+The `FilterEngine` compiles filter specs into **fast predicate closures** once,
+then evaluates them per item with minimal overhead:
+
+```{mermaid}
+graph LR
+    S["FilterSpec list or FilterGroup"] --> C["Compile predicates (once)"]
+    C --> P["predicate closures"]
+    P --> E["Evaluate per item"]
+    E --> R["Filtered list"]
+```
+
+```python
+from pypaginate.filtering.engine import FilterEngine
+from pypaginate.filtering.registry import OperatorRegistry
+
+engine = FilterEngine(OperatorRegistry.default())
+filtered = engine.apply(items, [
+    FilterSpec(field="age", operator="gte", value=18),
+    FilterSpec(field="status", value="active"),
+])
+```
+
+For flat `FilterSpec` lists, the engine partitions specs by `logic` (AND vs OR):
+- All AND specs must match.
+- At least one OR spec must match (if any exist).
+
+For `FilterGroup` trees, the engine recursively compiles nested predicates.
+
+### SQLAlchemy (SQLAlchemyFilterBackend)
+
+The SQLAlchemy filter backend translates `FilterSpec` objects into SQLAlchemy
+WHERE clauses:
+
+```python
+from pypaginate.adapters.sqlalchemy import SQLAlchemyFilterBackend
+
+fb = SQLAlchemyFilterBackend()
+modified_query = fb.apply_filters(
+    select(User),
+    [FilterSpec(field="age", operator="gte", value=18)],
+)
+# Generates: SELECT * FROM users WHERE users.age >= 18
+```
+
+### Pipeline Integration
+
+Both backends integrate with the pipeline for filter + sort + search + paginate:
+
+```python
+from pypaginate.engine.pipeline import AsyncPipeline
+from pypaginate.engine.paginator import AsyncPaginator
+from pypaginate.adapters.sqlalchemy import SQLAlchemyBackend, SQLAlchemyFilterBackend
+
+pipeline = AsyncPipeline(
+    AsyncPaginator(SQLAlchemyBackend(session)),
+    filter_backend=SQLAlchemyFilterBackend(),
+)
+
+result = await pipeline.execute(
+    select(User),
+    OffsetParams(page=1, limit=20),
+    filters=[FilterSpec(field="status", value="active")],
+)
+```
+
+---
+
+## Nested Field Access
+
+The filter engine supports dotted paths for nested objects:
+
+```python
+# Access nested attribute: item.address.city
+FilterSpec(field="address.city", operator="eq", value="Paris")
+```
+
+The `compile_accessor` function compiles a dotted path into a fast callable that
+resolves the value from any object (dict or object with attributes).
+
+---
+
+## Operator Registry
+
+The `OperatorRegistry` maps operator names to operator classes. The default registry
+includes all 20 operators. You can create custom registries:
+
+```python
+from pypaginate.filtering.registry import OperatorRegistry
+from pypaginate.filtering.operators import Eq
+
+registry = OperatorRegistry()
+registry.register("eq", Eq)
+# Add custom operators the same way
+```
+
+Each operator implements the `Operator` protocol:
+
+```python
+class Operator(Protocol):
+    @staticmethod
+    def evaluate(field_value: object, spec_value: object) -> bool: ...
+```
+
+---
 
 ## Error Handling
 
-Filter errors are specific and actionable:
+Filter errors carry structured details:
 
 ```python
-from pypaginate.exceptions import FilterError, UnknownFieldError
+from pypaginate.domain.exceptions import FilterError, FilterValidationError
 
 try:
-    result = engine.apply(data, filters)
-except UnknownFieldError as e:
-    print(f"Unknown field: {e.field}")
+    engine.apply(items, [FilterSpec(field="x", operator="regex", value="[invalid")])
 except FilterError as e:
-    print(f"Filter error: {e}")
+    print(e.details)  # {"pattern": "[invalid", "error": "..."}
+
+try:
+    FilterSpec(field="age", operator="between", value=[1, 2, 3])
+except FilterValidationError as e:
+    print(e.details)  # {"value": "[1, 2, 3]", "length": 3}
 ```
-
-## Further Reading
-
-- [User Guide: Filtering](../filtering/index.md) - Practical usage
-- [User Guide: JSONLogic](../filtering/json-logic.md) - JSONLogic syntax
-- [Operators Reference](../filtering/operators.md) - All operators
-- [Architecture](architecture.md) - Overall library design

@@ -1,209 +1,264 @@
 # Text Search
 
-Implement full-text search in your applications.
+This guide covers exact text search with `SearchSpec`, including contains/prefix/exact modes, multi-field search, weighted fields, and pipeline integration.
 
-## MemorySearchService
+## Basic Usage
 
-For searching in-memory data collections:
+### SearchEngine
+
+`SearchEngine` searches in-memory sequences with relevance ranking:
 
 ```python
-from pypaginate.filters.search import MemorySearchService
-from pypaginate.filters.search.options import SearchOptions
+from pypaginate import SearchSpec
+from pypaginate.search.engine import SearchEngine
 
-# Configure the service
-service = MemorySearchService(
-    options=SearchOptions(
-        fields=["title", "description", "tags"],
-    )
-)
+engine = SearchEngine()
 
-# Your data
 products = [
-    {"id": 1, "title": "Python Book", "description": "Learn Python programming"},
-    {"id": 2, "title": "JavaScript Guide", "description": "Master JS development"},
-    {"id": 3, "title": "Go Handbook", "description": "Golang essentials"},
+    {"title": "Python Book", "description": "Learn Python programming"},
+    {"title": "JavaScript Guide", "description": "Master JS development"},
+    {"title": "Go Handbook", "description": "Golang essentials"},
 ]
 
-# Search
-results = service.search(products, "python")
-# Returns: [Product 1]
+spec = SearchSpec(query="python", fields=("title", "description"))
+results = engine.apply(products, spec)
+# [Python Book] -- matches both title and description
 ```
 
-## SearchOptions
+### MemorySearchBackend
 
-Configure search behavior:
+`MemorySearchBackend` satisfies the `SearchBackend` protocol for pipeline use:
 
 ```python
-from pypaginate.filters.search.options import SearchOptions
+from pypaginate import SearchSpec
+from pypaginate.adapters.memory import MemorySearchBackend
 
-options = SearchOptions(
-    # Fields to search
-    fields=["name", "email", "bio"],
-    
-    # Fuzzy matching threshold (0.0 to 1.0)
-    # Higher = stricter matching
-    fuzzy_threshold=0.8,
-    
-    # Case sensitivity
-    case_sensitive=False,  # Default: False
-    
-    # Accent sensitivity (é vs e)
-    accent_sensitive=False,  # Default: False
-    
-    # Minimum query length
-    min_query_length=2,
-    
-    # Maximum results (0 = no limit)
-    max_results=100,
+backend = MemorySearchBackend()
+
+filtered = backend.apply_search(products, SearchSpec(
+    query="python",
+    fields=("title", "description"),
+))
+```
+
+## Search Modes
+
+### CONTAINS (Default)
+
+Matches when the token appears anywhere in the field value:
+
+```python
+from pypaginate import SearchSpec, SearchFieldMode
+
+spec = SearchSpec(
+    query="python",
+    fields=("title",),
+    mode=SearchFieldMode.CONTAINS,  # default
 )
+# "Python Book" matches (contains "python")
+# "Learn Python Programming" matches
+```
+
+### PREFIX
+
+Matches when the field value starts with the token:
+
+```python
+spec = SearchSpec(
+    query="py",
+    fields=("title",),
+    mode=SearchFieldMode.PREFIX,
+)
+# "Python Book" matches (starts with "py")
+# "Learn Python" does NOT match
+```
+
+### EXACT
+
+Matches when the normalized field value equals the normalized token:
+
+```python
+spec = SearchSpec(
+    query="python book",
+    fields=("title",),
+    mode=SearchFieldMode.EXACT,
+)
+# "Python Book" matches (normalizes to "python book")
+# "Python Book 2nd Edition" does NOT match
 ```
 
 ## Multi-Field Search
 
-Search across multiple fields simultaneously:
+Search across multiple fields simultaneously. A result matches if any field contains the token:
 
 ```python
-service = MemorySearchService(
-    options=SearchOptions(
-        fields=["name", "email", "department", "title"],
-    )
-)
+from pypaginate import SearchSpec
+from pypaginate.search.engine import SearchEngine
+
+engine = SearchEngine()
 
 employees = [
-    {"name": "Alice Smith", "email": "alice@corp.com", "department": "Engineering", "title": "Senior Developer"},
-    {"name": "Bob Johnson", "email": "bob@corp.com", "department": "Sales", "title": "Account Manager"},
+    {"name": "Alice Smith", "email": "alice@corp.com", "department": "Engineering"},
+    {"name": "Bob Johnson", "email": "bob@corp.com", "department": "Sales"},
 ]
 
-# Searches all configured fields
-results = service.search(employees, "engineer")
-# Matches Alice (department: Engineering)
-
-results = service.search(employees, "alice")
-# Matches Alice (name and email)
+spec = SearchSpec(query="alice", fields=("name", "email", "department"))
+results = engine.apply(employees, spec)
+# [Alice Smith] -- matches in both name and email
 ```
 
-## Search with Weights
+## Weighted Fields
 
-Weight fields differently:
-
-```python
-options = SearchOptions(
-    fields={
-        "title": 2.0,       # Title matches are twice as important
-        "description": 1.0,
-        "tags": 0.5,        # Tags are less important
-    }
-)
-```
-
-## Searching Nested Fields
-
-Search in nested object properties:
+Assign different weights to fields to control relevance ranking. Higher weights make matches in that field rank higher:
 
 ```python
-data = [
-    {
-        "id": 1,
-        "user": {"name": "Alice", "profile": {"bio": "Developer"}}
-    }
+from pypaginate import SearchSpec
+from pypaginate.search.engine import SearchEngine
+
+engine = SearchEngine()
+
+products = [
+    {"title": "Python", "description": "A snake species"},
+    {"title": "Cobra", "description": "A python library for CLI"},
 ]
 
-service = MemorySearchService(
-    options=SearchOptions(
-        fields=["user.name", "user.profile.bio"],
-    )
+# Title matches are twice as important as description matches
+spec = SearchSpec(
+    query="python",
+    fields=("title", "description"),
+    weights={"title": 2.0, "description": 1.0},
+)
+results = engine.apply(products, spec)
+# [{"title": "Python", ...}, {"title": "Cobra", ...}]
+# "Python" ranks higher (title match with 2x weight)
+```
+
+Default weight is `1.0` for fields not specified in the weights dict.
+
+## Multi-Word Queries
+
+Queries with multiple words are tokenized. All tokens must match for an item to be included:
+
+```python
+spec = SearchSpec(query="alice smith", fields=("name",))
+# Tokenized to ["alice", "smith"]
+# Both tokens must match somewhere in the searched fields
+```
+
+## Nested Field Access
+
+Search in nested attributes or dictionary keys with dot notation:
+
+```python
+spec = SearchSpec(
+    query="developer",
+    fields=("user.profile.bio",),
+)
+# Accesses item["user"]["profile"]["bio"] or item.user.profile.bio
+```
+
+## Max Results
+
+Limit the number of search results:
+
+```python
+spec = SearchSpec(
+    query="python",
+    fields=("title",),
+    max_results=10,  # return at most 10 matches
+)
+```
+
+## Min Query Length
+
+Skip search for very short queries:
+
+```python
+spec = SearchSpec(
+    query="a",
+    fields=("name",),
+    min_length=2,  # skip search if query < 2 chars
+)
+# Returns all items unfiltered (query too short)
+```
+
+## SQLAlchemy Search
+
+`SQLAlchemySearchBackend` generates ILIKE WHERE clauses:
+
+```python
+from sqlalchemy import select
+from pypaginate import SearchSpec, SearchFieldMode
+from pypaginate.adapters.sqlalchemy import SQLAlchemySearchBackend
+
+backend = SQLAlchemySearchBackend()
+
+stmt = select(User)
+searched_stmt = backend.apply_search(stmt, SearchSpec(
+    query="alice",
+    fields=("name", "email"),
+))
+# SELECT * FROM user
+# WHERE (name ILIKE '%alice%' OR email ILIKE '%alice%')
+```
+
+Mode affects the ILIKE pattern:
+
+| Mode | Pattern |
+|------|---------|
+| `CONTAINS` | `%token%` |
+| `PREFIX` | `token%` |
+| `EXACT` | `token` (no wildcards) |
+
+Multi-word queries generate AND-combined conditions:
+
+```python
+# query="alice smith", fields=("name", "email")
+# WHERE (name ILIKE '%alice%' OR email ILIKE '%alice%')
+#   AND (name ILIKE '%smith%' OR email ILIKE '%smith%')
+```
+
+## Pipeline Integration
+
+Combine search with filtering, sorting, and pagination:
+
+```python
+from pypaginate import (
+    FilterSpec, SortSpec, SortDirection, SearchSpec, OffsetParams,
+)
+from pypaginate.adapters.memory import (
+    MemoryBackend, MemoryFilterBackend, MemorySortBackend, MemorySearchBackend,
+)
+from pypaginate.engine.paginator import Paginator
+from pypaginate.engine.pipeline import SyncPipeline
+
+pipeline = SyncPipeline(
+    Paginator(MemoryBackend()),
+    filter_backend=MemoryFilterBackend(),
+    sort_backend=MemorySortBackend(),
+    search_backend=MemorySearchBackend(),
 )
 
-results = service.search(data, "alice")
-```
-
-## SQL Search Service
-
-For database queries, use SqlSearchService:
-
-```python
-from pypaginate.filters.search import SqlSearchService
-from pypaginate.filters.search.options import SearchOptions
-
-service = SqlSearchService(
-    model=User,
-    search_fields=["name", "email", "bio"],
-    options=SearchOptions(
-        case_sensitive=False,
-    )
+page = pipeline.execute(
+    users,
+    OffsetParams(page=1, limit=20),
+    filters=[FilterSpec(field="status", value="active")],
+    sorting=[SortSpec(field="name")],
+    search=SearchSpec(query="alice", fields=("name", "email")),
 )
-
-# Apply search to a query
-stmt = select(User).order_by(User.name)
-stmt = service.apply_search(stmt, "alice")
-
-# Execute the query
-result = await session.execute(stmt)
-users = result.scalars().all()
 ```
 
-### SQL Search Patterns
+## Text Normalization
 
-```python
-# The SQL search generates LIKE patterns:
-# "alice" -> WHERE name ILIKE '%alice%' OR email ILIKE '%alice%' OR ...
-```
+Both field values and query tokens are normalized before comparison:
 
-## Combining Search with Pagination
+- Unicode normalization (NFC)
+- Lowercased
+- Whitespace trimmed
 
-```python
-from pypaginate import PageParams
-from pypaginate.engines import MemoryPaginator
-
-# 1. Search
-search_results = service.search(all_items, query)
-
-# 2. Paginate results
-paginator = MemoryPaginator()
-params = PageParams(page=1, limit=20)
-page = paginator.paginate(search_results, params).to_page()
-```
-
-## Combining Search with Filtering
-
-```python
-from pypaginate.filters.predicates import FilterEngine
-
-filter_engine = FilterEngine()
-
-# 1. Filter first (narrow down the dataset)
-filtered = filter_engine.filter(items, {"status": {"eq": "active"}})
-
-# 2. Then search within filtered results
-results = service.search(filtered, "query")
-```
-
-## Error Handling
-
-```python
-from pypaginate import SearchException
-
-try:
-    results = service.search(items, "query")
-except SearchException as e:
-    print(f"Search error: {e}")
-```
-
-## Performance Tips
-
-1. **Limit fields**: Only search relevant fields
-2. **Filter first**: Narrow down data before searching
-3. **Set max_results**: Limit result count for large datasets
-4. **Use SQL search**: For large databases, search at DB level
-
-```python
-# Good: Filter, then search, then paginate
-filtered = filter_engine.filter(items, {"status": {"eq": "active"}})
-searched = service.search(filtered, query)
-page = paginator.paginate(searched, params).to_page()
-```
+This means searches are case-insensitive and accent-aware by default.
 
 ## Next Steps
 
-- [Fuzzy Matching](fuzzy.md) - Approximate string matching
-- [Filtering Guide](../filtering/index.md) - Combine with filters
+- [Fuzzy Matching](fuzzy.md) -- Approximate matching for typo tolerance
+- [Filtering](../filtering/index.md) -- Combine with declarative filters

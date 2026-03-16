@@ -9,27 +9,29 @@ This guide covers all installation options for pypaginate.
 
 ## Basic Installation
 
-### Using uv (Recommended)
+::::{tab-set}
 
-[uv](https://docs.astral.sh/uv/) is a fast Python package manager:
-
+:::{tab-item} uv
 ```bash
 uv add pypaginate
 ```
+:::
 
-### Using pip
-
+:::{tab-item} pip
 ```bash
 pip install pypaginate
 ```
+:::
 
-## Installation with Optional Features
+::::
 
-pypaginate uses optional dependencies to keep the core package lightweight. Install only what you need:
+The base package includes in-memory pagination, filtering specs, sorting specs, and search specs with no heavy dependencies beyond pydantic.
+
+## Installation with Extras
 
 ### SQLAlchemy Support
 
-For database pagination with SQLAlchemy 2.0+:
+For database pagination (offset and cursor/keyset) with SQLAlchemy 2.0+:
 
 ::::{tab-set}
 
@@ -47,14 +49,14 @@ pip install pypaginate[sqlalchemy]
 
 ::::
 
-This includes:
+Includes:
 
-- `SQLAlchemy>=2.0.45` - ORM and database toolkit
-- `sqlakeyset>=2.0` - Keyset pagination support
+- `SQLAlchemy[asyncio]>=2.0.0` -- ORM and async database toolkit
+- `sqlakeyset>=2.0` -- Keyset/cursor pagination support
 
 ### Search Features
 
-For full-text search with fuzzy matching:
+For fuzzy text search with rapidfuzz:
 
 ::::{tab-set}
 
@@ -72,63 +74,13 @@ pip install pypaginate[search]
 
 ::::
 
-This includes:
+Includes:
 
-- `rapidfuzz>=3.14` - Fast fuzzy string matching
-- `pyparsing>=3.3` - Query parsing
-
-### Filtering Features
-
-For advanced JSON Logic filtering:
-
-::::{tab-set}
-
-:::{tab-item} uv
-```bash
-uv add pypaginate[filters]
-```
-:::
-
-:::{tab-item} pip
-```bash
-pip install pypaginate[filters]
-```
-:::
-
-::::
-
-This includes:
-
-- `json-logic-qubit>=0.9` - JSON Logic evaluator
-- `jmespath>=1.0` - Nested field access
-
-### Text Processing
-
-For text normalization (accent removal, etc.):
-
-::::{tab-set}
-
-:::{tab-item} uv
-```bash
-uv add pypaginate[text]
-```
-:::
-
-:::{tab-item} pip
-```bash
-pip install pypaginate[text]
-```
-:::
-
-::::
-
-This includes:
-
-- `text-unidecode>=1.3` - ASCII transliteration
+- `rapidfuzz>=3.0.0` -- Fast fuzzy string matching
 
 ### FastAPI Integration
 
-For FastAPI dependency injection:
+For FastAPI dependency injection (`OffsetDep`, `CursorDep`, `FilterDep`, etc.):
 
 ::::{tab-set}
 
@@ -146,9 +98,33 @@ pip install pypaginate[fastapi]
 
 ::::
 
-This includes:
+Includes:
 
-- `fastapi>=0.127` - FastAPI framework
+- `fastapi>=0.95.0` -- FastAPI framework
+
+### Fast Mode (msgspec)
+
+For near-zero-overhead page construction using msgspec structs:
+
+::::{tab-set}
+
+:::{tab-item} uv
+```bash
+uv add pypaginate[fast]
+```
+:::
+
+:::{tab-item} pip
+```bash
+pip install pypaginate[fast]
+```
+:::
+
+::::
+
+Includes:
+
+- `msgspec>=0.18.0` -- Fast serialization
 
 ### All Features
 
@@ -175,92 +151,82 @@ pip install pypaginate[all]
 For contributing to pypaginate:
 
 ```bash
-# Clone the repository
 git clone https://github.com/CybLow/pypaginate.git
 cd pypaginate
-
-# Install with development dependencies
 uv sync
 ```
 
-This installs:
-
-- All optional dependencies
-- Testing tools (pytest, coverage)
-- Linting tools (ruff, mypy)
-- Documentation tools (Sphinx)
+This installs all optional dependencies plus testing, linting, and documentation tools.
 
 ## Verifying Installation
-
-After installation, verify everything works:
 
 ```python
 >>> import pypaginate
 >>> pypaginate.__version__
-'0.1.0'
+'0.2.0'
 
->>> from pypaginate import PageParams, Page
->>> params = PageParams(page=1, limit=20)
->>> params.offset
-0
+>>> from pypaginate import paginate, OffsetParams
+>>> page = paginate([1, 2, 3, 4, 5], OffsetParams(page=1, limit=2))
+>>> page.items
+[1, 2]
+>>> page.total
+5
 ```
 
 ### Check Optional Dependencies
 
 ```python
 # Check SQLAlchemy support
->>> from pypaginate import paginate_entities
+>>> from pypaginate.adapters.sqlalchemy import SQLAlchemyBackend
 >>> # No ImportError = SQLAlchemy is installed
 
-# Check search support
->>> from pypaginate.filters.search import MemorySearchService
->>> # No ImportError = search features are installed
+# Check FastAPI support
+>>> from pypaginate.adapters.fastapi import OffsetDep, FilterDep
+>>> # No ImportError = FastAPI is installed
 
-# Check filter support
->>> from pypaginate.filters.predicates import FilterEngine
->>> # No ImportError = filter features are installed
+# Check fast mode
+>>> from pypaginate.domain.fast_pages import FastOffsetPage
+>>> # No ImportError = msgspec is installed
 ```
 
 ## Troubleshooting
 
-### ImportError: SQLAlchemy Features
+### ImportError: FastAPI Features
 
 If you see:
 
 ```
-ImportError: SQLAlchemy features require installation: uv add pypaginate[sqlalchemy]
+ImportError: FastAPI is required: pip install pypaginate[fastapi]
 ```
 
-Solution: Install the SQLAlchemy extra:
+Solution:
 
 ```bash
-uv add pypaginate[sqlalchemy]
+pip install pypaginate[fastapi]
 ```
 
-### ImportError: rapidfuzz
+### ImportError: SQLAlchemy
 
-If you see errors about `rapidfuzz`:
+If you get import errors for `pypaginate.adapters.sqlalchemy`:
 
 ```bash
-uv add pypaginate[search]
+pip install pypaginate[sqlalchemy]
 ```
 
 ### Version Conflicts
 
-If you have version conflicts with existing packages:
+If you have version conflicts:
 
 ```bash
-# Create a fresh virtual environment with uv
 uv venv
 source .venv/bin/activate  # Linux/Mac
 # or
 .venv\Scripts\activate  # Windows
 
-# Install pypaginate
-uv add pypaginate[all]
+pip install pypaginate[all]
 ```
 
 ## Next Steps
 
-- [Quick Start Guide](quickstart.md) - Learn the basics in 5 minutes
-- [First Steps Tutorial](first-steps.md) - Build your first paginated API
+- [Quick Start Guide](quickstart.md) -- Learn the basics in 5 minutes
+- [First Steps](first-steps.md) -- Filtering, sorting, and search

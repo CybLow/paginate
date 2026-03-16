@@ -1,6 +1,35 @@
 # Architecture Guide
 
-> How pypaginate is structured and why.
+How pypaginate is structured and why.
+
+---
+
+## Hexagonal Architecture
+
+pypaginate follows a **hexagonal (ports and adapters)** architecture. The core
+domain defines protocols (ports), and adapters implement them for specific
+backends (SQLAlchemy, FastAPI, in-memory).
+
+```
+                    ┌──────────────────────────┐
+                    │    FastAPI Adapters       │
+                    │  OffsetDep, FilterDep,    │
+                    │  SortDep, SearchDep       │
+                    └────────────┬─────────────┘
+                                 │
+┌───────────────┐    ┌───────────┴───────────┐    ┌──────────────────┐
+│  SA Adapters  │    │      Engine Layer      │    │  Memory Adapters │
+│  Backend,     ├───►│  Paginator, Pipeline,  │◄───┤  MemoryBackend,  │
+│  Filter,      │    │  CursorPaginator       │    │  FilterEngine,   │
+│  Sort, Search │    └───────────┬───────────┘    │  SortEngine      │
+└───────────────┘                │                 └──────────────────┘
+                     ┌───────────┴───────────┐
+                     │     Domain Layer       │
+                     │  Specs, Params, Pages, │
+                     │  Protocols, Enums,     │
+                     │  Exceptions            │
+                     └────────────────────────┘
+```
 
 ---
 
@@ -8,63 +37,76 @@
 
 ```
 src/pypaginate/
-├── __init__.py          # Public API (23 exports)
-├── _dispatch.py         # Universal paginate() — type overloads + auto-detection
+├── __init__.py          # Public API (exports paginate, pages, params, specs)
+├── _dispatch.py         # Universal paginate() -- type overloads + auto-detection
 │
-├── domain/              # Pure domain — Pydantic models + protocols
-│   ├── enums.py         # SortDirection, FilterLogic, FuzzyMode, etc.
+├── domain/              # Pure domain -- Pydantic models + protocols
+│   ├── enums.py         # SortDirection, FilterLogic, FuzzyMode, SearchFieldMode, etc.
 │   ├── exceptions.py    # PaginationError hierarchy
-│   ├── models.py        # Re-export hub
-│   ├── pages.py         # OffsetPage, CursorPage
+│   ├── pages.py         # OffsetPage, CursorPage (result types)
 │   ├── fast_pages.py    # msgspec.Struct pages (optional acceleration)
-│   ├── params.py        # OffsetParams, CursorParams
-│   ├── protocols.py     # Backend protocol definitions
-│   └── specs.py         # FilterSpec, SortSpec, SearchSpec
+│   ├── params.py        # OffsetParams, CursorParams (input types)
+│   ├── protocols.py     # PaginationBackend, CursorBackend, FilterBackend, etc.
+│   └── specs.py         # FilterSpec, SortSpec, SearchSpec, FilterGroup
 │
 ├── engine/              # Core orchestration (backend-agnostic)
-│   ├── paginator.py     # Paginator, AsyncPaginator
-│   ├── pipeline.py      # SyncPipeline, AsyncPipeline
-│   └── cursor.py        # AsyncCursorPaginator
+│   ├── paginator.py     # Paginator, AsyncPaginator (offset)
+│   ├── pipeline.py      # SyncPipeline, AsyncPipeline (filter+sort+search+paginate)
+│   └── cursor.py        # AsyncCursorPaginator (keyset)
 │
-├── filtering/           # Filter engine + 17 operators
-│   ├── accessor.py      # compile_accessor() — field path resolution
+├── filtering/           # In-memory filter engine + operators
+│   ├── accessor.py      # compile_accessor() -- field path resolution
 │   ├── engine.py        # FilterEngine (compiled predicates)
 │   ├── operators.py     # Eq, Gt, Like, Regex, Between, etc.
 │   ├── registry.py      # OperatorRegistry + create_default_registry()
-│   ├── like.py          # LIKE pattern classification (string methods)
+│   ├── like.py          # LIKE pattern classification
 │   └── regex.py         # Optional google-re2 wrapper
 │
-├── sorting/             # Sort engine
+├── sorting/             # In-memory sort engine
 │   ├── engine.py        # SortEngine (stable multi-key)
 │   └── keys.py          # build_sort_key() with null handling
 │
-├── search/              # Search engine
+├── search/              # In-memory search engine
 │   ├── engine.py        # SearchEngine (token-based relevance)
 │   ├── matching.py      # matches_field(), fuzzy_score()
 │   └── parser.py        # TokenParser (shlex-based)
 │
 ├── text/                # Text utilities
-│   └── normalize.py     # normalize_text() — LRU cached + ASCII fast path
+│   └── normalize.py     # normalize_text() -- LRU cached + ASCII fast path
 │
 └── adapters/            # Backend implementations
-    ├── memory/          # In-memory (list, tuple)
+    ├── memory/          # In-memory (list, tuple) -- MemoryBackend
     ├── sqlalchemy/      # SQLAlchemy ORM (sync + async)
+    │   ├── backend.py   # SQLAlchemyBackend, SyncSQLAlchemyBackend
+    │   ├── cursor.py    # SQLAlchemyCursorBackend, SyncSQLAlchemyCursorBackend
+    │   ├── filters.py   # SQLAlchemyFilterBackend
+    │   ├── sorting.py   # SQLAlchemySortBackend
+    │   ├── search.py    # SQLAlchemySearchBackend
+    │   └── columns.py   # resolve_column() -- ORM column resolution
     └── fastapi/         # FastAPI dependency injection
+        ├── dependencies.py  # OffsetDep, CursorDep
+        ├── filters.py       # FilterDep, FilterField
+        ├── sorting.py       # SortDep
+        └── search.py        # SearchDep
 ```
 
 ---
 
 ## Layer Rules
 
-| Layer | Depends On | Never Depends On |
+| Layer | May Import | Must Not Import |
 |---|---|---|
-| **Domain** | Pydantic only | Engine, Adapters, Text |
+| **Domain** | pydantic only | Engine, Adapters, Text |
 | **Engine** | Domain | Adapters |
 | **Filtering/Sorting/Search** | Domain, Text | Adapters |
-| **Adapters** | Domain, Filtering, Sorting, Search | Engine (via protocols) |
-| **Dispatch** | Domain, Engine, Adapters | — |
+| **Adapters** | Domain, Filtering, Sorting, Search | Engine (uses protocols) |
+| **Dispatch** | Domain, Engine, Adapters | -- |
 
-**Enforced by** `tests/architecture/test_imports.py`.
+These rules are enforced by `tests/architecture/test_imports.py`.
+
+**Key principle:** The domain layer has **zero** external dependencies beyond
+Pydantic. It defines protocols that adapters implement. The engine layer depends
+only on domain abstractions, never on concrete adapters.
 
 ---
 
@@ -72,45 +114,56 @@ src/pypaginate/
 
 ### Protocol-Based Backends (Dependency Inversion)
 
-Backends implement protocols, not base classes. The engine layer depends on abstractions:
+Backends implement protocols, not base classes. Any class with matching method
+signatures satisfies the protocol -- no inheritance required.
 
 ```python
-# domain/protocols.py
+# domain/protocols.py -- the contract
 class PaginationBackend(Protocol[T]):
     async def count(self, query: object) -> int: ...
     async def fetch(self, query: object, offset: int, limit: int) -> list[T]: ...
+
+# adapters/sqlalchemy/backend.py -- one implementation
+class SQLAlchemyBackend(Generic[ItemT]):
+    async def count(self, query: object) -> int: ...
+    async def fetch(self, query: object, offset: int, limit: int) -> list[ItemT]: ...
 ```
 
-Any class with matching methods satisfies the protocol — no inheritance required.
+Six protocols are defined in `domain/protocols.py`:
+
+| Protocol | Methods | Implementations |
+|---|---|---|
+| `PaginationBackend[T]` | `count`, `fetch` (async) | `SQLAlchemyBackend` |
+| `SyncPaginationBackend[T]` | `count`, `fetch` (sync) | `SyncSQLAlchemyBackend`, `MemoryBackend` |
+| `CursorBackend[T]` | `fetch_page` (async) | `SQLAlchemyCursorBackend` |
+| `FilterBackend` | `apply_filters` | `SQLAlchemyFilterBackend` |
+| `SortBackend` | `apply_sorting` | `SQLAlchemySortBackend` |
+| `SearchBackend` | `apply_search` | `SQLAlchemySearchBackend` |
+
+### Elysia-Style Type Inference
+
+The `paginate()` function uses input type to determine output type:
+
+```python
+paginate(source, OffsetParams(...))            # -> OffsetPage[T]
+paginate(source, CursorParams(...), backend=b) # -> CursorPage[T]
+```
+
+This is implemented via `@overload` signatures in `_dispatch.py`.
 
 ### Compile-Once, Apply-N (Strategy Pattern)
 
-Specs are compiled into closures ONCE, then applied to every item:
+Specs are compiled into closures once, then applied to every item:
 
 ```python
-# Accessor: split path once, reuse closure
-accessor = compile_accessor("user.profile.email")  # O(1)
+accessor = compile_accessor("user.profile.email")  # O(1) -- splits once
 for item in items:
     value = accessor(item)  # O(1) per call, no string split
-
-# Filter: compile predicate once
-predicate = _compile_predicate(FilterSpec(field="age", operator="gte", value=30), registry)
-results = [item for item in items if predicate(item)]
 ```
 
-### Partition-Sort (Null Handling)
+### Optional Acceleration
 
-Instead of wrapping every sort key in a `(is_null, value)` tuple, the memory sort backend partitions items into nulls and non-nulls, sorts non-nulls directly, then concatenates:
-
-```python
-nulls, non_nulls = _partition_nulls(items, accessor)
-non_nulls.sort(key=lambda item: accessor(item))
-return _join_partitions(nulls, non_nulls, null_position)
-```
-
-### Optional Acceleration (Strategy + Feature Flag)
-
-Optional dependencies follow the try/except pattern:
+Optional dependencies follow the try/except import pattern:
 
 ```python
 try:
@@ -127,8 +180,11 @@ Used for: `rapidfuzz` (search), `msgspec` (page construction), `google-re2` (reg
 ## Adding a New Feature
 
 1. **Read** existing code in the target module
-2. **Check** similar implementations for patterns
-3. **Keep** functions ≤ 12 lines, files ≤ 200 lines
+2. **Check** similar implementations for patterns to follow
+3. **Keep** functions <=12 lines, files <=200 lines
 4. **Add** `__slots__` to any new class with instance attributes
 5. **Write** tests in the matching `tests/unit/` directory
-6. **Run** `uv run ruff check src/ && uv run mypy src/ && uv run pytest tests/ --ignore=tests/perf -q`
+6. **Run** all quality checks:
+   ```bash
+   uv run ruff format . && uv run ruff check --fix . && uv run mypy src/ && uv run pytest tests/ --ignore=tests/perf -q
+   ```

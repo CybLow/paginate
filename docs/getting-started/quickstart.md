@@ -5,20 +5,26 @@ Get up and running with pypaginate in 5 minutes.
 ## Installation
 
 ```bash
-uv add pypaginate[all]
+pip install pypaginate
 ```
 
-## Basic Usage
-
-### 1. In-Memory Pagination
-
-The simplest way to paginate data in Python:
+## The 3-Line Core
 
 ```python
-from pypaginate import PageParams
-from pypaginate.engines import MemoryPaginator
+from pypaginate import paginate, OffsetParams
 
-# Your data (list, tuple, or any sequence)
+page = paginate([1, 2, 3, 4, 5], OffsetParams(page=1, limit=2))
+```
+
+That is it. `paginate()` detects the input type and returns the right page type automatically.
+
+## In-Memory Pagination
+
+Paginate any Python sequence (list, tuple, etc.) with zero setup:
+
+```python
+from pypaginate import paginate, OffsetParams
+
 users = [
     {"id": 1, "name": "Alice", "age": 30},
     {"id": 2, "name": "Bob", "age": 25},
@@ -27,230 +33,139 @@ users = [
     {"id": 5, "name": "Eve", "age": 32},
 ]
 
-# Create paginator and parameters
-paginator = MemoryPaginator()
-params = PageParams(page=1, limit=2)
+page = paginate(users, OffsetParams(page=1, limit=2))
 
-# Paginate!
-page = paginator.paginate(users, params).to_page()
-
-# Access results
-print(f"Items: {page.items}")      # First 2 users
-print(f"Total: {page.total}")       # 5
-print(f"Page: {page.page}")         # 1
-print(f"Pages: {page.pages}")       # 3
-print(f"Has next: {page.has_next}") # True
+print(page.items)        # [{"id": 1, ...}, {"id": 2, ...}]
+print(page.total)        # 5
+print(page.page)         # 1
+print(page.pages)        # 3
+print(page.has_next)     # True
+print(page.has_previous) # False
 ```
 
-**Output:**
+## SQLAlchemy Pagination
+
+Paginate database queries with an async SQLAlchemy backend:
+
+```bash
+pip install pypaginate[sqlalchemy]
 ```
-Items: [{'id': 1, 'name': 'Alice', 'age': 30}, {'id': 2, 'name': 'Bob', 'age': 25}]
-Total: 5
-Page: 1
-Pages: 3
-Has next: True
-```
-
-### 2. Filtering Data
-
-Filter your data before pagination using JSON Logic:
-
-```python
-from pypaginate.filters.predicates import FilterEngine
-
-engine = FilterEngine()
-
-users = [
-    {"name": "Alice", "age": 30, "status": "active"},
-    {"name": "Bob", "age": 25, "status": "inactive"},
-    {"name": "Charlie", "age": 35, "status": "active"},
-]
-
-# Simple filter: active users only
-active_users = engine.filter(users, {"status": {"eq": "active"}})
-# Result: [Alice, Charlie]
-
-# Complex filter: active AND age >= 30
-filtered = engine.filter(users, {
-    "and": [
-        {"age": {"gte": 30}},
-        {"status": {"eq": "active"}}
-    ]
-})
-# Result: [Alice, Charlie]
-```
-
-### 3. SQLAlchemy Pagination
-
-Paginate database queries with SQLAlchemy:
 
 ```python
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from pypaginate import PageParams, paginate_entities
 
-async def list_users(session: AsyncSession, page: int = 1, limit: int = 20):
-    # Create pagination parameters
-    params = PageParams(page=page, limit=limit)
-    
-    # Build your query
-    stmt = select(User).order_by(User.created_at.desc())
-    
-    # Paginate
-    result = await paginate_entities(session, stmt, params)
-    
+from pypaginate import paginate, OffsetParams
+from pypaginate.adapters.sqlalchemy import SQLAlchemyBackend
+
+
+async def list_users(session: AsyncSession):
+    query = select(User).order_by(User.created_at.desc())
+    backend = SQLAlchemyBackend(session)
+
+    page = await paginate(query, OffsetParams(page=1, limit=20), backend=backend)
+
     return {
-        "items": result.items,
-        "total": result.total,
-        "page": result.page,
-        "pages": result.pages,
+        "items": page.items,
+        "total": page.total,
+        "page": page.page,
+        "pages": page.pages,
     }
 ```
 
-### 4. FastAPI Integration
+## FastAPI Integration
 
-Use pypaginate with FastAPI's dependency injection:
+Use built-in dependencies for automatic query parameter parsing:
+
+```bash
+pip install pypaginate[fastapi]
+```
 
 ```python
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from pypaginate import PageParams, paginate_entities
-from pypaginate.integrations.fastapi import get_pagination_params
+
+from pypaginate import paginate, OffsetPage
+from pypaginate.adapters.fastapi import OffsetDep
+from pypaginate.adapters.sqlalchemy import SQLAlchemyBackend
 
 app = FastAPI()
 
+
 @app.get("/users")
-async def list_users(
-    session: AsyncSession = Depends(get_session),
-    params: PageParams = Depends(get_pagination_params),
-):
-    stmt = select(User).order_by(User.created_at.desc())
-    return await paginate_entities(session, stmt, params)
+async def list_users(params: OffsetDep, session: AsyncSession = Depends(get_session)):
+    query = select(User).order_by(User.id)
+    backend = SQLAlchemyBackend(session)
+    return await paginate(query, params, backend=backend)
 ```
 
-Now your API accepts query parameters:
-```
-GET /users?page=1&limit=20
-```
-
-### 5. Text Search
-
-Search your data with fuzzy matching:
-
-```python
-from pypaginate.filters.search import MemorySearchService
-from pypaginate.filters.search.options import SearchOptions
-
-# Configure search
-service = MemorySearchService(
-    options=SearchOptions(
-        fields=["name", "email"],
-        fuzzy_threshold=0.8,
-    )
-)
-
-users = [
-    {"name": "Alice Smith", "email": "alice@example.com"},
-    {"name": "Bob Johnson", "email": "bob@example.com"},
-    {"name": "Alicia Keys", "email": "alicia@example.com"},
-]
-
-# Search for "alice" - finds "Alice" and "Alicia" (fuzzy match)
-results = service.search(users, "alice")
-```
+Your API now accepts `?page=1&limit=20` query parameters automatically.
 
 ## Core Concepts
 
-### PageParams
+### OffsetParams
 
-Immutable parameters for pagination:
+Immutable pagination input:
 
 ```python
-from pypaginate import PageParams
+from pypaginate import OffsetParams
 
-params = PageParams(page=1, limit=20)
+params = OffsetParams(page=2, limit=20)
 
-print(params.page)    # 1
-print(params.limit)   # 20
-print(params.offset)  # 0 (calculated: (page - 1) * limit)
+params.page    # 2
+params.limit   # 20
+params.offset  # 20  (computed: (page - 1) * limit)
 ```
 
-### Page
+### OffsetPage
 
-The result of pagination:
+The pagination result:
 
 ```python
-from pypaginate import Page
+from pypaginate import OffsetPage
 
-# Page contains:
-# - items: List of items for current page
-# - total: Total count across all pages
-# - page: Current page number
-# - limit: Items per page
-# - pages: Total number of pages (calculated)
-# - has_next: True if there are more pages
-# - has_previous: True if not on first page
+# OffsetPage fields:
+# - items: list[T]       -- items for this page
+# - total: int           -- total count across all pages
+# - page: int            -- current page number
+# - pages: int           -- total number of pages
+# - limit: int           -- items per page
+# - has_next: bool       -- True if more pages exist
+# - has_previous: bool   -- True if not on first page
 ```
 
-## Common Patterns
+### CursorParams / CursorPage
 
-### Pattern 1: Filter then Paginate
-
-```python
-# 1. Filter data
-filtered = engine.filter(users, {"status": {"eq": "active"}})
-
-# 2. Paginate results
-page = paginator.paginate(filtered, params).to_page()
-```
-
-### Pattern 2: Search then Paginate
+For keyset/cursor pagination (large datasets, real-time feeds):
 
 ```python
-# 1. Search
-results = search_service.search(users, "query")
+from pypaginate import CursorParams, CursorPage
 
-# 2. Paginate
-page = paginator.paginate(results, params).to_page()
-```
+params = CursorParams(limit=20)                  # first page
+params = CursorParams(limit=20, after="abc123")   # next page
+params = CursorParams(limit=20, before="xyz789")  # previous page
 
-### Pattern 3: Custom Count Query
-
-For complex joins where automatic count is expensive:
-
-```python
-from sqlalchemy import func, select
-
-# Main query with join
-stmt = select(User).join(Profile).filter(Profile.verified == True)
-
-# Custom count query
-count_stmt = select(func.count(User.id)).join(Profile).filter(Profile.verified == True)
-
-# Use custom count
-page = await paginate_entities(
-    session, 
-    stmt, 
-    params,
-    count_statement=count_stmt
-)
+# CursorPage fields:
+# - items, limit, has_next, has_previous (same as OffsetPage)
+# - next_cursor: str | None
+# - previous_cursor: str | None
+# (no total, no page -- those are offset-only concepts)
 ```
 
 ## Error Handling
 
 ```python
-from pypaginate import PaginationConfigurationError
+from pypaginate import OffsetParams, ValidationError
 
 try:
-    # Invalid: page must be >= 1
-    params = PageParams(page=0, limit=20)
-except PaginationConfigurationError as e:
-    print(f"Error: {e}")
+    params = OffsetParams(page=0, limit=20)  # page must be >= 1
+except ValidationError as e:
+    print(e)  # "page must be >= 1"
 ```
 
 ## Next Steps
 
-- [First Steps Tutorial](first-steps.md) - Build a complete paginated API
-- [Pagination Guide](../pagination/index.md) - Learn all pagination strategies
-- [Filtering Guide](../filtering/index.md) - Master filtering with JSON Logic
-- [API Reference](../api/overview.md) - Complete API documentation
+- [First Steps](first-steps.md) -- Filtering, sorting, and search examples
+- [Examples](../examples/index.md) -- Complete runnable examples
+- [API Reference](../api/overview.md) -- Full API documentation

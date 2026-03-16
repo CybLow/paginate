@@ -1,6 +1,9 @@
 # Code Style
 
-> Standards enforced across pypaginate — by tooling, architecture tests, and convention.
+Standards enforced across pypaginate by tooling, architecture tests, and convention.
+
+The canonical reference is [CLAUDE.md](/CLAUDE.md) in the repository root.
+This page summarizes the key rules.
 
 ---
 
@@ -23,7 +26,7 @@ uv run ruff format . && uv run ruff check --fix . && uv run mypy src/ && uv run 
 
 ## Hard Limits
 
-These are enforced by `tests/architecture/test_file_limits.py`:
+Enforced by `tests/architecture/test_file_limits.py`:
 
 | Metric | Hard Limit | Preferred |
 |---|---|---|
@@ -33,6 +36,7 @@ These are enforced by `tests/architecture/test_file_limits.py`:
 | Indentation levels | **2** | 1 |
 | Public methods per class | 10 | 5-7 |
 | Instance attributes | 5 | 3-4 |
+| Cyclomatic complexity | 10 | 5 |
 
 ---
 
@@ -56,21 +60,21 @@ tuple[int, str]   # Not Tuple[int, str]
 ### Required for All Public APIs
 
 ```python
-def apply(
+def apply_filters(
     self,
-    items: Sequence[T],
+    query: object,
     filters: Sequence[FilterSpec],
-) -> list[T]: ...
+) -> object: ...
 ```
 
 ### Use Protocols, Not Base Classes
 
 ```python
-# GOOD — structural typing
+# GOOD -- structural typing
 class PaginationBackend(Protocol[T]):
     async def count(self, query: object) -> int: ...
 
-# BAD — inheritance coupling
+# BAD -- inheritance coupling
 class BasePaginationBackend(ABC):
     @abstractmethod
     async def count(self, query: object) -> int: ...
@@ -91,35 +95,35 @@ if TYPE_CHECKING:
 
 ### `__slots__` on Every Class
 
-Every class with instance attributes MUST have `__slots__`:
+Every class with instance attributes **must** have `__slots__`:
 
 ```python
-class FilterEngine:
-    """Apply filter specs to sequences."""
+class SQLAlchemyBackend(Generic[ItemT]):
+    __slots__ = ("_count_query", "_session", "_unique")
 
-    __slots__ = ("_registry",)
-
-    def __init__(self, registry: OperatorRegistry) -> None:
-        self._registry = registry
+    def __init__(self, session: AsyncSession, ...) -> None:
+        self._session = session
 ```
 
-Stateless classes (all `@staticmethod`) use empty slots:
+Stateless classes use empty slots:
 
 ```python
-class MemoryBackend:
+class SQLAlchemySearchBackend:
     __slots__ = ()
 ```
 
 ### No Boolean Parameters
 
+Use enums or separate methods:
+
 ```python
 # BAD
-def find_users(include_deleted: bool = False): ...
+def paginate(source, params, clamp: bool = False): ...
 
-# GOOD — use enums or separate methods
-class OverflowStrategy(StrEnum):
-    CLAMP = "clamp"
-    EMPTY = "empty"
+# GOOD
+class OverflowStrategy(Enum):
+    CLAMP = auto()
+    EMPTY = auto()
 
 def paginate(source, params, *, overflow: OverflowStrategy = OverflowStrategy.EMPTY): ...
 ```
@@ -131,7 +135,7 @@ def paginate(source, params, *, overflow: OverflowStrategy = OverflowStrategy.EM
 ### Guard Clauses (No Deep Nesting)
 
 ```python
-# BAD — deep nesting
+# BAD -- deep nesting
 def process(data):
     if data:
         if data.get("valid"):
@@ -139,7 +143,7 @@ def process(data):
                 return Result(...)
     return None
 
-# GOOD — guard clauses
+# GOOD -- guard clauses
 def process(data):
     if not data:
         return None
@@ -158,7 +162,7 @@ def process(data):
 | `find_*` | Value or None | `find_user_by_email(email)` |
 | `create_*` | New object | `create_default_registry()` |
 | `compile_*` | Reusable callable | `compile_accessor("user.name")` |
-| `apply_*` | Transformed input | `apply_filters(items, specs)` |
+| `apply_*` | Transformed input | `apply_filters(query, specs)` |
 | `build_*` | Constructed object | `build_sort_key(field, dir, nulls)` |
 | `is_*` / `has_*` | bool | `is_active()`, `has_items()` |
 
@@ -169,66 +173,11 @@ def process(data):
 | Element | Convention | Example |
 |---|---|---|
 | Files | `snake_case.py` | `filter_engine.py` |
-| Classes | `PascalCase` | `FilterEngine` |
-| Functions | `snake_case` + verb | `compile_accessor()` |
-| Constants | `UPPER_SNAKE` | `_STRING_OPS` |
-| Private | `_leading_underscore` | `self._registry` |
-| Type vars | Single uppercase | `T`, `ItemT` |
-
----
-
-## Performance Patterns
-
-### Compile-Once, Apply-N
-
-All specs are static for a query. Compile expensive work ONCE:
-
-```python
-# BAD — per-item work
-for item in items:
-    segments = field_path.split(".")  # splits every time
-    for seg in segments: ...
-
-# GOOD — compile once
-accessor = compile_accessor(field_path)  # splits once
-for item in items:
-    value = accessor(item)  # closure, no split
-```
-
-### LRU Cache for Pure Functions
-
-```python
-@functools.lru_cache(maxsize=8192)
-def normalize_text(value: str) -> str: ...
-```
-
-Provide `clear_*_cache()` for long-lived processes.
-
-### Optional Dependencies
-
-Follow this pattern for optional acceleration:
-
-```python
-try:
-    from rapidfuzz import fuzz as _fuzz
-    _HAS_RAPIDFUZZ = True
-except ImportError:  # pragma: no cover
-    _HAS_RAPIDFUZZ = False  # pragma: no cover
-```
-
-### String Methods Over Regex
-
-For simple patterns, use string methods (2-10x faster than regex/fnmatch):
-
-```python
-# BAD — fnmatch compiles regex internally
-fnmatch(field, "%value%".replace("%", "*"))
-
-# GOOD — classify pattern, dispatch to string method
-kind, inner = classify_like("%value%")
-if kind == "contains":
-    return inner in field  # pure string, no regex
-```
+| Classes | `PascalCase` | `SQLAlchemyBackend` |
+| Functions | `snake_case` + verb | `apply_filters()` |
+| Constants | `UPPER_SNAKE` | `MAX_LIMIT` |
+| Private | `_leading_underscore` | `self._session` |
+| Type vars | Single uppercase or `*T` | `T`, `ItemT` |
 
 ---
 
@@ -243,7 +192,6 @@ import functools                            # 2. Stdlib
 from collections.abc import Callable
 
 from pypaginate.domain.enums import FilterLogic  # 3. Local
-from pypaginate.filtering.accessor import compile_accessor
 ```
 
 ### No Circular Imports
@@ -262,18 +210,60 @@ if TYPE_CHECKING:
 ## Docstrings (Google Style)
 
 ```python
-def compile_accessor(field_path: str) -> Callable[[object], object]:
-    """Compile a field path into a fast accessor function.
-
-    Called ONCE per field path. Returns a callable used N times.
+def apply_filters(
+    self,
+    query: object,
+    filters: Sequence[FilterSpec],
+) -> object:
+    """Apply filter specs to a SQLAlchemy Select.
 
     Args:
-        field_path: Dot-separated path (e.g. ``"user.name"``).
+        query: A SQLAlchemy Select statement.
+        filters: Filter specifications to apply.
 
     Returns:
-        A callable that resolves the path on any item.
+        Modified Select with WHERE clauses.
 
     Raises:
-        FilterError: If any segment cannot be resolved.
+        FilterError: If the operator is unsupported.
     """
 ```
+
+---
+
+## Performance Patterns
+
+### Compile-Once, Apply-N
+
+```python
+# BAD -- per-item work
+for item in items:
+    segments = field_path.split(".")
+    for seg in segments: ...
+
+# GOOD -- compile once
+accessor = compile_accessor(field_path)
+for item in items:
+    value = accessor(item)
+```
+
+### LRU Cache for Pure Functions
+
+```python
+@functools.lru_cache(maxsize=8192)
+def normalize_text(value: str) -> str: ...
+```
+
+### Optional Dependencies
+
+```python
+try:
+    from rapidfuzz import fuzz as _fuzz
+    _HAS_RAPIDFUZZ = True
+except ImportError:  # pragma: no cover
+    _HAS_RAPIDFUZZ = False  # pragma: no cover
+```
+
+### String Methods Over Regex
+
+For simple patterns, use string methods (2-10x faster than regex/fnmatch).

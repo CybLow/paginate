@@ -4,13 +4,14 @@ Welcome to pypaginate! This section will help you get up and running quickly.
 
 ## What is pypaginate?
 
-pypaginate is a modern, framework-agnostic pagination library for Python that provides:
+pypaginate is a modern, framework-agnostic pagination toolkit for Python 3.11+ that provides:
 
-- **Multiple pagination strategies** - Offset-based, cursor-based (keyset), and in-memory
-- **Advanced filtering** - JSON Logic with 20+ operators
-- **Powerful text search** - Full-text search with fuzzy matching
-- **Flexible sorting** - Multi-column with custom sort keys
-- **Framework integration** - Native FastAPI and SQLAlchemy support
+- **Universal `paginate()` function** -- one call for lists, SQLAlchemy queries, and custom backends
+- **Type-safe inference** -- `OffsetParams` produces `OffsetPage`, `CursorParams` produces `CursorPage`
+- **Declarative filtering** -- `FilterSpec`, composable `And`/`Or` groups, 20+ operators
+- **Sorting and search** -- `SortSpec` and `SearchSpec` with fuzzy matching
+- **FastAPI dependencies** -- `OffsetDep`, `CursorDep`, `FilterDep`, `SortDep`, `SearchDep`
+- **Pipeline composition** -- filter, sort, search, then paginate in one call
 
 ## Quick Navigation
 
@@ -35,7 +36,7 @@ Get paginating in 5 minutes
 :link: first-steps
 :link-type: doc
 
-Build your first paginated API
+Filtering, sorting, and search examples
 :::
 
 ::::
@@ -44,21 +45,20 @@ Build your first paginated API
 ## Minimum Requirements
 
 - **Python 3.11+**
-- No runtime dependencies for core functionality
+- **pydantic** (core dependency)
 
 ## Optional Dependencies
 
 | Feature | Installation | Provides |
 |---------|-------------|----------|
-| SQLAlchemy | `pypaginate[sqlalchemy]` | Database pagination |
-| Search | `pypaginate[search]` | Fuzzy text search |
-| Filters | `pypaginate[filters]` | JSON Logic filtering |
-| Text | `pypaginate[text]` | Text normalization |
-| FastAPI | `pypaginate[fastapi]` | FastAPI integration |
+| SQLAlchemy | `pypaginate[sqlalchemy]` | Database pagination + cursor/keyset |
+| Search | `pypaginate[search]` | Fuzzy text search (rapidfuzz) |
+| FastAPI | `pypaginate[fastapi]` | FastAPI dependency injection |
+| Fast | `pypaginate[fast]` | msgspec-backed pages (near-zero overhead) |
 | All | `pypaginate[all]` | Everything above |
 
 ## Next Steps
 
-1. **[Install pypaginate](installation.md)** with your preferred features
+1. **[Install pypaginate](installation.md)** with your preferred extras
 2. **[Follow the Quick Start](quickstart.md)** for basic usage
-3. **[Build your first API](first-steps.md)** with a complete example
+3. **[Explore First Steps](first-steps.md)** with filtering, sorting, and search

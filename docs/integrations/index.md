@@ -1,101 +1,90 @@
 # Framework Integrations
 
-pypaginate provides seamless integrations with popular Python frameworks and ORMs.
+pypaginate provides adapter packages for FastAPI and SQLAlchemy that translate between
+framework-specific concepts and the library's domain types.
 
 :::{tip} Installation
 ```bash
-uv add pypaginate[fastapi]  # For FastAPI
-uv add pypaginate[all]      # All integrations
+uv add pypaginate[fastapi]      # FastAPI dependencies
+uv add pypaginate[sqlalchemy]   # SQLAlchemy + sqlakeyset
+uv add pypaginate[all]          # Everything
 ```
 :::
 
-These integrations simplify common patterns and provide framework-specific utilities.
-
 ## Available Integrations
 
-| Integration | Description | Installation |
-|------------|-------------|--------------|
-| [FastAPI](fastapi.md) | Dependency injection, Pydantic models | `uv add pypaginate[fastapi]` |
-| [SQLAlchemy](sqlalchemy.md) | Async pagination, query building | Included by default |
+| Integration | Description | Import Path |
+|---|---|---|
+| [FastAPI](fastapi.md) | Annotated deps, declarative filters, sort/search parsing | `pypaginate.adapters.fastapi` |
+| [SQLAlchemy](sqlalchemy.md) | Async/sync offset + cursor backends, filter/sort/search | `pypaginate.adapters.sqlalchemy` |
 
-## Quick Overview
+## How It Fits Together
+
+```
+  FastAPI Endpoint
+        |
+  OffsetDep / CursorDep          ← query params → OffsetParams / CursorParams
+  FilterDep, SortDep, SearchDep  ← query params → FilterSpec / SortSpec / SearchSpec
+        |
+  AsyncPipeline.execute()        ← applies specs to the SA Select
+        |
+  SQLAlchemyBackend              ← COUNT + OFFSET/LIMIT
+  SQLAlchemyCursorBackend        ← keyset via sqlakeyset
+        |
+  OffsetPage[T] / CursorPage[T] ← returned to caller
+```
 
 ### FastAPI Integration
 
-The FastAPI integration provides:
-
-- **Dependency injection** for pagination parameters
-- **Pydantic response models** for OpenAPI documentation
-- **Query parameter parsing** with validation
+The FastAPI adapter provides **Annotated** dependency types that parse query parameters
+directly into pypaginate domain objects:
 
 ```python
-from fastapi import Depends, FastAPI
-from pypaginate.integrations.fastapi import get_pagination_params, PagedResponse
-from pypaginate.core import PageParams
-
-app = FastAPI()
-
-@app.get("/users", response_model=PagedResponse[UserSchema])
-async def list_users(
-    params: PageParams = Depends(get_pagination_params),
-):
-    # params.page, params.limit available
-    ...
+from pypaginate.adapters.fastapi import (
+    OffsetDep, CursorDep,
+    FilterDep, FilterField,
+    SortDep, SearchDep,
+)
 ```
 
 ### SQLAlchemy Integration
 
-The SQLAlchemy integration provides:
-
-- **Async pagination** with SQLAlchemy 2.0+
-- **Offset and keyset strategies** for different use cases
-- **Automatic count queries** with optimization
+The SQLAlchemy adapter provides async and sync backends for all four concerns:
 
 ```python
+from pypaginate.adapters.sqlalchemy import (
+    SQLAlchemyBackend, SyncSQLAlchemyBackend,       # offset pagination
+    SQLAlchemyCursorBackend, SyncSQLAlchemyCursorBackend,  # cursor pagination
+    SQLAlchemyFilterBackend,                         # WHERE clauses
+    SQLAlchemySortBackend,                           # ORDER BY clauses
+    SQLAlchemySearchBackend,                         # ILIKE search
+)
+```
+
+## Minimal End-to-End Example
+
+```python
+from fastapi import FastAPI
 from sqlalchemy import select
-from pypaginate.query import paginate_entities_to_page
-from pypaginate.core import PageParams
+from sqlalchemy.ext.asyncio import AsyncSession
 
-async def get_users(session: AsyncSession) -> Page[User]:
-    stmt = select(User).order_by(User.created_at.desc())
-    params = PageParams(page=1, limit=20)
-    
-    return await paginate_entities_to_page(session, stmt, params)
-```
+from pypaginate import OffsetPage, paginate
+from pypaginate.adapters.fastapi import OffsetDep
+from pypaginate.adapters.sqlalchemy import SQLAlchemyBackend
 
-## Installation
+app = FastAPI()
 
-### All Integrations
-
-```bash
-uv add pypaginate[all]
-```
-
-### FastAPI Only
-
-```bash
-uv add pypaginate[fastapi]
-```
-
-### Base Package (SQLAlchemy included)
-
-```bash
-uv add pypaginate
-```
-
-## Architecture
-
-```{mermaid}
-graph TB
-    A[pypaginate Core] --> B[FastAPI Integration]
-    A --> C[SQLAlchemy Integration]
-    B --> D[get_pagination_params]
-    B --> E[PagedResponse]
-    C --> F[paginate_entities]
-    C --> G[SqlPaginator]
+@app.get("/users")
+async def list_users(
+    params: OffsetDep,
+    session: AsyncSession = Depends(get_session),
+) -> OffsetPage[UserSchema]:
+    query = select(User).order_by(User.id)
+    backend = SQLAlchemyBackend(session)
+    return await paginate(query, params, backend=backend)
 ```
 
 ## Next Steps
 
-- [FastAPI Integration](fastapi.md) - Complete FastAPI setup guide
-- [SQLAlchemy Integration](sqlalchemy.md) - Database pagination patterns
+- [FastAPI Integration](fastapi.md) -- pagination deps, declarative filters, sorting, and search
+- [SQLAlchemy Integration](sqlalchemy.md) -- backend configuration, cursor pagination, deduplication
