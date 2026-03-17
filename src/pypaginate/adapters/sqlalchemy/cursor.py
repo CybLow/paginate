@@ -163,12 +163,18 @@ class SQLAlchemyCursorBackend(Generic[ItemT]):
             Tuple of (items, next_cursor, prev_cursor).
         """
         stmt, order_cols, backwards = _prepare_query(
-            query, limit=limit, after=after, before=before,
+            query,
+            limit=limit,
+            after=after,
+            before=before,
         )
         result = await self._session.execute(stmt)
         rows = list(result.scalars().all())
         return _finalize_page(
-            rows, order_cols, limit=limit, backwards=backwards,
+            rows,
+            order_cols,
+            limit=limit,
+            backwards=backwards,
             has_cursor=bool(after or before),
         )
 
@@ -208,12 +214,18 @@ class SyncSQLAlchemyCursorBackend(Generic[ItemT]):
             Tuple of (items, next_cursor, prev_cursor).
         """
         stmt, order_cols, backwards = _prepare_query(
-            query, limit=limit, after=after, before=before,
+            query,
+            limit=limit,
+            after=after,
+            before=before,
         )
         result = self._session.execute(stmt)
         rows = list(result.scalars().all())
         return _finalize_page(
-            rows, order_cols, limit=limit, backwards=backwards,
+            rows,
+            order_cols,
+            limit=limit,
+            backwards=backwards,
             has_cursor=bool(after or before),
         )
 
@@ -246,7 +258,10 @@ def _prepare_query(
 
     if cursor_str:
         stmt, nav_cols = _apply_keyset_filter(
-            stmt, order_cols, cursor_str, backwards=backwards,
+            stmt,
+            order_cols,
+            cursor_str,
+            backwards=backwards,
         )
         stmt = _apply_order_by(stmt, nav_cols)
     return stmt.limit(limit + 1), order_cols, backwards
@@ -278,8 +293,11 @@ def _finalize_page(
     if backwards:
         rows.reverse()
     next_c, prev_c = _compute_cursors(
-        rows, order_cols,
-        has_more=has_more, backwards=backwards, has_cursor=has_cursor,
+        rows,
+        order_cols,
+        has_more=has_more,
+        backwards=backwards,
+        has_cursor=has_cursor,
     )
     return rows, next_c, prev_c
 

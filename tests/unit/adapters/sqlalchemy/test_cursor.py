@@ -199,7 +199,10 @@ class TestPrepareQuery:
     def test_no_cursor(self) -> None:
         query = select(Item).order_by(Item.id.asc())
         stmt, cols, backwards = _prepare_query(
-            query, limit=5, after=None, before=None,
+            query,
+            limit=5,
+            after=None,
+            before=None,
         )
         assert not backwards
         assert len(cols) == 1
@@ -210,7 +213,10 @@ class TestPrepareQuery:
         query = select(Item).order_by(Item.id.asc())
         cursor = encode_cursor((3,))
         stmt, cols, backwards = _prepare_query(
-            query, limit=5, after=cursor, before=None,
+            query,
+            limit=5,
+            after=cursor,
+            before=None,
         )
         assert not backwards
         assert len(cols) == 1
@@ -219,8 +225,11 @@ class TestPrepareQuery:
 class TestComputeCursors:
     def test_empty_rows(self) -> None:
         nxt, prev = _compute_cursors(
-            [], [],
-            has_more=False, backwards=False, has_cursor=False,
+            [],
+            [],
+            has_more=False,
+            backwards=False,
+            has_cursor=False,
         )
         assert nxt is None
         assert prev is None

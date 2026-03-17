@@ -72,7 +72,7 @@ class TestTupleShape:
         assert decode_cursor(encode_cursor(values)) == values
 
     def test_empty_tuple(self) -> None:
-        values: tuple[(),...] = ()
+        values: tuple[(), ...] = ()
         assert decode_cursor(encode_cursor(values)) == values
 
 
