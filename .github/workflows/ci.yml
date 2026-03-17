@@ -122,11 +122,12 @@ jobs:
             RUN_PROPERTY=true
             RUN_BENCHMARKS=true
             RUN_BUILD=true
-          # Pull requests: Tier 2 (standard validation)
+          # Pull requests: Tier 2 (standard validation + benchmarks for PR diff)
           elif [[ "$EVENT" == "pull_request" ]]; then
             TIER=2
             RUN_INTEGRATION=true
             RUN_PROPERTY=true
+            RUN_BENCHMARKS=true
             RUN_BUILD=true
           # Main branch: Tier 3 (full pipeline)
           elif [[ "$REF" == "refs/heads/main" ]]; then
@@ -369,6 +370,9 @@ jobs:
     timeout-minutes: 15
     needs: [setup, test-unit]
     if: needs.setup.outputs.run_benchmarks == 'true'
+    permissions:
+      contents: write
+      pull-requests: write
 
     steps:
       - name: Checkout
@@ -401,6 +405,19 @@ jobs:
             benchmark-results.json
             .benchmarks/
           retention-days: 90
+
+      - name: Continuous benchmark
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'pytest'
+          output-file-path: benchmark-results.json
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: dev/bench
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: ${{ github.ref == 'refs/heads/main' }}
+          comment-always: ${{ github.event_name == 'pull_request' }}
+          alert-threshold: '120%'
+          fail-on-alert: false
 
   # ---------------------------------------------------------------------------
   # Build Package - TIER 2+

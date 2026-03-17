@@ -1,8 +1,8 @@
 # =============================================================================
 # Documentation Deployment - pypaginate
 # =============================================================================
-# Builds and deploys Sphinx documentation to GitHub Pages
-# Uses sphinx-polyversion for multi-version documentation
+# Builds and deploys Sphinx documentation to GitHub Pages (gh-pages branch).
+# Uses keep_files to preserve /dev/bench/ benchmark charts pushed by CI.
 # =============================================================================
 
 name: Documentation
@@ -29,9 +29,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages-${{ github.ref }}
@@ -47,22 +45,22 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: 📥 Checkout
+      - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0  # Full history for sphinx-polyversion
 
-      - name: 🐍 Setup UV + Python
+      - name: Setup UV + Python
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: uv sync --frozen --group docs --all-extras
 
-      - name: 🏗️ Build documentation
+      - name: Build documentation
         run: |
           # Try multi-version build first
           if uv run sphinx-polyversion docs/poly.py 2>/dev/null; then
@@ -72,7 +70,7 @@ jobs:
             uv run sphinx-build -b html docs site
           fi
 
-      - name: 📄 Create root index.html redirect
+      - name: Create root index.html redirect
         run: |
           # Create redirect from root to main (or latest tag)
           if [ -d "site/main" ]; then
@@ -92,25 +90,20 @@ jobs:
           EOF
           fi
 
-      - name: 📄 Create .nojekyll
+      - name: Create .nojekyll
         run: touch site/.nojekyll
 
-      - name: 📤 Upload artifact
-        uses: actions/upload-pages-artifact@v4
+      - name: Upload build artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
         with:
+          name: docs
           path: site/
+          retention-days: 7
 
-  deploy:
-    name: Deploy to GitHub Pages
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: 🚀 Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: site
+          clean-exclude: dev/bench

@@ -1,0 +1,33 @@
+# Codecov configuration for pypaginate
+# https://docs.codecov.io/docs/codecov-yaml
+
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 2
+  round: down
+  status:
+    project:
+      default:
+        target: 85%
+        threshold: 2%
+    patch:
+      default:
+        target: 80%
+        threshold: 5%
+
+flags:
+  unit:
+    paths:
+      - src/pypaginate/
+    carryforward: true
+  integration:
+    paths:
+      - src/pypaginate/
+    carryforward: true
+
+comment:
+  layout: "reach,diff,flags,components"
+  behavior: default
+  require_changes: false

@@ -312,4 +312,5 @@ CODE_OF_CONDUCT
 :caption: Project
 
 comparison
+benchmarks
 ```
