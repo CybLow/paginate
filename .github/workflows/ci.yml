@@ -239,6 +239,12 @@ jobs:
             --junitxml=junit-architecture.xml \
             -v
 
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
@@ -251,8 +257,8 @@ jobs:
   # Unit Tests (Fast, Parallel) - ALL TIERS
   # ---------------------------------------------------------------------------
   test-unit:
-    name: Unit Tests / Python ${{ matrix.python }}
-    runs-on: ubuntu-latest
+    name: Unit / Py${{ matrix.python }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     needs: [setup, quality]
 
@@ -260,6 +266,7 @@ jobs:
       fail-fast: false
       matrix:
         python: ['3.11', '3.12', '3.13', '3.14']
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - name: Checkout
@@ -282,36 +289,43 @@ jobs:
             --dist loadgroup \
             -p no:benchmark \
             --cov=pypaginate \
-            --cov-report=xml:coverage-unit-${{ matrix.python }}.xml \
+            --cov-report=xml:coverage-unit.xml \
             --cov-report=term-missing:skip-covered \
-            --junitxml=junit-unit-${{ matrix.python }}.xml \
+            --junitxml=junit-unit.xml \
             -v \
             --ignore=tests/perf \
             --ignore=tests/e2e
 
       - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage-unit-${{ matrix.python }}.xml
+          files: coverage-unit.xml
           flags: unit,python-${{ matrix.python }}
           fail_ci_if_error: false
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: unit-results-py${{ matrix.python }}
+          name: unit-results-py${{ matrix.python }}-${{ matrix.os }}
           path: |
-            junit-unit-*.xml
-            coverage-unit-*.xml
+            junit-unit.xml
+            coverage-unit.xml
           retention-days: 7
 
   # ---------------------------------------------------------------------------
   # Integration Tests (Cross-platform) - TIER 2+
   # ---------------------------------------------------------------------------
   test-integration:
-    name: Integration Tests / ${{ matrix.os }}
+    name: Integration / Py${{ matrix.python }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     needs: [setup, test-unit]
@@ -320,42 +334,59 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        python: ['3.11', '3.12', '3.13', '3.14']
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup UV + Python
+      - name: Setup UV + Python ${{ matrix.python }}
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: ${{ matrix.python }}
 
       - name: Install dependencies
         run: uv sync --frozen --all-extras --group test
 
       - name: Run integration tests
-        run: uv run pytest tests/ --benchmark-disable --cov=pypaginate --cov-report=xml:coverage-integration-${{ matrix.os }}.xml --cov-report=term-missing:skip-covered --junitxml=junit-integration-${{ matrix.os }}.xml -v --ignore=tests/perf --ignore=tests/e2e --reruns 2 --reruns-delay 1
+        run: |
+          uv run pytest tests/ \
+            --benchmark-disable \
+            --cov=pypaginate \
+            --cov-report=xml:coverage-integration.xml \
+            --cov-report=term-missing:skip-covered \
+            --junitxml=junit-integration.xml \
+            -v \
+            --ignore=tests/perf \
+            --ignore=tests/e2e \
+            --reruns 2 --reruns-delay 1
 
       - name: Upload coverage
         if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage-integration-${{ matrix.os }}.xml
-          flags: integration,${{ matrix.os }}
+          files: coverage-integration.xml
+          flags: integration,python-${{ matrix.python }}
           fail_ci_if_error: false
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: integration-results-${{ matrix.os }}
+          name: integration-results-py${{ matrix.python }}-${{ matrix.os }}
           path: |
-            junit-integration-*.xml
-            coverage-integration-*.xml
+            junit-integration.xml
+            coverage-integration.xml
           retention-days: 7
 
   # ---------------------------------------------------------------------------
@@ -389,6 +420,12 @@ jobs:
             --junitxml=junit-e2e.xml \
             -v
 
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
@@ -417,7 +454,7 @@ jobs:
         ports:
           - 5433:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U pypaginate"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -445,6 +482,12 @@ jobs:
             --benchmark-disable \
             --junitxml=junit-postgresql.xml \
             -v
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload test results
         if: always()
@@ -486,6 +529,12 @@ jobs:
             --hypothesis-seed=random \
             --junitxml=junit-property.xml \
             -v
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload test results
         if: always()

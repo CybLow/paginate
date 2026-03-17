@@ -390,6 +390,7 @@ addopts = [
     "--durations=10",            # Show 10 slowest tests
     "--durations-min=0.5",       # Only show tests > 0.5s
 ]
+junit_family = "legacy"
 
 # Filter warnings
 filterwarnings = [
