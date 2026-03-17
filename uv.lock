@@ -1072,17 +1072,6 @@ wheels = [
 ]
 
 [[package]]
-name = "json-logic-qubit"
-version = "0.9.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "six" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d8/62/2b023e1dcc6917d40a9f5687916d1c647e26af06c579f200bd0f3b91481a/json_logic_qubit-0.9.1-py2.py3-none-any.whl", hash = "sha256:d024ff0c77659eb97ddf742e0bd1b7caacd44bc53fdfc8f3977f4062a3c3b056", size = 13196, upload-time = "2018-08-15T14:41:05.867Z" },
-]
-
-[[package]]
 name = "jsonschema"
 version = "4.26.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2442,7 +2431,6 @@ dev = [
 docs = [
     { name = "fastapi" },
     { name = "jinja2" },
-    { name = "json-logic-qubit" },
     { name = "myst-parser" },
     { name = "rapidfuzz" },
     { name = "sphinx", version = "9.0.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -2554,7 +2542,6 @@ dev = [
 docs = [
     { name = "fastapi", specifier = ">=0.127.0" },
     { name = "jinja2", specifier = ">=3.0" },
-    { name = "json-logic-qubit", specifier = ">=0.9.1" },
     { name = "myst-parser", specifier = ">=4.0" },
     { name = "rapidfuzz", specifier = ">=3.14.3" },
     { name = "sphinx", specifier = ">=9.0" },

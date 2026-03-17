@@ -207,7 +207,6 @@ docs = [
     # All optional dependencies for complete autodoc
     "SQLAlchemy>=2.0.45",
     "rapidfuzz>=3.14.3",
-    "json-logic-qubit>=0.9.1",
     "fastapi>=0.127.0",
 ]
 # MCP server dependencies (for .opencode/scripts)
@@ -340,8 +339,6 @@ exclude = ["build", "dist", ".venv"]
 
 [[tool.mypy.overrides]]
 module = [
-    "json_logic.*",
-    "json_logic_qubit.*",
     "text_unidecode.*",
     "rapidfuzz.*",
     "sqlalchemy.*",
