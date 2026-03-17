@@ -7,22 +7,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for v0.2.0
-- FilterModel and FilterDepends for declarative filtering
-- Auto SQL WHERE clause generation
-- Relationship filters with auto-join
-- OrderingDepends for sorting
-- Pydantic validation for filters
-
 ### Planned for v0.3.0
-- Alternative pagination formats (LimitOffsetPage, CursorPage)
+- JSON Logic dict-to-FilterGroup parser for frontend integration
+- Django `__` filter format parser
+- `add_pagination(app)` zero-config FastAPI middleware
 - HATEOAS link generation
-- Custom response models and customizers
+- Additional ORM support (Beanie, Tortoise)
 
-### Planned for v0.4.0
-- Advanced SQL operators (between, array_contains, overlap, jsonb_path)
-- Count query caching
-- Additional ORM support (Django, Tortoise)
+---
+
+## [0.2.0] - 2025-XX-XX
+
+### Added
+
+#### Architecture
+- Hexagonal architecture with domain/engine/adapter layers
+- Protocol-based backends (`PaginationBackend`, `CursorBackend`, `FilterBackend`, `SortBackend`, `SearchBackend`)
+- Universal `paginate()` entry point with Elysia-style type inference
+- `SyncPipeline` and `AsyncPipeline` for composing filter + sort + search + paginate
+
+#### Pagination
+- `OffsetParams` / `OffsetPage` (replaces `PageParams` / `Page`)
+- `CursorParams` / `CursorPage` for cursor/keyset pagination
+- `OverflowStrategy` (EMPTY or CLAMP) for out-of-range pages
+- Custom count query via `SQLAlchemyBackend(session, count_query=...)`
+- Row deduplication via `SQLAlchemyBackend(session, unique=True)`
+- `SyncSQLAlchemyBackend` and `SyncSQLAlchemyCursorBackend` for sync sessions
+- Fast in-memory path (no backend allocation for list + OffsetParams)
+
+#### Filtering
+- 20 operators: eq, ne, gt, gte, lt, lte, in, not_in, contains, starts_with, ends_with, like, ilike, between, is_null, is_not_null, regex, empty, not_empty, exists
+- `FilterGroup` with `And()` / `Or()` builders for nested boolean groups (up to 5 levels)
+- Compiled predicate closures (compile once, evaluate N times)
+- `SQLAlchemyFilterBackend` for SQL WHERE clause generation
+- `OperatorRegistry` for extensible operator lookup
+
+#### Search
+- `SearchSpec` with `weights`, `fuzzy`, `threshold`, `min_length`, `max_results`
+- `FuzzyMode.EXACT`, `FuzzyMode.FUZZY` (partial_ratio), `FuzzyMode.TOKEN_SORT` (token_sort_ratio)
+- `SearchFieldMode.EXACT`, `PREFIX`, `CONTAINS`
+- Unicode normalization with accent removal
+- `SQLAlchemySearchBackend` for SQL LIKE/ILIKE search
+
+#### Sorting
+- `SortSpec` with `direction` and `nulls` (NullsPosition.FIRST / LAST)
+- Multi-key stable sorting
+- `SQLAlchemySortBackend` for SQL ORDER BY
+
+#### FastAPI Integration
+- `OffsetDep`, `CursorDep` (Annotated dependency types)
+- `FilterDep` with `FilterField()` for declarative filters
+- `SortDep` for `?sort=name,-age` query parsing
+- `SearchDep` for `?q=alice&search_fields=name,email` query parsing
+
+#### Performance
+- msgspec fast page construction (`pypaginate[fast]`)
+- Compiled field accessors, pre-normalized search tokens
+- `__slots__` on all stateful classes
+- Optional google-re2 for ReDoS safety (`pypaginate[security]`)
+- LIKE pattern string method dispatch (bypasses fnmatch/regex for common patterns)
+
+### Changed
+- Renamed `PageParams` to `OffsetParams`, `Page` to `OffsetPage`
+- Replaced `paginate_entities()` / `paginate_rows()` with universal `paginate()`
+- Replaced JSON Logic dict filters with typed `FilterSpec` / `FilterGroup`
+- Replaced `SearchOptions` with `SearchSpec`
+- Moved `FilterEngine` to `pypaginate.filtering.engine`
+- Moved `SortEngine` to `pypaginate.sorting.engine`
+- FastAPI deps use `Annotated` types instead of function-based `Depends`
+
+### Removed
+- `SqlPaginator`, `MemoryPaginator` (replaced by protocol backends)
+- `PaginationSnapshot` (direct page return)
+- `MemorySearchService`, `SqlSearchService` (replaced by `SearchEngine` + backends)
+- `SqlSortAdapter`, `SqlFilterAdapter` (replaced by SA backends)
+- `get_pagination_params()`, `PagedResponse` (replaced by `OffsetDep`, `OffsetPage`)
+- JSON Logic dict format (replaced by typed `FilterGroup`)
+- JMESPath array access (replaced by dot notation)
 
 ---
 
@@ -82,5 +143,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 See the [Roadmap](https://pypaginate.readthedocs.io/contributing/roadmap/) for detailed planning of future versions.
 
-[Unreleased]: https://github.com/CybLow/pypaginate/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/CybLow/pypaginate/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/CybLow/pypaginate/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/CybLow/pypaginate/releases/tag/v0.1.0

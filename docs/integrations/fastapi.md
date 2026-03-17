@@ -1,6 +1,7 @@
 # FastAPI Integration
 
-pypaginate provides first-class FastAPI integration with dependency injection and Pydantic models for seamless API development.
+The `pypaginate.adapters.fastapi` package provides **Annotated** dependency types
+that parse query parameters into pypaginate domain objects with zero boilerplate.
 
 ## Installation
 
@@ -8,346 +9,363 @@ pypaginate provides first-class FastAPI integration with dependency injection an
 uv add pypaginate[fastapi]
 ```
 
-This installs pypaginate along with FastAPI and Pydantic dependencies.
-
-## Quick Start
+## Exports at a Glance
 
 ```python
-from fastapi import Depends, FastAPI
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-
-from pypaginate.integrations.fastapi import get_pagination_params, PagedResponse
-from pypaginate.core import PageParams
-from pypaginate.query import paginate_entities_to_page
-
-app = FastAPI()
-
-@app.get("/users", response_model=PagedResponse[UserSchema])
-async def list_users(
-    session: AsyncSession = Depends(get_session),
-    params: PageParams = Depends(get_pagination_params),
-):
-    stmt = select(User).order_by(User.created_at.desc())
-    page = await paginate_entities_to_page(session, stmt, params)
-    return PagedResponse.from_page(page)
+from pypaginate.adapters.fastapi import (
+    OffsetDep,     # Annotated[OffsetParams, Depends(...)]
+    CursorDep,     # Annotated[CursorParams, Depends(...)]
+    FilterDep,     # Base class for declarative filter models
+    FilterField,   # Field descriptor with operator metadata
+    SortDep,       # Parses ?sort=name,-age into SortSpec list
+    SearchDep,     # Parses ?q=alice&search_fields=name,email into SearchSpec
+)
 ```
+
+---
 
 ## Pagination Parameters
 
-### Using `get_pagination_params`
+### OffsetDep
 
-The `get_pagination_params` function is a FastAPI dependency that extracts pagination parameters from query strings:
+Parses `?page=` and `?limit=` into an `OffsetParams` instance.
+
+| Query Param | Type | Default | Constraints |
+|---|---|---|---|
+| `page` | int | 1 | >= 1 |
+| `limit` | int | 20 | >= 1, <= 1000 |
 
 ```python
-from pypaginate.integrations.fastapi import get_pagination_params
-from pypaginate.core import PageParams
+from pypaginate import OffsetPage, paginate
+from pypaginate.adapters.fastapi import OffsetDep
 
-@app.get("/items")
-async def list_items(
-    params: PageParams = Depends(get_pagination_params),
-):
-    # Access pagination parameters
-    print(f"Page: {params.page}")      # Default: 1
-    print(f"Limit: {params.limit}")    # Default: 20
-    print(f"Offset: {params.offset}")  # Computed: (page - 1) * limit
+@app.get("/users")
+async def list_users(params: OffsetDep) -> OffsetPage[UserSchema]:
+    return paginate(users, params)
 ```
-
-**Query parameters:**
-
-| Parameter | Type | Default | Constraints |
-|-----------|------|---------|-------------|
-| `page` | int | 1 | >= 1 |
-| `limit` | int | 20 | >= 1, <= 100 |
 
 **Example requests:**
 
 ```
-GET /items                    # page=1, limit=20
-GET /items?page=2            # page=2, limit=20
-GET /items?page=3&limit=50   # page=3, limit=50
+GET /users                    # page=1, limit=20
+GET /users?page=3             # page=3, limit=20
+GET /users?page=2&limit=50    # page=2, limit=50
 ```
 
-### Custom Pagination Parameters
+The `OffsetParams` object exposes:
 
-Create custom pagination dependencies with different defaults or constraints:
+- `params.page` -- current page number
+- `params.limit` -- items per page
+- `params.offset` -- computed zero-based offset `(page - 1) * limit`
 
-```python
-from fastapi import Query
-from pypaginate.core import PageParams
+### CursorDep
 
-def get_custom_pagination(
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(50, ge=1, le=200, description="Items per page"),
-) -> PageParams:
-    return PageParams(page=page, limit=limit)
+Parses `?limit=`, `?after=`, and `?before=` into a `CursorParams` instance.
 
-@app.get("/products")
-async def list_products(
-    params: PageParams = Depends(get_custom_pagination),
-):
-    # Uses custom defaults: page=1, limit=50, max=200
-    ...
-```
+| Query Param | Type | Default | Constraints |
+|---|---|---|---|
+| `limit` | int | 20 | >= 1, <= 1000 |
+| `after` | str | None | Cursor for the next page |
+| `before` | str | None | Cursor for the previous page |
 
-### Aliased Parameter Names
-
-Use different query parameter names:
+`after` and `before` are mutually exclusive -- providing both raises a `ValidationError`.
 
 ```python
-from fastapi import Query
-from pypaginate.core import PageParams
+from pypaginate import CursorPage, paginate
+from pypaginate.adapters.fastapi import CursorDep
+from pypaginate.adapters.sqlalchemy import SQLAlchemyCursorBackend
 
-def get_aliased_pagination(
-    offset: int = Query(0, ge=0, alias="skip"),
-    count: int = Query(20, ge=1, le=100, alias="take"),
-) -> PageParams:
-    # Convert offset/count to page/limit
-    page = (offset // count) + 1
-    return PageParams(page=page, limit=count)
-
-@app.get("/data")
-async def get_data(
-    params: PageParams = Depends(get_aliased_pagination),
-):
-    # Query: /data?skip=40&take=20
-    ...
-```
-
-## Response Models
-
-### Using `PagedResponse`
-
-`PagedResponse` is a Pydantic model that wraps pagination results for proper OpenAPI schema generation:
-
-```python
-from pypaginate.integrations.fastapi import PagedResponse
-from pydantic import BaseModel
-
-class UserSchema(BaseModel):
-    id: int
-    name: str
-    email: str
-
-@app.get("/users", response_model=PagedResponse[UserSchema])
-async def list_users(
+@app.get("/users/scroll")
+async def scroll_users(
+    params: CursorDep,
     session: AsyncSession = Depends(get_session),
-    params: PageParams = Depends(get_pagination_params),
-):
-    stmt = select(User).order_by(User.id)
-    page = await paginate_entities_to_page(session, stmt, params)
-    return PagedResponse.from_page(page)
+) -> CursorPage[UserSchema]:
+    query = select(User).order_by(User.id)
+    backend = SQLAlchemyCursorBackend(session)
+    return await paginate(query, params, backend=backend)
 ```
 
-**Response structure:**
+---
 
-```json
-{
-    "items": [
-        {"id": 1, "name": "Alice", "email": "alice@example.com"},
-        {"id": 2, "name": "Bob", "email": "bob@example.com"}
-    ],
-    "total": 100,
-    "page": 1,
-    "limit": 20
-}
-```
+## Declarative Filters
 
-### Custom Response Models
+### FilterDep and FilterField
 
-Create custom response models with additional fields:
+Subclass `FilterDep` and annotate fields with `FilterField()` to declare filter
+parameters. Non-`None` fields are automatically converted to `FilterSpec` objects
+when the pipeline calls `to_specs()`.
 
 ```python
-from pydantic import BaseModel, Field
-from typing import Generic, TypeVar
+from typing import Annotated
+from fastapi import Query
+from pypaginate.adapters.fastapi import FilterDep, FilterField
 
-T = TypeVar("T")
-
-class CustomPagedResponse(BaseModel, Generic[T]):
-    """Extended pagination response with navigation helpers."""
-    
-    items: list[T]
-    total: int
-    page: int
-    limit: int
-    has_next: bool = Field(description="Whether more pages exist")
-    has_previous: bool = Field(description="Whether previous pages exist")
-    total_pages: int = Field(description="Total number of pages")
-    
-    @classmethod
-    def from_page(cls, page):
-        total_pages = (page.total + page.limit - 1) // page.limit
-        return cls(
-            items=list(page.items),
-            total=page.total,
-            page=page.page,
-            limit=page.limit,
-            has_next=page.page < total_pages,
-            has_previous=page.page > 1,
-            total_pages=total_pages,
-        )
-
-@app.get("/users", response_model=CustomPagedResponse[UserSchema])
-async def list_users(...):
-    page = await paginate_entities_to_page(session, stmt, params)
-    return CustomPagedResponse.from_page(page)
+class UserFilters(FilterDep):
+    name: str | None = FilterField(None, operator="contains")
+    age_min: int | None = FilterField(None, field="age", operator="gte")
+    age_max: int | None = FilterField(None, field="age", operator="lte")
+    role: str | None = FilterField(None, operator="eq")
 ```
 
-## Complete Example
+**`FilterField` parameters:**
 
-Here's a complete FastAPI application with pagination:
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `default` | Any | None | Default value. `None` means the filter is not applied. |
+| `operator` | str | `"eq"` | Filter operator: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `not_in`, `contains`, `starts_with`, `ends_with`, `like`, `ilike`, `between`, `is_null`, `is_not_null`, `regex`. |
+| `field` | str | None | Target field name on the model. Defaults to the attribute name. |
+
+**Endpoint usage:**
 
 ```python
-from contextlib import asynccontextmanager
-from fastapi import Depends, FastAPI, HTTPException, Query
-from pydantic import BaseModel
+@app.get("/users")
+async def list_users(
+    params: OffsetDep,
+    filters: Annotated[UserFilters, Query()],
+    session: AsyncSession = Depends(get_session),
+) -> OffsetPage[UserSchema]:
+    page = await pipeline.execute(
+        select(User).order_by(User.id),
+        params,
+        filters=filters,
+    )
+    return page
+```
+
+**Example request:**
+
+```
+GET /users?name=alice&age_min=18&role=admin
+```
+
+This generates three `FilterSpec` objects:
+
+1. `FilterSpec(field="name", operator="contains", value="alice")`
+2. `FilterSpec(field="age", operator="gte", value=18)`
+3. `FilterSpec(field="role", operator="eq", value="admin")`
+
+---
+
+## Sort Parsing
+
+### SortDep
+
+Parses `?sort=name,-age` into a list of `SortSpec` objects.
+
+- No prefix or `+` prefix means ascending
+- `-` prefix means descending
+
+```python
+from pypaginate.adapters.fastapi import SortDep
+
+@app.get("/users")
+async def list_users(
+    params: OffsetDep,
+    sort: SortDep,
+    session: AsyncSession = Depends(get_session),
+) -> OffsetPage[UserSchema]:
+    page = await pipeline.execute(
+        select(User).order_by(User.id),
+        params,
+        sorting=sort,
+    )
+    return page
+```
+
+**Example requests:**
+
+```
+GET /users?sort=name              # ORDER BY name ASC
+GET /users?sort=-created_at       # ORDER BY created_at DESC
+GET /users?sort=role,-age,name    # ORDER BY role ASC, age DESC, name ASC
+```
+
+---
+
+## Search Parsing
+
+### SearchDep
+
+Parses `?q=` and `?search_fields=` into a `SearchSpec` (or `None` if `q` is empty).
+
+| Query Param | Type | Default | Description |
+|---|---|---|---|
+| `q` | str | None | Search text |
+| `search_fields` | str | `""` | Comma-separated field names to search |
+
+Both `q` and `search_fields` must be provided for a search to execute.
+
+```python
+from pypaginate.adapters.fastapi import SearchDep
+
+@app.get("/users")
+async def list_users(
+    params: OffsetDep,
+    search: SearchDep,
+    session: AsyncSession = Depends(get_session),
+) -> OffsetPage[UserSchema]:
+    page = await pipeline.execute(
+        select(User).order_by(User.id),
+        params,
+        search=search,
+    )
+    return page
+```
+
+**Example request:**
+
+```
+GET /users?q=alice&search_fields=name,email
+```
+
+---
+
+## Pipeline Auto-Conversion
+
+The `AsyncPipeline` and `SyncPipeline` automatically detect `FilterDep`, `SortDep`,
+and `SearchDep` objects via the protocol methods `to_specs()` and `to_spec()`.
+You pass them directly -- no manual conversion needed:
+
+```python
+from pypaginate.engine.pipeline import AsyncPipeline
+from pypaginate.engine.paginator import AsyncPaginator
+from pypaginate.adapters.sqlalchemy import (
+    SQLAlchemyBackend,
+    SQLAlchemyFilterBackend,
+    SQLAlchemySortBackend,
+    SQLAlchemySearchBackend,
+)
+
+# Build once at startup
+def create_pipeline(session: AsyncSession) -> AsyncPipeline:
+    backend = SQLAlchemyBackend(session)
+    paginator = AsyncPaginator(backend)
+    return AsyncPipeline(
+        paginator,
+        filter_backend=SQLAlchemyFilterBackend(),
+        sort_backend=SQLAlchemySortBackend(),
+        search_backend=SQLAlchemySearchBackend(),
+    )
+```
+
+Then in endpoints, pass FastAPI deps directly:
+
+```python
+pipeline.execute(query, params, filters=filters, sorting=sort, search=search)
+```
+
+The pipeline calls `filters.to_specs()`, `sort.to_specs()`, and `search.to_spec()`
+internally, then delegates to the SQLAlchemy backends.
+
+---
+
+## Complete Endpoint Example
+
+A full endpoint combining all features:
+
+```python
+from typing import Annotated
+
+from fastapi import Depends, FastAPI, Query
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from pypaginate.integrations.fastapi import get_pagination_params, PagedResponse
-from pypaginate.core import PageParams
-from pypaginate.query import paginate_entities_to_page
+from pypaginate import OffsetPage
+from pypaginate.adapters.fastapi import (
+    FilterDep, FilterField, OffsetDep, SearchDep, SortDep,
+)
+from pypaginate.adapters.sqlalchemy import (
+    SQLAlchemyBackend,
+    SQLAlchemyFilterBackend,
+    SQLAlchemySearchBackend,
+    SQLAlchemySortBackend,
+)
+from pypaginate.engine.paginator import AsyncPaginator
+from pypaginate.engine.pipeline import AsyncPipeline
 
-# Database setup
-DATABASE_URL = "postgresql+asyncpg://user:pass@localhost/db"
-engine = create_async_engine(DATABASE_URL)
-async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-async def get_session():
-    async with async_session() as session:
-        yield session
-
-# Pydantic schemas
-class UserCreate(BaseModel):
-    name: str
-    email: str
-
-class UserSchema(BaseModel):
-    id: int
-    name: str
-    email: str
-    
-    class Config:
-        from_attributes = True
-
-# FastAPI app
 app = FastAPI(title="User API")
 
-@app.get("/users", response_model=PagedResponse[UserSchema])
+
+# --- Filter model ---
+class UserFilters(FilterDep):
+    name: str | None = FilterField(None, operator="contains")
+    role: str | None = FilterField(None, operator="eq")
+    age_min: int | None = FilterField(None, field="age", operator="gte")
+
+
+# --- Endpoint ---
+@app.get("/users")
 async def list_users(
+    params: OffsetDep,
+    filters: Annotated[UserFilters, Query()],
+    sort: SortDep,
+    search: SearchDep,
     session: AsyncSession = Depends(get_session),
-    params: PageParams = Depends(get_pagination_params),
-    search: str | None = Query(None, description="Search by name"),
-):
-    """List users with pagination and optional search."""
-    stmt = select(User).order_by(User.id)
-    
-    if search:
-        stmt = stmt.where(User.name.ilike(f"%{search}%"))
-    
-    page = await paginate_entities_to_page(session, stmt, params)
-    return PagedResponse.from_page(page)
-
-@app.get("/users/{user_id}", response_model=UserSchema)
-async def get_user(
-    user_id: int,
-    session: AsyncSession = Depends(get_session),
-):
-    """Get a single user by ID."""
-    result = await session.execute(
-        select(User).where(User.id == user_id)
+) -> OffsetPage[UserSchema]:
+    backend = SQLAlchemyBackend(session)
+    pipeline = AsyncPipeline(
+        AsyncPaginator(backend),
+        filter_backend=SQLAlchemyFilterBackend(),
+        sort_backend=SQLAlchemySortBackend(),
+        search_backend=SQLAlchemySearchBackend(),
     )
-    user = result.scalar_one_or_none()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return user
+    query = select(User).order_by(User.id)
+    return await pipeline.execute(
+        query,
+        params,
+        filters=filters,
+        sorting=sort,
+        search=search,
+    )
 ```
 
-## Filtering and Sorting
+**Example request combining all features:**
 
-Combine pagination with filtering and sorting:
-
-```python
-from pypaginate.sorting import SqlSortAdapter
-from pypaginate.filters.predicates import FilterEngine
-
-@app.get("/products", response_model=PagedResponse[ProductSchema])
-async def list_products(
-    session: AsyncSession = Depends(get_session),
-    params: PageParams = Depends(get_pagination_params),
-    # Filters
-    category: str | None = Query(None),
-    min_price: float | None = Query(None, ge=0),
-    max_price: float | None = Query(None, ge=0),
-    # Sorting
-    sort_by: str = Query("created_at", regex="^(name|price|created_at)$"),
-    order: str = Query("desc", regex="^(asc|desc)$"),
-):
-    """List products with filtering, sorting, and pagination."""
-    stmt = select(Product)
-    
-    # Apply filters
-    if category:
-        stmt = stmt.where(Product.category == category)
-    if min_price is not None:
-        stmt = stmt.where(Product.price >= min_price)
-    if max_price is not None:
-        stmt = stmt.where(Product.price <= max_price)
-    
-    # Apply sorting
-    column = getattr(Product, sort_by)
-    order_expr = SqlSortAdapter.build_order_expression(
-        column=column,
-        descending=(order == "desc"),
-    )
-    stmt = stmt.order_by(order_expr)
-    
-    # Paginate
-    page = await paginate_entities_to_page(session, stmt, params)
-    return PagedResponse.from_page(page)
 ```
+GET /users?page=2&limit=10&name=al&role=admin&sort=-age,name&q=alice&search_fields=name,email
+```
+
+---
 
 ## Error Handling
 
-Handle pagination-related errors gracefully:
+pypaginate raises typed exceptions that map cleanly to HTTP status codes:
 
 ```python
-from pypaginate.exceptions import PaginationConfigurationError
+from pypaginate import PaginationError, ValidationError, FilterError
 
-@app.exception_handler(PaginationConfigurationError)
-async def pagination_error_handler(request, exc):
+@app.exception_handler(ValidationError)
+async def validation_handler(request, exc):
+    return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+@app.exception_handler(FilterError)
+async def filter_handler(request, exc):
     return JSONResponse(
         status_code=400,
-        content={"detail": str(exc), "error_type": "pagination_error"},
+        content={"detail": str(exc), "field": exc.field},
     )
+
+@app.exception_handler(PaginationError)
+async def pagination_handler(request, exc):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
 ```
+
+---
 
 ## OpenAPI Documentation
 
-The integration automatically generates proper OpenAPI documentation:
+All dependencies generate proper OpenAPI schemas automatically:
 
-- Query parameters are documented with types and constraints
-- Response schemas show the paginated structure
-- Descriptions are included from docstrings
+- `OffsetDep` / `CursorDep` expose query parameters with types and constraints
+- `FilterDep` subclasses expose each filter field as a query parameter
+- `SortDep` exposes `?sort=` as an optional string
+- `SearchDep` exposes `?q=` and `?search_fields=`
 
-Access your API documentation at:
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+Access your docs at `/docs` (Swagger UI) or `/redoc` (ReDoc).
 
-## Best Practices
-
-1. **Always use response models** for proper OpenAPI generation
-2. **Set reasonable limits** to prevent excessive data fetching
-3. **Add caching headers** for paginated responses
-4. **Include sorting** for consistent results across pages
-5. **Validate sort fields** against an allowed list
-6. **Use async sessions** for non-blocking database access
+---
 
 ## See Also
 
-- [SQLAlchemy Integration](sqlalchemy.md) - Database-level pagination
-- [Basic Pagination](../pagination/offset.md) - Pagination fundamentals
-- [Filtering](../filtering/index.md) - Add filters to your API
+- [SQLAlchemy Integration](sqlalchemy.md) -- backend configuration and cursor pagination
+- API Reference -- see the `adapters` section in the generated API docs

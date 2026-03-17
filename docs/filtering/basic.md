@@ -1,246 +1,242 @@
 # Basic Filtering
 
-Learn the fundamentals of filtering data with pypaginate.
+This guide covers `FilterSpec` construction, operator selection, value types, and how to apply filters to both in-memory collections and SQLAlchemy queries.
 
-## The FilterEngine
+## FilterSpec
 
-The `FilterEngine` is your primary tool for in-memory filtering:
+Every filter is a `FilterSpec` -- an immutable Pydantic model with four fields:
 
 ```python
-from pypaginate.filters.predicates import FilterEngine
+from pypaginate import FilterSpec
 
-engine = FilterEngine()
+spec = FilterSpec(
+    field="age",       # field name (supports dot notation: "address.city")
+    operator="gte",    # one of 20 built-in operators
+    value=18,          # comparison value (type depends on operator)
+    # logic=FilterLogic.AND  (default)
+)
 ```
 
-## Simple Filters
+### Defaults
 
-### Equality
+- `operator` defaults to `"eq"` (equality)
+- `value` defaults to `None`
+- `logic` defaults to `FilterLogic.AND`
 
 ```python
+# These are equivalent:
+FilterSpec(field="name", operator="eq", value="Alice")
+FilterSpec(field="name", value="Alice")
+```
+
+## Operator Categories
+
+| Category | Operators | Value Type |
+|----------|-----------|------------|
+| Comparison | `eq`, `ne`, `gt`, `gte`, `lt`, `lte` | Same as field |
+| Membership | `in`, `not_in` | Sequence |
+| Text | `contains`, `starts_with`, `ends_with` | `str` |
+| Pattern | `like`, `ilike`, `regex` | `str` |
+| Range | `between` | Two-element sequence |
+| Null | `is_null`, `is_not_null` | Ignored |
+| Emptiness | `empty`, `not_empty` | Ignored |
+| Existence | `exists` | Ignored |
+
+See [Operators Reference](operators.md) for detailed examples of each.
+
+## Value Types by Operator
+
+```python
+from pypaginate import FilterSpec
+
+# Comparison: value matches the field type
+FilterSpec(field="age", operator="gt", value=25)
+FilterSpec(field="name", operator="eq", value="Alice")
+
+# Membership: value is a list/tuple
+FilterSpec(field="status", operator="in", value=["active", "pending"])
+
+# Text: value is a string
+FilterSpec(field="name", operator="contains", value="ali")
+
+# Pattern: SQL-style wildcards for like/ilike
+FilterSpec(field="email", operator="like", value="%@example.com")
+FilterSpec(field="name", operator="ilike", value="%alice%")
+
+# Regex: value is a regex pattern string
+FilterSpec(field="code", operator="regex", value=r"^[A-Z]{3}-\d+$")
+
+# Range: value is (low, high)
+FilterSpec(field="age", operator="between", value=(18, 65))
+
+# Null checks: value is ignored
+FilterSpec(field="deleted_at", operator="is_null")
+
+# Emptiness: value is ignored
+FilterSpec(field="tags", operator="not_empty")
+```
+
+## Applying Filters
+
+### In-Memory with FilterEngine
+
+`FilterEngine` applies filters directly to Python sequences:
+
+```python
+from pypaginate import FilterSpec
+from pypaginate.filtering.engine import FilterEngine
+from pypaginate.filtering.registry import create_default_registry
+
+engine = FilterEngine(registry=create_default_registry())
+
 users = [
-    {"name": "Alice", "role": "admin"},
-    {"name": "Bob", "role": "user"},
-    {"name": "Charlie", "role": "user"},
+    {"name": "Alice", "age": 30, "status": "active"},
+    {"name": "Bob", "age": 25, "status": "inactive"},
+    {"name": "Charlie", "age": 35, "status": "active"},
 ]
 
-# Find admins
-admins = engine.filter(users, {"role": {"eq": "admin"}})
-# [{"name": "Alice", "role": "admin"}]
+# Single filter
+active = engine.apply(users, [FilterSpec(field="status", value="active")])
+# [Alice, Charlie]
+
+# Multiple filters (AND)
+result = engine.apply(users, [
+    FilterSpec(field="status", value="active"),
+    FilterSpec(field="age", operator="gte", value=30),
+])
+# [Alice, Charlie]
 ```
 
-### Comparison
+### In-Memory with MemoryFilterBackend
+
+`MemoryFilterBackend` satisfies the `FilterBackend` protocol for use in pipelines:
 
 ```python
+from pypaginate import FilterSpec
+from pypaginate.adapters.memory import MemoryFilterBackend
+
+backend = MemoryFilterBackend()
+
 users = [
     {"name": "Alice", "age": 30},
     {"name": "Bob", "age": 25},
-    {"name": "Charlie", "age": 35},
 ]
 
-# Age greater than or equal to 30
-result = engine.filter(users, {"age": {"gte": 30}})
-# [Alice, Charlie]
-
-# Age less than 30
-result = engine.filter(users, {"age": {"lt": 30}})
-# [Bob]
+filtered = backend.apply_filters(users, [
+    FilterSpec(field="age", operator="gte", value=30),
+])
+# [{"name": "Alice", "age": 30}]
 ```
 
-### Membership
+### SQLAlchemy
+
+`SQLAlchemyFilterBackend` translates `FilterSpec` to WHERE clauses:
 
 ```python
-# Status in a list
-result = engine.filter(users, {
-    "status": {"in": ["active", "pending"]}
-})
+from sqlalchemy import select
+from pypaginate import FilterSpec
+from pypaginate.adapters.sqlalchemy import SQLAlchemyFilterBackend
 
-# Check if list contains value
-result = engine.filter(users, {
-    "roles": {"contains": "admin"}
-})
+backend = SQLAlchemyFilterBackend()
+
+stmt = select(User)
+filtered_stmt = backend.apply_filters(stmt, [
+    FilterSpec(field="status", operator="eq", value="active"),
+    FilterSpec(field="age", operator="gte", value=18),
+])
+# SELECT * FROM user WHERE status = 'active' AND age >= 18
 ```
 
-### Pattern Matching
+## AND/OR Logic
+
+Each `FilterSpec` has a `logic` field controlling how it combines with others:
 
 ```python
-# LIKE pattern (% is wildcard)
-result = engine.filter(users, {
-    "email": {"like": "%@gmail.com"}
-})
+from pypaginate import FilterSpec, FilterLogic
 
-# Starts with
-result = engine.filter(users, {
-    "name": {"startswith": "A"}
-})
+filters = [
+    # AND filters (default): all must match
+    FilterSpec(field="age", operator="gte", value=18),
 
-# Ends with
-result = engine.filter(users, {
-    "email": {"endswith": ".com"}
-})
-```
-
-## Combining Conditions
-
-### AND Logic
-
-All conditions must be true:
-
-```python
-# Active users aged 30+
-result = engine.filter(users, {
-    "and": [
-        {"age": {"gte": 30}},
-        {"status": {"eq": "active"}}
-    ]
-})
-```
-
-### OR Logic
-
-Any condition can be true:
-
-```python
-# Admins or moderators
-result = engine.filter(users, {
-    "or": [
-        {"role": {"eq": "admin"}},
-        {"role": {"eq": "moderator"}}
-    ]
-})
-```
-
-### NOT Logic
-
-Negate a condition:
-
-```python
-# Non-banned users
-result = engine.filter(users, {
-    "not": {"status": {"eq": "banned"}}
-})
-```
-
-### Nested Logic
-
-Combine AND, OR, NOT:
-
-```python
-# (Active AND age >= 18) OR is_admin
-result = engine.filter(users, {
-    "or": [
-        {
-            "and": [
-                {"status": {"eq": "active"}},
-                {"age": {"gte": 18}}
-            ]
-        },
-        {"is_admin": {"eq": True}}
-    ]
-})
-```
-
-## Filtering Nested Data
-
-Access nested fields with dot notation:
-
-```python
-users = [
-    {"id": 1, "profile": {"name": "Alice", "settings": {"theme": "dark"}}},
-    {"id": 2, "profile": {"name": "Bob", "settings": {"theme": "light"}}},
+    # OR filters: at least one must match
+    FilterSpec(field="role", value="admin", logic=FilterLogic.OR),
+    FilterSpec(field="role", value="moderator", logic=FilterLogic.OR),
 ]
-
-# Filter by nested field
-result = engine.filter(users, {
-    "profile.settings.theme": {"eq": "dark"}
-})
-# [User 1]
+# Result: age >= 18 AND (role = "admin" OR role = "moderator")
 ```
 
-## Filtering Lists
+**Rule**: All AND filters must pass, then at least one OR filter must pass.
 
-Filter items that contain list fields:
+## Dot Notation for Nested Fields
+
+Access nested attributes or dictionary keys with dot notation:
 
 ```python
-users = [
-    {"name": "Alice", "tags": ["python", "django"]},
-    {"name": "Bob", "tags": ["javascript", "react"]},
-    {"name": "Charlie", "tags": ["python", "fastapi"]},
-]
+from pypaginate import FilterSpec
 
-# Users with "python" tag
-result = engine.filter(users, {
-    "tags": {"contains": "python"}
-})
-# [Alice, Charlie]
+# Works with dicts
+FilterSpec(field="address.city", value="Paris")
+# Accesses item["address"]["city"]
+
+# Works with objects
+FilterSpec(field="profile.email", operator="contains", value="@example.com")
+# Accesses item.profile.email
 ```
 
-## Null and Empty Checks
+## Pipeline Usage
+
+Pass filters to `SyncPipeline.execute()` or `AsyncPipeline.execute()` alongside pagination params. See [In-Memory Pagination](../pagination/memory.md) for a full pipeline example combining filters, sorting, search, and pagination.
+
+## Custom Operators
+
+Register custom operators via the `OperatorRegistry`:
 
 ```python
-users = [
-    {"name": "Alice", "bio": "Developer"},
-    {"name": "Bob", "bio": None},
-    {"name": "Charlie", "bio": ""},
-]
+from pypaginate.filtering.registry import OperatorRegistry, create_default_registry
 
-# Check for null
-result = engine.filter(users, {"bio": {"null": True}})
-# [Bob]
+class DivisibleBy:
+    __slots__ = ()
 
-# Check for non-null
-result = engine.filter(users, {"bio": {"null": False}})
-# [Alice, Charlie]
+    @staticmethod
+    def evaluate(field_value: object, spec_value: object) -> bool:
+        return int(field_value) % int(spec_value) == 0  # type: ignore[arg-type]
 
-# Check for empty (null or "")
-result = engine.filter(users, {"bio": {"empty": True}})
-# [Bob, Charlie]
-```
+registry = create_default_registry()
+registry.register("divisible_by", DivisibleBy())
 
-## Case Sensitivity
+# Use with FilterEngine
+from pypaginate.filtering.engine import FilterEngine
 
-By default, string comparisons are case-sensitive:
-
-```python
-# Case-sensitive (default)
-result = engine.filter(users, {"name": {"eq": "alice"}})
-# [] - no match
-
-result = engine.filter(users, {"name": {"eq": "Alice"}})
-# [Alice]
-
-# Case-insensitive LIKE
-result = engine.filter(users, {"name": {"ilike": "alice"}})
-# [Alice]
+engine = FilterEngine(registry=registry)
 ```
 
 ## Error Handling
 
+Invalid operators are caught at construction time by Pydantic:
+
 ```python
-from pypaginate import FilterException
+from pydantic import ValidationError
 
 try:
-    result = engine.filter(users, {"invalid": {"unknown_op": "value"}})
-except FilterException as e:
-    print(f"Filter error: {e}")
+    FilterSpec(field="age", operator="unknown_op", value=5)
+except ValidationError as e:
+    print(e)  # operator must be one of the 20 built-in operators
 ```
 
-## Performance Tips
-
-1. **Filter early**: Apply filters before other operations
-2. **Use simple operators**: `eq` is faster than `regex`
-3. **Index-friendly**: Structure data for efficient access
+Runtime filter errors (e.g., invalid regex patterns) raise `FilterError`:
 
 ```python
-# Good: Filter first, then paginate
-filtered = engine.filter(users, {"status": {"eq": "active"}})
-page = paginator.paginate(filtered, params).to_page()
+from pypaginate import FilterError
 
-# Less efficient: Paginate all, then check status
-# (Don't do this - you'll paginate all data first)
+try:
+    result = engine.apply(users, [
+        FilterSpec(field="code", operator="regex", value="[invalid"),
+    ])
+except FilterError as e:
+    print(f"Filter error: {e}")
 ```
 
 ## Next Steps
 
-- [JSON Logic](json-logic.md) - Advanced filter expressions
-- [Operators Reference](operators.md) - Complete operator list
-- [SQL Filtering](../integrations/sqlalchemy.md) - Database filtering
+- [Operators Reference](operators.md) -- Detailed examples for all 20 operators
+- [Nested Filter Groups](json-logic.md) -- Nested And/Or groups for complex expressions

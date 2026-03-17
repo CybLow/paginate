@@ -1,396 +1,264 @@
 # Operators Reference
 
-Complete reference for all pypaginate filter operators.
+pypaginate ships 20 built-in filter operators. All are pre-registered in the default `OperatorRegistry`.
+
+```python
+from pypaginate import FilterSpec
+```
 
 ## Comparison Operators
 
-### `eq` - Equal
-
-Exact equality comparison.
+### eq -- Equal
 
 ```python
-{"name": {"eq": "Alice"}}
-{"age": {"eq": 30}}
-{"is_active": {"eq": True}}
-{"data": {"eq": None}}
+FilterSpec(field="status", operator="eq", value="active")
+FilterSpec(field="status", value="active")  # "eq" is the default
 ```
 
-### `ne` - Not Equal
+Matches when the field value equals the spec value.
 
-Inequality comparison.
+### ne -- Not Equal
 
 ```python
-{"status": {"ne": "deleted"}}
-{"role": {"ne": "guest"}}
+FilterSpec(field="status", operator="ne", value="banned")
 ```
 
-### `gt` - Greater Than
+Matches when the field value does not equal the spec value.
 
-Strictly greater than.
+### gt -- Greater Than
 
 ```python
-{"age": {"gt": 18}}        # age > 18
-{"price": {"gt": 99.99}}
-{"date": {"gt": "2024-01-01"}}
+FilterSpec(field="age", operator="gt", value=18)
+FilterSpec(field="created_at", operator="gt", value=datetime(2024, 1, 1))
 ```
 
-### `gte` - Greater Than or Equal
+Matches when the field value is strictly greater than the spec value.
 
-Greater than or equal to.
+### gte -- Greater Than or Equal
 
 ```python
-{"age": {"gte": 18}}       # age >= 18
-{"score": {"gte": 0}}
+FilterSpec(field="age", operator="gte", value=18)
 ```
 
-### `lt` - Less Than
+Matches when the field value is greater than or equal to the spec value.
 
-Strictly less than.
+### lt -- Less Than
 
 ```python
-{"age": {"lt": 65}}        # age < 65
-{"attempts": {"lt": 3}}
+FilterSpec(field="price", operator="lt", value=100.0)
 ```
 
-### `lte` - Less Than or Equal
+Matches when the field value is strictly less than the spec value.
 
-Less than or equal to.
+### lte -- Less Than or Equal
 
 ```python
-{"age": {"lte": 65}}       # age <= 65
-{"priority": {"lte": 5}}
+FilterSpec(field="quantity", operator="lte", value=0)
 ```
 
-### `between` - Range (Inclusive)
+Matches when the field value is less than or equal to the spec value.
 
-Value is between two bounds (inclusive).
+## Membership Operators
+
+### in -- In List
 
 ```python
-{"age": {"between": [18, 65]}}      # 18 <= age <= 65
-{"price": {"between": [10.0, 100.0]}}
-{"date": {"between": ["2024-01-01", "2024-12-31"]}}
+FilterSpec(field="status", operator="in", value=["active", "pending"])
+FilterSpec(field="priority", operator="in", value=[1, 2, 3])
 ```
 
-## String Operators
+Matches when the field value is contained in the provided sequence.
 
-### `like` - Pattern Match
-
-SQL LIKE-style pattern matching.
-
-| Pattern | Matches |
-|---------|---------|
-| `%` | Any sequence of characters |
-| `_` | Any single character |
+### not_in -- Not In List
 
 ```python
-{"email": {"like": "%@gmail.com"}}    # Ends with @gmail.com
-{"name": {"like": "A%"}}               # Starts with A
-{"code": {"like": "AB_123"}}           # AB followed by any char, then 123
-{"name": {"like": "%John%"}}           # Contains "John"
+FilterSpec(field="role", operator="not_in", value=["banned", "suspended"])
 ```
 
-### `ilike` - Case-Insensitive Pattern
+Matches when the field value is not contained in the provided sequence.
 
-Same as `like` but case-insensitive.
+## Text Operators
+
+### contains -- Substring Match
 
 ```python
-{"email": {"ilike": "%@GMAIL.COM"}}   # Matches alice@gmail.com
-{"name": {"ilike": "alice"}}           # Matches "Alice", "ALICE"
+FilterSpec(field="name", operator="contains", value="alice")
+FilterSpec(field="description", operator="contains", value="urgent")
 ```
 
-### `startswith` - Starts With
+Matches when the string spec value appears anywhere in the string field value. Both sides are cast to `str`.
 
-String begins with value.
+### starts_with -- Prefix Match
 
 ```python
-{"name": {"startswith": "Dr."}}
-{"email": {"startswith": "admin"}}
+FilterSpec(field="email", operator="starts_with", value="admin@")
+FilterSpec(field="code", operator="starts_with", value="PRJ-")
 ```
 
-### `endswith` - Ends With
+Matches when the field value starts with the spec value.
 
-String ends with value.
+### ends_with -- Suffix Match
 
 ```python
-{"email": {"endswith": ".edu"}}
-{"filename": {"endswith": ".pdf"}}
+FilterSpec(field="email", operator="ends_with", value="@example.com")
+FilterSpec(field="filename", operator="ends_with", value=".pdf")
 ```
 
-### `contains` - Contains Substring
+Matches when the field value ends with the spec value.
 
-String contains value (for string fields).
+## Pattern Operators
+
+### like -- SQL LIKE
 
 ```python
-{"bio": {"contains": "developer"}}
-{"description": {"contains": "python"}}
+FilterSpec(field="name", operator="like", value="A%")       # starts with A
+FilterSpec(field="email", operator="like", value="%@%.com")  # contains @ and ends with .com
 ```
 
-### `regex` - Regular Expression
+SQL-style pattern matching. `%` matches any sequence of characters, `_` matches any single character. Case-sensitive.
 
-Match against regular expression pattern.
+In-memory: optimized to use `str.startswith()`, `str.endswith()`, or `in` when the pattern allows, falling back to `fnmatch` for complex patterns.
+
+### ilike -- Case-Insensitive LIKE
 
 ```python
-{"phone": {"regex": "^\\+1[0-9]{10}$"}}     # US phone format
-{"email": {"regex": ".*@company\\.com$"}}   # Company email
-{"code": {"regex": "^[A-Z]{2}[0-9]{4}$"}}   # 2 letters + 4 digits
+FilterSpec(field="name", operator="ilike", value="%alice%")
 ```
 
-:::{warning} Regex Performance
-Regular expressions can be slow. Use simpler operators when possible.
-:::
+Same as `like` but case-insensitive. In SQLAlchemy, translates to `column.ilike(value)`.
 
-## Collection Operators
-
-### `in` - In List
-
-Value is in the given list.
+### regex -- Regular Expression
 
 ```python
-{"status": {"in": ["active", "pending"]}}
-{"role": {"in": ["admin", "moderator", "user"]}}
-{"country": {"in": ["US", "CA", "MX"]}}
+FilterSpec(field="phone", operator="regex", value=r"^\+\d{1,3}-\d+$")
+FilterSpec(field="code", operator="regex", value=r"^[A-Z]{3}-\d{4}$")
 ```
 
-### `not_in` - Not In List
+Matches when the field value matches the regex pattern. The pattern is compiled once and reused.
 
-Value is not in the given list.
+Raises `FilterError` if the pattern is invalid.
+
+## Range Operators
+
+### between -- Inclusive Range
 
 ```python
-{"status": {"not_in": ["banned", "deleted"]}}
-{"role": {"not_in": ["guest", "anonymous"]}}
+FilterSpec(field="age", operator="between", value=(18, 65))
+FilterSpec(field="price", operator="between", value=[10.0, 99.99])
 ```
 
-### `contains` - Array Contains
+Matches when `low <= field_value <= high`. The value must be a two-element sequence.
 
-Array field contains the value.
+Raises `FilterValidationError` if the value is not a two-element sequence.
+
+## Null Operators
+
+### is_null -- Is None
 
 ```python
-{"tags": {"contains": "python"}}           # tags array contains "python"
-{"permissions": {"contains": "admin"}}
+FilterSpec(field="deleted_at", operator="is_null")
 ```
 
-### `any` - Any Match
+Matches when the field value is `None`. The `value` field is ignored.
 
-Array field contains any of the given values.
+In SQLAlchemy: translates to `column.is_(None)`.
+
+### is_not_null -- Is Not None
 
 ```python
-{"tags": {"any": ["python", "javascript", "go"]}}
-# Matches if tags contains at least one of these
+FilterSpec(field="email", operator="is_not_null")
 ```
 
-### `all` - All Match
+Matches when the field value is not `None`. The `value` field is ignored.
 
-Array field contains all of the given values.
+In SQLAlchemy: translates to `column.is_not(None)`.
+
+## Emptiness Operators
+
+### empty -- Is Empty
 
 ```python
-{"permissions": {"all": ["read", "write"]}}
-# Matches only if both "read" AND "write" are in permissions
+FilterSpec(field="tags", operator="empty")
+FilterSpec(field="bio", operator="empty")
 ```
 
-## Null/Empty Operators
+Matches when the field value is `None`, `""` (empty string), or `[]` (empty list). The `value` field is ignored.
 
-### `null` - Null Check
-
-Check if value is null.
+### not_empty -- Is Not Empty
 
 ```python
-{"deleted_at": {"null": True}}     # Field is null
-{"manager_id": {"null": False}}    # Field is not null
+FilterSpec(field="tags", operator="not_empty")
 ```
 
-### `empty` - Empty Check
+Matches when the field value is not `None`, not `""`, and not `[]`. The `value` field is ignored.
 
-Check if value is empty (null, empty string, or empty array).
+## Existence Operators
+
+### exists -- Field Exists
 
 ```python
-{"bio": {"empty": True}}           # null, "", or []
-{"tags": {"empty": False}}         # Has content
+FilterSpec(field="optional_field", operator="exists")
 ```
 
-### `exists` - Field Exists
+Always returns `True` if the field can be accessed. Useful for checking that a field exists on the item. The `value` field is ignored.
 
-Check if field exists in the object.
+## Operator Summary Table
+
+| Operator | Value | In-Memory | SQLAlchemy |
+|----------|-------|-----------|------------|
+| `eq` | same as field | `==` | `column == value` |
+| `ne` | same as field | `!=` | `column != value` |
+| `gt` | same as field | `>` | `column > value` |
+| `gte` | same as field | `>=` | `column >= value` |
+| `lt` | same as field | `<` | `column < value` |
+| `lte` | same as field | `<=` | `column <= value` |
+| `in` | sequence | `in` | `column.in_(value)` |
+| `not_in` | sequence | `not in` | `column.not_in(value)` |
+| `contains` | str | `value in str(field)` | `column.contains(value)` |
+| `starts_with` | str | `str.startswith()` | `column.startswith(value)` |
+| `ends_with` | str | `str.endswith()` | `column.endswith(value)` |
+| `like` | str (with `%`/`_`) | fnmatch/string | `column.like(value)` |
+| `ilike` | str (with `%`/`_`) | case-insensitive | `column.ilike(value)` |
+| `regex` | str (regex) | `re.search()` | `column.regexp_match(value)` |
+| `between` | `(low, high)` | `low <= x <= high` | `column.between(low, high)` |
+| `is_null` | ignored | `is None` | `column.is_(None)` |
+| `is_not_null` | ignored | `is not None` | `column.is_not(None)` |
+| `empty` | ignored | `None / "" / []` | N/A |
+| `not_empty` | ignored | not `None / "" / []` | N/A |
+| `exists` | ignored | always True | N/A |
+
+## Custom Operators
+
+Implement the `Operator` protocol and register with `OperatorRegistry`:
 
 ```python
-{"metadata.custom_field": {"exists": True}}
-{"optional_field": {"exists": False}}
+from pypaginate.filtering.operators import Operator
+from pypaginate.filtering.registry import OperatorRegistry, create_default_registry
+
+class CaseInsensitiveEq:
+    """Case-insensitive equality."""
+    __slots__ = ()
+
+    @staticmethod
+    def evaluate(field_value: object, spec_value: object) -> bool:
+        return str(field_value).lower() == str(spec_value).lower()
+
+# Add to the default registry
+registry = create_default_registry()
+registry.register("ieq", CaseInsensitiveEq())
+
+# Use it
+from pypaginate.filtering.engine import FilterEngine
+from pypaginate import FilterSpec
+
+engine = FilterEngine(registry=registry)
+engine.apply(items, [FilterSpec(field="name", operator="ieq", value="alice")])
 ```
 
-## Logical Operators
-
-### `and` - Logical AND
-
-All conditions must be true.
+The `Operator` protocol requires a single static method:
 
 ```python
-{
-    "and": [
-        {"age": {"gte": 18}},
-        {"status": {"eq": "active"}},
-        {"verified": {"eq": True}}
-    ]
-}
-```
-
-### `or` - Logical OR
-
-At least one condition must be true.
-
-```python
-{
-    "or": [
-        {"role": {"eq": "admin"}},
-        {"role": {"eq": "moderator"}}
-    ]
-}
-```
-
-### `not` - Logical NOT
-
-Negate a condition.
-
-```python
-{"not": {"status": {"eq": "banned"}}}
-
-{"not": {
-    "or": [
-        {"role": {"eq": "guest"}},
-        {"role": {"eq": "anonymous"}}
-    ]
-}}
-```
-
-## Type-Specific Behavior
-
-### Numbers
-
-```python
-# Integer comparison
-{"count": {"eq": 5}}
-{"count": {"gte": 0}}
-
-# Float comparison
-{"price": {"lte": 99.99}}
-{"rating": {"between": [4.0, 5.0]}}
-```
-
-### Strings
-
-```python
-# Exact match
-{"name": {"eq": "Alice"}}
-
-# Pattern matching
-{"email": {"like": "%@example.com"}}
-
-# Case-insensitive
-{"name": {"ilike": "alice"}}
-```
-
-### Booleans
-
-```python
-{"is_active": {"eq": True}}
-{"is_deleted": {"eq": False}}
-{"verified": {"ne": False}}
-```
-
-### Dates/Datetimes
-
-Dates can be compared as strings in ISO format:
-
-```python
-{"created_at": {"gte": "2024-01-01"}}
-{"updated_at": {"between": ["2024-01-01T00:00:00", "2024-12-31T23:59:59"]}}
-{"expires_at": {"lt": "2024-06-01"}}
-```
-
-### Null Values
-
-```python
-{"deleted_at": {"null": True}}    # Is null
-{"manager": {"null": False}}      # Is not null
-{"value": {"eq": None}}           # Also checks for null
-```
-
-## Operator Aliases
-
-Some operators have aliases for convenience:
-
-| Primary | Alias |
-|---------|-------|
-| `eq` | `==`, `equals` |
-| `ne` | `!=`, `not_equals` |
-| `gt` | `>` |
-| `gte` | `>=` |
-| `lt` | `<` |
-| `lte` | `<=` |
-
-## SQL Translation
-
-When using `SqlFilterAdapter`, operators translate to SQL:
-
-| pypaginate | SQL |
-|------------|-----|
-| `eq` | `= value` |
-| `ne` | `!= value` |
-| `gt` | `> value` |
-| `gte` | `>= value` |
-| `lt` | `< value` |
-| `lte` | `<= value` |
-| `in` | `IN (...)` |
-| `like` | `LIKE pattern` |
-| `ilike` | `ILIKE pattern` |
-| `null: True` | `IS NULL` |
-| `null: False` | `IS NOT NULL` |
-| `between` | `BETWEEN a AND b` |
-
-## Examples by Use Case
-
-### User Status Filter
-
-```python
-{"and": [
-    {"status": {"in": ["active", "pending"]}},
-    {"email_verified": {"eq": True}},
-    {"banned_at": {"null": True}}
-]}
-```
-
-### Price Range
-
-```python
-{"and": [
-    {"price": {"gte": 10}},
-    {"price": {"lte": 100}},
-    {"in_stock": {"eq": True}}
-]}
-# Or: {"price": {"between": [10, 100]}}
-```
-
-### Search by Name/Email
-
-```python
-{"or": [
-    {"name": {"ilike": "%search_term%"}},
-    {"email": {"ilike": "%search_term%"}}
-]}
-```
-
-### Date Range
-
-```python
-{"created_at": {"between": ["2024-01-01", "2024-03-31"]}}
-```
-
-### Complex Permission Check
-
-```python
-{"or": [
-    {"role": {"eq": "admin"}},
-    {"and": [
-        {"role": {"eq": "user"}},
-        {"permissions": {"contains": "special_access"}}
-    ]}
-]}
+class Operator(Protocol):
+    @staticmethod
+    def evaluate(field_value: object, spec_value: object) -> bool: ...
 ```

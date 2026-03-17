@@ -1,139 +1,78 @@
-# =============================================================================
-# PR Labeler Configuration
-# =============================================================================
-# Automatically labels PRs based on files changed
-# See: https://github.com/actions/labeler
-# =============================================================================
+# PR Labeler — auto-labels PRs based on changed files
+# Matches v0.2 module structure
 
-# -----------------------------------------------------------------------------
-# Code Labels
-# -----------------------------------------------------------------------------
-
-# Core source code changes
+# -- Source code --
 source:
   - changed-files:
       - any-glob-to-any-file:
           - 'src/**/*.py'
 
-# API changes
 api:
   - changed-files:
       - any-glob-to-any-file:
           - 'src/pypaginate/__init__.py'
-          - 'src/pypaginate/core/**'
+          - 'src/pypaginate/_dispatch.py'
+          - 'src/pypaginate/domain/**'
 
-# Filter system
-filters:
+filtering:
   - changed-files:
       - any-glob-to-any-file:
-          - 'src/pypaginate/filters/**'
+          - 'src/pypaginate/filtering/**'
 
-# Sorting system
 sorting:
   - changed-files:
       - any-glob-to-any-file:
           - 'src/pypaginate/sorting/**'
 
-# Engine implementations
-engines:
+search:
   - changed-files:
       - any-glob-to-any-file:
-          - 'src/pypaginate/engines/**'
+          - 'src/pypaginate/search/**'
 
-# Integrations (FastAPI, SQLAlchemy, etc.)
-integrations:
+engine:
   - changed-files:
       - any-glob-to-any-file:
-          - 'src/pypaginate/integrations/**'
-          - 'src/pypaginate/contrib/**'
+          - 'src/pypaginate/engine/**'
 
-# -----------------------------------------------------------------------------
-# Test Labels
-# -----------------------------------------------------------------------------
+adapters:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/pypaginate/adapters/**'
 
+# -- Tests --
 tests:
   - changed-files:
       - any-glob-to-any-file:
           - 'tests/**'
 
-unit-tests:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'tests/unit/**'
-
-integration-tests:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'tests/integration/**'
-
-property-tests:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'tests/property/**'
-
 benchmarks:
   - changed-files:
       - any-glob-to-any-file:
-          - 'tests/benchmarks/**'
+          - 'tests/perf/**'
 
-e2e:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'tests/e2e/**'
-
-# -----------------------------------------------------------------------------
-# Documentation Labels
-# -----------------------------------------------------------------------------
-
+# -- Documentation --
 documentation:
   - changed-files:
       - any-glob-to-any-file:
           - '**/*.md'
           - 'docs/**'
-          - 'mkdocs.yml'
 
-examples:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'examples/**'
-
-# -----------------------------------------------------------------------------
-# Infrastructure Labels
-# -----------------------------------------------------------------------------
-
+# -- Infrastructure --
 ci:
   - changed-files:
       - any-glob-to-any-file:
           - '.github/workflows/**'
-
-github:
-  - changed-files:
-      - any-glob-to-any-file:
-          - '.github/**'
 
 dependencies:
   - changed-files:
       - any-glob-to-any-file:
           - 'pyproject.toml'
           - 'uv.lock'
-          - 'requirements*.txt'
 
 config:
   - changed-files:
       - any-glob-to-any-file:
           - 'pyproject.toml'
-          - '.editorconfig'
           - '.gitignore'
           - '.pre-commit-config.yaml'
-          - 'ruff.toml'
-          - 'mypy.ini'
-
-# -----------------------------------------------------------------------------
-# OpenCode / AI Agent Labels
-# -----------------------------------------------------------------------------
-
-opencode:
-  - changed-files:
-      - any-glob-to-any-file:
-          - '.opencode/**'
-          - 'AGENTS.md'
+          - 'CLAUDE.md'

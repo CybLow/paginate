@@ -1,39 +1,40 @@
 # Fuzzy Matching
 
-Find approximate matches using RapidFuzz.
-
-## What is Fuzzy Matching?
-
-Fuzzy matching finds strings that are similar but not exactly equal:
-
-| Query | Matches |
-|-------|---------|
-| "alice" | "Alice", "Alicia", "Allice" |
-| "python" | "Python", "Pyhton", "pythn" |
-| "john" | "John", "Jon", "Johan" |
+Fuzzy matching finds approximate string matches, handling typos, misspellings, and word-order variations.
 
 ## Requirements
 
-Install the search extra:
+Install the search extra for rapidfuzz support:
 
 ```bash
 uv add pypaginate[search]
 ```
 
-This includes [RapidFuzz](https://github.com/rapidfuzz/RapidFuzz), a fast fuzzy string matching library.
+This includes [rapidfuzz](https://github.com/rapidfuzz/RapidFuzz), a fast fuzzy string matching library. Without rapidfuzz, fuzzy matching falls back to simple substring checks.
+
+## FuzzyMode
+
+`FuzzyMode` controls the fuzzy matching algorithm:
+
+```python
+from pypaginate import FuzzyMode
+
+FuzzyMode.EXACT       # no fuzzy matching (default)
+FuzzyMode.FUZZY       # partial_ratio -- good for substring typos
+FuzzyMode.TOKEN_SORT  # token_sort_ratio -- word-order agnostic
+```
 
 ## Basic Usage
 
-```python
-from pypaginate.filters.search import MemorySearchService
-from pypaginate.filters.search.options import SearchOptions
+### FuzzyMode.FUZZY
 
-service = MemorySearchService(
-    options=SearchOptions(
-        fields=["name"],
-        fuzzy_threshold=0.8,  # 80% similarity required
-    )
-)
+Uses rapidfuzz's `partial_ratio` for substring-aware fuzzy matching:
+
+```python
+from pypaginate import SearchSpec, FuzzyMode
+from pypaginate.search.engine import SearchEngine
+
+engine = SearchEngine()
 
 users = [
     {"name": "Alice Smith"},
@@ -41,220 +42,232 @@ users = [
     {"name": "Bob Wilson"},
 ]
 
-# Finds both "Alice" and "Alicia"
-results = service.search(users, "alice")
-```
-
-## Fuzzy Threshold
-
-The `fuzzy_threshold` controls matching strictness:
-
-| Threshold | Behavior |
-|-----------|----------|
-| 1.0 | Exact match only |
-| 0.9 | Very strict (typos may not match) |
-| 0.8 | Recommended (catches common typos) |
-| 0.7 | Lenient (more false positives) |
-| 0.5 | Very lenient (many false positives) |
-
-```python
-# Strict matching
-options = SearchOptions(fields=["name"], fuzzy_threshold=0.9)
-
-# Lenient matching (for auto-complete)
-options = SearchOptions(fields=["name"], fuzzy_threshold=0.6)
-```
-
-## How Similarity Works
-
-RapidFuzz uses various algorithms to compute similarity:
-
-```python
-# Example similarity scores:
-# "Alice" vs "Alice" = 1.0 (exact match)
-# "Alice" vs "alice" = 1.0 (case-insensitive)
-# "Alice" vs "Alicia" = 0.83
-# "Alice" vs "Bob" = 0.0
-```
-
-## Fuzzy Search Strategies
-
-### Ratio (Default)
-
-Standard Levenshtein-based similarity:
-
-```python
-options = SearchOptions(
-    fields=["name"],
-    fuzzy_threshold=0.8,
-    # Uses ratio by default
+spec = SearchSpec(
+    query="alice",
+    fields=("name",),
+    fuzzy=FuzzyMode.FUZZY,
+    threshold=75,
 )
+results = engine.apply(users, spec)
+# [Alice Smith, Alicia Jones] -- "Alicia" fuzzy-matches "alice"
 ```
 
-### Partial Ratio
+### FuzzyMode.TOKEN_SORT
 
-Good for substring matching:
-
-```python
-# "Alice" matches "Alice Smith" with high score
-# Useful when query is shorter than field value
-```
-
-### Token Sort Ratio
-
-Ignores word order:
+Uses rapidfuzz's `token_sort_ratio` for word-order-agnostic matching:
 
 ```python
-# "Smith Alice" matches "Alice Smith"
-# Good for name searches
-```
-
-## Multi-Word Queries
-
-For multi-word queries:
-
-```python
-results = service.search(users, "alice smith")
-
-# Matches:
-# - "Alice Smith" (exact)
-# - "Smith, Alice" (reordered)
-# - "Alicia Smyth" (fuzzy on both words)
-```
-
-## Combining Fuzzy with Exact
-
-Sometimes you want both:
-
-```python
-# First try exact match
-results = service.search(items, query)
-
-# If no results, try with lower threshold
-if not results:
-    lenient_service = MemorySearchService(
-        options=SearchOptions(fields=["name"], fuzzy_threshold=0.6)
-    )
-    results = lenient_service.search(items, query)
-```
-
-## Performance Considerations
-
-Fuzzy matching is more CPU-intensive than exact matching:
-
-| Data Size | Exact Match | Fuzzy Match |
-|-----------|-------------|-------------|
-| 1,000 | < 1ms | ~5ms |
-| 10,000 | ~5ms | ~50ms |
-| 100,000 | ~50ms | ~500ms |
-
-### Optimization Tips
-
-1. **Filter first**: Reduce dataset before fuzzy search
-2. **Limit fields**: Only search necessary fields
-3. **Set max_results**: Stop after finding enough matches
-4. **Use SQL for large datasets**: Push search to database
-
-```python
-# Good: Filter, then fuzzy search
-filtered = filter_engine.filter(items, {"category": {"eq": "electronics"}})
-results = service.search(filtered, query)  # Searches smaller set
-```
-
-## Accent-Insensitive Search
-
-Match regardless of accents:
-
-```python
-options = SearchOptions(
-    fields=["name"],
-    accent_sensitive=False,  # Default
+spec = SearchSpec(
+    query="smith alice",
+    fields=("name",),
+    fuzzy=FuzzyMode.TOKEN_SORT,
+    threshold=75,
 )
+results = engine.apply(users, spec)
+# [Alice Smith] -- word order doesn't matter
+```
+
+`TOKEN_SORT` treats the entire query as a single unit (no tokenization), normalizes it, and compares against each field value using token-sorted ratio.
+
+## Threshold
+
+The `threshold` parameter (0-100) controls how strict fuzzy matching is:
+
+```python
+from pypaginate import SearchSpec, FuzzyMode
+
+# Strict: only very close matches
+SearchSpec(query="alice", fields=("name",), fuzzy=FuzzyMode.FUZZY, threshold=90)
+
+# Moderate (default): catches common typos
+SearchSpec(query="alice", fields=("name",), fuzzy=FuzzyMode.FUZZY, threshold=75)
+
+# Lenient: more false positives, fewer misses
+SearchSpec(query="alice", fields=("name",), fuzzy=FuzzyMode.FUZZY, threshold=60)
+```
+
+| Threshold | Behavior | Use Case |
+|-----------|----------|----------|
+| 90-100 | Very strict | Exact-ish matching |
+| 75-89 | Moderate | General search (recommended) |
+| 60-74 | Lenient | Autocomplete, "did you mean" |
+| < 60 | Very lenient | Broad discovery |
+
+## Scoring and Ranking
+
+Results are ranked by fuzzy score (highest first):
+
+```python
+from pypaginate import SearchSpec, FuzzyMode
+from pypaginate.search.engine import SearchEngine
+
+engine = SearchEngine()
 
 users = [
-    {"name": "José García"},
-    {"name": "Renée Müller"},
+    {"name": "Alice"},       # score ~100 (exact)
+    {"name": "Alicia"},      # score ~83 (close)
+    {"name": "Alexandra"},   # score ~60 (distant)
+    {"name": "Bob"},         # score 0 (no match, filtered out)
 ]
 
-# "jose" matches "José"
-# "rene" matches "Renée"
-# "muller" matches "Müller"
-results = service.search(users, "jose")
+spec = SearchSpec(
+    query="alice",
+    fields=("name",),
+    fuzzy=FuzzyMode.FUZZY,
+    threshold=55,
+)
+results = engine.apply(users, spec)
+# [Alice, Alicia, Alexandra] -- ordered by descending score
 ```
 
-Requires the text extra:
+## Weighted Fuzzy Search
 
-```bash
-uv add pypaginate[text]
+Combine fuzzy matching with field weights for relevance-tuned results:
+
+```python
+from pypaginate import SearchSpec, FuzzyMode
+
+spec = SearchSpec(
+    query="jhon",  # typo for "john"
+    fields=("name", "email", "bio"),
+    weights={"name": 3.0, "email": 2.0, "bio": 1.0},
+    fuzzy=FuzzyMode.FUZZY,
+    threshold=70,
+)
+# Name matches rank 3x higher than bio matches
+```
+
+## How the Algorithms Work
+
+### partial_ratio (FuzzyMode.FUZZY)
+
+Compares the shorter string as a sliding window against the longer string. Good for matching substrings with typos:
+
+```
+"alice" vs "Alice Smith"  -> high score (substring match)
+"alce"  vs "Alice Smith"  -> moderate score (typo)
+"alice" vs "Bob"          -> low score (no similarity)
+```
+
+### token_sort_ratio (FuzzyMode.TOKEN_SORT)
+
+Sorts the tokens alphabetically before comparing, making word order irrelevant:
+
+```
+"smith alice"  vs "Alice Smith"  -> high score (same words)
+"alice s"      vs "Alice Smith"  -> moderate score (partial)
+```
+
+### Fallback (no rapidfuzz)
+
+Without rapidfuzz installed, both modes fall back to simple substring containment:
+
+```python
+# Without rapidfuzz:
+# FuzzyMode.FUZZY -> returns 100 if query is a substring, else 0
+# FuzzyMode.TOKEN_SORT -> same fallback
+```
+
+## Multi-Field Fuzzy Search
+
+When searching multiple fields with fuzzy mode, the engine picks the best matching field per token:
+
+```python
+from pypaginate import SearchSpec, FuzzyMode
+
+spec = SearchSpec(
+    query="jhon",
+    fields=("name", "email"),
+    fuzzy=FuzzyMode.FUZZY,
+    threshold=70,
+)
+# For each item, checks both name and email
+# Uses the highest-scoring field match for ranking
+```
+
+## Pipeline Integration
+
+```python
+from pypaginate import SearchSpec, FuzzyMode, OffsetParams
+from pypaginate.adapters.memory import MemoryBackend, MemorySearchBackend
+from pypaginate.engine.paginator import Paginator
+from pypaginate.engine.pipeline import SyncPipeline
+
+pipeline = SyncPipeline(
+    Paginator(MemoryBackend()),
+    search_backend=MemorySearchBackend(),
+)
+
+page = pipeline.execute(
+    users,
+    OffsetParams(page=1, limit=20),
+    search=SearchSpec(
+        query="jhon",
+        fields=("name", "email"),
+        fuzzy=FuzzyMode.FUZZY,
+        threshold=70,
+    ),
+)
 ```
 
 ## Real-World Examples
 
-### User Search
+### User Search with Typo Tolerance
 
 ```python
-service = MemorySearchService(
-    options=SearchOptions(
-        fields=["name", "email", "username"],
-        fuzzy_threshold=0.75,
-    )
+spec = SearchSpec(
+    query="jhon smth",  # typos in both words
+    fields=("name",),
+    fuzzy=FuzzyMode.FUZZY,
+    threshold=70,
 )
-
-# Find user even with typos
-results = service.search(users, "jhon")  # Finds "John"
+# Finds "John Smith"
 ```
 
 ### Product Search
 
 ```python
-service = MemorySearchService(
-    options=SearchOptions(
-        fields={
-            "title": 2.0,       # Prioritize title
-            "description": 1.0,
-            "brand": 1.5,
-        },
-        fuzzy_threshold=0.7,  # Lenient for products
-    )
+spec = SearchSpec(
+    query="samung galxy",  # misspelled brand and product
+    fields=("title", "brand"),
+    weights={"title": 1.0, "brand": 2.0},
+    fuzzy=FuzzyMode.FUZZY,
+    threshold=65,
 )
-
-# "iphone" finds "iPhone 15 Pro"
-# "samung" finds "Samsung Galaxy" (typo tolerance)
+# Finds "Samsung Galaxy"
 ```
 
-### Address Search
+### Name Search (Order-Agnostic)
 
 ```python
-service = MemorySearchService(
-    options=SearchOptions(
-        fields=["street", "city", "zip"],
-        fuzzy_threshold=0.8,
-    )
+spec = SearchSpec(
+    query="doe jane",
+    fields=("full_name",),
+    fuzzy=FuzzyMode.TOKEN_SORT,
+    threshold=80,
 )
-
-# "main stret" finds "Main Street"
+# Finds "Jane Doe" -- word order doesn't matter
 ```
 
-## SQL Fuzzy Search
+## Performance Tips
 
-For PostgreSQL with trigram extension:
+1. **Filter first** -- reduce the dataset before fuzzy search
+2. **Set `max_results`** -- stop ranking after enough matches
+3. **Raise threshold** -- higher threshold means fewer comparisons pass
+4. **Limit fields** -- only search relevant fields
+5. **Use SQLAlchemy for large datasets** -- fuzzy search is CPU-intensive in memory
 
 ```python
-from pypaginate.filters.search import SqlSearchService
+# Efficient: filter, then fuzzy search a smaller set
+from pypaginate import FilterSpec
 
-# Uses pg_trgm for fuzzy matching
-service = SqlSearchService(
-    model=User,
-    search_fields=["name"],
-    options=SearchOptions(fuzzy=True)
-)
+filtered = filter_backend.apply_filters(users, [
+    FilterSpec(field="status", value="active"),
+])
+results = engine.apply(filtered, fuzzy_spec)
 ```
-
-:::{note} Database Support
-Fuzzy SQL search depends on database capabilities. PostgreSQL supports pg_trgm, SQLite has limited support.
-:::
 
 ## Next Steps
 
-- [Text Search](text-search.md) - Basic search guide
-- [Filtering](../filtering/index.md) - Combine with filters
+- [Text Search](text-search.md) -- Exact text search modes
+- [Filtering](../filtering/index.md) -- Combine with declarative filters

@@ -1,44 +1,72 @@
-# Keyset Pagination Example
+# Keyset (Cursor) Pagination
 
-This example demonstrates keyset (cursor-based) pagination for efficient handling of large datasets.
+This example demonstrates keyset pagination using `CursorParams` and `CursorPage` for efficient handling of large datasets.
 
 ## Why Keyset Pagination?
 
-Offset pagination has performance issues with large datasets:
+Offset pagination gets slower as the offset grows:
 
 ```sql
--- Offset pagination: gets slower as offset increases
-SELECT * FROM users ORDER BY id LIMIT 20 OFFSET 100000;
--- Database must scan 100,000 rows before returning 20
+-- Offset: database must scan 100,000 rows before returning 20
+SELECT * FROM events ORDER BY id LIMIT 20 OFFSET 100000;
+
+-- Keyset: uses index, constant performance regardless of position
+SELECT * FROM events WHERE id > 100000 ORDER BY id LIMIT 20;
 ```
 
-Keyset pagination uses a cursor to resume from the last item:
+Use keyset pagination for:
 
-```sql
--- Keyset pagination: consistent performance
-SELECT * FROM users WHERE id > 100000 ORDER BY id LIMIT 20;
--- Database uses index, much faster
-```
+- Large datasets (>10k rows)
+- Real-time feeds (new rows inserted frequently)
+- Infinite scroll UIs
 
-## Complete Example
+## CursorParams and CursorPage
 
 ```python
-"""Keyset pagination example with pypaginate."""
+from pypaginate import CursorParams, CursorPage
+
+# First page (no cursor)
+params = CursorParams(limit=20)
+
+# Next page (using cursor from previous response)
+params = CursorParams(limit=20, after="eyJpZCI6IDEwMH0=")
+
+# Previous page
+params = CursorParams(limit=20, before="eyJpZCI6IDgxfQ==")
+```
+
+`CursorPage` has no `total` or `page` -- those are offset-only concepts:
+
+```python
+# CursorPage fields:
+page.items              # list[T]
+page.limit              # int
+page.has_next           # bool
+page.has_previous       # bool
+page.next_cursor        # str | None
+page.previous_cursor    # str | None
+```
+
+## SQLAlchemy Cursor Pagination
+
+Requires `pypaginate[sqlalchemy]`:
+
+```bash
+pip install pypaginate[sqlalchemy]
+```
+
+```python
 import asyncio
-from datetime import datetime
-from sqlalchemy import Column, DateTime, Integer, String, select
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-from pypaginate.core import KeysetPageParams
-from pypaginate.engines.sql import SqlPaginator
+from sqlalchemy import String, select
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+
+from pypaginate import CursorParams, paginate
+from pypaginate.adapters.sqlalchemy import SQLAlchemyCursorBackend
 
 
-# Database setup
-DATABASE_URL = "sqlite+aiosqlite:///./keyset.db"
-engine = create_async_engine(DATABASE_URL, echo=False)
-async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
+# -- Models ---------------------------------------------------------------
 
 class Base(DeclarativeBase):
     pass
@@ -46,252 +74,181 @@ class Base(DeclarativeBase):
 
 class Event(Base):
     __tablename__ = "events"
-    
-    id = Column(Integer, primary_key=True)
-    name = Column(String(200), nullable=False)
-    timestamp = Column(DateTime, default=datetime.utcnow)
-    
-    def __repr__(self):
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(200))
+
+    def __repr__(self) -> str:
         return f"Event(id={self.id}, name={self.name})"
 
 
-async def create_tables():
+# -- Database setup -------------------------------------------------------
+
+DATABASE_URL = "sqlite+aiosqlite:///./keyset.db"
+engine = create_async_engine(DATABASE_URL, echo=False)
+async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+
+async def setup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-
-
-async def seed_data():
-    """Create 10,000 events for testing."""
     async with async_session() as session:
         result = await session.execute(select(Event).limit(1))
-        if result.scalar():
-            return
-        
-        # Batch insert for performance
-        batch_size = 1000
-        for batch in range(10):
-            events = [
-                Event(name=f"Event {batch * batch_size + i}")
-                for i in range(batch_size)
-            ]
-            session.add_all(events)
+        if not result.scalar():
+            for batch in range(10):
+                events = [
+                    Event(name=f"Event {batch * 1000 + i}")
+                    for i in range(1000)
+                ]
+                session.add_all(events)
             await session.commit()
-        
-        print("Created 10,000 events")
+            print("Created 10,000 events")
 
 
-async def keyset_paginate_all():
-    """Paginate through all events using keyset pagination."""
+# -- Cursor pagination ----------------------------------------------------
+
+async def paginate_forward():
+    """Walk forward through events using cursor pagination."""
     async with async_session() as session:
-        paginator = SqlPaginator(session, clamp=False)
-        
-        # First page - no cursor
-        params = KeysetPageParams(limit=100)
-        stmt = select(Event).order_by(Event.id)
-        
+        # Query MUST have ORDER BY (keyset pagination requirement)
+        query = select(Event).order_by(Event.id)
+        backend = SQLAlchemyCursorBackend(session)
+
+        params = CursorParams(limit=100)
         page_num = 1
-        total_fetched = 0
-        
+
         while True:
-            snapshot = await paginator.paginate_keyset(
-                stmt, params, unique=False, scalars=True
-            )
-            
-            items = snapshot.items
-            total_fetched += len(items)
-            
-            print(f"Page {page_num}: fetched {len(items)} items "
-                  f"(total: {total_fetched})")
-            
-            if items:
-                print(f"  First: {items[0]}")
-                print(f"  Last: {items[-1]}")
-            
-            # Check if there are more pages
-            if not snapshot.next_marker:
-                print("\nReached end of data")
+            page = await paginate(query, params, backend=backend)
+
+            print(f"Page {page_num}: {len(page)} items", end="")
+            if page.items:
+                print(f" [{page.items[0]} ... {page.items[-1]}]")
+            else:
+                print()
+
+            if not page.has_next:
+                print("Reached end of data")
                 break
-            
-            # Get next page using cursor
-            params = KeysetPageParams(limit=100, after=snapshot.next_marker)
+
+            # Use next_cursor to get the next page
+            params = CursorParams(limit=100, after=page.next_cursor)
             page_num += 1
-            
-            # Safety limit for example
+
             if page_num > 5:
-                print(f"\n(Stopping after 5 pages for demo)")
+                print("(Stopping after 5 pages for demo)")
                 break
-    
-    return total_fetched
 
 
-async def bidirectional_navigation():
-    """Demonstrate forward and backward navigation."""
+async def bidirectional():
+    """Navigate forward and backward."""
     async with async_session() as session:
-        paginator = SqlPaginator(session, clamp=False)
-        stmt = select(Event).order_by(Event.id)
-        
-        # Go to page 3
-        params = KeysetPageParams(limit=10)
+        query = select(Event).order_by(Event.id)
+        backend = SQLAlchemyCursorBackend(session)
+
+        # Go forward 3 pages
+        params = CursorParams(limit=10)
         cursors = []
-        
-        print("=== Navigating Forward ===")
+
+        print("=== Forward ===")
         for i in range(3):
-            snapshot = await paginator.paginate_keyset(
-                stmt, params, unique=False, scalars=True
-            )
-            print(f"Page {i+1}: {snapshot.items[0]} to {snapshot.items[-1]}")
-            
-            cursors.append({
-                'next': snapshot.next_marker,
-                'prev': snapshot.prev_marker,
-            })
-            
-            if snapshot.next_marker:
-                params = KeysetPageParams(limit=10, after=snapshot.next_marker)
-        
-        print("\n=== Navigating Backward ===")
-        # Go back to page 2
-        if cursors[-1]['prev']:
-            params = KeysetPageParams(limit=10, before=cursors[-1]['prev'])
-            snapshot = await paginator.paginate_keyset(
-                stmt, params, unique=False, scalars=True
-            )
-            print(f"Back to page 2: {snapshot.items[0]} to {snapshot.items[-1]}")
+            page = await paginate(query, params, backend=backend)
+            print(f"Page {i + 1}: {page.items[0]} to {page.items[-1]}")
+            cursors.append(page.previous_cursor)
+
+            if page.has_next:
+                params = CursorParams(limit=10, after=page.next_cursor)
+
+        # Go back one page
+        print("\n=== Backward ===")
+        params = CursorParams(limit=10, before=cursors[-1])
+        page = await paginate(query, params, backend=backend)
+        print(f"Back to: {page.items[0]} to {page.items[-1]}")
 
 
 async def main():
-    await create_tables()
-    await seed_data()
-    
-    print("\n=== Keyset Pagination Demo ===\n")
-    await keyset_paginate_all()
-    
-    print("\n=== Bidirectional Navigation Demo ===\n")
-    await bidirectional_navigation()
+    await setup()
+    print("\n=== Cursor Pagination Demo ===\n")
+    await paginate_forward()
+    print()
+    await bidirectional()
 
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Output
+## Sync Cursor Pagination
 
-```
-Created 10,000 events
-
-=== Keyset Pagination Demo ===
-
-Page 1: fetched 100 items (total: 100)
-  First: Event(id=1, name=Event 0)
-  Last: Event(id=100, name=Event 99)
-Page 2: fetched 100 items (total: 200)
-  First: Event(id=101, name=Event 100)
-  Last: Event(id=200, name=Event 199)
-Page 3: fetched 100 items (total: 300)
-  First: Event(id=201, name=Event 200)
-  Last: Event(id=300, name=Event 299)
-Page 4: fetched 100 items (total: 400)
-  First: Event(id=301, name=Event 300)
-  Last: Event(id=400, name=Event 399)
-Page 5: fetched 100 items (total: 500)
-  First: Event(id=401, name=Event 400)
-  Last: Event(id=500, name=Event 499)
-
-(Stopping after 5 pages for demo)
-
-=== Bidirectional Navigation Demo ===
-
-Page 1: Event(id=1, name=Event 0) to Event(id=10, name=Event 9)
-Page 2: Event(id=11, name=Event 10) to Event(id=20, name=Event 19)
-Page 3: Event(id=21, name=Event 20) to Event(id=30, name=Event 29)
-
-Back to page 2: Event(id=11, name=Event 10) to Event(id=20, name=Event 19)
-```
-
-## Key Concepts
-
-### KeysetPageParams
+For synchronous sessions:
 
 ```python
-from pypaginate.core import KeysetPageParams
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-# First page (no cursor)
-params = KeysetPageParams(limit=20)
+from pypaginate.adapters.sqlalchemy import SyncSQLAlchemyCursorBackend
 
-# Next page (using cursor from previous response)
-params = KeysetPageParams(limit=20, after=cursor)
 
-# Previous page
-params = KeysetPageParams(limit=20, before=cursor)
+def list_events(session: Session):
+    query = select(Event).order_by(Event.id)
+    backend = SyncSQLAlchemyCursorBackend(session)
+
+    # Note: sync cursor uses .fetch_page() directly (no paginate() dispatch)
+    items, next_cursor, prev_cursor = backend.fetch_page(
+        query,
+        limit=20,
+        after=None,
+    )
+    print(f"Items: {len(items)}, next: {next_cursor}")
 ```
 
-### Cursor Markers
+## FastAPI with CursorDep
 
 ```python
-snapshot = await paginator.paginate_keyset(stmt, params, ...)
+from fastapi import Depends, FastAPI
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-# Access markers
-next_cursor = snapshot.next_marker  # Cursor for next page
-prev_cursor = snapshot.prev_marker  # Cursor for previous page
-
-# Check if more pages exist
-has_more = snapshot.next_marker is not None
-```
-
-## FastAPI Integration
-
-```python
-from fastapi import FastAPI, Query
-from pypaginate.core import KeysetPageParams
-from pypaginate.engines.sql import SqlPaginator
+from pypaginate import CursorPage, paginate
+from pypaginate.adapters.fastapi import CursorDep
+from pypaginate.adapters.sqlalchemy import SQLAlchemyCursorBackend
 
 app = FastAPI()
 
+
 @app.get("/events")
 async def list_events(
+    params: CursorDep,
     session: AsyncSession = Depends(get_session),
-    limit: int = Query(20, ge=1, le=100),
-    after: str | None = Query(None, description="Cursor for next page"),
-    before: str | None = Query(None, description="Cursor for previous page"),
-):
-    paginator = SqlPaginator(session, clamp=False)
-    
-    params = KeysetPageParams(limit=limit, after=after, before=before)
-    stmt = select(Event).order_by(Event.id)
-    
-    snapshot = await paginator.paginate_keyset(
-        stmt, params, unique=False, scalars=True
-    )
-    
-    return {
-        "items": [EventSchema.from_orm(e) for e in snapshot.items],
-        "next_cursor": snapshot.next_marker,
-        "prev_cursor": snapshot.prev_marker,
-        "has_next": snapshot.next_marker is not None,
-        "has_previous": snapshot.prev_marker is not None,
-    }
+) -> CursorPage[dict]:
+    query = select(Event).order_by(Event.id)
+    backend = SQLAlchemyCursorBackend(session)
+    return await paginate(query, params, backend=backend)
 ```
 
-## When to Use Keyset Pagination
+Request: `GET /events?limit=20&after=eyJpZCI6IDEwMH0=`
+
+`CursorDep` parses `limit`, `after`, and `before` from query parameters automatically.
+
+## When to Use Keyset vs Offset
 
 | Scenario | Recommendation |
 |----------|----------------|
-| Small dataset (<10k rows) | Offset pagination |
-| Large dataset (>10k rows) | Keyset pagination |
-| Random page access needed | Offset pagination |
-| Sequential navigation only | Keyset pagination |
-| Real-time data (insertions) | Keyset pagination |
-| Analytics/reporting | Offset pagination |
+| Small dataset (<10k rows) | Offset -- simpler, supports random page access |
+| Large dataset (>10k rows) | Keyset -- consistent performance |
+| Random page access needed | Offset -- keyset only supports next/previous |
+| Sequential navigation | Keyset -- ideal for this |
+| Real-time data (insertions) | Keyset -- no skipped/duplicate rows |
+| Analytics/reporting | Offset -- page numbers useful for UIs |
 
 ## Best Practices
 
-1. **Always use indexed columns** for ordering
-2. **Use unique columns** (like ID) as the final sort key
-3. **Include all sort columns** in the cursor
-4. **Make cursors opaque** (encode/encrypt in production)
-5. **Set reasonable limits** (max 100-500 per page)
+1. **Always include ORDER BY** -- keyset pagination requires it
+2. **Use indexed columns** for the sort key
+3. **End with a unique column** (e.g., `id`) as the final sort key for deterministic ordering
+4. **Cursors are opaque** -- clients should not parse or construct them
+5. **Set reasonable limits** -- max 100-500 per page
 
 ## Next Steps
 
-- [Offset Pagination](../pagination/offset.md) - Standard pagination
-- [Performance Guide](../pagination/index.md) - Optimization tips
+- [Basic Pagination](basic-pagination.md) -- Offset pagination
+- [FastAPI Example](fastapi.md) -- Full app with all features

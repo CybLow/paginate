@@ -1,11 +1,11 @@
 # Pagination
 
-pypaginate provides multiple pagination strategies to suit different use cases.
+pypaginate provides offset and cursor pagination with a unified `paginate()` entry point.
 
 :::{tip} Quick Decision Guide
-- **Small datasets (<100k rows)?** → Use [Offset Pagination](offset.md)
-- **Large datasets or infinite scroll?** → Use [Keyset Pagination](keyset.md)
-- **In-memory data?** → Use [Memory Pagination](memory.md)
+- **Small datasets (<100k rows)?** -- Use [Offset Pagination](offset.md)
+- **Large datasets or infinite scroll?** -- Use [Cursor/Keyset Pagination](keyset.md)
+- **In-memory data?** -- Use [Memory Pagination](memory.md)
 :::
 
 ## Overview
@@ -13,100 +13,152 @@ pypaginate provides multiple pagination strategies to suit different use cases.
 | Strategy | Best For | Performance |
 |----------|----------|-------------|
 | [Offset](offset.md) | Small-medium datasets, UI with page numbers | O(n) for deep pages |
-| [Keyset/Cursor](keyset.md) | Large datasets, infinite scroll | O(1) constant time |
+| [Cursor/Keyset](keyset.md) | Large datasets, infinite scroll | O(1) constant time |
 | [In-Memory](memory.md) | Python collections, cached data | Depends on collection size |
 
-## Choosing a Strategy
+## Universal paginate() Function
 
-### Use Offset Pagination When:
-
-- You need page numbers in your UI
-- Your dataset is small to medium (< 100k rows)
-- Users rarely go beyond page 10
-- You need random access to any page
-
-### Use Keyset/Cursor Pagination When:
-
-- You have large datasets (100k+ rows)
-- You're building infinite scroll
-- Performance on deep pages matters
-- You can use opaque cursors instead of page numbers
-
-### Use In-Memory Pagination When:
-
-- Data is already loaded in Python
-- You're processing files or API responses
-- You need to paginate cached data
-- No database is involved
-
-## Quick Comparison
+The `paginate()` function auto-detects the backend and returns the correct page type based on the params type:
 
 ```python
-from pypaginate import PageParams
-from pypaginate.core import KeysetPageParams
+from pypaginate import paginate, OffsetParams, CursorParams
 
-# Offset: "Give me page 5 with 20 items"
-offset_params = PageParams(page=5, limit=20)
-# SQL: OFFSET 80 LIMIT 20
+# Offset: OffsetParams -> OffsetPage
+page = paginate(users, OffsetParams(page=1, limit=20))
+page.total    # int
+page.pages    # int
 
-# Keyset: "Give me 20 items after this cursor"
-keyset_params = KeysetPageParams(limit=20, after="eyJpZCI6MTAwfQ==")
-# SQL: WHERE id > 100 LIMIT 20
+# Cursor: CursorParams -> CursorPage (async)
+page = await paginate(query, CursorParams(limit=20, after="abc"), backend=cursor_backend)
+page.next_cursor  # str | None
 ```
 
-## Core Concepts
-
-### PageParams
+## OffsetParams
 
 Immutable parameters for offset-based pagination:
 
 ```python
-from pypaginate import PageParams
+from pypaginate import OffsetParams
 
-params = PageParams(page=1, limit=20)
+params = OffsetParams(page=2, limit=20)
 
-# Properties
-params.page    # Current page (1-indexed)
-params.limit   # Items per page
-params.offset  # Calculated offset: (page - 1) * limit
+params.page    # 2 (1-indexed)
+params.limit   # 20 (items per page, max 1000)
+params.offset  # 20 (computed: (page - 1) * limit)
 ```
 
-### Page[T]
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | `int` | `1` | Page number (>= 1) |
+| `limit` | `int` | `20` | Items per page (1-1000) |
+| `offset` | `int` | computed | Zero-based offset for queries |
 
-Generic container for paginated results:
-
-```python
-from pypaginate import Page
-
-# A Page contains:
-page.items        # List of items for current page
-page.total        # Total count across all pages
-page.page         # Current page number
-page.limit        # Items per page
-page.pages        # Total number of pages (calculated)
-page.has_next     # True if there are more pages
-page.has_previous # True if not on first page
-```
-
-### KeysetPageParams
+## CursorParams
 
 Parameters for cursor-based pagination:
 
 ```python
-from pypaginate.core import KeysetPageParams
+from pypaginate import CursorParams
 
 # First page
-params = KeysetPageParams(limit=20)
+params = CursorParams(limit=20)
 
-# Next page using cursor
-params = KeysetPageParams(limit=20, after="cursor_token")
+# Next page
+params = CursorParams(limit=20, after="cursor_token")
 
 # Previous page
-params = KeysetPageParams(limit=20, before="cursor_token")
+params = CursorParams(limit=20, before="cursor_token")
+```
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | `int` | `20` | Items per page (1-1000) |
+| `after` | `str \| None` | `None` | Cursor for the next page |
+| `before` | `str \| None` | `None` | Cursor for the previous page |
+
+`after` and `before` are mutually exclusive.
+
+## OffsetPage
+
+Result from offset pagination:
+
+```python
+from pypaginate import OffsetPage
+
+page.items         # list[T] -- items for this page
+page.total         # int -- total count across all pages
+page.page          # int -- current page number
+page.pages         # int -- total number of pages
+page.limit         # int -- items per page
+page.has_next      # bool -- True if more pages exist
+page.has_previous  # bool -- True if not on first page
+```
+
+`OffsetPage` supports iteration and indexing:
+
+```python
+for item in page:
+    print(item)
+
+first = page[0]
+count = len(page)
+```
+
+## CursorPage
+
+Result from cursor pagination:
+
+```python
+from pypaginate import CursorPage
+
+page.items            # list[T] -- items for this page
+page.limit            # int -- items per page
+page.has_next         # bool -- True if next page exists
+page.has_previous     # bool -- True if previous page exists
+page.next_cursor      # str | None -- cursor for the next page
+page.previous_cursor  # str | None -- cursor for the previous page
+```
+
+No `total` or `page` number -- those are offset-only concepts.
+
+## OverflowStrategy
+
+Controls what happens when page exceeds total pages:
+
+```python
+from pypaginate import OverflowStrategy
+
+OverflowStrategy.EMPTY  # return empty page (default)
+OverflowStrategy.CLAMP  # clamp to last valid page
+```
+
+```python
+from pypaginate import paginate, OffsetParams, OverflowStrategy
+
+# Request page 999 of a 10-page dataset
+page = paginate(items, OffsetParams(page=999, limit=20), overflow=OverflowStrategy.CLAMP)
+# page.page == 10 (clamped to last page)
+
+page = paginate(items, OffsetParams(page=999, limit=20), overflow=OverflowStrategy.EMPTY)
+# page.items == [] (empty result)
+```
+
+## Quick Comparison
+
+```python
+from pypaginate import OffsetParams, CursorParams
+
+# Offset: "Give me page 5 with 20 items"
+offset_params = OffsetParams(page=5, limit=20)
+# SQL: SELECT ... OFFSET 80 LIMIT 20
+
+# Cursor: "Give me 20 items after this cursor"
+cursor_params = CursorParams(limit=20, after="eyJpZCI6MTAwfQ==")
+# SQL: WHERE (sort_cols) > (cursor_values) LIMIT 20
 ```
 
 ## Next Steps
 
-- [Offset Pagination](offset.md) - Detailed guide
-- [Keyset Pagination](keyset.md) - For large datasets
-- [In-Memory Pagination](memory.md) - For collections
+- [Offset Pagination](offset.md) -- Detailed guide with examples
+- [Cursor/Keyset Pagination](keyset.md) -- For large datasets
+- [In-Memory Pagination](memory.md) -- For Python collections

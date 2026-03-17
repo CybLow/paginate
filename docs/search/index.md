@@ -1,14 +1,12 @@
 # Search
 
-pypaginate provides powerful text search capabilities with fuzzy matching.
+pypaginate provides declarative text search through `SearchSpec` with support for multi-field search, weighted fields, and fuzzy matching via rapidfuzz.
 
 :::{tip} Quick Start
 ```python
-from pypaginate.filters.search import MemorySearchService
-from pypaginate.filters.search.options import SearchOptions
+from pypaginate import SearchSpec
 
-service = MemorySearchService(options=SearchOptions(fields=["name"]))
-results = service.search(items, "query")
+spec = SearchSpec(query="alice", fields=("name", "email"))
 ```
 :::
 
@@ -16,77 +14,91 @@ results = service.search(items, "query")
 
 | Feature | Description |
 |---------|-------------|
-| [Text Search](text-search.md) | Full-text search basics |
-| [Fuzzy Matching](fuzzy.md) | Approximate string matching |
+| [Text Search](text-search.md) | Contains, prefix, and exact modes across multiple fields |
+| [Fuzzy Matching](fuzzy.md) | Approximate matching with FuzzyMode and rapidfuzz |
 
 ## Quick Example
 
 ```python
-from pypaginate.filters.search import MemorySearchService
-from pypaginate.filters.search.options import SearchOptions
+from pypaginate import SearchSpec, SearchFieldMode
+from pypaginate.search.engine import SearchEngine
 
-# Configure search
-service = MemorySearchService(
-    options=SearchOptions(
-        fields=["name", "email", "bio"],
-        fuzzy_threshold=0.8,
-    )
-)
+engine = SearchEngine()
 
 users = [
-    {"name": "Alice Smith", "email": "alice@example.com", "bio": "Python developer"},
-    {"name": "Bob Johnson", "email": "bob@example.com", "bio": "JavaScript expert"},
-    {"name": "Alicia Keys", "email": "alicia@example.com", "bio": "Full-stack dev"},
+    {"name": "Alice Smith", "email": "alice@example.com"},
+    {"name": "Bob Johnson", "email": "bob@example.com"},
+    {"name": "Alicia Keys", "email": "alicia@example.com"},
 ]
 
-# Search
-results = service.search(users, "alice")
-# Finds: Alice Smith, Alicia Keys (fuzzy match)
+spec = SearchSpec(query="alice", fields=("name", "email"))
+results = engine.apply(users, spec)
+# [Alice Smith, Alicia Keys] (ranked by relevance score)
 ```
 
-## Search Engines
+## SearchSpec
 
-### MemorySearchService
-
-For in-memory data:
+`SearchSpec` is an immutable Pydantic model describing a search operation:
 
 ```python
-from pypaginate.filters.search import MemorySearchService
+from pypaginate import SearchSpec, SearchFieldMode, FuzzyMode
 
-service = MemorySearchService(options=SearchOptions(fields=["name"]))
-results = service.search(items, "query")
-```
-
-### SqlSearchService
-
-For database queries:
-
-```python
-from pypaginate.filters.search import SqlSearchService
-
-service = SqlSearchService(
-    model=User,
-    search_fields=["name", "email"],
-    options=SearchOptions(fuzzy=True)
-)
-
-stmt = service.apply_search(select(User), "query")
-```
-
-## Search Options
-
-```python
-from pypaginate.filters.search.options import SearchOptions
-
-options = SearchOptions(
-    fields=["name", "description"],   # Fields to search
-    fuzzy_threshold=0.8,               # Similarity threshold (0-1)
-    case_sensitive=False,              # Case-insensitive by default
-    accent_sensitive=False,            # Ignore accents
+spec = SearchSpec(
+    query="alice smith",
+    fields=("name", "email", "bio"),
+    weights={"name": 2.0, "email": 1.0, "bio": 0.5},
+    mode=SearchFieldMode.CONTAINS,
+    fuzzy=FuzzyMode.EXACT,
+    threshold=75,
+    min_length=1,
+    max_results=100,
 )
 ```
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `query` | `str` | required | Search query string (max 500 chars) |
+| `fields` | `tuple[str, ...]` | required | Fields to search in |
+| `weights` | `dict[str, float] \| None` | `None` | Per-field relevance weights |
+| `mode` | `SearchFieldMode` | `CONTAINS` | Matching mode |
+| `fuzzy` | `FuzzyMode` | `EXACT` | Fuzzy matching strategy |
+| `threshold` | `int` | `75` | Minimum fuzzy score (0-100) |
+| `min_length` | `int` | `1` | Minimum query length to search |
+| `max_results` | `int \| None` | `None` | Cap on returned results |
+
+## SearchFieldMode Enum
+
+Controls how tokens are matched against field values:
+
+```python
+from pypaginate import SearchFieldMode
+
+SearchFieldMode.CONTAINS  # token appears anywhere in the field (default)
+SearchFieldMode.PREFIX    # field value starts with the token
+SearchFieldMode.EXACT     # field value equals the token exactly
+```
+
+## FuzzyMode Enum
+
+Controls the fuzzy matching algorithm:
+
+```python
+from pypaginate import FuzzyMode
+
+FuzzyMode.EXACT       # no fuzzy matching, only exact token match (default)
+FuzzyMode.FUZZY       # partial_ratio via rapidfuzz (substring matching)
+FuzzyMode.TOKEN_SORT  # token_sort_ratio via rapidfuzz (word-order agnostic)
+```
+
+## Backend Support
+
+| Backend | Import | Notes |
+|---------|--------|-------|
+| In-memory (engine) | `from pypaginate.search.engine import SearchEngine` | Relevance ranking, weights |
+| In-memory (backend) | `from pypaginate.adapters.memory import MemorySearchBackend` | Pipeline-compatible |
+| SQLAlchemy | `from pypaginate.adapters.sqlalchemy import SQLAlchemySearchBackend` | ILIKE-based search |
 
 ## Next Steps
 
-- [Text Search](text-search.md) - Full guide
-- [Fuzzy Matching](fuzzy.md) - RapidFuzz integration
+- [Text Search](text-search.md) -- Contains, prefix, exact modes and weights
+- [Fuzzy Matching](fuzzy.md) -- FuzzyMode.FUZZY, TOKEN_SORT, and threshold tuning

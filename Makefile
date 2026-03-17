@@ -106,10 +106,10 @@ clean:  ## Clean build artifacts and caches
 # =============================================================================
 
 docs:  ## Build documentation
-	uv run mkdocs build
+	uv run sphinx-build -b html docs site
 
 docs-serve:  ## Serve documentation locally
-	uv run mkdocs serve
+	uv run sphinx-autobuild docs site
 
 docs-clean:  ## Clean documentation build
 	rm -rf site/

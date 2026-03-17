@@ -1,92 +1,54 @@
 # Examples
 
-This section provides complete, runnable examples demonstrating pypaginate features in real-world scenarios.
+Complete, runnable examples demonstrating pypaginate v0.2 features.
 
 ## Quick Links
 
 | Example | Description |
 |---------|-------------|
-| [Basic Pagination](basic-pagination.md) | Simple pagination with SQLAlchemy |
-| [Filtering](filtering.md) | Query filtering with predicates |
-| [FastAPI Integration](fastapi.md) | Complete FastAPI REST API |
-| [Keyset Pagination](keyset.md) | Cursor-based pagination for large datasets |
+| [Basic Pagination](basic-pagination.md) | In-memory and SQLAlchemy offset pagination |
+| [Filtering](filtering.md) | FilterSpec, And/Or groups, FilterDep |
+| [Keyset Pagination](keyset.md) | CursorParams, CursorPage, cursor backends |
+| [FastAPI Integration](fastapi.md) | Full app with OffsetDep, filtering, sorting, search |
 
 ## Prerequisites
 
-All examples assume you have pypaginate installed:
-
 ```bash
-uv add pypaginate[all]
+pip install pypaginate[all]
 ```
 
-## Database Setup
+## The Core Pattern
 
-Most examples use SQLAlchemy with an async SQLite database:
+Every example follows the same pattern -- the universal `paginate()` function:
 
 ```python
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from pypaginate import paginate, OffsetParams
 
-# Create async engine
-DATABASE_URL = "sqlite+aiosqlite:///./example.db"
-engine = create_async_engine(DATABASE_URL, echo=True)
+# In-memory: no backend needed
+page = paginate([1, 2, 3, 4, 5], OffsetParams(page=1, limit=2))
 
-# Session factory
-async_session = sessionmaker(
-    engine, 
-    class_=AsyncSession, 
-    expire_on_commit=False
-)
-
-# Base class for models
-class Base(DeclarativeBase):
-    pass
-
-# Example model
-class User(Base):
-    __tablename__ = "users"
-    
-    id: int = Column(Integer, primary_key=True)
-    name: str = Column(String(100), nullable=False)
-    email: str = Column(String(255), unique=True, nullable=False)
-    created_at: datetime = Column(DateTime, default=datetime.utcnow)
+# Database: pass a backend explicitly
+page = await paginate(query, OffsetParams(page=1, limit=20), backend=backend)
 ```
 
-## Running Examples
+Input type determines output type:
 
-Each example can be run as a standalone script:
-
-```bash
-# Clone the repository
-git clone https://github.com/CybLow/pypaginate.git
-cd pypaginate
-
-# Install dependencies
-uv add -e ".[all]"
-
-# Run an example
-python examples/basic_pagination.py
-```
+- `OffsetParams` produces `OffsetPage` (with `total`, `page`, `pages`)
+- `CursorParams` produces `CursorPage` (with `next_cursor`, `previous_cursor`)
 
 ## Example Categories
 
 ### Getting Started
 
-- **Basic Pagination** - Learn the fundamentals
-- **Simple Filtering** - Add filters to queries
+- **Basic Pagination** -- `paginate()` with lists and SQLAlchemy
+- **Filtering** -- `FilterSpec` and `And`/`Or` groups
 
 ### Intermediate
 
-- **FastAPI Integration** - Build a REST API
-- **Multi-column Sorting** - Complex ordering
-- **Search with Fuzzy Matching** - Text search
+- **Keyset Pagination** -- `CursorParams` for large datasets
+- **FastAPI Integration** -- Declarative dependencies
 
 ### Advanced
 
-- **Keyset Pagination** - Handle large datasets
-- **Custom Response Formats** - Extend response models
-- **Performance Optimization** - Tune for production
-
-## Contributing Examples
-
-We welcome example contributions! See [Contributing](../contributing/index.md) for guidelines.
+- **Pipelines** -- `SyncPipeline` / `AsyncPipeline` for filter + sort + search + paginate
+- **Custom backends** -- Implement the `PaginationBackend` protocol

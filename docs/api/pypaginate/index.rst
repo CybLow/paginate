@@ -5,54 +5,19 @@ pypaginate
 
 .. autoapi-nested-parse::
 
-   Modern pagination toolkit for Python.
+   pypaginate — Universal pagination toolkit for Python.
 
-   pypaginate is a framework-agnostic pagination library that provides powerful
-   features for paginating, filtering, and searching data. It works seamlessly with
-   SQLAlchemy (async/sync), in-memory collections, and can be extended to support
-   other ORMs.
+   Input type determines output type (Elysia-style inference)::
 
-   Quick Start
-   -----------
+       from pypaginate import paginate, OffsetParams
 
-   .. code-block:: python
+       page = paginate(users, OffsetParams(page=1, limit=20))
+       page.total  # int — auto-inferred as OffsetPage
 
-       from pypaginate import PageParams, paginate_entities
+       from pypaginate import CursorParams
 
-       params = PageParams(page=1, limit=20)
-       page = await paginate_entities(session, select(User), params)
-
-   Architecture
-   ------------
-   The pagination module is organized by responsibility:
-
-   - core/: Base types (Page, PageParams, PaginationSnapshot)
-   - engines/: Pagination strategies (MemoryPaginator, SqlPaginator, KeysetPaginator)
-   - query/: Query construction and execution (paginate_* functions)
-   - filters/: Filtering and search (predicates and text search)
-   - sorting/: Sorting utilities
-   - text/: Text normalization
-   - database/: Database utilities
-
-   Public API
-   ----------
-   From core:
-       Page, PageParams, KeysetPageParams
-
-   From query:
-       paginate_entities, paginate_entities_to_page
-       paginate_rows, paginate_rows_to_page
-
-   From exceptions:
-       PaginatorException, PaginationConfigurationError, FilterException,
-       SearchException, SortException, ValidationException
-
-   For advanced usage, import from submodules::
-
-       from pypaginate.engines import MemoryPaginator
-       from pypaginate.filters.predicates import FilterEngine
-       from pypaginate.filters.search import SqlSearchService
-       from pypaginate.sorting import SortEngine
+       page = await paginate(query, CursorParams(after="abc"), backend=backend)
+       page.next_cursor  # str | None — auto-inferred as CursorPage
 
 
 
@@ -62,17 +27,13 @@ Submodules
 .. toctree::
    :maxdepth: 1
 
-   /api/pypaginate/core/index
-   /api/pypaginate/database/index
-   /api/pypaginate/dependencies/index
-   /api/pypaginate/engines/index
-   /api/pypaginate/exceptions/index
-   /api/pypaginate/filters/index
-   /api/pypaginate/integrations/index
-   /api/pypaginate/query/index
+   /api/pypaginate/adapters/index
+   /api/pypaginate/domain/index
+   /api/pypaginate/engine/index
+   /api/pypaginate/filtering/index
+   /api/pypaginate/search/index
    /api/pypaginate/sorting/index
    /api/pypaginate/text/index
-   /api/pypaginate/types/index
 
 
 Exceptions
@@ -80,12 +41,14 @@ Exceptions
 
 .. autoapisummary::
 
-   pypaginate.FilterException
-   pypaginate.PaginationConfigurationError
-   pypaginate.PaginatorException
-   pypaginate.SearchException
-   pypaginate.SortException
-   pypaginate.ValidationException
+   pypaginate.ConfigurationError
+   pypaginate.FilterError
+   pypaginate.FilterValidationError
+   pypaginate.PaginationError
+   pypaginate.SearchError
+   pypaginate.SearchQueryError
+   pypaginate.SortError
+   pypaginate.ValidationError
 
 
 Classes
@@ -93,31 +56,60 @@ Classes
 
 .. autoapisummary::
 
-   pypaginate.KeysetPageParams
-   pypaginate.Page
-   pypaginate.PageParams
+   pypaginate.CursorPage
+   pypaginate.CursorParams
+   pypaginate.FilterGroup
+   pypaginate.FilterLogic
+   pypaginate.FilterSpec
+   pypaginate.FuzzyMode
+   pypaginate.NullsPosition
+   pypaginate.OffsetPage
+   pypaginate.OffsetParams
+   pypaginate.OverflowStrategy
+   pypaginate.SearchFieldMode
+   pypaginate.SearchSpec
+   pypaginate.SortDirection
+   pypaginate.SortSpec
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   pypaginate.And
+   pypaginate.Or
+   pypaginate.paginate
 
 
 Package Contents
 ----------------
 
-.. py:exception:: FilterException(message: str, field: str | None = None)
+.. py:exception:: ConfigurationError(message: str, *, details: dict[str, Any] | None = None)
 
-   Bases: :py:obj:`PaginatorException`
-
-
-   Raised when filtering operations fail.
-
-
-.. py:exception:: PaginationConfigurationError(message: str, *, field: str | None = None, value: object = None, reason: str | None = None, details: dict[str, Any] | None = None)
-
-   Bases: :py:obj:`PaginatorException`
+   Bases: :py:obj:`PaginationError`
 
 
    Raised when pagination configuration is invalid.
 
 
-.. py:exception:: PaginatorException
+.. py:exception:: FilterError(message: str, *, field: str | None = None, details: dict[str, Any] | None = None)
+
+   Bases: :py:obj:`PaginationError`
+
+
+   Raised when filtering operations fail.
+
+
+.. py:exception:: FilterValidationError(message: str, *, field: str | None = None, details: dict[str, Any] | None = None)
+
+   Bases: :py:obj:`FilterError`
+
+
+   Raised when filter specification validation fails.
+
+
+.. py:exception:: PaginationError
 
    Bases: :py:obj:`Exception`
 
@@ -125,103 +117,185 @@ Package Contents
    Base exception for all pypaginate errors.
 
 
-.. py:exception:: SearchException
+.. py:exception:: SearchError(message: str, *, details: dict[str, Any] | None = None)
 
-   Bases: :py:obj:`PaginatorException`
+   Bases: :py:obj:`PaginationError`
 
 
    Raised when search operations fail.
 
 
-.. py:exception:: SortException
+.. py:exception:: SearchQueryError(message: str, *, details: dict[str, Any] | None = None)
 
-   Bases: :py:obj:`PaginatorException`
+   Bases: :py:obj:`SearchError`
+
+
+   Raised when search query processing fails.
+
+
+.. py:exception:: SortError(message: str, *, details: dict[str, Any] | None = None)
+
+   Bases: :py:obj:`PaginationError`
 
 
    Raised when sort operations fail.
 
 
-.. py:exception:: ValidationException(field: str, value: object, reason: str)
+.. py:exception:: ValidationError(message: str, *, field: str | None = None, details: dict[str, Any] | None = None)
 
-   Bases: :py:obj:`PaginatorException`
-
-
-   Raised when validation fails.
+   Bases: :py:obj:`PaginationError`
 
 
-.. py:class:: KeysetPageParams
-
-   Parameters for keyset-based pagination using bookmarks.
+   Raised when generic validation fails.
 
 
-.. py:class:: Page
+.. py:class:: CursorPage
 
-   Bases: :py:obj:`Generic`\ [\ :py:obj:`ItemT`\ ]
-
-
-   Dataclass representing a paginated result set.
-
-   This is a concrete generic dataclass, not a Protocol. It provides
-   nominal typing and clear return types.
+   Bases: :py:obj:`BasePage`\ [\ :py:obj:`ItemT`\ ]
 
 
-   .. py:method:: create(items: collections.abc.Sequence[ItemT], total: int, params: PageParams) -> Page[ItemT]
+   Cursor pagination result.
+
+   No total, no page — those are offset-only concepts.
+
+
+   .. py:method:: create(items: list[ItemT], params: pypaginate.domain.params.CursorParams, *, next_cursor: str | None = None, previous_cursor: str | None = None) -> Any
       :classmethod:
 
 
-      Factory method to create a Page from items and params.
+      Build from cursor pagination results.
 
       :param items: Items for this page.
-      :param total: Total number of items across all pages.
-      :param params: Page parameters used.
+      :param params: Cursor parameters used.
+      :param next_cursor: Cursor for the next page.
+      :param previous_cursor: Cursor for the previous page.
 
-      :returns: A new Page instance.
-
-
-
-   .. py:property:: has_next
-      :type: bool
+      :returns: CursorPage or FastCursorPage (if msgspec installed).
 
 
-      Check if there is a next page.
 
-      :returns: True if there are more pages after this one.
+.. py:class:: CursorParams(/, **data: Any)
 
-
-   .. py:property:: has_previous
-      :type: bool
+   Bases: :py:obj:`BaseParams`
 
 
-      Check if there is a previous page.
+   Cursor pagination input.
 
-      :returns: True if there are pages before this one.
+   Example::
 
-
-   .. py:property:: pages
-      :type: int
-
-
-      Calculate total number of pages.
-
-      :returns: Total number of pages.
+       CursorParams(limit=20, after="abc123")
+       CursorParams(limit=20, before="xyz789")
 
 
-.. py:class:: PageParams
+.. py:class:: FilterGroup(/, **data: Any)
 
-   Immutable pagination parameters with validation helpers.
-
-   This is a concrete dataclass, not a Protocol. It provides nominal typing
-   guarantees and clear return types for all operations.
+   Bases: :py:obj:`pydantic.BaseModel`
 
 
-   .. py:method:: model_copy(*, update: collections.abc.Mapping[str, UpdateValue] | None = None, deep: bool = False) -> PageParams
+   Composite filter for nested AND/OR expressions.
 
-      Create a copy with optional field updates.
+   Use ``And()`` and ``Or()`` builder functions instead of
+   constructing directly.
 
-      :param update: Dictionary of fields to update in the copy.
-      :param deep: Unused parameter kept for compatibility.
+   Example::
 
-      :returns: New PageParams instance with updated fields.
+       And(
+           Or(FilterSpec(field="a", value=1), FilterSpec(field="b", value=2)),
+           Or(FilterSpec(field="c", value=3), FilterSpec(field="d", value=4)),
+       )
+       # = (a=1 OR b=2) AND (c=3 OR d=4)
+
+
+   .. py:attribute:: model_config
+
+      Configuration for the model, should be a dictionary conforming to [`ConfigDict`][pydantic.config.ConfigDict].
+
+
+.. py:class:: FilterLogic(*args, **kwds)
+
+   Bases: :py:obj:`enum.Enum`
+
+
+   Logical operator for combining filter conditions.
+
+
+.. py:class:: FilterSpec(/, **data: Any)
+
+   Bases: :py:obj:`pydantic.BaseModel`
+
+
+   Declarative filter specification.
+
+   Example::
+
+       FilterSpec(field="age", operator="gte", value=18)
+       FilterSpec(field="name", operator="contains", value="john")
+
+
+   .. py:attribute:: model_config
+
+      Configuration for the model, should be a dictionary conforming to [`ConfigDict`][pydantic.config.ConfigDict].
+
+
+.. py:class:: FuzzyMode(*args, **kwds)
+
+   Bases: :py:obj:`enum.Enum`
+
+
+   Fuzzy matching strategy for search.
+
+
+.. py:class:: NullsPosition(*args, **kwds)
+
+   Bases: :py:obj:`enum.Enum`
+
+
+   Where to place NULL values in sorted results.
+
+
+.. py:class:: OffsetPage
+
+   Bases: :py:obj:`BasePage`\ [\ :py:obj:`ItemT`\ ]
+
+
+   Offset pagination result.
+
+   All fields are non-optional — clean serialization.
+
+
+   .. py:method:: create(items: list[ItemT], total: int, params: pypaginate.domain.params.OffsetParams) -> Any
+      :classmethod:
+
+
+      Build from offset pagination results.
+
+      :param items: Items for this page.
+      :param total: Total item count across all pages.
+      :param params: Offset parameters used.
+
+      :returns: OffsetPage or FastOffsetPage (if msgspec installed).
+
+
+
+.. py:class:: OffsetParams(/, **data: Any)
+
+   Bases: :py:obj:`BaseParams`
+
+
+   Offset pagination input.
+
+   Example::
+
+       OffsetParams(page=2, limit=20)
+
+
+   .. py:method:: clamp(total: int) -> Self
+
+      Clamp page number to valid bounds.
+
+      :param total: Total number of items available.
+
+      :returns: New params clamped to valid range, or self if valid.
 
 
 
@@ -229,8 +303,99 @@ Package Contents
       :type: int
 
 
-      Calculate the offset based on page and limit.
+      Zero-based offset for database queries.
 
-      :returns: The calculated offset for database queries.
+
+.. py:class:: OverflowStrategy(*args, **kwds)
+
+   Bases: :py:obj:`enum.Enum`
+
+
+   How to handle page numbers exceeding total pages.
+
+
+.. py:class:: SearchFieldMode(*args, **kwds)
+
+   Bases: :py:obj:`enum.Enum`
+
+
+   How to match search terms against fields.
+
+
+.. py:class:: SearchSpec(/, **data: Any)
+
+   Bases: :py:obj:`pydantic.BaseModel`
+
+
+   Declarative search specification.
+
+   Example::
+
+       SearchSpec(query="john doe", fields=("name", "email"))
+       SearchSpec(query="jhn", fields=("name",), fuzzy=FuzzyMode.FUZZY)
+       SearchSpec(query="alice", fields=("name", "bio"), weights={"name": 2.0})
+
+
+   .. py:attribute:: model_config
+
+      Configuration for the model, should be a dictionary conforming to [`ConfigDict`][pydantic.config.ConfigDict].
+
+
+.. py:class:: SortDirection(*args, **kwds)
+
+   Bases: :py:obj:`enum.Enum`
+
+
+   Sort direction for ordering.
+
+
+.. py:class:: SortSpec(/, **data: Any)
+
+   Bases: :py:obj:`pydantic.BaseModel`
+
+
+   Declarative sort specification.
+
+   Example::
+
+       SortSpec(field="name")
+       SortSpec(field="created_at", direction=SortDirection.DESC)
+
+
+   .. py:attribute:: model_config
+
+      Configuration for the model, should be a dictionary conforming to [`ConfigDict`][pydantic.config.ConfigDict].
+
+
+.. py:function:: And(*conditions: FilterSpec | FilterGroup) -> FilterGroup
+
+   Create an AND group of filter conditions.
+
+
+.. py:function:: Or(*conditions: FilterSpec | FilterGroup) -> FilterGroup
+
+   Create an OR group of filter conditions.
+
+
+.. py:function:: paginate(source: collections.abc.Sequence[ItemT], params: pypaginate.domain.params.OffsetParams, *, overflow: pypaginate.domain.enums.OverflowStrategy = ...) -> pypaginate.domain.pages.OffsetPage[ItemT]
+                 paginate(source: object, params: pypaginate.domain.params.OffsetParams, *, backend: pypaginate.domain.protocols.SyncPaginationBackend[ItemT], overflow: pypaginate.domain.enums.OverflowStrategy = ...) -> pypaginate.domain.pages.OffsetPage[ItemT]
+                 paginate(source: object, params: pypaginate.domain.params.OffsetParams, *, backend: pypaginate.domain.protocols.PaginationBackend[ItemT], overflow: pypaginate.domain.enums.OverflowStrategy = ...) -> collections.abc.Awaitable[pypaginate.domain.pages.OffsetPage[ItemT]]
+                 paginate(source: object, params: pypaginate.domain.params.CursorParams, *, backend: pypaginate.domain.protocols.CursorBackend[ItemT]) -> collections.abc.Awaitable[pypaginate.domain.pages.CursorPage[ItemT]]
+
+   Universal pagination entry point.
+
+   The return type is automatically inferred from the params type:
+   - ``OffsetParams`` → ``OffsetPage``
+   - ``CursorParams`` → ``CursorPage``
+
+   :param source: Data source (Sequence for in-memory, or query).
+   :param params: OffsetParams or CursorParams.
+   :param backend: Optional backend. Auto-detected from source if None.
+   :param overflow: How to handle out-of-range pages (offset only).
+
+   :returns: OffsetPage for sync, Awaitable[OffsetPage|CursorPage] for async.
+
+   :raises TypeError: If source is not a Sequence and no backend given.
+   :raises TypeError: If cursor params used with a sync backend.
 
 

@@ -1,303 +1,171 @@
-"""Root pytest configuration with shared fixtures and hooks.
+"""Root pytest configuration with hooks and shared fixtures.
 
-This module provides:
-- Pytest configuration hooks
-- Shared fixtures available to all tests
-- Custom command line options
-- Test collection modifiers
+Provides auto-markers by directory, custom CLI options,
+and fixtures available to all test categories.
 """
 
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
-from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
-from sqlalchemy import String, select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+from pypaginate.filtering.engine import FilterEngine
+from pypaginate.filtering.registry import OperatorRegistry, create_default_registry
+from pypaginate.search.engine import SearchEngine
+from pypaginate.sorting.engine import SortEngine
+from tests.factories.data import make_users
+from tests.fixtures.backends import BACKEND_REGISTRY, BackendEnv
 
 
 if TYPE_CHECKING:
     from _pytest.config import Config
     from _pytest.nodes import Item
-    from sqlalchemy.ext.asyncio import AsyncEngine
 
 
-# ============================================
-# Backward compatibility: Models from old conftest
-# These are re-exported for existing tests
-# ============================================
+# -- Hooks -------------------------------------------------------------------
 
 
-class Base(DeclarativeBase):
-    """Base class for SQLAlchemy models."""
-
-    pass
-
-
-class User(Base):
-    """Sample user model for integration tests."""
-
-    __tablename__ = "users"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(100))
-    email: Mapped[str] = mapped_column(String(200))
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
-
-    def __repr__(self) -> str:
-        return f"User(id={self.id}, name={self.name!r})"
-
-
-# Sample test data (backward compatibility)
-TEST_USERS = [
-    {"name": "Alice", "email": "alice@example.com"},
-    {"name": "Bob", "email": "bob@example.com"},
-    {"name": "Charlie", "email": "charlie@example.com"},
-    {"name": "David", "email": "david@example.com"},
-    {"name": "Eve", "email": "eve@example.com"},
-    {"name": "Frank", "email": "frank@example.com"},
-    {"name": "Grace", "email": "grace@example.com"},
-    {"name": "Henry", "email": "henry@example.com"},
-    {"name": "Ivy", "email": "ivy@example.com"},
-    {"name": "Jack", "email": "jack@example.com"},
-]
-
-
-# ============================================
-# Pytest Hooks
-# ============================================
+def pytest_configure(config: Config) -> None:
+    """Register custom markers for IDE and --strict-markers."""
+    markers = [
+        "unit: Unit tests",
+        "integration: Integration tests",
+        "e2e: End-to-end tests",
+        "property: Property-based tests",
+        "stress: Stress tests",
+        "benchmark: Performance benchmarks",
+    ]
+    for marker in markers:
+        config.addinivalue_line("markers", marker)
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
-    """Add custom command line options.
-
-    Options:
-        --run-slow: Run tests marked as slow
-        --run-benchmark: Run benchmark tests
-        --run-mutation: Run mutation tests
-    """
+    """Add --run-slow and --run-benchmark CLI options."""
     parser.addoption(
         "--run-slow",
         action="store_true",
         default=False,
-        help="Run slow tests (marked with @pytest.mark.slow)",
+        help="Run slow tests",
     )
     parser.addoption(
         "--run-benchmark",
         action="store_true",
         default=False,
-        help="Run benchmark tests (marked with @pytest.mark.benchmark)",
+        help="Run benchmark tests",
     )
 
 
-def pytest_configure(config: Config) -> None:
-    """Configure pytest with custom settings."""
-    # Register custom markers (already in pyproject.toml, but good for IDE support)
-    config.addinivalue_line("markers", "focus: Mark test to run in isolation during development")
+_MARKER_MAP: dict[str, str] = {
+    "/unit/": "unit",
+    "/integration/": "integration",
+    "/e2e/": "e2e",
+    "/property/": "property",
+    "/benchmarks/": "benchmark",
+    "/perf/": "benchmark",
+}
 
 
-def pytest_collection_modifyitems(config: Config, items: list[Item]) -> None:
-    """Modify test collection based on markers and options.
+def pytest_collection_modifyitems(
+    config: Config,
+    items: list[Item],
+) -> None:
+    """Auto-apply markers by directory and skip slow/benchmark."""
+    _skip_by_option(config, items)
+    _apply_directory_markers(items)
 
-    - Skips slow tests unless --run-slow is provided
-    - Skips benchmark tests unless --run-benchmark is provided
-    - Auto-applies markers based on test location
-    """
-    # Handle slow tests
+
+def _skip_by_option(config: Config, items: list[Item]) -> None:
+    """Skip slow and benchmark tests unless opted in."""
     if not config.getoption("--run-slow"):
-        skip_slow = pytest.mark.skip(reason="use --run-slow to run slow tests")
+        skip_slow = pytest.mark.skip(reason="use --run-slow")
         for item in items:
             if "slow" in item.keywords:
                 item.add_marker(skip_slow)
 
-    # Handle benchmark tests
-    run_benchmark = config.getoption("--run-benchmark", default=False)
-    # Also check if pytest-benchmark is enabling benchmarks
-    benchmark_enabled = (
+    run_bench = config.getoption("--run-benchmark", default=False)
+    bench_on = (
         config.getoption("--benchmark-enable", default=False)
         if hasattr(config.option, "benchmark_enable")
         else False
     )
-
-    if not run_benchmark and not benchmark_enabled:
-        skip_benchmark = pytest.mark.skip(
-            reason="use --run-benchmark or --benchmark-enable to run benchmarks"
-        )
+    if not run_bench and not bench_on:
+        skip_bench = pytest.mark.skip(reason="use --run-benchmark")
         for item in items:
             if "benchmark" in item.keywords:
-                item.add_marker(skip_benchmark)
+                item.add_marker(skip_bench)
 
-    # Auto-apply markers based on test location
+
+def _apply_directory_markers(items: list[Item]) -> None:
+    """Add markers based on test file path."""
     for item in items:
-        # Add unit marker to tests in tests/unit/
-        if "/unit/" in str(item.fspath):
-            item.add_marker(pytest.mark.unit)
-        # Add integration marker to tests in tests/integration/
-        elif "/integration/" in str(item.fspath):
-            item.add_marker(pytest.mark.integration)
-        # Add e2e marker to tests in tests/e2e/
-        elif "/e2e/" in str(item.fspath):
-            item.add_marker(pytest.mark.e2e)
-        # Add property marker to tests in tests/property/
-        elif "/property/" in str(item.fspath):
-            item.add_marker(pytest.mark.property)
-        # Add benchmark marker to tests in tests/benchmarks/
-        elif "/benchmarks/" in str(item.fspath):
-            item.add_marker(pytest.mark.benchmark)
+        path = str(item.fspath)
+        for fragment, name in _MARKER_MAP.items():
+            if fragment in path:
+                item.add_marker(getattr(pytest.mark, name))
+                break
 
 
-# ============================================
-# Database Fixtures
-# ============================================
+# -- Fixtures: backend_env --------------------------------------------------
 
 
-@pytest.fixture(scope="function")
-async def async_engine() -> AsyncGenerator[AsyncEngine, None]:
-    """Create an async SQLite engine for testing.
-
-    This fixture creates an in-memory SQLite database with all tables
-    from the Base metadata. The engine is disposed after the test.
-
-    Yields:
-        AsyncEngine: An async SQLAlchemy engine.
-    """
-    engine = create_async_engine(
-        "sqlite+aiosqlite:///:memory:",
-        echo=False,
-        future=True,
-    )
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    yield engine
-    await engine.dispose()
+@pytest.fixture(params=list(BACKEND_REGISTRY.keys()))
+async def backend_env(
+    request: pytest.FixtureRequest,
+) -> AsyncGenerator[BackendEnv, None]:
+    """Yield a BackendEnv for every registered backend (8 items)."""
+    setup_fn = BACKEND_REGISTRY[request.param]
+    env = await setup_fn()
+    yield env
+    if env.cleanup:
+        await env.cleanup()
 
 
-@pytest.fixture(scope="function")
-async def async_session(
-    async_engine: AsyncEngine,
-) -> AsyncGenerator[AsyncSession, None]:
-    """Create an async session for testing.
-
-    Args:
-        async_engine: The async engine fixture.
-
-    Yields:
-        AsyncSession: An async SQLAlchemy session.
-    """
-    session_factory = async_sessionmaker(
-        async_engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-    )
-    async with session_factory() as session:
-        yield session
-        await session.rollback()
+# -- Fixtures: engines -------------------------------------------------------
 
 
-@pytest.fixture(scope="function")
-async def populated_session(
-    async_engine: AsyncEngine,
-) -> AsyncGenerator[AsyncSession, None]:
-    """Create a session with pre-populated test data.
-
-    Populates the database with 10 sample users (Alice through Jack).
-
-    Args:
-        async_engine: The async engine fixture.
-
-    Yields:
-        AsyncSession: A session with pre-populated test data.
-    """
-    session_factory = async_sessionmaker(
-        async_engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-    )
-    async with session_factory() as session:
-        for user_data in TEST_USERS:
-            session.add(User(**user_data))
-        await session.commit()
-        yield session
+@pytest.fixture()
+def filter_registry() -> OperatorRegistry:
+    """Default operator registry with all built-in operators."""
+    return create_default_registry()
 
 
-@pytest.fixture
-def user_query():
-    """Return a base query for User ordered by id.
-
-    Returns:
-        A SQLAlchemy select statement for User.
-    """
-    return select(User).order_by(User.id)
+@pytest.fixture()
+def filter_engine(filter_registry: OperatorRegistry) -> FilterEngine:
+    """FilterEngine backed by the default registry."""
+    return FilterEngine(filter_registry)
 
 
-# ============================================
-# Snapshot Testing Fixtures
-# ============================================
+@pytest.fixture()
+def sort_engine() -> SortEngine:
+    """Stateless SortEngine instance."""
+    return SortEngine()
 
 
-@pytest.fixture
-def snapshot_json(snapshot):
-    """JSON snapshot fixture for syrupy.
-
-    Use this for testing JSON-serializable data structures.
-
-    Args:
-        snapshot: The syrupy snapshot fixture.
-
-    Returns:
-        A snapshot configured for JSON comparison.
-    """
-    try:
-        from syrupy.extensions.json import JSONSnapshotExtension
-
-        return snapshot.use_extension(JSONSnapshotExtension)
-    except ImportError:
-        pytest.skip("syrupy not installed")
+@pytest.fixture()
+def search_engine() -> SearchEngine:
+    """SearchEngine with default TokenParser."""
+    return SearchEngine()
 
 
-# ============================================
-# Utility Fixtures
-# ============================================
+# -- Fixtures: data ----------------------------------------------------------
 
 
-@pytest.fixture
-def sample_items() -> list[dict[str, int | str]]:
-    """Provide a sample list of items for testing.
+@pytest.fixture()
+def sample_users() -> list[dict[str, Any]]:
+    """Eight diverse users with name, age, email, active."""
+    return make_users()
 
-    Returns:
-        A list of 20 sample items with id, name, and category.
+
+@pytest.fixture()
+def large_dataset() -> list[dict[str, Any]]:
+    """1000 user dicts for performance tests.
+
+    Note: overridden in tests/benchmarks/conftest.py (session-scoped, 10k)
+    and tests/e2e/conftest.py (100 items with more fields).
     """
     return [
-        {"id": i, "name": f"Item {i}", "category": "A" if i % 2 == 0 else "B"} for i in range(1, 21)
+        {"id": i, "name": f"User_{i}", "age": 20 + i % 50, "email": f"u{i}@test.com"}
+        for i in range(1_000)
     ]
-
-
-@pytest.fixture
-def large_dataset() -> list[int]:
-    """Provide a large dataset for performance testing.
-
-    Returns:
-        A list of 100,000 integers.
-    """
-    return list(range(100_000))
-
-
-# ============================================
-# Exports for backward compatibility
-# ============================================
-
-__all__ = [
-    "TEST_USERS",
-    "Base",
-    "User",
-    "async_engine",
-    "async_session",
-    "large_dataset",
-    "populated_session",
-    "sample_items",
-    "snapshot_json",
-    "user_query",
-]

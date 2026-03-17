@@ -1,99 +1,64 @@
 # In-Memory Pagination
 
-Paginate Python collections without database queries.
-
-## Overview
-
-The `MemoryPaginator` efficiently paginates any sequence type:
-
-- Lists
-- Tuples
-- Dictionaries (values)
-- Generator results
-- Any iterable
+Paginate Python collections (lists, tuples, sequences) without a database.
 
 ## Basic Usage
 
-```python
-from pypaginate import PageParams
-from pypaginate.engines import MemoryPaginator
+The simplest way to paginate in-memory data -- just pass a list and `OffsetParams` to `paginate()`:
 
-# Your data
+```python
+from pypaginate import paginate, OffsetParams
+
 users = [
-    {"id": 1, "name": "Alice", "age": 30},
-    {"id": 2, "name": "Bob", "age": 25},
-    {"id": 3, "name": "Charlie", "age": 35},
-    {"id": 4, "name": "Diana", "age": 28},
-    {"id": 5, "name": "Eve", "age": 32},
+    {"id": 1, "name": "Alice"},
+    {"id": 2, "name": "Bob"},
+    {"id": 3, "name": "Charlie"},
+    {"id": 4, "name": "Diana"},
+    {"id": 5, "name": "Eve"},
 ]
 
-# Create paginator
-paginator = MemoryPaginator()
+page = paginate(users, OffsetParams(page=1, limit=2))
 
-# Paginate
-params = PageParams(page=1, limit=2)
-result = paginator.paginate(users, params)
-
-# Convert to Page object
-page = result.to_page()
-
-print(page.items)  # First 2 users
-print(page.total)  # 5
-print(page.pages)  # 3
+page.items         # [{"id": 1, ...}, {"id": 2, ...}]
+page.total         # 5
+page.page          # 1
+page.pages         # 3
+page.has_next      # True
+page.has_previous  # False
 ```
 
-## The Paginator
+`paginate()` auto-detects Python sequences and uses in-memory slicing -- no backend needed.
 
-### Creating a MemoryPaginator
+## Page Navigation
 
 ```python
-from pypaginate.engines import MemoryPaginator
+# Page 1
+page1 = paginate(users, OffsetParams(page=1, limit=2))
+# page1.items = [Alice, Bob]
 
-# Default paginator
-paginator = MemoryPaginator()
+# Page 2
+page2 = paginate(users, OffsetParams(page=2, limit=2))
+# page2.items = [Charlie, Diana]
 
-# Paginate any sequence
-result = paginator.paginate(data, params)
+# Page 3
+page3 = paginate(users, OffsetParams(page=3, limit=2))
+# page3.items = [Eve]
+# page3.has_next = False
 ```
 
-### Result Object
-
-The `paginate()` method returns a `PaginationSnapshot`:
-
-```python
-result = paginator.paginate(users, params)
-
-# Access as snapshot
-result.items      # Items for this page
-result.total      # Total count
-result.params     # Original params
-
-# Convert to Page
-page = result.to_page()
-```
-
-## Working with Different Data Types
+## Working with Different Types
 
 ### Lists
 
 ```python
-users = [user1, user2, user3, ...]
-page = paginator.paginate(users, params).to_page()
+page = paginate(my_list, OffsetParams(page=1, limit=20))
 ```
 
-### Dictionaries
-
-Paginate dictionary values:
+### Tuples
 
 ```python
-users_dict = {
-    "alice": {"name": "Alice", "age": 30},
-    "bob": {"name": "Bob", "age": 25},
-}
-
-# Convert to list first
-users_list = list(users_dict.values())
-page = paginator.paginate(users_list, params).to_page()
+items = tuple(range(100))
+page = paginate(items, OffsetParams(page=1, limit=20))
 ```
 
 ### Dataclasses / Pydantic Models
@@ -105,231 +70,135 @@ from dataclasses import dataclass
 class User:
     id: int
     name: str
-    age: int
 
-users = [
-    User(1, "Alice", 30),
-    User(2, "Bob", 25),
-    User(3, "Charlie", 35),
-]
-
-page = paginator.paginate(users, params).to_page()
+users = [User(1, "Alice"), User(2, "Bob"), User(3, "Charlie")]
+page = paginate(users, OffsetParams(page=1, limit=2))
 # page.items contains User objects
 ```
 
-### Generator Results
-
-For generators, convert to list first:
+## Overflow Handling
 
 ```python
-def generate_users():
-    for i in range(100):
-        yield {"id": i, "name": f"User {i}"}
+from pypaginate import paginate, OffsetParams, OverflowStrategy
 
-# Materialize generator
-users = list(generate_users())
-page = paginator.paginate(users, params).to_page()
+items = list(range(50))
+
+# EMPTY (default): empty page for out-of-range
+page = paginate(items, OffsetParams(page=999, limit=20))
+page.items  # []
+
+# CLAMP: clamp to last valid page
+page = paginate(items, OffsetParams(page=999, limit=20), overflow=OverflowStrategy.CLAMP)
+page.page   # 3
+page.items  # items 40-49
 ```
 
-## Combining with Filtering
+## MemoryBackend
 
-Filter before paginating:
+For explicit backend usage (e.g., within a `Paginator` or `SyncPipeline`):
 
 ```python
-from pypaginate.filters.predicates import FilterEngine
+from pypaginate import OffsetParams
+from pypaginate.adapters.memory import MemoryBackend
+from pypaginate.engine.paginator import Paginator
 
-engine = FilterEngine()
-paginator = MemoryPaginator()
+backend = MemoryBackend()
+paginator = Paginator(backend)
 
-# All users
-users = [
-    {"name": "Alice", "age": 30, "status": "active"},
-    {"name": "Bob", "age": 25, "status": "inactive"},
-    {"name": "Charlie", "age": 35, "status": "active"},
-]
-
-# 1. Filter
-active_users = engine.filter(users, {"status": {"eq": "active"}})
-
-# 2. Paginate filtered results
-params = PageParams(page=1, limit=10)
-page = paginator.paginate(active_users, params).to_page()
-
-print(page.items)  # [Alice, Charlie]
-print(page.total)  # 2
+page = paginator.paginate(users, OffsetParams(page=1, limit=20))
 ```
 
-## Combining with Sorting
-
-Sort before paginating:
-
-```python
-from pypaginate.sorting import SortEngine
-
-sort_engine = SortEngine()
-paginator = MemoryPaginator()
-
-# Sort by age descending
-sorted_users = sort_engine.sort(
-    users,
-    sort_fields=["age"],
-    sort_orders=["desc"]
-)
-
-# Then paginate
-page = paginator.paginate(sorted_users, params).to_page()
-```
-
-## Combining with Search
-
-Search before paginating:
-
-```python
-from pypaginate.filters.search import MemorySearchService
-from pypaginate.filters.search.options import SearchOptions
-
-search = MemorySearchService(
-    options=SearchOptions(
-        fields=["name", "email"],
-        fuzzy_threshold=0.8
-    )
-)
-paginator = MemoryPaginator()
-
-# 1. Search
-matches = search.search(users, "alice")
-
-# 2. Paginate
-page = paginator.paginate(matches, params).to_page()
-```
+`MemoryBackend` counts via `len()` and fetches via list slicing. It accepts any Python `Sequence` (list, tuple, etc.) but rejects strings and bytes.
 
 ## Complete Pipeline
 
-A typical in-memory data pipeline:
+Combine filtering, sorting, search, and pagination with `SyncPipeline`:
 
 ```python
-from pypaginate import PageParams
-from pypaginate.engines import MemoryPaginator
-from pypaginate.filters.predicates import FilterEngine
-from pypaginate.sorting import SortEngine
+from pypaginate import FilterSpec, SortSpec, SortDirection, SearchSpec, OffsetParams
+from pypaginate.adapters.memory import (
+    MemoryBackend,
+    MemoryFilterBackend,
+    MemorySortBackend,
+    MemorySearchBackend,
+)
+from pypaginate.engine.paginator import Paginator
+from pypaginate.engine.pipeline import SyncPipeline
 
-def paginate_users(
-    users: list[dict],
-    filters: dict | None = None,
-    sort_by: str = "name",
-    sort_order: str = "asc",
-    page: int = 1,
-    limit: int = 20,
-) -> dict:
-    """Complete pagination pipeline."""
-    
-    filter_engine = FilterEngine()
-    sort_engine = SortEngine()
-    paginator = MemoryPaginator()
-    
-    # 1. Filter (if provided)
-    if filters:
-        users = filter_engine.filter(users, filters)
-    
-    # 2. Sort
-    users = sort_engine.sort(
-        users,
-        sort_fields=[sort_by],
-        sort_orders=[sort_order]
-    )
-    
-    # 3. Paginate
-    params = PageParams(page=page, limit=limit)
-    page_result = paginator.paginate(users, params).to_page()
-    
-    return {
-        "items": page_result.items,
-        "total": page_result.total,
-        "page": page_result.page,
-        "pages": page_result.pages,
-        "has_next": page_result.has_next,
-        "has_previous": page_result.has_previous,
-    }
+pipeline = SyncPipeline(
+    Paginator(MemoryBackend()),
+    filter_backend=MemoryFilterBackend(),
+    sort_backend=MemorySortBackend(),
+    search_backend=MemorySearchBackend(),
+)
+
+page = pipeline.execute(
+    users,
+    OffsetParams(page=1, limit=20),
+    filters=[FilterSpec(field="status", value="active")],
+    sorting=[SortSpec(field="name", direction=SortDirection.ASC)],
+    search=SearchSpec(query="alice", fields=("name", "email")),
+)
+
+page.items         # filtered, sorted, searched, paginated
+page.total         # total after filter/search
+page.page          # 1
 ```
 
-## Performance Considerations
+## Step-by-Step Pipeline
 
-### Memory Usage
+For explicit control over each step, use `FilterEngine`, `SortEngine`, and `SearchEngine` individually, then pass the result to `paginate()`. See [First Steps](../getting-started/first-steps.md) for a walkthrough.
 
-In-memory pagination requires all data to be loaded:
+## Edge Cases
+
+### Empty Input
 
 ```python
-# Good: Small to medium datasets
-users = load_users()  # 1,000 items = OK
-page = paginator.paginate(users, params).to_page()
-
-# Careful: Large datasets
-users = load_all_users()  # 1,000,000 items = High memory
+page = paginate([], OffsetParams(page=1, limit=20))
+page.items  # []
+page.total  # 0
+page.pages  # 0
 ```
 
-### For Large Datasets
-
-Consider:
-
-1. **Database pagination**: Use SQLAlchemy with offset/keyset
-2. **Chunked processing**: Process in batches
-3. **Streaming**: Use generators with itertools.islice
+### Single Item
 
 ```python
-import itertools
-
-def paginate_generator(items, page: int, limit: int):
-    """Paginate a generator without loading all into memory."""
-    start = (page - 1) * limit
-    
-    # Skip items before start
-    iterator = iter(items)
-    for _ in range(start):
-        next(iterator, None)
-    
-    # Take limit items
-    page_items = list(itertools.islice(iterator, limit))
-    
-    return page_items
+page = paginate([42], OffsetParams(page=1, limit=20))
+page.items     # [42]
+page.total     # 1
+page.pages     # 1
+page.has_next  # False
 ```
 
-## API Integration
-
-Using with FastAPI:
+### Limit Exceeds Total
 
 ```python
-from fastapi import FastAPI, Query
-from pypaginate import PageParams
-from pypaginate.engines import MemoryPaginator
-
-app = FastAPI()
-
-# In-memory data store
-USERS = [
-    {"id": i, "name": f"User {i}"}
-    for i in range(100)
-]
-
-@app.get("/users")
-async def list_users(
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
-):
-    paginator = MemoryPaginator()
-    params = PageParams(page=page, limit=limit)
-    result = paginator.paginate(USERS, params).to_page()
-    
-    return {
-        "items": result.items,
-        "total": result.total,
-        "page": result.page,
-        "pages": result.pages,
-    }
+items = [1, 2, 3]
+page = paginate(items, OffsetParams(page=1, limit=100))
+page.items  # [1, 2, 3]
+page.total  # 3
+page.pages  # 1
 ```
+
+## Performance
+
+In-memory pagination requires all data to be loaded into memory. For large datasets:
+
+| Approach | Memory | Latency |
+|----------|--------|---------|
+| `paginate(list, ...)` | O(n) | O(1) per page |
+| SQLAlchemy offset | O(page_size) | O(offset) |
+| SQLAlchemy cursor | O(page_size) | O(1) |
+
+### Recommendations
+
+- **< 10,000 items**: in-memory pagination is fast and simple
+- **10k-100k items**: consider database pagination if data is in a DB
+- **> 100k items**: use SQLAlchemy backends to avoid loading all data
 
 ## Next Steps
 
-- [Offset Pagination](offset.md) - Database pagination
-- [Keyset Pagination](keyset.md) - Large datasets
-- [Filtering Guide](../filtering/index.md) - Filter before paginating
-- [Sorting Guide](../sorting/index.md) - Sort before paginating
+- [Offset Pagination](offset.md) -- Database-backed offset pagination
+- [Cursor/Keyset Pagination](keyset.md) -- For large datasets
+- [Filtering](../filtering/index.md) -- Combine with declarative filters
+- [Sorting](../sorting/index.md) -- Sort before paginating

@@ -1,397 +1,239 @@
 # Search & Relevance
 
-pypaginate provides text search capabilities with relevance scoring and fuzzy matching.
-This page explains how search works and how relevance is calculated.
+pypaginate provides a search engine that tokenizes queries, matches them against
+fields, scores results by relevance, and supports optional fuzzy matching via
+[rapidfuzz](https://github.com/maxbachmann/RapidFuzz).
 
-## Search Overview
+---
 
-```{mermaid}
-graph LR
-    subgraph "Search Pipeline"
-        Q[Query] --> T[Tokenizer]
-        T --> N[Normalizer]
-        N --> M[Matcher]
-        M --> S[Scorer]
-        S --> R[Ranked Results]
-    end
-```
-
-Search involves several stages:
-
-1. **Tokenize** - Break query into searchable terms
-2. **Normalize** - Lowercase, remove accents, stem words
-3. **Match** - Find documents containing terms
-4. **Score** - Calculate relevance for each match
-5. **Rank** - Sort by relevance score
-
-## Search Types
-
-### Exact Search
-
-Finds documents containing the exact query string:
-
-```python
-results = await search(query, search="john doe")
-# Matches: "John Doe", "john doe", "JOHN DOE"
-# No match: "John A. Doe", "Johnny Doe"
-```
-
-### Partial Search
-
-Finds documents containing any part of the query:
-
-```python
-results = await search(query, search="john", partial=True)
-# Matches: "John", "Johnny", "Johnson"
-```
-
-### Fuzzy Search
-
-Finds approximate matches, tolerating typos:
-
-```python
-results = await search(query, search="jonh", fuzzy=True)
-# Matches: "John" (typo corrected)
-# Matches: "Jon" (close enough)
-```
-
-## Relevance Scoring
-
-### Scoring Factors
-
-```{mermaid}
-graph TB
-    subgraph "Relevance Score Components"
-        TF[Term Frequency<br/>How often term appears]
-        IDF[Inverse Doc Frequency<br/>How rare term is]
-        FL[Field Length<br/>Shorter = more relevant]
-        FW[Field Weight<br/>Title > Description]
-        FP[Field Position<br/>Earlier = more relevant]
-    end
-    
-    TF --> Score
-    IDF --> Score
-    FL --> Score
-    FW --> Score
-    FP --> Score
-    Score[Final Score]
-```
-
-### TF-IDF Scoring
-
-The classic TF-IDF (Term Frequency-Inverse Document Frequency) formula:
-
-```
-score = TF(term, document) × IDF(term, corpus)
-
-Where:
-  TF = count(term in doc) / total_terms_in_doc
-  IDF = log(total_docs / docs_containing_term)
-```
-
-Terms that appear frequently in a document but rarely across all documents
-score highest.
-
-### Example Scoring
-
-| Document | Query: "python" | TF | IDF | Score |
-|----------|----------------|-----|-----|-------|
-| "Python programming in Python" | 2 occurrences | 0.5 | 2.0 | 1.0 |
-| "Learn Python basics" | 1 occurrence | 0.33 | 2.0 | 0.66 |
-| "Java and JavaScript guide" | 0 occurrences | 0 | - | 0 |
-
-## Multi-Field Search
-
-When searching across multiple fields, weights determine relative importance:
+## Search Pipeline
 
 ```{mermaid}
 graph LR
-    subgraph "Field Weights"
-        T["Title (weight: 3.0)"] --> S[Combined Score]
-        D["Description (weight: 1.0)"] --> S
-        C["Content (weight: 0.5)"] --> S
-    end
+    Q["SearchSpec"] --> T["TokenParser.parse()"]
+    T --> N["normalize_text()"]
+    N --> M["Match & score per item"]
+    M --> R["Sort by score (descending)"]
+    R --> O["Ranked results"]
 ```
 
-### Configuration
+1. **Parse** -- the `TokenParser` splits the query into tokens (handles quotes, whitespace).
+2. **Normalize** -- each token and field value is Unicode-normalized (lowercased, accents removed).
+3. **Match** -- each item is scored across the specified fields.
+4. **Rank** -- items are sorted by score (highest first), then optionally truncated by `max_results`.
+
+---
+
+## SearchSpec
+
+A `SearchSpec` is an immutable Pydantic model:
 
 ```python
-from pypaginate import SearchOptions
+from pypaginate import SearchSpec
+from pypaginate.domain.enums import FuzzyMode, SearchFieldMode
 
-options = SearchOptions(
-    fields={
-        "title": 3.0,        # Most important
-        "description": 1.0,  # Normal weight
-        "tags": 2.0,         # Important
-        "content": 0.5       # Less important
-    }
+# Basic search
+SearchSpec(query="john doe", fields=("name", "email"))
+
+# Fuzzy search with weights
+SearchSpec(
+    query="jhn",
+    fields=("name", "email"),
+    weights={"name": 2.0, "email": 1.0},
+    fuzzy=FuzzyMode.FUZZY,
+    threshold=75,
 )
 
-results = await search(query, search="python", options=options)
-```
-
-### Score Combination
-
-Final score combines per-field scores:
-
-```
-total_score = sum(field_score × field_weight) / sum(field_weights)
-```
-
-## Fuzzy Matching
-
-### Levenshtein Distance
-
-Fuzzy matching uses Levenshtein distance - the minimum number of single-character
-edits (insertions, deletions, substitutions) to transform one string into another:
-
-```{mermaid}
-graph LR
-    subgraph "Levenshtein Distance Examples"
-        E1["'cat' → 'hat' = 1"]
-        E2["'book' → 'back' = 2"]
-        E3["'python' → 'pythn' = 1"]
-    end
-```
-
-| From | To | Distance | Edits |
-|------|----|----------|-------|
-| cat | hat | 1 | substitute c→h |
-| book | back | 2 | substitute o→a, o→c |
-| python | pythn | 1 | delete o |
-| hello | helo | 1 | delete l |
-
-### Similarity Threshold
-
-A threshold determines how fuzzy the match can be:
-
-```python
-from pypaginate import FuzzyOptions
-
-options = FuzzyOptions(
-    threshold=0.7,  # 70% similarity required
-    max_distance=2  # Maximum 2 edits
+# Token-sort matching (word-order agnostic)
+SearchSpec(
+    query="doe john",
+    fields=("name",),
+    fuzzy=FuzzyMode.TOKEN_SORT,
 )
 ```
 
-```{mermaid}
-graph TB
-    subgraph "Threshold Examples (0.7)"
-        M1["'john' vs 'jon'<br/>Similarity: 0.86 ✓"]
-        M2["'john' vs 'joan'<br/>Similarity: 0.75 ✓"]
-        M3["'john' vs 'jack'<br/>Similarity: 0.50 ✗"]
-    end
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `query` | `str` | required | Search query (max 500 characters) |
+| `fields` | `tuple[str, ...]` | required | Fields to search |
+| `weights` | `dict[str, float] \| None` | `None` | Per-field weight multipliers |
+| `mode` | `SearchFieldMode` | `CONTAINS` | How tokens match field values |
+| `fuzzy` | `FuzzyMode` | `EXACT` | Fuzzy matching strategy |
+| `threshold` | `int` | `75` | Minimum fuzzy score (0-100) |
+| `min_length` | `int` | `1` | Minimum query length (below this, all items returned) |
+| `max_results` | `int \| None` | `None` | Limit number of results |
+
+---
+
+## Search Modes (SearchFieldMode)
+
+| Mode | Behavior | Example |
+|------|----------|---------|
+| `EXACT` | Field value must equal the normalized token | `"john" matches "john"` only |
+| `PREFIX` | Field value must start with the token | `"joh" matches "john", "johnson"` |
+| `CONTAINS` | Token must appear anywhere in the field value | `"ohn" matches "john", "johnson"` |
+
+---
+
+## Fuzzy Modes (FuzzyMode)
+
+| Mode | Algorithm | Use Case |
+|------|-----------|----------|
+| `EXACT` | No fuzzy -- exact/prefix/contains matching only | Fast, precise results |
+| `FUZZY` | `rapidfuzz.fuzz.partial_ratio` (substring matching) | Typo tolerance |
+| `TOKEN_SORT` | `rapidfuzz.fuzz.token_sort_ratio` (word-order agnostic) | "John Doe" matches "Doe John" |
+
+When rapidfuzz is not installed (`pypaginate[search]` not added), fuzzy modes fall
+back to simple substring matching.
+
+---
+
+## Scoring
+
+### Exact Scoring
+
+In exact mode (`FuzzyMode.EXACT`), each matching token contributes a fixed score of 100.
+All tokens must match (AND logic) -- if any token fails to match any field, the item
+scores 0.
+
+### Fuzzy Scoring
+
+In fuzzy mode, `rapidfuzz.fuzz.partial_ratio` returns a score from 0-100 for each
+(token, field_value) pair. Only scores at or above the `threshold` count as a match.
+A score below threshold is treated as 0 (no match).
+
+### Weighted Scoring
+
+When `weights` are provided, each field's score is multiplied by its weight:
+
+```python
+SearchSpec(
+    query="john",
+    fields=("name", "email", "bio"),
+    weights={"name": 3.0, "email": 1.0, "bio": 0.5},
+)
 ```
 
-### Fuzzy Algorithm
+For multi-field search, the engine finds the **best weighted score** across all fields
+for each token, then sums across tokens.
 
-```{mermaid}
-flowchart TD
-    Q[Query: 'jonh'] --> T[Tokenize]
-    T --> C{Candidates}
-    C --> W1[john - dist 1]
-    C --> W2[jon - dist 1]
-    C --> W3[jonas - dist 2]
-    W1 --> F{Above threshold?}
-    W2 --> F
-    W3 --> F
-    F -->|Yes| R[Include in results]
-    F -->|No| X[Exclude]
+### Scoring Example
+
+Given `weights={"name": 2.0, "email": 1.0}` and query `"john"`:
+
+| Item | Name Score | Email Score | Best Weighted | Total |
+|------|-----------|-------------|---------------|-------|
+| `name="John Doe", email="john@x.com"` | 100 * 2.0 = 200 | 100 * 1.0 = 100 | 200 | 200 |
+| `name="Jane", email="john.doe@x.com"` | 0 | 100 * 1.0 = 100 | 100 | 100 |
+| `name="Bob", email="bob@x.com"` | 0 | 0 | 0 | 0 (excluded) |
+
+---
+
+## Single-Field vs Multi-Field
+
+The `SearchEngine` has two optimized paths:
+
+- **Single field** -- avoids list allocation per item, direct accessor call.
+- **Multi-field** -- extracts and normalizes all field values, finds best weighted match.
+
+```python
+# Single field (fast path)
+SearchSpec(query="john", fields=("name",))
+
+# Multi-field with weights
+SearchSpec(query="john", fields=("name", "email", "bio"), weights={"name": 2.0})
 ```
 
-## SQL Search Implementation
+---
 
-### PostgreSQL Full-Text Search
+## Text Normalization
 
-For PostgreSQL, pypaginate can use built-in full-text search:
+All text (queries and field values) is normalized before matching:
 
-```sql
--- Creates tsvector for searching
-SELECT *, ts_rank(to_tsvector(title), plainto_tsquery('python')) as rank
-FROM articles
-WHERE to_tsvector(title) @@ plainto_tsquery('python')
-ORDER BY rank DESC;
+```python
+from pypaginate.text.normalize import normalize_text
+
+normalize_text("Cafe\u0301")   # "cafe"  (accent removed, lowercased)
+normalize_text("HELLO World")  # "hello world"
 ```
 
-### LIKE-Based Fallback
+Normalization includes:
+- Unicode NFKD decomposition
+- Accent/diacritic removal
+- Lowercase conversion
 
-For databases without full-text search:
+This makes search accent-insensitive and case-insensitive by default.
 
-```sql
-SELECT *
-FROM articles
-WHERE LOWER(title) LIKE '%python%'
-   OR LOWER(description) LIKE '%python%';
-```
-
-### Trigram Similarity (PostgreSQL)
-
-For fuzzy matching in PostgreSQL using pg_trgm:
-
-```sql
--- Find similar names
-SELECT *, similarity(name, 'jonh') as sim
-FROM users
-WHERE similarity(name, 'jonh') > 0.3
-ORDER BY sim DESC;
-```
+---
 
 ## In-Memory Search
 
-For in-memory data sources, search uses Python implementations:
+```python
+from pypaginate.search.engine import SearchEngine
+from pypaginate import SearchSpec
 
-```{mermaid}
-flowchart LR
-    subgraph "In-Memory Search"
-        D[Data] --> I[Build Index]
-        I --> Q[Query]
-        Q --> M[Match]
-        M --> S[Score]
-        S --> R[Results]
-    end
+engine = SearchEngine()
+results = engine.apply(
+    items,
+    SearchSpec(query="john doe", fields=("name", "email")),
+)
+# Returns items sorted by relevance score (highest first)
 ```
 
-### Indexing Strategy
+---
+
+## SQLAlchemy Search
+
+The `SQLAlchemySearchBackend` translates `SearchSpec` into SQL LIKE/ILIKE conditions:
 
 ```python
-# Simple inverted index
-index = defaultdict(set)
-for doc_id, doc in enumerate(documents):
-    for word in tokenize(doc.text):
-        index[normalize(word)].add(doc_id)
+from pypaginate.adapters.sqlalchemy import SQLAlchemySearchBackend
 
-# Search
-def search(query):
-    terms = [normalize(t) for t in tokenize(query)]
-    matching_docs = set.intersection(*[index[t] for t in terms])
-    return matching_docs
+backend = SQLAlchemySearchBackend()
+modified_query = backend.apply_search(select(User), search_spec)
 ```
 
-## Search Options
+---
 
-### Full Configuration
+## Pipeline Integration
+
+Search integrates with the pipeline alongside filters and sorting:
 
 ```python
-from pypaginate import SearchOptions, FuzzyOptions
+from pypaginate.engine.pipeline import AsyncPipeline
+from pypaginate.engine.paginator import AsyncPaginator
+from pypaginate.adapters.sqlalchemy import (
+    SQLAlchemyBackend, SQLAlchemyFilterBackend,
+    SQLAlchemySortBackend, SQLAlchemySearchBackend,
+)
+from pypaginate import OffsetParams, FilterSpec, SortSpec, SearchSpec
 
-options = SearchOptions(
-    # Fields to search with weights
-    fields={
-        "title": 3.0,
-        "description": 1.0,
-        "content": 0.5
-    },
-    
-    # Matching options
-    mode="any",  # "all" requires all terms, "any" requires at least one
-    
-    # Fuzzy matching
-    fuzzy=FuzzyOptions(
-        enabled=True,
-        threshold=0.7,
-        max_distance=2
-    ),
-    
-    # Highlighting
-    highlight=True,
-    highlight_tag="<mark>",
-    
-    # Minimum score threshold
-    min_score=0.1
+pipeline = AsyncPipeline(
+    AsyncPaginator(SQLAlchemyBackend(session)),
+    filter_backend=SQLAlchemyFilterBackend(),
+    sort_backend=SQLAlchemySortBackend(),
+    search_backend=SQLAlchemySearchBackend(),
+)
+
+result = await pipeline.execute(
+    select(User),
+    OffsetParams(page=1, limit=20),
+    filters=[FilterSpec(field="status", value="active")],
+    sorting=[SortSpec(field="name")],
+    search=SearchSpec(query="john", fields=("name", "email")),
 )
 ```
 
-### Search Modes
+The pipeline applies operations in order: **filter -> sort -> search -> paginate**.
 
-| Mode | Description | Example |
-|------|-------------|---------|
-| `all` | All terms must match | "python web" → both required |
-| `any` | Any term can match | "python web" → either sufficient |
-| `phrase` | Exact phrase match | "python web" → must be adjacent |
+---
 
-## Result Highlighting
+## Performance Tips
 
-Search results can include highlighted matches:
-
-```python
-results = await search(query, search="python", highlight=True)
-
-for item in results.items:
-    print(item.highlights)
-    # {"title": "Learn <mark>Python</mark> basics"}
-```
-
-### Highlight Configuration
-
-```python
-options = SearchOptions(
-    highlight=True,
-    highlight_tag="<em>",           # HTML tag to use
-    highlight_max_length=200,       # Truncate long fields
-    highlight_fragment_size=50,     # Context around match
-    highlight_number_of_fragments=3 # Max fragments per field
-)
-```
-
-## Performance Optimization
-
-### Indexing
-
-For best search performance, create appropriate indexes:
-
-```sql
--- PostgreSQL full-text index
-CREATE INDEX idx_articles_search 
-ON articles USING GIN (to_tsvector('english', title || ' ' || description));
-
--- PostgreSQL trigram index for fuzzy
-CREATE INDEX idx_users_name_trgm 
-ON users USING GIN (name gin_trgm_ops);
-```
-
-### Query Optimization
-
-| Tip | Description |
-|-----|-------------|
-| Limit search fields | Search fewer fields = faster queries |
-| Use appropriate thresholds | Lower fuzzy threshold = faster matching |
-| Index searched columns | Full-text or trigram indexes |
-| Paginate results | Don't load all matches at once |
-
-### Caching
-
-For frequently searched terms:
-
-```python
-from functools import lru_cache
-
-@lru_cache(maxsize=1000)
-def cached_search(query_hash, search_term):
-    return perform_search(search_term)
-```
-
-## Search Quality
-
-### Improving Relevance
-
-| Technique | Description |
-|-----------|-------------|
-| **Stop words** | Ignore common words ("the", "a", "is") |
-| **Stemming** | Match word roots ("running" → "run") |
-| **Synonyms** | Match related terms ("car" → "automobile") |
-| **Boosting** | Increase weight for important fields |
-
-### Measuring Quality
-
-| Metric | Description |
-|--------|-------------|
-| **Precision** | % of returned results that are relevant |
-| **Recall** | % of relevant results that are returned |
-| **MRR** | Mean Reciprocal Rank - how high relevant results appear |
-
-## Further Reading
-
-- [User Guide: Text Search](../search/text-search.md) - Basic usage
-- [User Guide: Fuzzy Matching](../search/fuzzy.md) - Fuzzy search
-- [Filter Expressions](filter-expressions.md) - Combine search with filters
-- [Architecture](architecture.md) - Overall library design
+- Search fewer fields for faster results.
+- Use `EXACT` mode when fuzzy matching is not needed.
+- Set `max_results` to limit scoring work on large datasets.
+- Install `pypaginate[search]` for rapidfuzz -- without it, fuzzy modes fall back to
+  simple substring matching.
+- For SQL backends, ensure searched columns have appropriate indexes (GIN for
+  PostgreSQL full-text, trigram for fuzzy).

@@ -1,122 +1,93 @@
 # Sorting
 
-pypaginate provides flexible sorting capabilities for both in-memory collections and SQL queries.
+pypaginate provides declarative sorting through `SortSpec` objects with `SortDirection` and `NullsPosition` enums.
 
 :::{tip} Quick Start
 ```python
-from pypaginate.sorting import sort_items
+from pypaginate import SortSpec, SortDirection
 
-sorted_users = sort_items(users, sort_field="name", reverse=False)
+sorting = [
+    SortSpec(field="created_at", direction=SortDirection.DESC),
+    SortSpec(field="name"),  # defaults to ASC
+]
 ```
 :::
 
-The sorting system supports:
-
-- **Single-field sorting** with ascending/descending order
-- **Multi-column sorting** for complex ordering requirements
-- **Null value positioning** (first or last)
-- **Deterministic tie-breaking** for stable sort results
-- **SQL ORDER BY generation** via the SQL adapter
-
 ## Overview
 
-The sorting module consists of two main components:
-
-| Component | Use Case |
-|-----------|----------|
-| `SortEngine` | In-memory sorting of Python objects |
-| `SqlSortAdapter` | Building SQLAlchemy ORDER BY clauses |
+| Feature | Description |
+|---------|-------------|
+| [Basic Sorting](basic.md) | Single-column sorting with SortSpec |
+| [Multi-Column Sorting](multi-column.md) | Priority-based multi-field sorting |
 
 ## Quick Example
 
-### In-Memory Sorting
-
 ```python
-from pypaginate.sorting import SortEngine, sort_items
+from pypaginate import SortSpec, SortDirection, NullsPosition
 
-# Define some data
 users = [
-    User(name="Alice", age=30),
-    User(name="Bob", age=None),
-    User(name="Charlie", age=25),
+    {"name": "Charlie", "age": 35},
+    {"name": "Alice", "age": 30},
+    {"name": "Bob", "age": None},
 ]
 
-# Sort by age with nulls last
-sorted_users = sort_items(
-    users,
-    sort_field="age",
-    reverse=False,
-    nulls_position="last",
-    tie_breaker_field="name",
-)
-# Result: [Charlie(25), Alice(30), Bob(None)]
+# Sort by age ascending, nulls at the end
+from pypaginate.sorting.engine import SortEngine
+
+engine = SortEngine()
+sorted_users = engine.apply(users, [
+    SortSpec(field="age", direction=SortDirection.ASC, nulls=NullsPosition.LAST),
+])
+# [Alice(30), Charlie(35), Bob(None)]
 ```
 
-### SQL Sorting
+## SortSpec
+
+`SortSpec` is an immutable Pydantic model describing a sort criterion:
 
 ```python
-from sqlalchemy import select
-from pypaginate.sorting import SqlSortAdapter
+from pypaginate import SortSpec, SortDirection, NullsPosition
 
-# Build ORDER BY expression
-order_expr = SqlSortAdapter.build_order_expression(
-    column=User.created_at,
-    descending=True,
-    nulls_position="last",
-)
-
-# Apply to query
-stmt = select(User).order_by(order_expr)
-```
-
-## Key Features
-
-### Null Handling
-
-pypaginate gives you explicit control over where `None` values appear:
-
-```python
-# Nulls first (default for many databases with ASC)
-sorted_items(items, "field", nulls_position="first", ...)
-
-# Nulls last (often preferred for descending sorts)
-sorted_items(items, "field", nulls_position="last", ...)
-```
-
-### Tie-Breaking
-
-For deterministic results, specify a secondary sort field:
-
-```python
-sorted_users = sort_items(
-    users,
-    sort_field="department",
-    reverse=False,
-    nulls_position="last",
-    tie_breaker_field="id",  # Ensures stable ordering
+spec = SortSpec(
+    field="created_at",
+    direction=SortDirection.DESC,
+    nulls=NullsPosition.LAST,
 )
 ```
 
-### Type-Safe Sorting
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `field` | `str` | required | Field name to sort on |
+| `direction` | `SortDirection` | `ASC` | `ASC` or `DESC` |
+| `nulls` | `NullsPosition` | `LAST` | `FIRST` or `LAST` -- where to place `None` values |
 
-The sorting engine handles heterogeneous types gracefully:
+## SortDirection Enum
 
-- Numbers are sorted numerically
-- Strings are sorted lexicographically
-- Mixed types are grouped by type, then sorted within groups
+```python
+from pypaginate import SortDirection
 
-## Architecture
-
-```{mermaid}
-graph LR
-    A[Sort Request] --> B{Data Source}
-    B -->|In-Memory| C[SortEngine]
-    B -->|SQL Query| D[SqlSortAdapter]
-    C --> E[Sorted List]
-    D --> F[ORDER BY Clause]
+SortDirection.ASC    # ascending (A-Z, 0-9, oldest first)
+SortDirection.DESC   # descending (Z-A, 9-0, newest first)
 ```
+
+## NullsPosition Enum
+
+```python
+from pypaginate import NullsPosition
+
+NullsPosition.FIRST  # None values appear before non-None
+NullsPosition.LAST   # None values appear after non-None (default)
+```
+
+## Backend Support
+
+| Backend | Import | Notes |
+|---------|--------|-------|
+| In-memory (engine) | `from pypaginate.sorting.engine import SortEngine` | Direct sort on sequences |
+| In-memory (backend) | `from pypaginate.adapters.memory import MemorySortBackend` | Pipeline-compatible |
+| SQLAlchemy | `from pypaginate.adapters.sqlalchemy import SQLAlchemySortBackend` | Generates ORDER BY |
 
 ## Next Steps
 
-- [Basic Sorting](basic.md) - Learn single-field sorting
-- [Multi-Column Sorting](multi-column.md) - Complex ordering scenarios
+- [Basic Sorting](basic.md) -- Single-field sorting fundamentals
+- [Multi-Column Sorting](multi-column.md) -- Complex sorting scenarios

@@ -62,6 +62,7 @@ dmypy.json
 docs/_build/
 docs-sphinx/_build/
 site/
+v1docs/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -81,6 +82,13 @@ node_modules/
 # Build artifacts
 *.manifest
 *.spec
+
+# Session artifacts (AI-generated planning docs)
+REFACTORING_PLAN.md
+REFACTORING_ROADMAP.md
+AUDIT_IMPLEMENTATION_PLAN.md
+AUDIT_R2_IMPLEMENTATION_PLAN.md
+DOCS_REFACTOR_PLAN.md
 
 # Installer logs
 pip-log.txt

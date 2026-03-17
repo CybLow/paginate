@@ -1,343 +1,270 @@
 # Code Style
 
-pypaginate follows strict coding standards to maintain quality and consistency.
+Standards enforced across pypaginate by tooling, architecture tests, and convention.
+
+The canonical reference is [CLAUDE.md](https://github.com/CybLow/pypaginate/blob/main/CLAUDE.md) in the repository root.
+This page summarizes the key rules.
+
+---
 
 ## Tools
 
-| Tool | Purpose |
-|------|---------|
-| [Ruff](https://docs.astral.sh/ruff/) | Linting and formatting |
-| [mypy](https://mypy.readthedocs.io/) | Type checking |
-| [pytest](https://docs.pytest.org/) | Testing |
+| Tool | Purpose | Command |
+|---|---|---|
+| [Ruff](https://docs.astral.sh/ruff/) | Lint + format | `uv run ruff check src/ && uv run ruff format .` |
+| [mypy](https://mypy.readthedocs.io/) | Type checking (strict) | `uv run mypy src/` |
+| [pytest](https://docs.pytest.org/) | Testing | `uv run pytest tests/ --ignore=tests/perf -q` |
+| [bandit](https://bandit.readthedocs.io/) | Security scan | `uv run bandit -r src/ -c pyproject.toml` |
 
-## Running Checks
+### Run All Checks
 
 ```bash
-# All checks
-uv run pypaginate qa
-
-# Individual checks
-uv run pypaginate lint      # Ruff linting
-uv run pypaginate format    # Ruff formatting
-uv run pypaginate typecheck # mypy
+uv run ruff format . && uv run ruff check --fix . && uv run mypy src/ && uv run pytest tests/ --ignore=tests/perf -q
 ```
+
+---
+
+## Hard Limits
+
+Enforced by `tests/architecture/test_file_limits.py`:
+
+| Metric | Hard Limit | Preferred |
+|---|---|---|
+| Lines per file (code, excl. comments/docstrings) | **250** | 180 |
+| Lines per function (body, excl. docstring) | **15** | 10 |
+| Lines per class | **250** | 150 |
+| Parameters per function | **4** | 3 |
+| Indentation levels | **2** | 1 |
+| Public methods per class | 10 | 5-7 |
+| Instance attributes | 5 | 3-4 |
+| Cyclomatic complexity | 10 | 5 |
+
+---
+
+## Python Version
+
+**Python 3.11+** required. Use modern syntax:
+
+```python
+from __future__ import annotations  # Required in all files
+
+X | None          # Not Optional[X]
+list[str]         # Not List[str]
+dict[str, int]    # Not Dict[str, int]
+tuple[int, str]   # Not Tuple[int, str]
+```
+
+---
 
 ## Type Hints
 
 ### Required for All Public APIs
 
 ```python
-# GOOD
-def paginate(
-    items: list[T],
-    page: int,
-    limit: int,
-) -> Page[T]:
-    ...
-
-# BAD
-def paginate(items, page, limit):
-    ...
+def apply_filters(
+    self,
+    query: object,
+    filters: Sequence[FilterSpec],
+) -> object: ...
 ```
 
-### Use Future Annotations
+### Use Protocols, Not Base Classes
 
 ```python
-from __future__ import annotations
+# GOOD -- structural typing
+class PaginationBackend(Protocol[T]):
+    async def count(self, query: object) -> int: ...
 
-# Enables: list[T] instead of List[T]
-# Enables: T | None instead of Optional[T]
+# BAD -- inheritance coupling
+class BasePaginationBackend(ABC):
+    @abstractmethod
+    async def count(self, query: object) -> int: ...
 ```
 
-### Prefer `collections.abc`
+### TYPE_CHECKING for Import-Only Types
 
 ```python
-# GOOD
-from collections.abc import Sequence, Mapping
-
-def process(items: Sequence[int]) -> list[int]:
-    ...
-
-# AVOID
-from typing import List, Sequence
-
-def process(items: Sequence[int]) -> List[int]:
-    ...
-```
-
-## Docstrings
-
-### Google Style
-
-```python
-def paginate_entities(
-    session: AsyncSession,
-    query: Select,
-    params: PageParams,
-) -> Page[T]:
-    """Paginate a SQLAlchemy query.
-    
-    Executes the query with offset pagination and returns
-    a Page object containing the results.
-    
-    Args:
-        session: Async SQLAlchemy session.
-        query: Select statement to paginate.
-        params: Pagination parameters.
-    
-    Returns:
-        A Page object with items and metadata.
-    
-    Raises:
-        PaginationError: If pagination fails.
-    
-    Example:
-        >>> page = await paginate_entities(
-        ...     session, select(User), PageParams(page=1, limit=20)
-        ... )
-        >>> print(page.total)
-        100
-    """
-```
-
-### Class Docstrings
-
-```python
-class SqlPaginator(Generic[T]):
-    """SQL pagination engine using SQLAlchemy.
-    
-    This class provides offset-based pagination for SQLAlchemy
-    queries with automatic count query generation.
-    
-    Attributes:
-        session: The async session used for queries.
-        clamp: Whether to clamp out-of-range pages.
-    
-    Example:
-        >>> paginator = SqlPaginator(session, clamp=True)
-        >>> page = await paginator.paginate(stmt, params)
-    """
-```
-
-## Code Organization
-
-### Imports
-
-```python
-# Standard library
-from __future__ import annotations
-import asyncio
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Generic, TypeVar
-
-# Third-party
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-# Local
-from pypaginate.core import Page, PageParams
-from pypaginate.exceptions import PaginationError
-
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from sqlalchemy.ext.asyncio import AsyncSession
 ```
 
-### Module Structure
+---
+
+## Class Conventions
+
+### `__slots__` on Every Class
+
+Every class with instance attributes **must** have `__slots__`:
 
 ```python
-"""Module docstring explaining purpose.
+class SQLAlchemyBackend(Generic[ItemT]):
+    __slots__ = ("_count_query", "_session", "_unique")
 
-This module provides X functionality for Y use case.
-"""
-
-from __future__ import annotations
-
-# Imports...
-
-# Constants
-DEFAULT_LIMIT = 20
-MAX_LIMIT = 100
-
-# Type variables
-T = TypeVar("T")
-
-
-# Public classes/functions
-class PublicClass:
-    """Public class docstring."""
-    ...
-
-
-def public_function() -> None:
-    """Public function docstring."""
-    ...
-
-
-# Private helpers (underscore prefix)
-def _private_helper() -> None:
-    ...
-
-
-# Module exports
-__all__ = [
-    "PublicClass",
-    "public_function",
-]
+    def __init__(self, session: AsyncSession, ...) -> None:
+        self._session = session
 ```
 
-## Naming Conventions
-
-### Variables and Functions
+Stateless classes use empty slots:
 
 ```python
-# snake_case for variables and functions
-page_params = PageParams(page=1, limit=20)
-total_count = calculate_total(items)
-
-def get_pagination_params() -> PageParams:
-    ...
+class SQLAlchemySearchBackend:
+    __slots__ = ()
 ```
 
-### Classes
+### No Boolean Parameters
+
+Use enums or separate methods:
 
 ```python
-# PascalCase for classes
-class SqlPaginator:
-    ...
+# BAD
+def paginate(source, params, clamp: bool = False): ...
 
-class PageParams:
-    ...
+# GOOD
+class OverflowStrategy(Enum):
+    CLAMP = auto()
+    EMPTY = auto()
+
+def paginate(source, params, *, overflow: OverflowStrategy = OverflowStrategy.EMPTY): ...
 ```
 
-### Constants
+---
+
+## Function Conventions
+
+### Guard Clauses (No Deep Nesting)
 
 ```python
-# UPPER_SNAKE_CASE for constants
-DEFAULT_PAGE_SIZE = 20
-MAX_RESULTS = 1000
+# BAD -- deep nesting
+def process(data):
+    if data:
+        if data.get("valid"):
+            if data.get("type") == "order":
+                return Result(...)
+    return None
+
+# GOOD -- guard clauses
+def process(data):
+    if not data:
+        return None
+    if not data.get("valid"):
+        return None
+    if data.get("type") != "order":
+        return None
+    return Result(...)
 ```
 
-### Private Members
+### Verb Prefixes
+
+| Prefix | Returns | Example |
+|---|---|---|
+| `get_*` | Value or raises | `get_user(id)` |
+| `find_*` | Value or None | `find_user_by_email(email)` |
+| `create_*` | New object | `create_default_registry()` |
+| `compile_*` | Reusable callable | `compile_accessor("user.name")` |
+| `apply_*` | Transformed input | `apply_filters(query, specs)` |
+| `build_*` | Constructed object | `build_sort_key(field, dir, nulls)` |
+| `is_*` / `has_*` | bool | `is_active()`, `has_items()` |
+
+---
+
+## Naming
+
+| Element | Convention | Example |
+|---|---|---|
+| Files | `snake_case.py` | `filter_engine.py` |
+| Classes | `PascalCase` | `SQLAlchemyBackend` |
+| Functions | `snake_case` + verb | `apply_filters()` |
+| Constants | `UPPER_SNAKE` | `MAX_LIMIT` |
+| Private | `_leading_underscore` | `self._session` |
+| Type vars | Single uppercase or `*T` | `T`, `ItemT` |
+
+---
+
+## Imports
+
+### Order
 
 ```python
-class Example:
-    def __init__(self):
-        self._private_attr = "internal"
-    
-    def _private_method(self):
-        """Internal use only."""
-        ...
+from __future__ import annotations          # 1. Future annotations
+
+import functools                            # 2. Stdlib
+from collections.abc import Callable
+
+from pypaginate.domain.enums import FilterLogic  # 3. Local
 ```
 
-## Dataclasses
+### No Circular Imports
 
-### Immutable by Default
+Use `TYPE_CHECKING` guard for type-only imports:
 
 ```python
-from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-
-@dataclass(frozen=True, slots=True)
-class PageParams:
-    """Pagination parameters."""
-    
-    page: int = 1
-    limit: int = 20
-    
-    @property
-    def offset(self) -> int:
-        """Calculate offset from page and limit."""
-        return (self.page - 1) * self.limit
+if TYPE_CHECKING:
+    from pypaginate.domain.specs import FilterSpec
 ```
 
-### Why Frozen?
+---
 
-- Thread-safe
-- Hashable (can be dict keys)
-- Prevents accidental mutation
-- Clearer intent
-
-## Error Handling
-
-### Custom Exceptions
+## Docstrings (Google Style)
 
 ```python
-class PaginationError(Exception):
-    """Base exception for pagination errors."""
-    pass
+def apply_filters(
+    self,
+    query: object,
+    filters: Sequence[FilterSpec],
+) -> object:
+    """Apply filter specs to a SQLAlchemy Select.
 
+    Args:
+        query: A SQLAlchemy Select statement.
+        filters: Filter specifications to apply.
 
-class InvalidPageError(PaginationError):
-    """Raised when page number is invalid."""
-    pass
-```
+    Returns:
+        Modified Select with WHERE clauses.
 
-### Raising Exceptions
-
-```python
-def validate_page(page: int) -> None:
-    """Validate page number.
-    
     Raises:
-        InvalidPageError: If page is less than 1.
+        FilterError: If the operator is unsupported.
     """
-    if page < 1:
-        raise InvalidPageError(
-            f"Page must be >= 1, got {page}"
-        )
 ```
 
-## Async Patterns
+---
 
-### Async Functions
+## Performance Patterns
+
+### Compile-Once, Apply-N
 
 ```python
-async def paginate_entities(
-    session: AsyncSession,
-    query: Select,
-    params: PageParams,
-) -> Page[T]:
-    """Async pagination function."""
-    result = await session.execute(query)
-    ...
+# BAD -- per-item work
+for item in items:
+    segments = field_path.split(".")
+    for seg in segments: ...
+
+# GOOD -- compile once
+accessor = compile_accessor(field_path)
+for item in items:
+    value = accessor(item)
 ```
 
-### Context Managers
+### LRU Cache for Pure Functions
 
 ```python
-from contextlib import asynccontextmanager
-
-
-@asynccontextmanager
-async def get_session():
-    """Provide database session."""
-    async with async_session() as session:
-        yield session
+@functools.lru_cache(maxsize=8192)
+def normalize_text(value: str) -> str: ...
 ```
 
-## Quality Requirements
+### Optional Dependencies
 
-All code must pass:
-
-- **Zero linting errors** (`ruff check`)
-- **Proper formatting** (`ruff format`)
-- **Type checking** (`mypy --strict`)
-- **All tests pass** (`pytest`)
-- **Test coverage** (>= 80%)
-
-## Pre-commit Hooks
-
-Install pre-commit to run checks automatically:
-
-```bash
-uv run pre-commit install
+```python
+try:
+    from rapidfuzz import fuzz as _fuzz
+    _HAS_RAPIDFUZZ = True
+except ImportError:  # pragma: no cover
+    _HAS_RAPIDFUZZ = False  # pragma: no cover
 ```
 
-This runs ruff and mypy before each commit.
+### String Methods Over Regex
 
-## See Also
-
-- [Development Setup](development.md)
-- [Testing Guide](testing.md)
-- [Architecture](architecture.md)
+For simple patterns, use string methods (2-10x faster than regex/fnmatch).

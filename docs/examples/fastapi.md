@@ -1,30 +1,48 @@
-# FastAPI Integration Example
+# FastAPI Integration
 
-This example demonstrates a complete FastAPI REST API with pagination, filtering, sorting, and search.
+This example demonstrates a complete FastAPI REST API using pypaginate's declarative dependencies: `OffsetDep`, `FilterDep`, `SortDep`, and `SearchDep`.
+
+## Installation
+
+```bash
+pip install pypaginate[fastapi,sqlalchemy] uvicorn aiosqlite
+```
 
 ## Complete Example
 
 ```python
-"""FastAPI integration example with pypaginate."""
+"""Full FastAPI app with pypaginate v0.2 — pagination, filtering, sorting, search."""
 from contextlib import asynccontextmanager
-from datetime import datetime
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import Column, DateTime, Float, Integer, String, select
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy import String, Float, Integer, select
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
-from pypaginate.core import PageParams
-from pypaginate.query import paginate_entities_to_page
-from pypaginate.integrations.fastapi import get_pagination_params, PagedResponse
-from pypaginate.sorting import SqlSortAdapter
+from pypaginate import OffsetPage, OffsetParams, paginate
+from pypaginate.adapters.fastapi import (
+    FilterDep,
+    FilterField,
+    OffsetDep,
+    SearchDep,
+    SortDep,
+)
+from pypaginate.adapters.sqlalchemy import (
+    SQLAlchemyBackend,
+    SQLAlchemyFilterBackend,
+    SQLAlchemySearchBackend,
+    SQLAlchemySortBackend,
+)
+from pypaginate.engine.paginator import AsyncPaginator
+from pypaginate.engine.pipeline import AsyncPipeline
 
 
-# Database setup
-DATABASE_URL = "sqlite+aiosqlite:///./api.db"
-engine = create_async_engine(DATABASE_URL)
+# ── Database setup ───────────────────────────────────────
+
+DATABASE_URL = "sqlite+aiosqlite:///./products.db"
+engine = create_async_engine(DATABASE_URL, echo=False)
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
@@ -34,179 +52,128 @@ class Base(DeclarativeBase):
 
 class Product(Base):
     __tablename__ = "products"
-    
-    id = Column(Integer, primary_key=True)
-    name = Column(String(200), nullable=False)
-    description = Column(String(1000))
-    category = Column(String(100), nullable=False)
-    price = Column(Float, nullable=False)
-    stock = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(200))
+    description: Mapped[str | None] = mapped_column(String(1000), default=None)
+    category: Mapped[str] = mapped_column(String(100))
+    price: Mapped[float] = mapped_column(Float)
+    stock: Mapped[int] = mapped_column(Integer, default=0)
 
 
-# Pydantic schemas
+async def get_session():
+    async with async_session() as session:
+        yield session
+
+
+# ── Schemas ──────────────────────────────────────────────
+
 class ProductSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     name: str
     description: str | None
     category: str
     price: float
     stock: int
-    created_at: datetime
 
 
-class ProductCreate(BaseModel):
-    name: str
-    description: str | None = None
-    category: str
-    price: float
-    stock: int = 0
+# ── Filter dependency ────────────────────────────────────
+
+class ProductFilters(FilterDep):
+    """Declarative product filters — non-None fields become FilterSpecs."""
+
+    category: str | None = FilterField(None, operator="eq")
+    min_price: float | None = FilterField(None, field="price", operator="gte")
+    max_price: float | None = FilterField(None, field="price", operator="lte")
+    in_stock: int | None = FilterField(None, field="stock", operator="gt")
 
 
-# Dependencies
-async def get_session():
-    async with async_session() as session:
-        yield session
+# ── Pipeline factory ─────────────────────────────────────
+
+def create_pipeline(session: AsyncSession) -> AsyncPipeline:
+    return AsyncPipeline(
+        AsyncPaginator(SQLAlchemyBackend(session)),
+        filter_backend=SQLAlchemyFilterBackend(),
+        sort_backend=SQLAlchemySortBackend(),
+        search_backend=SQLAlchemySearchBackend(),
+    )
 
 
-# Lifespan for startup/shutdown
+# ── App ──────────────────────────────────────────────────
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: create tables and seed data
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     async with async_session() as session:
         result = await session.execute(select(Product).limit(1))
         if not result.scalar():
-            products = [
-                Product(name="iPhone 15", description="Latest iPhone", 
-                       category="Electronics", price=999.99, stock=50),
+            session.add_all([
+                Product(name="iPhone 15", description="Latest iPhone",
+                        category="Electronics", price=999.99, stock=50),
                 Product(name="MacBook Pro", description="Professional laptop",
-                       category="Electronics", price=2499.99, stock=25),
+                        category="Electronics", price=2499.99, stock=25),
+                Product(name="AirPods Pro", description="Noise-cancelling earbuds",
+                        category="Electronics", price=249.99, stock=100),
                 Product(name="Python Cookbook", description="Python recipes",
-                       category="Books", price=49.99, stock=100),
+                        category="Books", price=49.99, stock=200),
                 Product(name="Standing Desk", description="Ergonomic desk",
-                       category="Furniture", price=599.99, stock=20),
-            ]
-            session.add_all(products)
+                        category="Furniture", price=599.99, stock=20),
+                Product(name="Headphones", description="Over-ear headphones",
+                        category="Electronics", price=199.99, stock=0),
+            ])
             await session.commit()
-    
     yield
-    # Shutdown: cleanup if needed
 
 
-# FastAPI app
-app = FastAPI(
-    title="Product API",
-    description="Example API with pypaginate",
-    lifespan=lifespan,
-)
+app = FastAPI(title="Product API", lifespan=lifespan)
 
 
-@app.get("/products", response_model=PagedResponse[ProductSchema])
+# ── Endpoints ────────────────────────────────────────────
+
+@app.get("/products")
 async def list_products(
+    params: OffsetDep,
+    filters: Annotated[ProductFilters, Query()],
+    sort: Annotated[SortDep, Query()],
+    search: Annotated[SearchDep, Query()],
     session: AsyncSession = Depends(get_session),
-    params: PageParams = Depends(get_pagination_params),
-    # Filters
-    category: Annotated[str | None, Query(description="Filter by category")] = None,
-    min_price: Annotated[float | None, Query(ge=0, description="Minimum price")] = None,
-    max_price: Annotated[float | None, Query(ge=0, description="Maximum price")] = None,
-    in_stock: Annotated[bool | None, Query(description="Only in-stock items")] = None,
-    # Search
-    search: Annotated[str | None, Query(description="Search in name/description")] = None,
-    # Sorting
-    sort_by: Annotated[str, Query(
-        regex="^(name|price|created_at|stock)$",
-        description="Field to sort by"
-    )] = "created_at",
-    order: Annotated[str, Query(
-        regex="^(asc|desc)$",
-        description="Sort order"
-    )] = "desc",
-):
+) -> OffsetPage[ProductSchema]:
     """
     List products with pagination, filtering, sorting, and search.
-    
-    **Pagination:**
-    - `page`: Page number (default: 1)
-    - `limit`: Items per page (default: 20, max: 100)
-    
-    **Filters:**
-    - `category`: Exact category match
-    - `min_price`, `max_price`: Price range
-    - `in_stock`: Only products with stock > 0
-    
-    **Search:**
-    - `search`: Search in name and description
-    
-    **Sorting:**
-    - `sort_by`: name, price, created_at, stock
-    - `order`: asc or desc
+
+    **Pagination:** `?page=1&limit=20`
+    **Filters:** `?category=Electronics&min_price=100&max_price=500`
+    **Sorting:** `?sort=price` or `?sort=-price` (desc) or `?sort=name,-price`
+    **Search:** `?q=iphone&search_fields=name,description`
     """
-    stmt = select(Product)
-    
-    # Apply filters
-    if category:
-        stmt = stmt.where(Product.category == category)
-    if min_price is not None:
-        stmt = stmt.where(Product.price >= min_price)
-    if max_price is not None:
-        stmt = stmt.where(Product.price <= max_price)
-    if in_stock:
-        stmt = stmt.where(Product.stock > 0)
-    
-    # Apply search
-    if search:
-        search_term = f"%{search}%"
-        stmt = stmt.where(
-            Product.name.ilike(search_term) | 
-            Product.description.ilike(search_term)
-        )
-    
-    # Apply sorting
-    column = getattr(Product, sort_by)
-    order_expr = SqlSortAdapter.build_order_expression(
-        column=column,
-        descending=(order == "desc"),
-        nulls_position="last",
+    query = select(Product)
+    pipeline = create_pipeline(session)
+
+    return await pipeline.execute(
+        query,
+        params,
+        filters=filters,
+        sorting=sort,
+        search=search,
     )
-    stmt = stmt.order_by(order_expr)
-    
-    # Paginate
-    page = await paginate_entities_to_page(session, stmt, params)
-    return PagedResponse.from_page(page)
 
 
-@app.get("/products/{product_id}", response_model=ProductSchema)
+@app.get("/products/{product_id}")
 async def get_product(
     product_id: int,
     session: AsyncSession = Depends(get_session),
-):
+) -> ProductSchema:
     """Get a single product by ID."""
     result = await session.execute(
         select(Product).where(Product.id == product_id)
     )
     product = result.scalar_one_or_none()
-    
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    
-    return product
-
-
-@app.post("/products", response_model=ProductSchema, status_code=201)
-async def create_product(
-    data: ProductCreate,
-    session: AsyncSession = Depends(get_session),
-):
-    """Create a new product."""
-    product = Product(**data.model_dump())
-    session.add(product)
-    await session.commit()
-    await session.refresh(product)
     return product
 
 
@@ -215,75 +182,134 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
 
-## Running the Example
+## Running It
 
 ```bash
-# Install dependencies
-uv add pypaginate[fastapi] uvicorn aiosqlite
-
-# Run the server
-python examples/fastapi_example.py
-
-# Or with uvicorn
-uvicorn examples.fastapi_example:app --reload
+python app.py
+# or
+uvicorn app:app --reload
 ```
+
+Open http://localhost:8000/docs for the interactive Swagger UI.
 
 ## API Usage
 
-### List Products
+### Basic pagination
 
 ```bash
-# Basic pagination
-curl "http://localhost:8000/products?page=1&limit=10"
-
-# With filters
-curl "http://localhost:8000/products?category=Electronics&min_price=100"
-
-# With search
-curl "http://localhost:8000/products?search=iPhone"
-
-# With sorting
-curl "http://localhost:8000/products?sort_by=price&order=asc"
-
-# Combined
-curl "http://localhost:8000/products?category=Electronics&sort_by=price&order=desc&page=1&limit=5"
+curl "http://localhost:8000/products?page=1&limit=3"
 ```
 
-### Response Format
+### Filtering
+
+```bash
+# By category
+curl "http://localhost:8000/products?category=Electronics"
+
+# By price range
+curl "http://localhost:8000/products?min_price=100&max_price=500"
+
+# In stock only
+curl "http://localhost:8000/products?in_stock=1"
+
+# Combined
+curl "http://localhost:8000/products?category=Electronics&max_price=300&in_stock=1"
+```
+
+### Sorting
+
+```bash
+# Sort by price ascending
+curl "http://localhost:8000/products?sort=price"
+
+# Sort by price descending
+curl "http://localhost:8000/products?sort=-price"
+
+# Multi-column: category ASC, then price DESC
+curl "http://localhost:8000/products?sort=category,-price"
+```
+
+### Search
+
+```bash
+# Search name and description for "pro"
+curl "http://localhost:8000/products?q=pro&search_fields=name,description"
+```
+
+### Everything combined
+
+```bash
+curl "http://localhost:8000/products?category=Electronics&sort=-price&q=pro&search_fields=name&page=1&limit=5"
+```
+
+### Response format
 
 ```json
 {
     "items": [
         {
-            "id": 1,
-            "name": "iPhone 15",
-            "description": "Latest iPhone",
+            "id": 3,
+            "name": "AirPods Pro",
+            "description": "Noise-cancelling earbuds",
             "category": "Electronics",
-            "price": 999.99,
-            "stock": 50,
-            "created_at": "2024-01-15T10:30:00"
+            "price": 249.99,
+            "stock": 100
         }
     ],
-    "total": 25,
+    "total": 1,
     "page": 1,
-    "limit": 10
+    "pages": 1,
+    "limit": 5,
+    "has_next": false,
+    "has_previous": false
 }
 ```
 
-### OpenAPI Documentation
+## How It Works
 
-Visit `http://localhost:8000/docs` for interactive Swagger UI documentation.
+### Dependency injection
 
-## Key Features Demonstrated
+| Dependency | Query Parameters | Produces |
+|-----------|------------------|----------|
+| `OffsetDep` | `?page=1&limit=20` | `OffsetParams` |
+| `CursorDep` | `?limit=20&after=...&before=...` | `CursorParams` |
+| `FilterDep` subclass | Custom per subclass | `list[FilterSpec]` via `.to_specs()` |
+| `SortDep` | `?sort=name,-price` | `list[SortSpec]` via `.to_specs()` |
+| `SearchDep` | `?q=text&search_fields=a,b` | `SearchSpec` via `.to_spec()` |
 
-1. **Dependency Injection** - `get_pagination_params` for query params
-2. **Response Models** - `PagedResponse[ProductSchema]` for OpenAPI
-3. **Filtering** - Multiple filter parameters
-4. **Search** - ILIKE search across fields
-5. **Sorting** - Dynamic sort with validation
-6. **Validation** - Query parameter constraints
+### Pipeline auto-detection
+
+The `AsyncPipeline.execute()` method auto-detects `FilterDep`, `SortDep`, and `SearchDep` objects and calls their conversion methods. You can also pass raw spec lists directly:
+
+```python
+from pypaginate import FilterSpec, SortSpec, SearchSpec, SortDirection
+
+page = await pipeline.execute(
+    query,
+    params,
+    filters=[FilterSpec(field="category", value="Electronics")],
+    sorting=[SortSpec(field="price", direction=SortDirection.DESC)],
+    search=SearchSpec(query="pro", fields=("name", "description")),
+)
+```
+
+### Simple endpoint (no pipeline)
+
+For endpoints that only need pagination (no filtering/sorting/search):
+
+```python
+@app.get("/users")
+async def list_users(
+    params: OffsetDep,
+    session: AsyncSession = Depends(get_session),
+) -> OffsetPage[UserSchema]:
+    query = select(User).order_by(User.id)
+    backend = SQLAlchemyBackend(session)
+    return await paginate(query, params, backend=backend)
+```
 
 ## Next Steps
 
-- [Keyset Pagination](keyset.md) - Handle large datasets
-- [SQLAlchemy Integration](../integrations/sqlalchemy.md) - Advanced patterns
+- [Basic Pagination](basic-pagination.md) -- In-memory and SQLAlchemy basics
+- [Filtering](filtering.md) -- Deep dive into FilterSpec and And/Or groups
+- [Keyset Pagination](keyset.md) -- CursorParams for large datasets

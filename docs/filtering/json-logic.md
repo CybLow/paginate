@@ -1,351 +1,205 @@
-# JSON Logic Filtering
+# Nested Filter Groups
 
-pypaginate uses JSON Logic for powerful, expressive filtering.
+pypaginate supports arbitrarily nested AND/OR filter expressions via `FilterGroup`, `And()`, and `Or()` builder functions.
 
-## What is JSON Logic?
+:::{note}
+The name "JSON Logic" is historical. pypaginate v0.2 uses typed Python objects (`FilterGroup`, `And`, `Or`) instead of raw JSON dicts. These compose into nested boolean trees that both in-memory and SQLAlchemy backends evaluate natively.
+:::
 
-JSON Logic is a way to write logical expressions in JSON format. It's:
+## And / Or Builders
 
-- **Portable**: Works in any language (Python, JavaScript, etc.)
-- **Safe**: Can be sent from untrusted sources
-- **Expressive**: Supports complex nested logic
-
-## Basic Structure
-
-```text
-{
-  "operator": [arguments]
-}
-```
-
-In pypaginate, we use a simplified syntax:
+The `And()` and `Or()` functions create `FilterGroup` objects:
 
 ```python
-# Field-based filter
-{"field_name": {"operator": "value"}}
+from pypaginate import And, Or, FilterSpec
 
-# Logical operators
-{"and": [filter1, filter2]}
-{"or": [filter1, filter2]}
-{"not": filter}
+# Simple OR: either condition matches
+group = Or(
+    FilterSpec(field="role", value="admin"),
+    FilterSpec(field="role", value="moderator"),
+)
+# role = "admin" OR role = "moderator"
+
+# Simple AND: both conditions must match
+group = And(
+    FilterSpec(field="status", value="active"),
+    FilterSpec(field="age", operator="gte", value=18),
+)
+# status = "active" AND age >= 18
 ```
 
-## Field Filters
+## Nesting Groups
 
-### Simple Comparison
+Groups can contain other groups for complex boolean expressions:
 
 ```python
-from pypaginate.filters.predicates import FilterEngine
+from pypaginate import And, Or, FilterSpec
 
-engine = FilterEngine()
-
-# Equality
-{"name": {"eq": "Alice"}}
-
-# Not equal
-{"status": {"ne": "banned"}}
-
-# Greater than / Less than
-{"age": {"gt": 18}}
-{"age": {"lt": 65}}
-
-# Greater/less than or equal
-{"age": {"gte": 18}}
-{"age": {"lte": 65}}
+# (role=admin OR role=mod) AND (status=active OR status=pending)
+group = And(
+    Or(
+        FilterSpec(field="role", value="admin"),
+        FilterSpec(field="role", value="moderator"),
+    ),
+    Or(
+        FilterSpec(field="status", value="active"),
+        FilterSpec(field="status", value="pending"),
+    ),
+)
 ```
 
-### Range Filter
-
 ```python
-# Between (inclusive)
-{"age": {"between": [18, 65]}}
-
-# Equivalent to:
-{"and": [
-    {"age": {"gte": 18}},
-    {"age": {"lte": 65}}
-]}
+# age >= 18 AND (country=US OR (country=UK AND verified=True))
+group = And(
+    FilterSpec(field="age", operator="gte", value=18),
+    Or(
+        FilterSpec(field="country", value="US"),
+        And(
+            FilterSpec(field="country", value="UK"),
+            FilterSpec(field="verified", value=True),
+        ),
+    ),
+)
 ```
 
-### String Operators
+## Depth Limit
+
+`FilterGroup` validates nesting depth at construction time. The maximum depth is 5 levels. Exceeding this raises a `ValueError`:
 
 ```python
-# Pattern matching (SQL LIKE style)
-{"email": {"like": "%@gmail.com"}}      # ends with @gmail.com
-{"name": {"like": "A%"}}                 # starts with A
-{"code": {"like": "AB_123"}}             # _ matches single char
+from pypaginate import And, FilterSpec
 
-# Case-insensitive
-{"email": {"ilike": "%@GMAIL.COM"}}
-
-# Prefix/suffix
-{"name": {"startswith": "Alice"}}
-{"email": {"endswith": ".com"}}
-
-# Regular expression
-{"code": {"regex": "^[A-Z]{2}[0-9]{3}$"}}
+# This would raise ValueError: "FilterGroup nesting must not exceed 5 levels"
+# deeply_nested = And(And(And(And(And(And(FilterSpec(...)))))))
 ```
 
-### Collection Operators
+## FilterGroup Model
+
+Under the hood, `And()` and `Or()` return `FilterGroup` objects:
 
 ```python
-# In list
-{"status": {"in": ["active", "pending", "review"]}}
+from pypaginate import FilterGroup, FilterLogic, FilterSpec
 
-# Not in list
-{"status": {"not_in": ["banned", "deleted"]}}
-
-# Contains (for array fields)
-{"tags": {"contains": "python"}}
-
-# Has any of (array intersection)
-{"tags": {"any": ["python", "javascript"]}}
-
-# Has all of (array subset)
-{"permissions": {"all": ["read", "write"]}}
+# Direct construction (prefer And/Or builders)
+group = FilterGroup(
+    logic=FilterLogic.AND,
+    conditions=(
+        FilterSpec(field="a", value=1),
+        FilterSpec(field="b", value=2),
+    ),
+)
 ```
 
-## Logical Operators
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `logic` | `FilterLogic` | `AND` | How to combine the conditions |
+| `conditions` | `tuple[FilterSpec \| FilterGroup, ...]` | required | Child conditions |
 
-### AND
+## In-Memory Usage
 
-All conditions must be true:
-
-```python
-{
-    "and": [
-        {"age": {"gte": 18}},
-        {"status": {"eq": "active"}},
-        {"verified": {"eq": True}}
-    ]
-}
-```
-
-### OR
-
-At least one condition must be true:
+`FilterEngine.apply()` accepts both flat lists and `FilterGroup`:
 
 ```python
-{
-    "or": [
-        {"role": {"eq": "admin"}},
-        {"role": {"eq": "moderator"}},
-        {"is_owner": {"eq": True}}
-    ]
-}
-```
+from pypaginate import And, Or, FilterSpec
+from pypaginate.filtering.engine import FilterEngine
+from pypaginate.filtering.registry import create_default_registry
 
-### NOT
+engine = FilterEngine(registry=create_default_registry())
 
-Negate a condition:
-
-```python
-# Users who are NOT banned
-{"not": {"status": {"eq": "banned"}}}
-
-# Not in list
-{"not": {"role": {"in": ["guest", "anonymous"]}}}
-```
-
-## Complex Expressions
-
-### Nested Logic
-
-```python
-# (admin OR moderator) AND verified AND age >= 18
-{
-    "and": [
-        {
-            "or": [
-                {"role": {"eq": "admin"}},
-                {"role": {"eq": "moderator"}}
-            ]
-        },
-        {"verified": {"eq": True}},
-        {"age": {"gte": 18}}
-    ]
-}
-```
-
-### Multiple Conditions on Same Field
-
-```python
-# Age between 18 and 65 (inclusive)
-{
-    "and": [
-        {"age": {"gte": 18}},
-        {"age": {"lte": 65}}
-    ]
-}
-
-# Or use between
-{"age": {"between": [18, 65]}}
-```
-
-### Real-World Examples
-
-#### E-commerce Product Filter
-
-```python
-product_filter = {
-    "and": [
-        {"category": {"in": ["electronics", "computers"]}},
-        {"price": {"between": [100, 1000]}},
-        {"in_stock": {"eq": True}},
-        {
-            "or": [
-                {"rating": {"gte": 4}},
-                {"reviews_count": {"gte": 100}}
-            ]
-        }
-    ]
-}
-
-products = engine.filter(all_products, product_filter)
-```
-
-#### User Search Filter
-
-```python
-user_filter = {
-    "and": [
-        {"status": {"eq": "active"}},
-        {"email_verified": {"eq": True}},
-        {
-            "or": [
-                {"name": {"ilike": "%john%"}},
-                {"email": {"ilike": "%john%"}}
-            ]
-        },
-        {"not": {"role": {"eq": "bot"}}}
-    ]
-}
-
-users = engine.filter(all_users, user_filter)
-```
-
-#### Order History Filter
-
-```python
-order_filter = {
-    "and": [
-        {"user_id": {"eq": current_user_id}},
-        {"created_at": {"gte": "2024-01-01"}},
-        {
-            "or": [
-                {"status": {"eq": "completed"}},
-                {"status": {"eq": "shipped"}}
-            ]
-        },
-        {"total": {"gte": 50}}
-    ]
-}
-
-orders = engine.filter(all_orders, order_filter)
-```
-
-## Nested Field Access
-
-Access nested objects with dot notation:
-
-```python
-data = [
-    {
-        "id": 1,
-        "user": {
-            "profile": {
-                "name": "Alice",
-                "settings": {"theme": "dark"}
-            }
-        }
-    }
+users = [
+    {"name": "Alice", "role": "admin", "status": "active"},
+    {"name": "Bob", "role": "user", "status": "active"},
+    {"name": "Charlie", "role": "moderator", "status": "inactive"},
+    {"name": "Diana", "role": "admin", "status": "inactive"},
 ]
 
-# Filter by nested field
-result = engine.filter(data, {
-    "user.profile.settings.theme": {"eq": "dark"}
-})
+# Nested group
+group = And(
+    Or(
+        FilterSpec(field="role", value="admin"),
+        FilterSpec(field="role", value="moderator"),
+    ),
+    FilterSpec(field="status", value="active"),
+)
+
+result = engine.apply(users, group)
+# [{"name": "Alice", "role": "admin", "status": "active"}]
 ```
 
-## Arrays and Nested Objects
+## Pipeline Usage
+
+Groups work with the `paginate()` function by applying group filters first, then paginating the results:
 
 ```python
-data = [
-    {
-        "id": 1,
-        "orders": [
-            {"product": "A", "quantity": 2},
-            {"product": "B", "quantity": 1}
-        ]
-    }
-]
+from pypaginate import And, Or, FilterSpec, OffsetParams, paginate
+from pypaginate.filtering.engine import FilterEngine
+from pypaginate.filtering.registry import create_default_registry
 
-# Check if any order has quantity > 1
-result = engine.filter(data, {
-    "orders[*].quantity": {"gt": 1}
-})
+engine = FilterEngine(registry=create_default_registry())
+
+# Apply nested group, then paginate
+group = And(
+    Or(FilterSpec(field="role", value="admin"), FilterSpec(field="role", value="mod")),
+    FilterSpec(field="status", value="active"),
+)
+
+filtered = engine.apply(users, group)
+
+page = paginate(filtered, OffsetParams(page=1, limit=20))
 ```
 
-## Validation
+## FilterInput Type
 
-pypaginate validates filter syntax:
+The `FilterInput` type alias accepts either form:
 
 ```python
-from pypaginate import FilterException, FilterValidationError
+from pypaginate.domain.specs import FilterInput
 
-try:
-    # Invalid operator
-    engine.filter(users, {"age": {"invalid_op": 5}})
-except FilterValidationError as e:
-    print(f"Invalid filter: {e}")
-
-try:
-    # Invalid structure
-    engine.filter(users, "not a dict")
-except FilterException as e:
-    print(f"Filter error: {e}")
+# Both are valid FilterInput:
+flat: FilterInput = [FilterSpec(field="a", value=1)]
+nested: FilterInput = And(FilterSpec(field="a", value=1), FilterSpec(field="b", value=2))
 ```
 
-## API Integration
+## Real-World Examples
 
-Accept filters from API clients:
+### E-commerce Product Filter
 
 ```python
-from fastapi import FastAPI, Body
-from pypaginate.filters.predicates import FilterEngine
+from pypaginate import And, Or, FilterSpec
 
-app = FastAPI()
-engine = FilterEngine()
-
-@app.post("/users/search")
-async def search_users(
-    filters: dict = Body(default={}),
-):
-    """
-    Search users with JSON Logic filters.
-    
-    Example request:
-    ```json
-    {
-        "filters": {
-            "and": [
-                {"status": {"eq": "active"}},
-                {"age": {"gte": 18}}
-            ]
-        }
-    }
-    ```
-    """
-    # Validate and apply filters
-    try:
-        result = engine.filter(all_users, filters)
-        return {"users": result, "count": len(result)}
-    except FilterException as e:
-        raise HTTPException(400, f"Invalid filter: {e}")
+product_filter = And(
+    FilterSpec(field="category", operator="in", value=["electronics", "computers"]),
+    FilterSpec(field="price", operator="between", value=(100, 1000)),
+    FilterSpec(field="in_stock", operator="ne", value=0),
+    Or(
+        FilterSpec(field="rating", operator="gte", value=4),
+        FilterSpec(field="reviews_count", operator="gte", value=100),
+    ),
+)
 ```
 
-## Next Steps
+### User Search with Permissions
 
-- [Operators Reference](operators.md) - Complete operator documentation
-- [SQL Filtering](../integrations/sqlalchemy.md) - Database filtering
-- [Basic Filtering](basic.md) - Simpler filter patterns
+```python
+user_filter = And(
+    FilterSpec(field="status", value="active"),
+    FilterSpec(field="email_verified", operator="is_not_null"),
+    Or(
+        FilterSpec(field="role", value="admin"),
+        And(
+            FilterSpec(field="role", value="user"),
+            FilterSpec(field="permission_level", operator="gte", value=5),
+        ),
+    ),
+)
+```
+
+## Comparison: Flat vs Nested
+
+| Feature | Flat `list[FilterSpec]` | `FilterGroup` (And/Or) |
+|---------|------------------------|------------------------|
+| Simple AND | All specs with default logic | `And(spec1, spec2)` |
+| Mixed AND/OR | `logic=FilterLogic.OR` per spec | `And(Or(...), spec)` |
+| Nested groups | Not possible | Unlimited (up to depth 5) |
+| Pipeline compat | Yes | Yes (via FilterEngine) |
+| SQLAlchemy | Yes (via backend) | Via FilterEngine first |

@@ -1,6 +1,6 @@
 # pypaginate
 
-**Advanced pagination, filtering, and search toolkit for Python**
+**Universal pagination toolkit for Python -- one function, any backend, auto-detects sync/async.**
 
 [![CI](https://github.com/CybLow/pypaginate/actions/workflows/ci.yml/badge.svg)](https://github.com/CybLow/pypaginate/actions/workflows/ci.yml)
 [![PyPI version](https://img.shields.io/pypi/v/pypaginate.svg)](https://pypi.org/project/pypaginate/)
@@ -10,137 +10,180 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 
-pypaginate is a modern, framework-agnostic pagination library that provides powerful features for paginating, filtering, and searching data. It works seamlessly with SQLAlchemy (async/sync), in-memory collections, and can be extended to support other ORMs.
+pypaginate provides a single `paginate()` function that works with lists, SQLAlchemy queries (async and sync), and cursor-based pagination. The return type is automatically inferred from the params you pass in.
 
 ## Features
 
-- **Multiple Pagination Strategies**
-  - Offset-based pagination (page/limit)
-  - Cursor-based (keyset) pagination for efficient large datasets
-  - In-memory pagination for collections
-  
-- **Advanced Filtering**
-  - JSON Logic filtering with 20+ operators
-  - JMESPath for nested field access
-  - Type-safe filtering with mypy strict mode
-  
-- **Powerful Text Search**
-  - Full-text search with fuzzy matching (RapidFuzz)
-  - Accent-insensitive search
-  - SQL and in-memory search engines
-  
-- **Flexible Sorting**
-  - Multi-column sorting
-  - Custom sort key functions
-  - SQL and in-memory sorting
-  
-- **Framework Integration**
-  - Native FastAPI support with dependency injection
-  - SQLAlchemy 2.0+ (async and sync)
-  - Framework-agnostic core
-
-- **Production Ready**
-  - 100% type coverage (mypy --strict)
-  - Comprehensive test suite
-  - Fully documented API
+- **One function** -- `paginate()` handles lists, SQLAlchemy queries, sync and async
+- **Type-safe inference** -- `OffsetParams` returns `OffsetPage`, `CursorParams` returns `CursorPage`
+- **Filtering** -- 20 operators (eq, gte, contains, between, regex, etc.)
+- **Sorting** -- multi-column with direction and null placement control
+- **Search** -- full-text with optional fuzzy matching (RapidFuzz)
+- **FastAPI** -- `Annotated` dependencies for pagination, filtering, sorting, and search
+- **Cursor pagination** -- keyset/cursor-based pagination via sqlakeyset
+- **Pipeline** -- compose filter + sort + search + paginate in one call
+- **100% typed** -- mypy strict mode, Pydantic v2 models
 
 ## Installation
 
-### Using UV (Recommended)
-
 ```bash
-# Basic installation
-uv add pypaginate
-
-# With SQLAlchemy support
-uv add pypaginate[sqlalchemy]
-
-# With all features
-uv add pypaginate[all]
-```
-
-### Using pip
-
-```bash
-# Basic installation (in-memory pagination only)
+# Core (in-memory pagination only)
 pip install pypaginate
 
 # With SQLAlchemy support
 pip install pypaginate[sqlalchemy]
 
-# With all features
+# With FastAPI integration
+pip install pypaginate[fastapi]
+
+# With fuzzy search (RapidFuzz)
+pip install pypaginate[search]
+
+# Everything
 pip install pypaginate[all]
 ```
 
-### Optional Dependencies
+Or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-# Text search with fuzzy matching
-pip install pypaginate[search]
-
-# Advanced filtering
-pip install pypaginate[filters]
-
-# Text normalization
-pip install pypaginate[text]
-
-# FastAPI integration
-pip install pypaginate[fastapi]
+uv add pypaginate
+uv add pypaginate[all]
 ```
 
 ## Quick Start
 
-### Basic Pagination with SQLAlchemy
+Paginate a list in 3 lines:
+
+```python
+from pypaginate import paginate, OffsetParams
+
+page = paginate([1, 2, 3, 4, 5], OffsetParams(page=1, limit=2))
+
+page.items       # [1, 2]
+page.total       # 5
+page.pages       # 3
+page.has_next    # True
+```
+
+## SQLAlchemy (Async)
 
 ```python
 from sqlalchemy import select
-from pypaginate import PageParams, paginate_entities
+from sqlalchemy.ext.asyncio import AsyncSession
+from pypaginate import paginate, OffsetParams
+from pypaginate.adapters.sqlalchemy import SQLAlchemyBackend
 
-async def list_users(session, page: int = 1, limit: int = 20):
-    """Paginate User entities with automatic count."""
-    params = PageParams(page=page, limit=limit)
+async def list_users(session: AsyncSession):
     stmt = select(User).order_by(User.created_at.desc())
-    
-    result = await paginate_entities(
-        session=session,
-        query=stmt,
-        params=params
-    )
-    
-    return {
-        "items": result.items,      # List of User objects
-        "total": result.total,      # Total count
-        "page": result.page,        # Current page
-        "limit": result.limit,      # Items per page
-    }
+    backend = SQLAlchemyBackend(session)
+
+    page = await paginate(stmt, OffsetParams(page=1, limit=20), backend=backend)
+
+    page.items       # list[User]
+    page.total       # int
+    page.has_next    # bool
 ```
 
-### In-Memory Pagination
+For sync sessions, use `SyncSQLAlchemyBackend`:
 
 ```python
-from pypaginate import PageParams
-from pypaginate.engines import MemoryPaginator
+from sqlalchemy.orm import Session
+from pypaginate.adapters.sqlalchemy import SyncSQLAlchemyBackend
 
-users = [
-    {"name": "Alice", "age": 30},
-    {"name": "Bob", "age": 25},
-    {"name": "Charlie", "age": 35},
-]
-
-paginator = MemoryPaginator()
-params = PageParams(page=1, limit=2)
-
-page = paginator.paginate(users, params).to_page()
-print(page.items)  # [{"name": "Alice", ...}, {"name": "Bob", ...}]
-print(page.total)  # 3
+def list_users(session: Session):
+    backend = SyncSQLAlchemyBackend(session)
+    page = paginate(select(User), OffsetParams(page=1, limit=20), backend=backend)
 ```
 
-### Filtering with JSON Logic
+## Cursor Pagination
+
+For large datasets where offset-based pagination is inefficient:
 
 ```python
-from pypaginate.filters.predicates import FilterEngine
+from pypaginate import paginate, CursorParams
+from pypaginate.adapters.sqlalchemy import SQLAlchemyCursorBackend
 
-engine = FilterEngine()
+async def scroll_users(session: AsyncSession, cursor: str | None = None):
+    stmt = select(User).order_by(User.id)
+    backend = SQLAlchemyCursorBackend(session)
+
+    page = await paginate(stmt, CursorParams(limit=20, after=cursor), backend=backend)
+
+    page.items            # list[User]
+    page.next_cursor      # str | None -- pass to next request
+    page.previous_cursor  # str | None
+    page.has_next         # bool
+```
+
+## FastAPI Integration
+
+pypaginate provides `Annotated` dependency types for clean FastAPI integration:
+
+```python
+from fastapi import FastAPI
+from pypaginate import paginate, OffsetPage
+from pypaginate.adapters.fastapi import OffsetDep
+
+app = FastAPI()
+
+@app.get("/users")
+async def list_users(params: OffsetDep) -> OffsetPage[dict]:
+    users = [{"name": "Alice"}, {"name": "Bob"}, {"name": "Charlie"}]
+    return paginate(users, params)
+```
+
+Available dependencies:
+
+| Dependency | Query Params | Produces |
+|---|---|---|
+| `OffsetDep` | `?page=1&limit=20` | `OffsetParams` |
+| `CursorDep` | `?limit=20&after=abc` | `CursorParams` |
+| `FilterDep` | (user-defined fields) | `list[FilterSpec]` |
+| `SortDep` | `?sort=name,-age` | `list[SortSpec]` |
+| `SearchDep` | `?q=alice&search_fields=name,email` | `SearchSpec` |
+
+### Declarative Filters
+
+```python
+from typing import Annotated
+from fastapi import Query
+from pypaginate.adapters.fastapi import FilterDep, FilterField
+
+class UserFilters(FilterDep):
+    name: str | None = FilterField(None, operator="contains")
+    age_min: int | None = FilterField(None, field="age", operator="gte")
+    status: str | None = FilterField(None, operator="eq")
+
+@app.get("/users")
+async def list_users(
+    params: OffsetDep,
+    filters: Annotated[UserFilters, Query()],
+):
+    # filters.to_specs() returns list[FilterSpec] for non-None fields
+    ...
+```
+
+### Sorting and Search
+
+```python
+from pypaginate.adapters.fastapi import OffsetDep, SortDep, SearchDep
+
+@app.get("/users")
+async def list_users(params: OffsetDep, sort: SortDep, search: SearchDep):
+    # sort: ?sort=name,-created_at  (- prefix = descending)
+    # search: ?q=alice&search_fields=name,email
+    ...
+```
+
+## Filtering
+
+Use `FilterSpec` to define filter conditions:
+
+```python
+from pypaginate import FilterSpec
+from pypaginate.filtering import FilterEngine, create_default_registry
+
+engine = FilterEngine(create_default_registry())
 
 users = [
     {"name": "Alice", "age": 30, "status": "active"},
@@ -148,225 +191,178 @@ users = [
     {"name": "Charlie", "age": 35, "status": "active"},
 ]
 
-# Simple equality filter
-filtered = engine.filter(users, {"status": {"eq": "active"}})
-# Result: Alice and Charlie
+# Simple equality
+active = engine.apply(users, [FilterSpec(field="status", value="active")])
+# [Alice, Charlie]
 
-# Complex filters with AND/OR
-filtered = engine.filter(users, {
-    "and": [
-        {"age": {"gte": 30}},
-        {"status": {"eq": "active"}}
-    ]
-})
-# Result: Alice and Charlie (age >= 30 and active)
+# Multiple filters (AND by default)
+result = engine.apply(users, [
+    FilterSpec(field="age", operator="gte", value=30),
+    FilterSpec(field="status", value="active"),
+])
+# [Alice, Charlie]
 ```
 
-### Text Search
+### Nested Filter Groups
 
 ```python
-from pypaginate.filters.search import MemorySearchService
-from pypaginate.filters.search.options import SearchOptions
+from pypaginate import And, Or, FilterSpec
 
-service = MemorySearchService(
-    options=SearchOptions(
-        fields=["name", "email"],
-        fuzzy_threshold=0.8
-    )
+# (status = active) AND (age >= 30 OR name contains "bob")
+group = And(
+    FilterSpec(field="status", value="active"),
+    Or(
+        FilterSpec(field="age", operator="gte", value=30),
+        FilterSpec(field="name", operator="contains", value="bob"),
+    ),
 )
+
+result = engine.apply(users, group)
+```
+
+### Available Filter Operators
+
+| Operator | Description | Example |
+|---|---|---|
+| `eq`, `ne` | Equality / inequality | `FilterSpec(field="status", value="active")` |
+| `gt`, `gte`, `lt`, `lte` | Comparisons | `FilterSpec(field="age", operator="gte", value=18)` |
+| `in`, `not_in` | Membership | `FilterSpec(field="role", operator="in", value=["admin", "user"])` |
+| `contains`, `starts_with`, `ends_with` | Text matching | `FilterSpec(field="name", operator="contains", value="ali")` |
+| `like`, `ilike` | SQL-style patterns | `FilterSpec(field="email", operator="like", value="%@gmail.com")` |
+| `between` | Range | `FilterSpec(field="price", operator="between", value=[10, 100])` |
+| `is_null`, `is_not_null` | Null checks | `FilterSpec(field="notes", operator="is_null")` |
+| `empty`, `not_empty` | Empty checks | `FilterSpec(field="tags", operator="not_empty")` |
+| `exists` | Field existence | `FilterSpec(field="id", operator="exists")` |
+| `regex` | Regex matching | `FilterSpec(field="code", operator="regex", value="^A\\d+")` |
+
+## Sorting
+
+```python
+from pypaginate import SortSpec, SortDirection
+
+from pypaginate.sorting import SortEngine
+
+engine = SortEngine()
+
+users = [
+    {"name": "Charlie", "age": 35},
+    {"name": "Alice", "age": 30},
+    {"name": "Bob", "age": 25},
+]
+
+sorted_users = engine.apply(users, [
+    SortSpec(field="age", direction=SortDirection.DESC),
+])
+# [Charlie (35), Alice (30), Bob (25)]
+```
+
+## Search
+
+```python
+from pypaginate import SearchSpec
+
+from pypaginate.search import SearchEngine
+
+engine = SearchEngine()
 
 users = [
     {"name": "Alice Smith", "email": "alice@example.com"},
     {"name": "Bob Johnson", "email": "bob@example.com"},
 ]
 
-results = service.search(users, "alice")
-# Returns users matching "alice" in name or email
+results = engine.apply(users, SearchSpec(
+    query="alice",
+    fields=("name", "email"),
+))
+# [Alice Smith]
 ```
 
-### FastAPI Integration
+Fuzzy search (requires `pypaginate[search]`):
 
 ```python
-from fastapi import FastAPI, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from pypaginate import PageParams, paginate_entities
-from pypaginate.integrations.fastapi import get_pagination_params, PagedResponse
+from pypaginate import SearchSpec, FuzzyMode
 
-app = FastAPI()
-
-@app.get("/users", response_model=PagedResponse)
-async def list_users(
-    session: AsyncSession = Depends(get_session),
-    params: PageParams = Depends(get_pagination_params)
-):
-    stmt = select(User).order_by(User.created_at.desc())
-    return await paginate_entities(session, stmt, params)
+results = engine.apply(users, SearchSpec(
+    query="alce",
+    fields=("name",),
+    fuzzy=FuzzyMode.FUZZY,
+    threshold=75,
+))
 ```
 
-## Documentation
+## Pipeline (Filter + Sort + Search + Paginate)
 
-Full documentation is available at [pypaginate.readthedocs.io](https://pypaginate.readthedocs.io):
-
-- [Getting Started](https://pypaginate.readthedocs.io/getting-started/)
-- [User Guide](https://pypaginate.readthedocs.io/user-guide/)
-- [API Reference](https://pypaginate.readthedocs.io/api/)
-- [Examples](https://pypaginate.readthedocs.io/examples/)
-- [Contributing](https://pypaginate.readthedocs.io/contributing/)
-
-## Advanced Usage
-
-### Cursor-Based Pagination (Keyset)
-
-For better performance with large datasets:
+Compose all operations in a single call:
 
 ```python
-from pypaginate.core import KeysetPageParams
-from pypaginate.engines import KeysetPaginator
-
-params = KeysetPageParams(
-    limit=20,
-    cursor=None  # or cursor from previous page
+from pypaginate import OffsetParams, FilterSpec, SortSpec, SortDirection
+from pypaginate.engine.pipeline import SyncPipeline
+from pypaginate.engine.paginator import Paginator
+from pypaginate.adapters.memory import (
+    MemoryBackend,
+    MemoryFilterBackend,
+    MemorySortBackend,
 )
 
-paginator = KeysetPaginator()
-page = await paginator.paginate(session, stmt, params)
-```
+pipeline = SyncPipeline(
+    Paginator(MemoryBackend()),
+    filter_backend=MemoryFilterBackend(),
+    sort_backend=MemorySortBackend(),
+)
 
-### Custom Count Queries
-
-For complex joins:
-
-```python
-stmt = select(User).join(Profile).filter(Profile.verified == True)
-count_stmt = select(func.count(User.id)).join(Profile).filter(Profile.verified == True)
-
-page = await paginate_entities(
-    session, 
-    stmt, 
-    params,
-    count_statement=count_stmt
+page = pipeline.execute(
+    users,
+    OffsetParams(page=1, limit=10),
+    filters=[FilterSpec(field="status", value="active")],
+    sorting=[SortSpec(field="name", direction=SortDirection.ASC)],
 )
 ```
 
-### Available Filter Operators
-
-| Operator | Description | Example |
-|----------|-------------|---------|
-| `eq`, `ne` | Equality/inequality | `{"status": {"eq": "active"}}` |
-| `lt`, `le`, `gt`, `ge` | Comparisons | `{"age": {"gte": 18}}` |
-| `in`, `contains` | Membership | `{"role": {"in": ["admin", "user"]}}` |
-| `like`, `regex` | Pattern matching | `{"email": {"like": "%@gmail.com"}}` |
-| `between` | Range | `{"price": {"between": [10, 100]}}` |
-| `null`, `empty` | Nullity/emptiness | `{"notes": {"null": true}}` |
-
-### Nested Field Access with JMESPath
-
-```python
-items = [
-    {"user": {"profile": {"name": "Alice"}}},
-    {"user": {"profile": {"name": "Bob"}}},
-]
-
-filtered = engine.filter(items, {
-    "user.profile.name": {"eq": "Alice"}
-})
-```
+For async (e.g., SQLAlchemy), use `AsyncPipeline` with `AsyncPaginator`.
 
 ## Architecture
 
-pypaginate follows a clean, layered architecture:
-
 ```
 pypaginate/
-├── core/          # Base types (Page, PageParams, protocols)
-├── engines/       # Pagination strategies (SQL, memory, keyset)
-├── query/         # Query construction and execution
-├── filters/       # Filtering and search
-│   ├── predicates/    # JSON Logic filtering
-│   └── search/        # Text search engines
-├── sorting/       # Sorting utilities
-├── text/          # Text normalization
-└── integrations/  # Framework integrations (FastAPI)
+├── domain/        # Models, specs, enums, protocols (no deps)
+├── engine/        # Paginator, cursor paginator, pipeline
+├── filtering/     # In-memory filter engine + operators
+├── sorting/       # In-memory sort engine
+├── search/        # In-memory search engine
+└── adapters/
+    ├── memory/        # In-memory backends (filter, sort, search)
+    ├── sqlalchemy/    # SA backends (offset, cursor, filter, sort, search)
+    └── fastapi/       # Annotated dependencies (OffsetDep, FilterDep, etc.)
 ```
 
 ## Development
 
-### Prerequisites
-
-- Python 3.11+
-- [UV](https://docs.astral.sh/uv/) - Fast Python package manager
-
-### Setup
-
 ```bash
 git clone https://github.com/CybLow/pypaginate.git
 cd pypaginate
-
-# Install UV (if not already installed)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install all dependencies
 uv sync
-```
 
-### Running Tests
+# Run all checks
+uv run ruff format . && uv run ruff check --fix . && uv run mypy src/ && uv run pytest
 
-```bash
-# Run all tests
-uv run pytest
-
-# Run with coverage
-uv run pytest --cov=pypaginate --cov-report=term-missing
-
-# Run specific test categories
-uv run pytest -m unit
-uv run pytest -m integration
-```
-
-### Code Quality
-
-```bash
-# Format code
-uv run ruff format src tests
-
-# Lint code
-uv run ruff check src tests
-
-# Type checking
-uv run mypy src
-
-# All quality checks via Makefile
-make qa
+# Individual commands
+uv run pytest                  # Tests
+uv run pytest --cov            # Coverage
+uv run ruff format .           # Format
+uv run ruff check --fix .      # Lint
+uv run mypy src/               # Type check
 ```
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests and quality checks (`uv run pytest && uv run ruff check src tests`)
-5. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+3. Run tests and quality checks (`uv run pytest && uv run ruff check .`)
+4. Commit with conventional commits (`git commit -m 'feat: add amazing feature'`)
+5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Built with SQLAlchemy, RapidFuzz, and other excellent libraries
-- Inspired by modern pagination patterns from the Python ecosystem
-- Thanks to all contributors
-
-## Support
-
-- [Documentation](https://pypaginate.readthedocs.io)
-- [Issue Tracker](https://github.com/CybLow/pypaginate/issues)
-- [Discussions](https://github.com/CybLow/pypaginate/discussions)
-
----
-
-Made with care by the pypaginate team
+MIT -- see [LICENSE](LICENSE) for details.

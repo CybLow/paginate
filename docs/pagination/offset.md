@@ -1,150 +1,169 @@
 # Offset Pagination
 
-Offset pagination is the traditional approach where you specify a page number and items per page.
+Offset pagination uses page numbers and items-per-page to slice results. It maps to SQL `OFFSET`/`LIMIT`.
 
 :::{tip} When to Use
 Offset pagination is best for **small to medium datasets** (<100k rows) where users need page numbers in the UI and rarely go beyond page 10.
 :::
 
-## Overview
-
-Offset pagination uses `LIMIT` and `OFFSET` SQL clauses:
-
-```sql
--- Page 1
-SELECT * FROM users ORDER BY id LIMIT 20 OFFSET 0;
-
--- Page 2
-SELECT * FROM users ORDER BY id LIMIT 20 OFFSET 20;
-
--- Page 5
-SELECT * FROM users ORDER BY id LIMIT 20 OFFSET 80;
-```
-
 ## Basic Usage
 
-### With SQLAlchemy
+### In-Memory (Auto-Detected)
+
+Pass a list and `OffsetParams` to `paginate()`:
+
+```python
+from pypaginate import paginate, OffsetParams
+
+users = [{"id": i, "name": f"User {i}"} for i in range(100)]
+
+page = paginate(users, OffsetParams(page=1, limit=20))
+
+page.items         # first 20 users
+page.total         # 100
+page.page          # 1
+page.pages         # 5
+page.has_next      # True
+page.has_previous  # False
+```
+
+No backend needed -- `paginate()` auto-detects Python sequences.
+
+### SQLAlchemy (Async)
 
 ```python
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from pypaginate import PageParams, paginate_entities
+from pypaginate import paginate, OffsetParams
+from pypaginate.adapters.sqlalchemy import SQLAlchemyBackend
 
 async def list_users(session: AsyncSession, page: int = 1, limit: int = 20):
-    # Create pagination parameters
-    params = PageParams(page=page, limit=limit)
-    
-    # Build query with ordering (required for consistent pagination)
+    backend = SQLAlchemyBackend(session)
     stmt = select(User).order_by(User.id)
-    
-    # Paginate
-    result = await paginate_entities(session, stmt, params)
-    
+    params = OffsetParams(page=page, limit=limit)
+
+    result = await paginate(stmt, params, backend=backend)
     return result
 ```
 
-### Understanding the Result
+### SQLAlchemy (Sync)
 
 ```python
-result = await paginate_entities(session, stmt, params)
+from sqlalchemy.orm import Session
+from pypaginate import paginate, OffsetParams
+from pypaginate.adapters.sqlalchemy import SyncSQLAlchemyBackend
 
-# Access data
-result.items       # List[User] - items for this page
-result.total       # int - total count of all matching rows
-result.page        # int - current page number
-result.limit       # int - items per page
-result.pages       # int - total number of pages
-result.has_next    # bool - True if more pages exist
-result.has_previous # bool - True if not on first page
+def list_users(session: Session, page: int = 1, limit: int = 20):
+    backend = SyncSQLAlchemyBackend(session)
+    stmt = select(User).order_by(User.id)
+
+    return paginate(stmt, OffsetParams(page=page, limit=limit), backend=backend)
 ```
 
-## PageParams
+## OffsetParams
 
 ### Creating Parameters
 
 ```python
-from pypaginate import PageParams
+from pypaginate import OffsetParams
 
-# Default: page 1, 20 items
-params = PageParams()
+# Defaults: page=1, limit=20
+params = OffsetParams()
 
 # Specific page and limit
-params = PageParams(page=3, limit=50)
+params = OffsetParams(page=3, limit=50)
 
-# Validation happens automatically
+# Validation is automatic
+from pypaginate import ValidationError
+
 try:
-    params = PageParams(page=0, limit=20)  # Raises error
-except PaginationConfigurationError as e:
-    print(e)  # "page must be greater than or equal to 1"
+    params = OffsetParams(page=0)  # page must be >= 1
+except ValidationError as e:
+    print(e)
+
+try:
+    params = OffsetParams(limit=0)  # limit must be >= 1
+except ValidationError as e:
+    print(e)
+
+try:
+    params = OffsetParams(limit=5000)  # limit must not exceed 1000
+except ValidationError as e:
+    print(e)
 ```
 
-### Properties
+### Computed Offset
 
 ```python
-params = PageParams(page=3, limit=20)
+params = OffsetParams(page=3, limit=20)
 
 params.page    # 3
 params.limit   # 20
-params.offset  # 40 (calculated as (page - 1) * limit)
+params.offset  # 40 = (3 - 1) * 20
 ```
 
 ### Immutability
 
-`PageParams` is immutable (frozen dataclass):
+`OffsetParams` is frozen (immutable Pydantic model):
 
 ```python
-params = PageParams(page=1, limit=20)
-
-# This raises an error:
-# params.page = 2  # FrozenInstanceError
+params = OffsetParams(page=1, limit=20)
+# params.page = 2  # raises ValidationError
 
 # Create a new instance instead:
 new_params = params.model_copy(update={"page": 2})
 ```
 
-## Pagination Functions
+### Clamping
 
-### paginate_entities
-
-For ORM entities (full model objects):
+Clamp page to valid bounds:
 
 ```python
-from pypaginate import paginate_entities
-
-stmt = select(User).order_by(User.created_at.desc())
-result = await paginate_entities(session, stmt, params)
-
-# result.items contains User objects
-for user in result.items:
-    print(user.name)  # Access as ORM object
+params = OffsetParams(page=999, limit=20)
+clamped = params.clamp(total=100)
+# clamped.page == 5 (max page for 100 items with limit=20)
 ```
 
-### paginate_rows
+## OffsetPage
 
-For raw rows (tuples or specific columns):
+### Result Fields
 
 ```python
-from pypaginate import paginate_rows
+page = paginate(items, OffsetParams(page=2, limit=20))
 
-stmt = select(User.id, User.name).order_by(User.id)
-result = await paginate_rows(session, stmt, params)
+page.items         # list[T] -- items for this page
+page.total         # int -- total count across all pages
+page.page          # int -- current page number (2)
+page.pages         # int -- total number of pages
+page.limit         # int -- items per page (20)
+page.has_next      # bool -- True if page < pages
+page.has_previous  # bool -- True if page > 1
+```
 
-# result.items contains Row objects
-for row in result.items:
-    print(row.id, row.name)
+### Iteration and Indexing
+
+```python
+# Iterate
+for user in page:
+    print(user)
+
+# Index
+first = page[0]
+
+# Length
+count = len(page)  # items on this page
 ```
 
 ## Custom Count Queries
 
-For complex queries with joins, automatic count may be slow. Provide a custom count:
-
-:::{dropdown} Custom Count Query Example
-:animate: fade-in
+For complex queries with joins, provide a custom count query for better performance:
 
 ```python
 from sqlalchemy import func, select
+from pypaginate import paginate, OffsetParams
+from pypaginate.adapters.sqlalchemy import SQLAlchemyBackend
 
-# Complex query with joins
+# Complex query
 stmt = (
     select(User)
     .join(Profile)
@@ -159,30 +178,55 @@ count_stmt = (
     .where(Profile.is_public == True)
 )
 
-# Use custom count
-result = await paginate_entities(
-    session, 
-    stmt, 
-    params,
-    count_statement=count_stmt
-)
+backend = SQLAlchemyBackend(session, count_query=count_stmt)
+page = await paginate(stmt, OffsetParams(page=1, limit=20), backend=backend)
 ```
-:::
+
+## Deduplication
+
+For queries with joins that may produce duplicates, enable deduplication:
+
+```python
+from pypaginate.adapters.sqlalchemy import SQLAlchemyBackend
+
+backend = SQLAlchemyBackend(session, unique=True)
+page = await paginate(stmt, params, backend=backend)
+```
+
+## Overflow Strategies
+
+```python
+from pypaginate import paginate, OffsetParams, OverflowStrategy
+
+items = list(range(50))  # 50 items
+
+# EMPTY (default): return empty page for out-of-range requests
+page = paginate(items, OffsetParams(page=999, limit=20), overflow=OverflowStrategy.EMPTY)
+page.items  # []
+page.total  # 50
+page.page   # 999
+
+# CLAMP: clamp to the last valid page
+page = paginate(items, OffsetParams(page=999, limit=20), overflow=OverflowStrategy.CLAMP)
+page.items  # last 10 items
+page.total  # 50
+page.page   # 3
+```
 
 ## Ordering Requirements
 
 :::{warning} Always include ORDER BY
-Pagination without ordering produces inconsistent results. Always order your queries.
+Pagination without ordering produces inconsistent results across pages.
 :::
 
 ```python
-# Bad: No ordering - results may vary between pages
-stmt = select(User)  # Don't do this!
+# Bad: no ordering
+stmt = select(User)
 
-# Good: Consistent ordering
+# Good: consistent ordering
 stmt = select(User).order_by(User.id)
 
-# Better: Order by unique column(s)
+# Better: unique ordering for deterministic pages
 stmt = select(User).order_by(User.created_at.desc(), User.id.desc())
 ```
 
@@ -191,102 +235,47 @@ stmt = select(User).order_by(User.created_at.desc(), User.id.desc())
 ### Empty Results
 
 ```python
-result = await paginate_entities(session, stmt, params)
+page = paginate([], OffsetParams(page=1, limit=20))
 
-if not result.items:
-    # Handle empty page
-    print("No results found")
-
-# Page will still have metadata
-print(result.total)  # 0
-print(result.pages)  # 0
+page.items  # []
+page.total  # 0
+page.pages  # 0
+page.has_next  # False
 ```
 
-### Beyond Last Page
+### Single Page
 
 ```python
-# If page > total_pages, you get an empty items list
-params = PageParams(page=999, limit=20)
-result = await paginate_entities(session, stmt, params)
+items = [1, 2, 3]
+page = paginate(items, OffsetParams(page=1, limit=20))
 
-result.items  # []
-result.total  # Actual total count
-result.page   # 999
-result.pages  # Actual number of pages
+page.total  # 3
+page.pages  # 1
+page.has_next  # False
 ```
 
-### Limit Bounds
-
-```python
-# Validate limit in your API
-MAX_LIMIT = 100
-
-@app.get("/users")
-async def list_users(
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=MAX_LIMIT),
-):
-    params = PageParams(page=page, limit=limit)
-    ...
-```
-
-## Performance Considerations
+## Performance
 
 ### Deep Pagination Problem
 
-Offset pagination becomes slower on deep pages:
+Offset pagination becomes slower on deep pages because the database must skip rows:
 
 ```sql
--- Page 1: Fast
-OFFSET 0 LIMIT 20
+-- Page 1: fast
+SELECT * FROM users ORDER BY id LIMIT 20 OFFSET 0;
 
--- Page 1000: Slow - database must skip 19,980 rows
-OFFSET 19980 LIMIT 20
+-- Page 1000: slow (must skip 19,980 rows)
+SELECT * FROM users ORDER BY id LIMIT 20 OFFSET 19980;
 ```
 
-:::{dropdown} Mitigation Strategies
-:animate: fade-in
+### Mitigations
 
-1. **Limit maximum page**: Don't allow pages beyond a reasonable number
-2. **Use keyset pagination**: For deep pagination needs
-3. **Cache counts**: Expensive count queries can be cached
-4. **Use covering indexes**: Ensure ORDER BY columns are indexed
-
-```python
-# Limit maximum accessible pages
-MAX_PAGE = 100
-
-@app.get("/users")
-async def list_users(
-    page: int = Query(1, ge=1, le=MAX_PAGE),
-    limit: int = Query(20, ge=1, le=100),
-):
-    params = PageParams(page=page, limit=limit)
-    ...
-```
-:::
-
-## Sync Usage
-
-For synchronous SQLAlchemy:
-
-```python
-from sqlalchemy.orm import Session
-from pypaginate import PageParams
-from pypaginate.engines import SqlPaginator
-
-def list_users_sync(session: Session, page: int = 1, limit: int = 20):
-    params = PageParams(page=page, limit=limit)
-    stmt = select(User).order_by(User.id)
-    
-    paginator = SqlPaginator()
-    result = paginator.paginate_sync(session, stmt, params)
-    
-    return result.to_page()
-```
+1. **Limit maximum page** -- reject requests beyond a reasonable page number
+2. **Switch to cursor pagination** -- for infinite scroll or deep browsing
+3. **Use CLAMP overflow** -- prevent empty deep-page responses
+4. **Index ORDER BY columns** -- covering indexes speed up skip operations
 
 ## Next Steps
 
-- [Keyset Pagination](keyset.md) - For large datasets
-- [In-Memory Pagination](memory.md) - For collections
-- [SQLAlchemy Integration](../integrations/sqlalchemy.md) - Advanced patterns
+- [Cursor/Keyset Pagination](keyset.md) -- For large datasets and infinite scroll
+- [In-Memory Pagination](memory.md) -- For Python collections

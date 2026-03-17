@@ -1,305 +1,205 @@
 # Pagination Strategies
 
-pypaginate supports two fundamentally different pagination strategies: **offset-based** and
-**keyset-based** (also called cursor-based). Understanding the differences is crucial for
-choosing the right approach for your application.
+pypaginate supports two pagination strategies: **offset-based** (`OffsetParams` /
+`OffsetPage`) and **cursor-based** (`CursorParams` / `CursorPage`). Each strategy
+has a dedicated params type and page type with no null leakage between them.
 
-## The Two Strategies
-
-```{mermaid}
-graph LR
-    subgraph "Offset Pagination"
-        O1[Page 1<br/>OFFSET 0] --> O2[Page 2<br/>OFFSET 10]
-        O2 --> O3[Page 3<br/>OFFSET 20]
-        O3 --> O4[Page 4<br/>OFFSET 30]
-    end
-```
-
-```{mermaid}
-graph LR
-    subgraph "Keyset Pagination"
-        K1[First Page<br/>No cursor] --> K2[Next Page<br/>after: id=10]
-        K2 --> K3[Next Page<br/>after: id=20]
-        K3 --> K4[Next Page<br/>after: id=30]
-    end
-```
+---
 
 ## Offset Pagination
 
-Offset pagination uses `LIMIT` and `OFFSET` clauses to skip a number of rows and return
-a fixed page size.
+Offset pagination uses `LIMIT` and `OFFSET` (or list slicing for in-memory) to return
+a fixed window of items.
+
+```python
+from pypaginate import paginate, OffsetParams
+
+# In-memory
+page = paginate(users_list, OffsetParams(page=2, limit=20))
+page.total    # 347
+page.page     # 2
+page.pages    # 18
+page.has_next # True
+```
 
 ### How It Works
 
 ```sql
--- Page 1: Get first 10 items
-SELECT * FROM items ORDER BY id LIMIT 10 OFFSET 0;
+-- Page 1: first 20 items
+SELECT * FROM users ORDER BY id LIMIT 20 OFFSET 0;
 
--- Page 2: Skip 10, get next 10
-SELECT * FROM items ORDER BY id LIMIT 10 OFFSET 10;
-
--- Page 3: Skip 20, get next 10
-SELECT * FROM items ORDER BY id LIMIT 10 OFFSET 20;
+-- Page 2: skip 20, get next 20
+SELECT * FROM users ORDER BY id LIMIT 20 OFFSET 20;
 ```
+
+For in-memory lists, pypaginate slices directly: `users[offset:offset + limit]`.
 
 ### Advantages
 
-| Advantage | Description |
-|-----------|-------------|
-| **Simple mental model** | "Page 5 of 10" is intuitive for users |
-| **Random access** | Can jump directly to any page |
-| **Exact total count** | Can show "Showing 41-50 of 347 results" |
-| **Familiar UI patterns** | Works with traditional page number navigation |
+- **Random access** -- jump to any page directly.
+- **Exact total count** -- "Page 2 of 18 (347 results)" is trivially available.
+- **Simple mental model** -- users understand page numbers.
 
 ### Disadvantages
 
-| Disadvantage | Description |
-|--------------|-------------|
-| **Performance degrades** | Database must scan and discard OFFSET rows |
-| **Inconsistent results** | Insertions/deletions cause items to shift between pages |
-| **Memory pressure** | Large offsets require scanning many rows |
+- **Performance degrades with depth** -- the database must scan and discard OFFSET rows.
+- **Inconsistent under concurrent writes** -- insertions/deletions shift items between pages.
 
-### Performance Characteristics
+### OffsetParams Fields
 
-```{mermaid}
-graph TB
-    subgraph "Offset Performance"
-        direction LR
-        P1["Page 1<br/>⚡ Fast"] --> P10["Page 10<br/>🔶 Slower"]
-        P10 --> P100["Page 100<br/>🔴 Much Slower"]
-        P100 --> P1000["Page 1000<br/>💀 Very Slow"]
-    end
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `page` | `int` | `1` | Page number (1-based) |
+| `limit` | `int` | `20` | Items per page (max 1000) |
+| `offset` | `int` | computed | Zero-based offset: `(page - 1) * limit` |
+
+The `clamp(total)` method returns new params clamped to valid bounds when `OverflowStrategy.CLAMP` is used.
+
+### OffsetPage Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `items` | `list[T]` | Items on this page |
+| `total` | `int` | Total items across all pages |
+| `page` | `int` | Current page number |
+| `pages` | `int` | Total number of pages |
+| `limit` | `int` | Page size |
+| `has_next` | `bool` | Whether a next page exists |
+| `has_previous` | `bool` | Whether a previous page exists |
+
+---
+
+## Cursor Pagination
+
+Cursor (keyset) pagination uses an opaque cursor string to resume from a specific
+position. pypaginate uses a built-in cursor implementation for
+SQL-backed cursor pagination.
+
+```python
+from pypaginate import paginate, CursorParams
+from pypaginate.adapters.sqlalchemy import SQLAlchemyCursorBackend
+
+backend = SQLAlchemyCursorBackend(session)
+
+# First page -- no cursor
+page = await paginate(query, CursorParams(limit=20), backend=backend)
+
+# Next page -- use cursor from previous response
+if page.has_next:
+    next_page = await paginate(
+        query,
+        CursorParams(limit=20, after=page.next_cursor),
+        backend=backend,
+    )
 ```
-
-The database must:
-
-1. Execute the full query
-2. Sort all matching rows
-3. Skip OFFSET rows (reading but discarding)
-4. Return LIMIT rows
-
-For page 1000 with 10 items per page, the database scans 10,000 rows to return 10.
-
-### When to Use Offset
-
-✅ **Good for:**
-
-- Small to medium datasets (< 10,000 rows)
-- Admin interfaces with page number navigation
-- Reports where users need random page access
-- Situations where exact counts matter
-
-❌ **Avoid for:**
-
-- Large datasets (> 100,000 rows)
-- Real-time data with frequent insertions
-- Infinite scroll interfaces
-- Mobile apps with limited bandwidth
-
-## Keyset Pagination
-
-Keyset pagination (also called cursor pagination or seek pagination) uses a "cursor" that
-points to a specific row, then fetches rows after (or before) that position.
 
 ### How It Works
 
 ```sql
--- First page: No cursor
-SELECT * FROM items ORDER BY id LIMIT 10;
--- Returns ids 1-10, cursor points to id=10
+-- First page: no cursor
+SELECT * FROM users ORDER BY created_at, id LIMIT 20;
 
--- Next page: Use cursor
-SELECT * FROM items WHERE id > 10 ORDER BY id LIMIT 10;
--- Returns ids 11-20, cursor points to id=20
-
--- Next page: Use new cursor
-SELECT * FROM items WHERE id > 20 ORDER BY id LIMIT 10;
--- Returns ids 21-30, cursor points to id=30
+-- Next page: WHERE after cursor position (built-in keyset builder handles this)
+SELECT * FROM users
+WHERE (created_at, id) > ('2024-01-15', 42)
+ORDER BY created_at, id LIMIT 20;
 ```
+
+The WHERE clause uses an efficient index seek instead of scanning and discarding rows.
 
 ### Advantages
 
-| Advantage | Description |
-|-----------|-------------|
-| **Consistent performance** | Same speed for any "page" |
-| **Stable results** | Insertions don't cause duplicates or gaps |
-| **Index-friendly** | Uses efficient index seeks |
-| **Lower memory** | No need to scan skipped rows |
+- **Constant performance** -- same speed regardless of depth.
+- **Stable results** -- insertions don't cause duplicates or gaps.
+- **Index-friendly** -- uses efficient index seeks, not full scans.
 
 ### Disadvantages
 
-| Disadvantage | Description |
-|--------------|-------------|
-| **No random access** | Can't jump to "page 50" directly |
-| **No exact total count** | Can only say "has more" or estimate |
-| **More complex cursors** | Multi-column sorts need compound cursors |
-| **Forward/backward only** | Sequential navigation |
+- **No random access** -- cannot jump to "page 50" directly.
+- **No total count** -- can only say "has more" (by design: `CursorPage` has no `total` field).
+- **Requires ORDER BY** -- the query must have an ORDER BY clause for keyset pagination.
 
-### Performance Characteristics
+### CursorParams Fields
 
-```{mermaid}
-graph TB
-    subgraph "Keyset Performance"
-        direction LR
-        K1["First batch<br/>⚡ Fast"] --> K10["10th batch<br/>⚡ Fast"]
-        K10 --> K100["100th batch<br/>⚡ Fast"]
-        K100 --> K1000["1000th batch<br/>⚡ Still Fast!"]
-    end
-```
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `limit` | `int` | `20` | Items per page (max 1000) |
+| `after` | `str \| None` | `None` | Cursor for forward pagination |
+| `before` | `str \| None` | `None` | Cursor for backward pagination |
 
-With proper indexing, every "page" has the same performance because:
+`after` and `before` are mutually exclusive -- a `ValidationError` is raised if both are provided.
 
-1. The WHERE clause uses an index seek (not scan)
-2. Only LIMIT rows are read
-3. No rows are skipped
+### CursorPage Fields
 
-### When to Use Keyset
+| Field | Type | Description |
+|-------|------|-------------|
+| `items` | `list[T]` | Items on this page |
+| `limit` | `int` | Page size |
+| `has_next` | `bool` | Whether a next page exists |
+| `has_previous` | `bool` | Whether a previous page exists |
+| `next_cursor` | `str \| None` | Cursor for the next page |
+| `previous_cursor` | `str \| None` | Cursor for the previous page |
 
-✅ **Good for:**
-
-- Large datasets (any size)
-- Infinite scroll interfaces
-- Real-time data with frequent changes
-- APIs with high-volume clients
-- Mobile apps (predictable performance)
-
-❌ **Avoid for:**
-
-- UIs requiring page numbers
-- Reports needing random page access
-- Situations where exact counts are required
+---
 
 ## Side-by-Side Comparison
 
-```{mermaid}
-graph TB
-    subgraph "Offset: Page 1000"
-        direction TB
-        OQ[Query] --> OS[Scan 10,000 rows]
-        OS --> OD[Discard 9,990]
-        OD --> OR[Return 10]
-    end
-    
-    subgraph "Keyset: 1000th batch"
-        direction TB
-        KQ[Query] --> KS[Index seek to cursor]
-        KS --> KR[Return 10]
-    end
-```
+| Aspect | Offset (`OffsetParams`) | Cursor (`CursorParams`) |
+|--------|-------------------------|-------------------------|
+| **Performance at depth** | O(offset) -- degrades | O(1) -- constant |
+| **Random access** | Yes (any page) | No (sequential only) |
+| **Total count** | Yes (`OffsetPage.total`) | No |
+| **Consistent under writes** | No (items shift) | Yes (stable) |
+| **UI pattern** | Page numbers | Infinite scroll, "Load more" |
+| **Backend requirement** | `PaginationBackend` or `SyncPaginationBackend` | `CursorBackend` (async only) |
+| **In-memory support** | Yes (list slicing) | No (requires database) |
 
-| Aspect | Offset | Keyset |
-|--------|--------|--------|
-| **Query complexity** | Simple | Moderate |
-| **Performance at depth** | O(offset) | O(1) |
-| **Random access** | ✅ Yes | ❌ No |
-| **Consistent results** | ❌ Items can shift | ✅ Stable |
-| **Total count** | ✅ Exact | ⚠️ Estimate only |
-| **Index requirements** | Basic | Must cover sort columns |
-| **Implementation** | Trivial | Requires cursor encoding |
-
-## Multi-Column Sorting
-
-Keyset pagination becomes more complex with multiple sort columns:
-
-```{mermaid}
-graph TD
-    subgraph "Single Column Sort"
-        S1["ORDER BY id"] --> S2["Cursor: id > 10"]
-    end
-    
-    subgraph "Multi-Column Sort"
-        M1["ORDER BY created_at, id"] --> M2["Cursor: created_at > X<br/>OR (created_at = X AND id > Y)"]
-    end
-```
-
-pypaginate handles this automatically:
-
-```python
-# Single column - simple cursor
-params = KeysetPageParams(size=10, sort=["id"])
-
-# Multi-column - compound cursor handled automatically
-params = KeysetPageParams(size=10, sort=["created_at", "id"])
-```
-
-:::{tip} Always include a unique column
-When using keyset pagination with non-unique columns (like `created_at`),
-always include a unique column (like `id`) as a tiebreaker to ensure
-deterministic ordering.
-:::
+---
 
 ## Choosing a Strategy
 
 ```{mermaid}
 flowchart TD
-    Start([Need Pagination?]) --> Size{Dataset Size?}
-    
-    Size -->|"< 10K rows"| Random{Need random<br/>page access?}
-    Size -->|"> 10K rows"| Keyset[Use Keyset]
-    
-    Random -->|Yes| Offset[Use Offset]
-    Random -->|No| UI{UI Pattern?}
-    
+    Start([Need pagination?]) --> Source{Data source?}
+
+    Source -->|In-memory list| Offset["Use OffsetParams"]
+    Source -->|SQLAlchemy query| Size{Dataset size?}
+
+    Size -->|"< 10K rows"| UI{UI pattern?}
+    Size -->|"> 10K rows"| Cursor["Use CursorParams"]
+
     UI -->|Page numbers| Offset
-    UI -->|Infinite scroll| Keyset
-    UI -->|Load more| Keyset
-    
+    UI -->|Infinite scroll| Cursor
+    UI -->|Load more button| Cursor
+
     Offset --> Done([Done])
-    Keyset --> Done
+    Cursor --> Done
 ```
 
-### Decision Matrix
+| Situation | Recommendation |
+|-----------|----------------|
+| Admin panel with page numbers | `OffsetParams` |
+| Social media feed / infinite scroll | `CursorParams` |
+| API for mobile apps | `CursorParams` (predictable performance) |
+| Reports needing exact counts | `OffsetParams` |
+| Large product catalog | `CursorParams` |
+| Small filtered dataset | `OffsetParams` |
 
-| Your Situation | Recommendation |
-|----------------|----------------|
-| Building an admin panel | Offset (users expect page numbers) |
-| Building a social feed | Keyset (infinite scroll, real-time) |
-| API for mobile app | Keyset (predictable performance) |
-| Report with exports | Offset (need exact counts) |
-| E-commerce product list | Keyset (large catalogs) |
-| Search results | Either (depends on result size) |
-| Dashboard tables | Offset (small, filtered datasets) |
+---
 
-## Implementation in pypaginate
+## Overflow Handling (Offset Only)
 
-::::{tab-set}
+When a user requests a page beyond the total, two strategies are available:
 
-:::{tab-item} Offset Pagination
 ```python
-from pypaginate import paginate, PageParams
+from pypaginate import paginate, OffsetParams
+from pypaginate.domain.enums import OverflowStrategy
 
-# Create offset parameters
-params = PageParams(page=1, size=20)
+# EMPTY (default): return empty page with correct metadata
+page = paginate(items, OffsetParams(page=999), overflow=OverflowStrategy.EMPTY)
+# page.items == [], page.total == 50, page.page == 999
 
-# Paginate
-page = await paginate(query, params)
-
-# Access results
-print(f"Page {page.page} of {page.total_pages}")
-print(f"Showing {len(page.items)} of {page.total} items")
+# CLAMP: silently clamp to last valid page
+page = paginate(items, OffsetParams(page=999), overflow=OverflowStrategy.CLAMP)
+# page.items == [...last page items...], page.page == 3
 ```
-:::
-
-:::{tab-item} Keyset Pagination
-```python
-from pypaginate import paginate, KeysetPageParams
-
-# First page - no cursor
-params = KeysetPageParams(size=20)
-page = await paginate(query, params)
-
-# Next page - use cursor from previous response
-if page.next_cursor:
-    params = KeysetPageParams(size=20, after=page.next_cursor)
-    next_page = await paginate(query, params)
-```
-:::
-
-::::
-
-## Further Reading
-
-- [Cursor Encoding](cursor-encoding.md) - How cursors are encoded and decoded
-- [User Guide: Offset Pagination](../pagination/offset.md) - Practical usage
-- [User Guide: Keyset Pagination](../pagination/keyset.md) - Practical usage
-- [Architecture](architecture.md) - How pagination engines work internally

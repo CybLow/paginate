@@ -1,126 +1,98 @@
 # SQLAlchemy Integration
 
-pypaginate provides deep integration with SQLAlchemy 2.0+, offering async pagination, multiple strategies, and query optimization.
+The `pypaginate.adapters.sqlalchemy` package provides async and sync backends for
+offset pagination, cursor/keyset pagination, filtering, sorting, and search --
+all driven by SQLAlchemy 2.0+ Select statements.
 
-## Overview
+## Installation
 
-The SQLAlchemy integration includes:
+SQLAlchemy support is an optional dependency:
 
-- **Async pagination** with `AsyncSession`
-- **Offset-based pagination** for standard use cases
-- **Keyset pagination** for large datasets
-- **Automatic count queries** with optimization
-- **Deduplication support** for joined queries
+```bash
+uv add pypaginate[sqlalchemy]   # SQLAlchemy
+uv add pypaginate[all]          # Everything
+```
 
-## Basic Usage
+## Exports at a Glance
 
-### Paginate Entities
+```python
+from pypaginate.adapters.sqlalchemy import (
+    # Offset pagination
+    SQLAlchemyBackend,             # async  -- PaginationBackend[T]
+    SyncSQLAlchemyBackend,         # sync   -- SyncPaginationBackend[T]
 
-The most common pattern is paginating ORM entities:
+    # Cursor/keyset pagination
+    SQLAlchemyCursorBackend,       # async  -- CursorBackend[T]
+    SyncSQLAlchemyCursorBackend,   # sync
+
+    # Query transformation
+    SQLAlchemyFilterBackend,       # FilterSpec  → WHERE clauses
+    SQLAlchemySortBackend,         # SortSpec   → ORDER BY clauses
+    SQLAlchemySearchBackend,       # SearchSpec → ILIKE clauses
+)
+```
+
+---
+
+## Offset Pagination
+
+### SQLAlchemyBackend (async)
+
+Implements the `PaginationBackend[T]` protocol using `SELECT COUNT(*)` and
+`OFFSET/LIMIT`.
 
 ```python
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pypaginate.query import paginate_entities, paginate_entities_to_page
-from pypaginate.core import PageParams
+from pypaginate import OffsetParams, paginate
+from pypaginate.adapters.sqlalchemy import SQLAlchemyBackend
 
-async def list_users(session: AsyncSession) -> list[User]:
-    stmt = select(User).order_by(User.created_at.desc())
-    params = PageParams(page=1, limit=20)
-    
-    # Returns (items, total) tuple
-    items, total = await paginate_entities(session, stmt, params)
-    return items
-
-async def list_users_page(session: AsyncSession) -> Page[User]:
-    stmt = select(User).order_by(User.created_at.desc())
-    params = PageParams(page=1, limit=20)
-    
-    # Returns a Page object
-    page = await paginate_entities_to_page(session, stmt, params)
-    return page
+async def list_users(session: AsyncSession):
+    query = select(User).order_by(User.id)
+    backend = SQLAlchemyBackend(session)
+    return await paginate(query, OffsetParams(page=1, limit=20), backend=backend)
 ```
 
-### Paginate Rows
+### SyncSQLAlchemyBackend
 
-For raw column selections:
+Same API, but synchronous -- implements `SyncPaginationBackend[T]`.
 
 ```python
-from pypaginate.query import paginate_rows, paginate_rows_to_page
+from sqlalchemy.orm import Session
 
-async def list_user_summaries(session: AsyncSession):
-    stmt = select(User.id, User.name, User.email).order_by(User.id)
-    params = PageParams(page=1, limit=20)
-    
-    # Returns raw row tuples
-    rows, total = await paginate_rows(session, stmt, params)
-    
-    # Or as a Page
-    page = await paginate_rows_to_page(session, stmt, params)
+from pypaginate import OffsetParams, paginate
+from pypaginate.adapters.sqlalchemy import SyncSQLAlchemyBackend
+
+def list_users(session: Session):
+    query = select(User).order_by(User.id)
+    backend = SyncSQLAlchemyBackend(session)
+    return paginate(query, OffsetParams(page=1, limit=20), backend=backend)
 ```
 
-## Pagination Functions
+### Constructor Parameters
 
-### `paginate_entities`
+Both `SQLAlchemyBackend` and `SyncSQLAlchemyBackend` accept the same keyword
+arguments:
 
-Returns ORM entities with total count:
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `session` | `AsyncSession` / `Session` | *required* | SQLAlchemy session |
+| `count_query` | `Select` / `None` | `None` | Custom count query (see below) |
+| `unique` | `bool` | `False` | Deduplicate rows via `result.unique()` (see below) |
 
-```python
-async def paginate_entities(
-    session: AsyncSession,
-    query: Select,
-    params: PageParams,
-    *,
-    count_query: Select | None = None,
-    unique: bool = False,
-    clamp: bool = False,
-) -> tuple[list[T], int]:
-    ...
-```
+---
 
-**Parameters:**
+## Custom Count Query
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `session` | AsyncSession | SQLAlchemy async session |
-| `query` | Select | SQLAlchemy select statement |
-| `params` | PageParams | Pagination parameters |
-| `count_query` | Select | Optional optimized count query |
-| `unique` | bool | Deduplicate results (for joins) |
-| `clamp` | bool | Clamp page to valid range |
-
-### `paginate_entities_to_page`
-
-Returns a `Page` object with metadata:
-
-```python
-page = await paginate_entities_to_page(session, stmt, params)
-
-print(page.items)       # List of entities
-print(page.total)       # Total count
-print(page.page)        # Current page number
-print(page.limit)       # Items per page
-print(page.total_pages) # Computed total pages
-print(page.has_next)    # Whether next page exists
-print(page.has_previous)# Whether previous page exists
-```
-
-### `paginate_rows` / `paginate_rows_to_page`
-
-Same as entity functions but for raw row tuples.
-
-## Advanced Usage
-
-### Custom Count Query
-
-For complex queries, provide an optimized count query:
+For queries with expensive JOINs, provide an optimized count query that avoids
+the joins:
 
 ```python
 from sqlalchemy import func, select
 
-# Main query with joins and filters
-stmt = (
+# Expensive main query with joins and eager loading
+query = (
     select(Order)
     .join(Order.customer)
     .join(Order.items)
@@ -128,306 +100,293 @@ stmt = (
     .options(selectinload(Order.items))
 )
 
-# Optimized count (no joins needed for count)
-count_stmt = (
+# Cheap count -- same WHERE, no joins
+count_query = (
     select(func.count(Order.id))
     .where(Order.status == "completed")
 )
 
-items, total = await paginate_entities(
-    session, 
-    stmt, 
-    params,
-    count_query=count_stmt,
-)
+backend = SQLAlchemyBackend(session, count_query=count_query)
+page = await paginate(query, params, backend=backend)
 ```
 
-### Deduplication with `unique`
+Without `count_query`, the backend wraps your main query in
+`SELECT COUNT(*) FROM (your_query) AS subquery`, which can be slow for complex
+queries.
 
-When using joins that may produce duplicate rows:
+---
+
+## Deduplication
+
+When JOINs produce duplicate parent rows (e.g., one Author joined to many Books),
+pass `unique=True` to call `result.unique().scalars()` instead of
+`result.scalars()`:
 
 ```python
-# Query with one-to-many join
-stmt = (
+query = (
     select(Author)
     .join(Author.books)
     .where(Book.genre == "fiction")
 )
 
-# Deduplicate authors
-items, total = await paginate_entities(
-    session,
-    stmt,
-    params,
-    unique=True,  # Remove duplicate authors
-)
+backend = SQLAlchemyBackend(session, unique=True)
+page = await paginate(query, params, backend=backend)
+# Authors are deduplicated
 ```
 
-### Page Clamping with `clamp`
+---
 
-Automatically adjust out-of-range page requests:
+## Cursor/Keyset Pagination
 
-```python
-# If total is 100 and limit is 20, max page is 5
-# Requesting page 10 will be clamped to page 5
+### SQLAlchemyCursorBackend (async)
 
-page = await paginate_entities_to_page(
-    session,
-    stmt,
-    PageParams(page=10, limit=20),
-    clamp=True,  # Clamp to valid range
-)
-# page.page will be 5, not 10
-```
+Uses a built-in cursor implementation for efficient
+keyset pagination. Implements the `CursorBackend[T]` protocol.
 
-## Using SqlPaginator Directly
-
-For more control, use `SqlPaginator` directly:
+**Requirement:** The query **must** have an `ORDER BY` clause.
 
 ```python
-from pypaginate.engines.sql import SqlPaginator
-from pypaginate.core.context import PaginationContext
+from pypaginate import CursorParams, paginate
+from pypaginate.adapters.sqlalchemy import SQLAlchemyCursorBackend
 
-async def advanced_pagination(session: AsyncSession):
-    # Create paginator
-    paginator = SqlPaginator(session, clamp=True)
-    
-    # Build context
-    context = PaginationContext(
-        params=PageParams(page=1, limit=20),
-        count_query=None,
-        unique=False,
-    )
-    
-    # Execute pagination
-    stmt = select(User).order_by(User.id)
-    snapshot = await paginator.paginate(stmt, context, scalars=True)
-    
-    return snapshot.items, snapshot.total
-```
+async def scroll_users(session: AsyncSession):
+    query = select(User).order_by(User.id)
+    backend = SQLAlchemyCursorBackend(session)
 
-## Keyset Pagination
-
-For large datasets, use keyset (cursor) pagination:
-
-```python
-from pypaginate.core import KeysetPageParams
-from pypaginate.engines.sql import SqlPaginator
-
-async def keyset_pagination(session: AsyncSession):
-    paginator = SqlPaginator(session, clamp=False)
-    
     # First page
-    params = KeysetPageParams(limit=20)
-    stmt = select(User).order_by(User.id)
-    
-    snapshot = await paginator.paginate_keyset(
-        stmt, 
-        params, 
-        unique=False,
-        scalars=True,
+    first = await paginate(
+        query,
+        CursorParams(limit=20),
+        backend=backend,
     )
-    
-    # Get cursor for next page
-    next_cursor = snapshot.next_marker
-    
-    # Subsequent pages use cursor
-    if next_cursor:
-        params = KeysetPageParams(limit=20, after=next_cursor)
-        next_snapshot = await paginator.paginate_keyset(
-            stmt, params, unique=False, scalars=True
+
+    # Next page using cursor
+    if first.next_cursor:
+        second = await paginate(
+            query,
+            CursorParams(limit=20, after=first.next_cursor),
+            backend=backend,
         )
 ```
 
-(filtering)=
-## Query Building Patterns
+### SyncSQLAlchemyCursorBackend
 
-### With Filtering
+Synchronous equivalent:
 
 ```python
-from pypaginate.filters.predicates import FilterEngine
+from sqlalchemy.orm import Session
+from pypaginate.adapters.sqlalchemy import SyncSQLAlchemyCursorBackend
 
-async def filtered_pagination(
-    session: AsyncSession,
-    filters: dict,
-):
-    stmt = select(Product)
-    
-    # Apply filters
-    engine = FilterEngine()
-    if filters:
-        conditions = engine.build_conditions(Product, filters)
-        stmt = stmt.where(*conditions)
-    
-    # Always add ordering for consistent pagination
-    stmt = stmt.order_by(Product.id)
-    
-    return await paginate_entities_to_page(
-        session, stmt, PageParams(page=1, limit=20)
-    )
+def scroll_users(session: Session):
+    query = select(User).order_by(User.id)
+    backend = SyncSQLAlchemyCursorBackend(session)
+    # same fetch_page interface, called synchronously
 ```
 
-### With Sorting
+### CursorPage Fields
+
+The returned `CursorPage[T]` has:
+
+| Field | Type | Description |
+|---|---|---|
+| `items` | `list[T]` | Items for this page |
+| `limit` | `int` | Requested page size |
+| `has_next` | `bool` | Whether a next page exists |
+| `has_previous` | `bool` | Whether a previous page exists |
+| `next_cursor` | `str` / `None` | Bookmark for the next page |
+| `previous_cursor` | `str` / `None` | Bookmark for the previous page |
+
+---
+
+## Filter Backend
+
+`SQLAlchemyFilterBackend` translates `FilterSpec` objects into SQLAlchemy WHERE
+clauses. Implements the `FilterBackend` protocol.
+
+### Supported Operators
+
+| Operator | SQL | Example |
+|---|---|---|
+| `eq` | `=` | `FilterSpec(field="status", value="active")` |
+| `ne` | `!=` | `FilterSpec(field="status", operator="ne", value="deleted")` |
+| `gt` | `>` | `FilterSpec(field="age", operator="gt", value=18)` |
+| `gte` | `>=` | `FilterSpec(field="age", operator="gte", value=18)` |
+| `lt` | `<` | `FilterSpec(field="price", operator="lt", value=100)` |
+| `lte` | `<=` | `FilterSpec(field="price", operator="lte", value=100)` |
+| `in` | `IN` | `FilterSpec(field="role", operator="in", value=["admin", "mod"])` |
+| `not_in` | `NOT IN` | `FilterSpec(field="role", operator="not_in", value=["banned"])` |
+| `contains` | `LIKE '%val%'` | `FilterSpec(field="name", operator="contains", value="al")` |
+| `starts_with` | `LIKE 'val%'` | `FilterSpec(field="name", operator="starts_with", value="Al")` |
+| `ends_with` | `LIKE '%val'` | `FilterSpec(field="email", operator="ends_with", value=".com")` |
+| `like` | `LIKE` | `FilterSpec(field="name", operator="like", value="%ice%")` |
+| `ilike` | `ILIKE` | `FilterSpec(field="name", operator="ilike", value="%ice%")` |
+| `between` | `BETWEEN` | `FilterSpec(field="age", operator="between", value=[18, 65])` |
+| `is_null` | `IS NULL` | `FilterSpec(field="deleted_at", operator="is_null")` |
+| `is_not_null` | `IS NOT NULL` | `FilterSpec(field="email", operator="is_not_null")` |
+| `regex` | `REGEXP` | `FilterSpec(field="code", operator="regex", value="^AB\\d+")` |
+
+### AND/OR Logic
+
+Each `FilterSpec` has a `logic` field (defaults to `FilterLogic.AND`). Specs with
+`FilterLogic.OR` are combined with `OR`, everything else with `AND`:
 
 ```python
-from pypaginate.sorting import SqlSortAdapter
+from pypaginate import FilterSpec, FilterLogic
 
-async def sorted_pagination(
-    session: AsyncSession,
-    sort_field: str = "created_at",
-    descending: bool = True,
-):
-    stmt = select(Product)
-    
-    # Apply sorting
-    column = getattr(Product, sort_field)
-    order_expr = SqlSortAdapter.build_order_expression(
-        column=column,
-        descending=descending,
-        nulls_position="last",
-    )
-    stmt = stmt.order_by(order_expr)
-    
-    return await paginate_entities_to_page(
-        session, stmt, PageParams(page=1, limit=20)
-    )
+filters = [
+    FilterSpec(field="status", value="active"),
+    FilterSpec(field="role", value="admin", logic=FilterLogic.OR),
+    FilterSpec(field="role", value="moderator", logic=FilterLogic.OR),
+]
+# WHERE status = 'active' AND (role = 'admin' OR role = 'moderator')
 ```
 
-### With Search
+### Usage
 
 ```python
-from pypaginate.filters.search import SqlSearchService, SearchOptions
+from pypaginate.adapters.sqlalchemy import SQLAlchemyFilterBackend
 
-async def search_pagination(
-    session: AsyncSession,
-    query: str | None = None,
-):
-    stmt = select(Product).order_by(Product.id)
-    
-    if query:
-        search_service = SqlSearchService(
-            model=Product,
-            search_fields=["name", "description"],
-            options=SearchOptions(fuzzy=True),
-        )
-        stmt = search_service.apply_search(stmt, query)
-    
-    return await paginate_entities_to_page(
-        session, stmt, PageParams(page=1, limit=20)
-    )
+filter_backend = SQLAlchemyFilterBackend()
+query = filter_backend.apply_filters(query, filter_specs)
 ```
 
-## Relationships and Eager Loading
+---
 
-### Avoiding N+1 Queries
+## Sort Backend
 
-Use SQLAlchemy's loading strategies:
+`SQLAlchemySortBackend` translates `SortSpec` objects into SQLAlchemy ORDER BY
+clauses. Implements the `SortBackend` protocol.
+
+Each `SortSpec` supports:
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `field` | `str` | *required* | Column name |
+| `direction` | `SortDirection` | `ASC` | `SortDirection.ASC` or `SortDirection.DESC` |
+| `nulls` | `NullsPosition` | `LAST` | `NullsPosition.FIRST` or `NullsPosition.LAST` |
 
 ```python
-from sqlalchemy.orm import selectinload, joinedload
+from pypaginate import SortSpec, SortDirection, NullsPosition
+from pypaginate.adapters.sqlalchemy import SQLAlchemySortBackend
 
-stmt = (
-    select(Order)
-    .options(
-        selectinload(Order.items),      # Load items in separate query
-        joinedload(Order.customer),     # Load customer in same query
-    )
-    .order_by(Order.created_at.desc())
+specs = [
+    SortSpec(field="created_at", direction=SortDirection.DESC),
+    SortSpec(field="name", nulls=NullsPosition.LAST),
+]
+query = SQLAlchemySortBackend.apply_sorting(query, specs)
+```
+
+---
+
+## Search Backend
+
+`SQLAlchemySearchBackend` translates a `SearchSpec` into ILIKE WHERE clauses.
+Implements the `SearchBackend` protocol.
+
+Search behavior:
+
+- The query text is normalized and tokenized (whitespace-split)
+- Each token must match at **least one** field (OR across fields)
+- All tokens must match (AND across tokens)
+- Match mode is controlled by `SearchFieldMode` (PREFIX, CONTAINS, EXACT)
+
+```python
+from pypaginate import SearchSpec
+from pypaginate.adapters.sqlalchemy import SQLAlchemySearchBackend
+
+spec = SearchSpec(query="alice smith", fields=("name", "email"))
+query = SQLAlchemySearchBackend.apply_search(query, spec)
+# WHERE (name ILIKE '%alice%' OR email ILIKE '%alice%')
+#   AND (name ILIKE '%smith%' OR email ILIKE '%smith%')
+```
+
+---
+
+## Pipeline Wiring
+
+The recommended pattern for FastAPI + SQLAlchemy is to wire an `AsyncPipeline`
+that composes all backends:
+
+```python
+from pypaginate.engine.paginator import AsyncPaginator
+from pypaginate.engine.pipeline import AsyncPipeline
+from pypaginate.adapters.sqlalchemy import (
+    SQLAlchemyBackend,
+    SQLAlchemyFilterBackend,
+    SQLAlchemySortBackend,
+    SQLAlchemySearchBackend,
 )
 
-page = await paginate_entities_to_page(session, stmt, params)
-# page.items[0].items and page.items[0].customer are loaded
+async def get_pipeline(
+    session: AsyncSession = Depends(get_session),
+) -> AsyncPipeline:
+    backend = SQLAlchemyBackend(session)
+    return AsyncPipeline(
+        AsyncPaginator(backend),
+        filter_backend=SQLAlchemyFilterBackend(),
+        sort_backend=SQLAlchemySortBackend(),
+        search_backend=SQLAlchemySearchBackend(),
+    )
 ```
 
-### With Joined Filters
+Then in your endpoint:
 
 ```python
-# Filter by related entity, but only return parent
-stmt = (
-    select(Author)
-    .join(Author.books)
-    .where(Book.published_year >= 2020)
-    .options(selectinload(Author.books))
+from pypaginate.adapters.fastapi import (
+    FilterDep, FilterField, OffsetDep, SearchDep, SortDep,
 )
 
-# Use unique to deduplicate authors with multiple matching books
-page = await paginate_entities_to_page(
-    session, stmt, params, unique=True
-)
+class ProductFilters(FilterDep):
+    category: str | None = FilterField(None, operator="eq")
+    min_price: float | None = FilterField(None, field="price", operator="gte")
+
+@app.get("/products")
+async def list_products(
+    params: OffsetDep,
+    filters: Annotated[ProductFilters, Query()],
+    sort: SortDep,
+    search: SearchDep,
+    pipeline: AsyncPipeline = Depends(get_pipeline),
+) -> OffsetPage[ProductSchema]:
+    query = select(Product).order_by(Product.id)
+    return await pipeline.execute(
+        query, params, filters=filters, sorting=sort, search=search,
+    )
 ```
+
+The pipeline auto-converts `FilterDep.to_specs()`, `SortDep.to_specs()`, and
+`SearchDep.to_spec()` internally.
+
+---
 
 ## Performance Tips
 
-### 1. Index Your Sort Columns
+1. **Always include ORDER BY** for consistent pagination across pages
+2. **Provide `count_query`** for queries with expensive JOINs or subqueries
+3. **Use `unique=True`** only when JOINs produce duplicate parent rows
+4. **Use cursor pagination** for large datasets (avoids `OFFSET N` degradation)
+5. **Index sort columns** to avoid full table scans on ORDER BY
+6. **Limit eager loading** -- use `load_only()` and `selectinload()` to minimize data transfer
 
-```python
-from sqlalchemy import Index
-
-# Create index for common sort patterns
-Index("idx_user_created_at", User.created_at.desc())
-```
-
-### 2. Use Keyset for Large Offsets
-
-```python
-# Offset pagination degrades for large page numbers
-# Page 1000 with limit 20 = OFFSET 19980
-
-# Use keyset pagination instead
-page = await paginator.paginate_keyset(stmt, keyset_params, ...)
-```
-
-### 3. Optimize Count Queries
-
-```python
-# Provide simple count query for complex main queries
-count_stmt = select(func.count()).select_from(User)
-page = await paginate_entities_to_page(
-    session, stmt, params, count_query=count_stmt
-)
-```
-
-### 4. Limit Eager Loading
-
-```python
-# Only load what you need
-stmt = select(User).options(
-    load_only(User.id, User.name, User.email),  # Limit columns
-    selectinload(User.profile),                   # Load specific relations
-)
-```
+---
 
 ## Error Handling
 
 ```python
-from pypaginate.exceptions import (
-    PaginationConfigurationError,
-    InvalidPageError,
+from pypaginate import (
+    ConfigurationError,  # missing entity, bad field name
+    FilterError,         # unsupported operator, bad BETWEEN value
+    ValidationError,     # bad page/limit values
 )
-
-try:
-    page = await paginate_entities_to_page(session, stmt, params)
-except PaginationConfigurationError as e:
-    # Handle configuration errors
-    logger.error(f"Pagination config error: {e}")
-except InvalidPageError as e:
-    # Handle invalid page requests
-    logger.warning(f"Invalid page: {e}")
 ```
 
-## Best Practices
+- `ConfigurationError` is raised when column resolution fails (field not found on entity)
+- `FilterError` is raised for unsupported operators or malformed filter values
+- `ValidationError` is raised for invalid pagination parameters
 
-1. **Always include ORDER BY** for consistent pagination
-2. **Use `unique=True`** when joining one-to-many relationships
-3. **Consider keyset pagination** for large datasets (>10k rows)
-4. **Provide count queries** for complex queries with joins
-5. **Use `clamp=True`** to gracefully handle out-of-range pages
-6. **Index sort columns** for better performance
-7. **Limit page size** to prevent excessive memory usage
+---
 
 ## See Also
 
-- [FastAPI Integration](fastapi.md) - Web framework integration
-- [Offset Pagination](../pagination/offset.md) - Standard pagination
-- [Keyset Pagination](../pagination/keyset.md) - Cursor-based pagination
-- [Filtering](../filtering/index.md) - Query filtering
+- [FastAPI Integration](fastapi.md) -- dependency types and declarative filters
+- API Reference -- see the `adapters` section in the generated API docs

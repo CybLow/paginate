@@ -95,12 +95,12 @@ uv run ruff format . && uv run ruff check . && uv run mypy src/ && uv run pytest
 
 ### Size Limits
 
-Please follow these limits (see [AGENTS.md](AGENTS.md) for complete guidelines):
+Please follow these limits (see [CLAUDE.md](CLAUDE.md) for complete guidelines):
 
 | Metric | Limit |
 |--------|-------|
-| Lines per function | ≤12 |
-| Lines per file | ≤200 |
+| Lines per function | ≤15 |
+| Lines per file | ≤250 |
 | Parameters per function | ≤4 |
 | Nesting levels | ≤2 |
 
@@ -108,12 +108,11 @@ Please follow these limits (see [AGENTS.md](AGENTS.md) for complete guidelines):
 
 ### Branch Naming Convention
 
-Create branches from `develop` using this pattern:
+Create branches from `main` using this pattern:
 
 | Branch Pattern | Purpose | Example |
 |----------------|---------|---------|
 | `main` | Production-ready code | - |
-| `develop` | Integration branch | - |
 | `release/v*` | Release candidates | `release/v1.2.0` |
 | `feature/*` | New features | `feature/add-keyset-pagination` |
 | `fix/*` | Bug fixes | `fix/memory-leak-in-paginator` |
@@ -130,15 +129,15 @@ The CI pipeline runs different test suites based on branch type:
 | Tier | Branches | Tests Run |
 |------|----------|-----------|
 | **Tier 1** (Fast) | `feature/*`, `fix/*`, `refactor/*`, etc. | Quality + Unit Tests |
-| **Tier 2** (Standard) | `develop`, Pull Requests | + Integration + Property Tests + Build |
+| **Tier 2** (Standard) | Pull Requests | + Integration + Property Tests + Build |
 | **Tier 3** (Full) | `main`, `release/*` | + Benchmarks |
 
 ### Workflow Steps
 
-1. **Create a feature branch from develop**
+1. **Create a feature branch from main**
    ```bash
-   git checkout develop
-   git pull origin develop
+   git checkout main
+   git pull origin main
    git checkout -b feature/your-feature-name
    ```
 
@@ -161,7 +160,7 @@ The CI pipeline runs different test suites based on branch type:
    git commit -m "feat(scope): description of your feature"
    ```
 
-5. **Push and create a Pull Request to develop**
+5. **Push and create a Pull Request to main**
    ```bash
    git push -u origin feature/your-feature-name
    ```
@@ -213,7 +212,7 @@ git commit -m "test(core): add edge case tests for pagination"
 ### PR Checklist
 
 - [ ] I have read the CONTRIBUTING guidelines
-- [ ] Code follows project style guidelines ([AGENTS.md](AGENTS.md))
+- [ ] Code follows project style guidelines ([CLAUDE.md](CLAUDE.md))
 - [ ] All quality checks pass
 - [ ] New code has tests
 - [ ] Documentation is updated (if needed)
@@ -234,7 +233,8 @@ tests/
 ├── unit/           # Fast, isolated tests
 ├── integration/    # Tests with external dependencies
 ├── property/       # Property-based tests (Hypothesis)
-├── benchmarks/     # Performance tests
+├── architecture/   # Code quality enforcement
+├── perf/           # Performance benchmarks
 └── e2e/            # End-to-end tests
 ```
 
@@ -247,7 +247,7 @@ def test_paginate_returns_correct_page() -> None:
     """Test that pagination returns the correct page of items."""
     # Arrange
     items = [1, 2, 3, 4, 5]
-    params = PageParams(page=1, size=2)
+    params = OffsetParams(page=1, limit=2)
 
     # Act
     result = paginate(items, params)
@@ -277,7 +277,7 @@ uv run pytest tests/unit
 uv run pytest --cov=pypaginate --cov-report=term-missing
 
 # Specific file
-uv run pytest tests/unit/core/test_pagination.py
+uv run pytest tests/unit/domain/test_pages.py
 
 # By marker
 uv run pytest -m "not slow"
@@ -308,7 +308,7 @@ def process_items(items: Sequence[int]) -> list[int]:
 - Include examples for complex functionality
 
 ```python
-def paginate(items: list[T], params: PageParams) -> Page[T]:
+def paginate(items: list[T], params: OffsetParams) -> OffsetPage[T]:
     """Paginate a list of items.
 
     Args:
@@ -316,14 +316,14 @@ def paginate(items: list[T], params: PageParams) -> Page[T]:
         params: Pagination parameters.
 
     Returns:
-        A Page containing the paginated items.
+        An OffsetPage containing the paginated items.
 
     Raises:
-        ValueError: If page or size is less than 1.
+        ValidationError: If page or limit is less than 1.
 
     Example:
         >>> items = [1, 2, 3, 4, 5]
-        >>> result = paginate(items, PageParams(page=1, size=2))
+        >>> result = paginate(items, OffsetParams(page=1, limit=2))
         >>> result.items
         [1, 2]
     """
