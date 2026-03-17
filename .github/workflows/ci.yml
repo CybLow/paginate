@@ -261,6 +261,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     needs: [setup, quality]
+    defaults:
+      run:
+        shell: bash
 
     strategy:
       fail-fast: false
@@ -330,6 +333,9 @@ jobs:
     timeout-minutes: 15
     needs: [setup, test-unit]
     if: needs.setup.outputs.run_integration == 'true'
+    defaults:
+      run:
+        shell: bash
 
     strategy:
       fail-fast: false
