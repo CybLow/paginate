@@ -9,7 +9,7 @@
   :root {
     --bg: #0d1117; --surface: #161b22; --border: #30363d;
     --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
-    --green: #3fb950; --yellow: #d29922; --red: #f85149;
+    --green: #3fb950; --yellow: #d29922; --red: #f85149; --purple: #bc8cff;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
@@ -24,12 +24,21 @@
 
   .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
 
-  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 1rem; margin-bottom: 2rem; }
+  /* Tabs */
+  .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+  .tab { padding: 0.6rem 1.2rem; cursor: pointer; font-size: 0.9rem; font-weight: 500;
+    color: var(--muted); border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem; margin-bottom: 1.5rem; }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-    padding: 1rem; text-align: center; }
-  .card .value { font-size: 1.8rem; font-weight: 700; color: var(--accent); }
-  .card .label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    padding: 0.75rem; text-align: center; }
+  .card .value { font-size: 1.5rem; font-weight: 700; color: var(--accent); }
+  .card .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
 
   .group { background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
     margin-bottom: 1rem; overflow: hidden; }
@@ -52,13 +61,37 @@
   td { padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--border); }
   tr:last-child td { border-bottom: none; }
   .num { text-align: right; font-variant-numeric: tabular-nums; }
-  .fast { color: var(--green); } .slow { color: var(--red); }
 
   .empty { text-align: center; padding: 3rem; color: var(--muted); }
-  .filter-bar { margin-bottom: 1.5rem; }
+  .filter-bar { margin-bottom: 1rem; }
   .filter-bar input { background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
     color: var(--text); padding: 0.5rem 0.75rem; width: 100%; max-width: 400px; font-size: 0.9rem; }
   .filter-bar input::placeholder { color: var(--muted); }
+
+  /* Competitor styles */
+  .comp-section { margin-bottom: 2rem; }
+  .comp-section h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+  .comp-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 1rem; }
+  .comp-table th { background: var(--surface); padding: 0.5rem 0.75rem; text-align: left;
+    color: var(--muted); font-weight: 600; border: 1px solid var(--border); }
+  .comp-table td { padding: 0.5rem 0.75rem; border: 1px solid var(--border); }
+  .comp-table .num { text-align: right; }
+  .comp-table .winner { background: rgba(63,185,80,0.1); }
+  .comp-table .pypag { font-weight: 600; color: var(--accent); }
+  .badge-fast { display: inline-block; background: rgba(63,185,80,0.15); color: var(--green);
+    border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 0.75rem; font-weight: 600; }
+  .badge-slow { display: inline-block; background: rgba(248,81,73,0.15); color: var(--red);
+    border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 0.75rem; font-weight: 600; }
+  .badge-same { display: inline-block; background: rgba(139,148,158,0.15); color: var(--muted);
+    border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 0.75rem; font-weight: 600; }
+  .scale-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .scale-tab { padding: 0.3rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem;
+    background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+  .scale-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .comp-note { color: var(--muted); font-size: 0.8rem; font-style: italic; margin-bottom: 1rem; }
+  .bar-cell { position: relative; }
+  .bar-fill { position: absolute; top: 2px; bottom: 2px; left: 0; border-radius: 2px; opacity: 0.15; }
 </style>
 </head>
 <body>
@@ -68,17 +101,65 @@
   <a id="repoLink" class="meta" target="_blank">GitHub</a>
 </div>
 <div class="container">
-  <div id="summary" class="summary"></div>
-  <div class="filter-bar">
-    <input id="search" type="text" placeholder="Filter benchmarks...">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('overview')">Overview</div>
+    <div class="tab" onclick="switchTab('competitors')">vs Competitors</div>
+    <div class="tab" onclick="switchTab('scaling')">Scaling</div>
   </div>
-  <div id="groups"></div>
+  <div id="tab-overview" class="tab-content active">
+    <div id="summary" class="summary"></div>
+    <div class="filter-bar"><input id="search" type="text" placeholder="Filter benchmarks..."></div>
+    <div id="groups"></div>
+  </div>
+  <div id="tab-competitors" class="tab-content"></div>
+  <div id="tab-scaling" class="tab-content"></div>
   <div id="empty" class="empty" style="display:none">
     No benchmark data available yet. Push to <code>main</code> to generate.
   </div>
 </div>
 <script src="data.js"></script>
 <script>
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const tabs = ['overview', 'competitors', 'scaling'];
+    t.classList.toggle('active', tabs[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+function toggle(id) {
+  const body = document.getElementById(id);
+  const header = body.previousElementSibling;
+  body.classList.toggle('open');
+  header.classList.toggle('open');
+}
+
+function fmtTime(s) {
+  if (s < 0.000001) return (s * 1e9).toFixed(1) + ' ns';
+  if (s < 0.001) return (s * 1e6).toFixed(1) + ' \u00b5s';
+  if (s < 1) return (s * 1e3).toFixed(2) + ' ms';
+  return s.toFixed(3) + ' s';
+}
+function fmtOps(v) {
+  if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+  return v.toFixed(1);
+}
+function shortName(n) {
+  return n.replace(/^tests?\/perf\/[^:]+::/, '').replace(/^test_(bench_)?/, '');
+}
+function diffBadge(pypag, other) {
+  if (!pypag || !other) return '';
+  const ratio = pypag / other;
+  if (ratio > 1.05) return `<span class="badge-fast">${ratio.toFixed(1)}x faster</span>`;
+  if (ratio < 0.95) return `<span class="badge-slow">${(1/ratio).toFixed(1)}x slower</span>`;
+  return `<span class="badge-same">\u2248 same</span>`;
+}
+function barWidth(val, max) {
+  return Math.max(2, (val / max) * 100);
+}
+
 (function() {
   const D = window.BENCHMARK_DATA;
   if (!D || !D.entries || !D.entries.Benchmark || !D.entries.Benchmark.length) {
@@ -88,6 +169,8 @@
   const commits = D.entries.Benchmark;
   const latest = commits[commits.length - 1];
   const benches = latest.benches;
+  const byName = {};
+  benches.forEach(b => { byName[b.name] = b; });
 
   // Header
   document.getElementById('lastUpdate').textContent =
@@ -95,19 +178,30 @@
   const link = document.getElementById('repoLink');
   link.href = D.repoUrl; link.textContent = 'View on GitHub';
 
-  // Categorize benchmarks by name prefix
+  // Helper: find bench by partial name match
+  function find(pattern) {
+    const b = benches.find(b => b.name.includes(pattern));
+    return b ? (b.unit === 'iter/sec' ? b.value : 1 / b.value) : null;
+  }
+  function findTime(pattern) {
+    const b = benches.find(b => b.name.includes(pattern));
+    if (!b) return null;
+    return b.unit === 'iter/sec' ? (1 / b.value) : b.value;
+  }
+
+  // ===================== OVERVIEW TAB =====================
   const CATEGORIES = [
-    { key: 'paginate',      label: 'Pagination',     match: b => /paginate|pagination|offset|cursor/.test(b) },
-    { key: 'filter',        label: 'Filtering',       match: b => /filter/.test(b) },
-    { key: 'sort',          label: 'Sorting',         match: b => /sort/.test(b) },
-    { key: 'search',        label: 'Search',          match: b => /search/.test(b) },
-    { key: 'pipeline',      label: 'Pipeline',        match: b => /pipeline/.test(b) },
-    { key: 'fastapi',       label: 'FastAPI',         match: b => /fastapi/.test(b) },
-    { key: 'serialization', label: 'Serialization',   match: b => /serial/.test(b) },
-    { key: 'overhead',      label: 'Overhead',        match: b => /overhead/.test(b) },
-    { key: 'scaling',       label: 'Scaling',         match: b => /scal/.test(b) && !/fastapi/.test(b) },
-    { key: 'comparison',    label: 'Comparison',      match: b => /comparison|competitor|boundary/.test(b) },
-    { key: 'error',         label: 'Error Handling',  match: b => /error/.test(b) },
+    { key: 'paginate', label: 'Pagination', match: b => /paginate|pagination|offset|cursor/.test(b) },
+    { key: 'filter', label: 'Filtering', match: b => /filter/.test(b) },
+    { key: 'sort', label: 'Sorting', match: b => /sort/.test(b) },
+    { key: 'search', label: 'Search', match: b => /search/.test(b) },
+    { key: 'pipeline', label: 'Pipeline', match: b => /pipeline/.test(b) },
+    { key: 'fastapi', label: 'FastAPI', match: b => /fastapi/.test(b) },
+    { key: 'serialization', label: 'Serialization', match: b => /serial/.test(b) },
+    { key: 'overhead', label: 'Overhead', match: b => /overhead/.test(b) },
+    { key: 'scaling', label: 'Scaling', match: b => /scal/.test(b) && !/fastapi/.test(b) },
+    { key: 'comparison', label: 'Comparison', match: b => /comparison|competitor|boundary/.test(b) },
+    { key: 'error', label: 'Error Handling', match: b => /error/.test(b) },
   ];
 
   function categorize(name) {
@@ -116,7 +210,6 @@
     return { key: 'other', label: 'Other' };
   }
 
-  // Group benchmarks
   const groups = {};
   for (const b of benches) {
     const cat = categorize(b.name);
@@ -124,98 +217,262 @@
     groups[cat.key].items.push(b);
   }
 
-  // Sort groups by category order, then sort items by value (fastest first)
   const ordered = CATEGORIES.map(c => groups[c.key]).filter(Boolean);
   if (groups.other) ordered.push(groups.other);
   for (const g of ordered) g.items.sort((a, b) => a.value - b.value);
 
-  // Summary cards
   const sumEl = document.getElementById('summary');
-  const fastest = benches.reduce((a, b) => a.value < b.value ? a : b);
   const median = [...benches].sort((a, b) => a.value - b.value)[Math.floor(benches.length / 2)];
-  const cards = [
+  sumEl.innerHTML = [
     { value: benches.length, label: 'Benchmarks' },
     { value: ordered.length, label: 'Categories' },
     { value: commits.length, label: 'Data Points' },
-    { value: fmtTime(median.value), label: 'Median Time' },
-  ];
-  sumEl.innerHTML = cards.map(c =>
-    `<div class="card"><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`
-  ).join('');
+    { value: fmtTime(median.unit === 'iter/sec' ? 1/median.value : median.value), label: 'Median Time' },
+  ].map(c => `<div class="card"><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`).join('');
 
-  // Render groups
   const container = document.getElementById('groups');
   for (const g of ordered) {
     const id = 'g-' + g.label.toLowerCase().replace(/\s+/g, '-');
     const div = document.createElement('div');
-    div.className = 'group';
-    div.dataset.label = g.label.toLowerCase();
+    div.className = 'group'; div.dataset.label = g.label.toLowerCase();
     div.innerHTML = `
       <div class="group-header" onclick="toggle('${id}')">
-        <span class="arrow">&#9654;</span>
-        <h2>${g.label}</h2>
-        <span class="count">${g.items.length}</span>
-      </div>
+        <span class="arrow">&#9654;</span><h2>${g.label}</h2>
+        <span class="count">${g.items.length}</span></div>
       <div class="group-body" id="${id}">
         ${commits.length > 1 ? `<div class="chart-wrap"><canvas id="chart-${id}"></canvas></div>` : ''}
-        <table>
-          <thead><tr>
-            <th>Benchmark</th>
-            <th class="num">Time</th>
-            <th class="num">Ops/sec</th>
-            <th class="num">Stddev</th>
-            <th class="num">Rounds</th>
-          </tr></thead>
+        <table><thead><tr><th>Benchmark</th><th class="num">Time</th><th class="num">Ops/sec</th>
+          <th class="num">Stddev</th><th class="num">Rounds</th></tr></thead>
           <tbody>${g.items.map(b => {
             const ops = b.unit === 'iter/sec' ? b.value : (1 / b.value);
+            const time = b.unit === 'iter/sec' ? (1 / b.value) : b.value;
             const stddev = b.range ? b.range.replace(/^stddev:\s*/i, '') : '-';
             const rounds = b.extra ? (b.extra.match(/rounds:\s*(\d+)/i) || [])[1] || '-' : '-';
-            const time = b.unit === 'iter/sec' ? (1 / b.value) : b.value;
-            return `<tr>
-              <td>${shortName(b.name)}</td>
-              <td class="num">${fmtTime(time)}</td>
-              <td class="num">${fmtOps(ops)}</td>
-              <td class="num">${stddev}</td>
-              <td class="num">${rounds}</td>
-            </tr>`;
-          }).join('')}</tbody>
-        </table>
-      </div>`;
+            return `<tr><td>${shortName(b.name)}</td><td class="num">${fmtTime(time)}</td>
+              <td class="num">${fmtOps(ops)}</td><td class="num">${stddev}</td><td class="num">${rounds}</td></tr>`;
+          }).join('')}</tbody></table></div>`;
     container.appendChild(div);
-
-    // Chart for groups with history
     if (commits.length > 1) {
       const names = g.items.map(i => i.name);
       requestAnimationFrame(() => renderChart(id, names, commits));
     }
   }
 
-  // Search filter
   document.getElementById('search').addEventListener('input', function(e) {
     const q = e.target.value.toLowerCase();
     document.querySelectorAll('.group').forEach(g => {
-      const match = !q || g.dataset.label.includes(q) ||
-        Array.from(g.querySelectorAll('td:first-child')).some(td => td.textContent.toLowerCase().includes(q));
-      g.style.display = match ? '' : 'none';
+      g.style.display = !q || g.dataset.label.includes(q) ||
+        Array.from(g.querySelectorAll('td:first-child')).some(td => td.textContent.toLowerCase().includes(q)) ? '' : 'none';
     });
   });
 
-  // Helpers
-  function fmtTime(s) {
-    if (s < 0.000001) return (s * 1e9).toFixed(1) + ' ns';
-    if (s < 0.001) return (s * 1e6).toFixed(1) + ' us';
-    if (s < 1) return (s * 1e3).toFixed(2) + ' ms';
-    return s.toFixed(3) + ' s';
-  }
-  function fmtOps(v) {
-    if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
-    if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
-    return v.toFixed(1);
-  }
-  function shortName(n) {
-    return n.replace(/^tests?\/perf\//, '').replace(/^test_bench_/, '').replace(/^test_/, '');
+  // ===================== COMPETITORS TAB =====================
+  const compEl = document.getElementById('tab-competitors');
+
+  // Define comparison groups: each is a category × backend with pypaginate and competitors
+  const COMPS = [
+    { title: 'In-Memory Pagination',
+      subtitle: 'Paginating Python lists — offset-based, page_size=20',
+      rows: [
+        { label: 'pypaginate (memory)', key: 'pypaginate_memory', color: 'var(--accent)', pypag: true },
+        { label: 'Raw Python slice', key: 'raw_python_slice' },
+        { label: 'paginate (lib)', key: 'paginate_lib_memory' },
+        { label: 'fastapi-pagination', key: 'fastapi_pagination_memory' },
+      ],
+      scales: {
+        '10K': name => `test_competitors.py::test_${name}`,
+        '100K': name => name === 'pypaginate_memory' ? 'test_competitors.py::test_pypaginate_100k' :
+          name === 'raw_python_slice' ? 'test_competitors.py::test_raw_python_100k' :
+          name === 'paginate_lib_memory' ? 'test_competitors.py::test_paginate_lib_100k' :
+          'test_competitors.py::test_fastapi_pagination_100k',
+      }
+    },
+    { title: 'In-Memory Full Pipeline',
+      subtitle: 'Filter + Sort + Paginate on 10K items',
+      rows: [
+        { label: 'pypaginate (pipeline)', key: 'pypaginate_full_pipeline', pypag: true },
+        { label: 'Raw Python (manual)', key: 'raw_python_full_pipeline' },
+        { label: 'paginate (lib)', key: 'paginate_lib_full_pipeline' },
+        { label: 'fastapi-pagination', key: 'fastapi_pagination_full_pipeline' },
+      ],
+      scales: { '10K': name => `test_competitors.py::test_${name}` }
+    },
+    { title: 'In-Memory Filter + Paginate',
+      subtitle: 'Filter by field then paginate on 10K items',
+      rows: [
+        { label: 'pypaginate (filter)', key: 'pypaginate_filter_paginate', pypag: true },
+        { label: 'Raw Python', key: 'raw_python_filter_paginate' },
+      ],
+      scales: { '10K': name => `test_competitors.py::test_${name}` }
+    },
+    { title: 'In-Memory Sort + Paginate',
+      subtitle: 'Sort then paginate on 10K items',
+      rows: [
+        { label: 'pypaginate (sort)', key: 'pypaginate_sort_paginate', pypag: true },
+        { label: 'Raw Python', key: 'raw_python_sort_paginate' },
+      ],
+      scales: { '10K': name => `test_competitors.py::test_${name}` }
+    },
+    { title: 'In-Memory Search + Paginate',
+      subtitle: 'Text search then paginate on 10K items',
+      rows: [
+        { label: 'pypaginate (search)', key: 'pypaginate_search_paginate', pypag: true },
+        { label: 'Raw Python', key: 'raw_python_search_paginate' },
+      ],
+      scales: { '10K': name => `test_competitors.py::test_${name}` }
+    },
+    { title: 'SQLAlchemy Pagination',
+      subtitle: 'SQL OFFSET/LIMIT pagination with SA session',
+      rows: [
+        { label: 'pypaginate (SA sync)', key: 'pypaginate_sa_sync', pypag: true },
+        { label: 'pypaginate (SA async)', key: 'pypaginate_sa_async', pypag: true },
+        { label: 'Raw SQLAlchemy', key: 'raw_sqlalchemy' },
+        { label: 'sqlakeyset (keyset)', key: 'sqlakeyset_keyset' },
+        { label: 'sqlalchemy-pagination', key: 'sqlalchemy_pagination_lib_10k' },
+      ],
+      scales: { '10K': name => `test_competitors.py::test_${name}` }
+    },
+    { title: 'SQLAlchemy Filter + Paginate',
+      subtitle: 'SQL WHERE + pagination with SA session',
+      rows: [
+        { label: 'pypaginate (SA filter)', key: 'pypaginate_sa_filter', pypag: true },
+        { label: 'Raw SA (manual WHERE)', key: 'raw_sa_filter' },
+        { label: 'fastapi-filter', key: 'fastapi_filter_10k' },
+      ],
+      scales: { '10K': name => `test_competitors.py::test_${name}` }
+    },
+    { title: 'Scaling: In-Memory Pagination',
+      subtitle: 'List slicing across dataset sizes',
+      rows: [
+        { label: 'pypaginate', key: 'SCALING_MEM_PAG', pypag: true },
+        { label: 'Raw Python', key: 'raw_python_paginate_scaling' },
+        { label: 'paginate (lib)', key: 'paginate_lib_scaling' },
+        { label: 'fastapi-pagination', key: 'fp_paginate_scaling' },
+      ],
+      scales: {
+        '1K': name => name === 'SCALING_MEM_PAG' ? 'test_scaling.py::test_memory_paginate_scaling[1K]' : `test_competitor_scaling.py::test_${name}[1K]`,
+        '10K': name => name === 'SCALING_MEM_PAG' ? 'test_scaling.py::test_memory_paginate_scaling[10K]' : `test_competitor_scaling.py::test_${name}[10K]`,
+        '100K': name => name === 'SCALING_MEM_PAG' ? 'test_scaling.py::test_memory_paginate_scaling[100K]' : `test_competitor_scaling.py::test_${name}[100K]`,
+      }
+    },
+    { title: 'Scaling: SQLAlchemy Sync Pagination',
+      subtitle: 'SQL OFFSET/LIMIT across dataset sizes',
+      rows: [
+        { label: 'pypaginate (SA sync)', key: 'SCALING_SA_PAG', pypag: true },
+        { label: 'Raw SQLAlchemy', key: 'raw_sa_paginate_scaling' },
+        { label: 'sqlakeyset', key: 'sqlakeyset_scaling' },
+        { label: 'fastapi-pagination (SA)', key: 'fp_sa_paginate_scaling' },
+        { label: 'sqlalchemy-pagination', key: 'sa_pagination_lib_scaling' },
+      ],
+      scales: {
+        '1K': name => name === 'SCALING_SA_PAG' ? 'test_competitor_scaling_sa.py::test_bench_paginate_sa_sync_1k' :
+          `test_competitor_scaling_sa.py::test_${name}[1K]`,
+        '10K': name => name === 'SCALING_SA_PAG' ? 'test_competitor_scaling_sa.py::test_bench_paginate_sa_sync_10k' :
+          `test_competitor_scaling_sa.py::test_${name}[10K]`,
+      }
+    },
+  ];
+
+  let compHTML = `<p class="comp-note">All benchmarks run on the same CI runner, same dataset, same infrastructure.
+    pypaginate uses the same backend as the competitor (SA sync vs SA sync, memory vs memory).
+    Higher ops/sec = better. Bars are relative to the fastest in each group.</p>`;
+
+  for (const comp of COMPS) {
+    compHTML += `<div class="comp-section"><h3>${comp.title}</h3>
+      <p class="comp-note">${comp.subtitle}</p>`;
+
+    for (const [scale, resolver] of Object.entries(comp.scales)) {
+      compHTML += `<p style="font-size:0.8rem;color:var(--purple);font-weight:600;margin:0.5rem 0 0.25rem">Dataset: ${scale} items</p>`;
+
+      const results = [];
+      let maxOps = 0;
+      const pypagRows = [];
+      for (const row of comp.rows) {
+        const fullName = resolver(row.key);
+        const ops = find(fullName);
+        if (ops !== null) maxOps = Math.max(maxOps, ops);
+        results.push({ ...row, ops });
+        if (row.pypag && ops !== null) pypagRows.push(ops);
+      }
+      const pypagOps = pypagRows.length > 0 ? Math.max(...pypagRows) : null;
+
+      compHTML += `<table class="comp-table"><thead><tr>
+        <th style="width:35%">Library</th><th class="num" style="width:18%">Ops/sec</th>
+        <th class="num" style="width:15%">Time/op</th>
+        <th class="num" style="width:32%">vs pypaginate</th></tr></thead><tbody>`;
+
+      for (const r of results.sort((a, b) => (b.ops || 0) - (a.ops || 0))) {
+        const isBest = r.ops === maxOps && r.ops !== null;
+        const cls = isBest ? ' class="winner"' : '';
+        const nameCls = r.pypag ? ' class="pypag"' : '';
+        const opsStr = r.ops !== null ? fmtOps(r.ops) : '<span style="color:var(--muted)">not installed</span>';
+        const timeStr = r.ops !== null ? fmtTime(1 / r.ops) : '-';
+        let diff = '';
+        if (r.pypag) diff = '<span class="badge-same">baseline</span>';
+        else if (r.ops !== null && pypagOps !== null) diff = diffBadge(pypagOps, r.ops);
+        else diff = '-';
+
+        const bw = r.ops !== null && maxOps > 0 ? barWidth(r.ops, maxOps) : 0;
+        const barColor = r.pypag ? 'var(--accent)' : 'var(--muted)';
+
+        compHTML += `<tr${cls}>
+          <td${nameCls}>${r.label}</td>
+          <td class="num bar-cell">${opsStr}<div class="bar-fill" style="width:${bw}%;background:${barColor}"></div></td>
+          <td class="num">${timeStr}</td>
+          <td class="num">${diff}</td></tr>`;
+      }
+      compHTML += '</tbody></table>';
+    }
+    compHTML += '</div>';
   }
 
+  compEl.innerHTML = compHTML;
+
+  // ===================== SCALING TAB =====================
+  const scaleEl = document.getElementById('tab-scaling');
+
+  const SCALE_GROUPS = [
+    { title: 'In-Memory Pagination', prefix: 'test_scaling.py::test_memory_paginate_scaling' },
+    { title: 'In-Memory Filtering', prefix: 'test_scaling.py::test_memory_filter_scaling' },
+    { title: 'In-Memory Sorting', prefix: 'test_scaling.py::test_memory_sort_scaling' },
+    { title: 'In-Memory Search', prefix: 'test_scaling.py::test_memory_search_scaling' },
+    { title: 'In-Memory Pipeline', prefix: 'test_scaling.py::test_memory_pipeline_scaling' },
+    { title: 'SA Sync Pagination', prefix: 'test_competitor_scaling_sa.py::test_bench_paginate_sa_sync' },
+    { title: 'SA Async Pagination', prefix: 'test_competitor_scaling_sa.py::test_raw_sa_async_paginate_scaling' },
+    { title: 'SA Sync Filtering', prefix: 'test_competitor_scaling_sa.py::test_bench_filter_sa_sync' },
+    { title: 'SA Async Filtering', prefix: 'test_competitor_scaling_sa.py::test_raw_sa_async_filter_scaling' },
+  ];
+
+  const sizes = ['1K', '10K', '100K', '500K', '1M'];
+  let scaleHTML = '<p class="comp-note">How pypaginate scales from 1K to 1M items. Each row is the same operation at different dataset sizes.</p>';
+
+  for (const sg of SCALE_GROUPS) {
+    const data = [];
+    for (const sz of sizes) {
+      const b = benches.find(b => b.name.includes(sg.prefix) && b.name.includes(sz));
+      if (b) data.push({ size: sz, ops: b.unit === 'iter/sec' ? b.value : 1 / b.value });
+    }
+    if (data.length === 0) continue;
+
+    const maxOps = Math.max(...data.map(d => d.ops));
+    scaleHTML += `<div class="comp-section"><h3>${sg.title}</h3>
+      <table class="comp-table"><thead><tr><th>Dataset</th><th class="num">Ops/sec</th>
+        <th class="num">Time/op</th><th class="num">Relative</th></tr></thead><tbody>`;
+
+    for (const d of data) {
+      const bw = barWidth(d.ops, maxOps);
+      const pct = ((d.ops / maxOps) * 100).toFixed(0);
+      scaleHTML += `<tr><td style="font-weight:600">${d.size}</td>
+        <td class="num bar-cell">${fmtOps(d.ops)}<div class="bar-fill" style="width:${bw}%;background:var(--accent)"></div></td>
+        <td class="num">${fmtTime(1 / d.ops)}</td>
+        <td class="num">${pct}%</td></tr>`;
+    }
+    scaleHTML += '</tbody></table></div>';
+  }
+
+  scaleEl.innerHTML = scaleHTML;
+
+  // ===================== CHARTS =====================
   function renderChart(id, names, commits) {
     const canvas = document.getElementById('chart-' + id);
     if (!canvas) return;
@@ -234,20 +491,15 @@
       };
     });
     new Chart(canvas, {
-      type: 'line',
-      data: { labels, datasets },
+      type: 'line', data: { labels, datasets },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { position: 'bottom', labels: { color: '#8b949e', boxWidth: 12, padding: 8, font: { size: 11 } } },
-          tooltip: {
-            callbacks: {
-              title: (items) => {
-                const c = commits[items[0].dataIndex].commit;
-                return c.id.substring(0, 7) + ': ' + c.message.split('\n')[0].substring(0, 60);
-              }
-            }
-          }
+          tooltip: { callbacks: { title: (items) => {
+            const c = commits[items[0].dataIndex].commit;
+            return c.id.substring(0, 7) + ': ' + c.message.split('\n')[0].substring(0, 60);
+          }}}
         },
         scales: {
           x: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { color: '#30363d' } },
@@ -258,13 +510,6 @@
     });
   }
 })();
-
-function toggle(id) {
-  const body = document.getElementById(id);
-  const header = body.previousElementSibling;
-  body.classList.toggle('open');
-  header.classList.toggle('open');
-}
 </script>
 </body>
 </html>
