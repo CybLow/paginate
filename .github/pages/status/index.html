@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pypaginate - CI Status Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --surface2: #1c2129; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --yellow: #d29922; --red: #f85149; --purple: #bc8cff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .header { background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 1.5rem 2rem; }
+  .header h1 { font-size: 1.4rem; font-weight: 600; margin-bottom: 0.25rem; }
+  .header p { color: var(--muted); font-size: 0.85rem; }
+  .header .links { margin-top: 0.5rem; display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.85rem; }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+
+  .grid { display: grid; gap: 1rem; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .panel-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.5rem; }
+  .panel-header h2 { font-size: 0.9rem; font-weight: 600; flex: 1; }
+  .panel-body { padding: 1rem; }
+
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.75rem; text-align: center; }
+  .stat .value { font-size: 1.5rem; font-weight: 700; }
+  .stat .label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .green { color: var(--green); } .red { color: var(--red); }
+  .yellow { color: var(--yellow); } .purple { color: var(--purple); }
+
+  /* Pipeline */
+  .pipeline { display: flex; gap: 0.25rem; align-items: stretch; overflow-x: auto; padding: 0.5rem 0; }
+  .stage { display: flex; flex-direction: column; gap: 0.25rem; min-width: 140px; }
+  .stage-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.05em; text-align: center; padding: 0.25rem; }
+  .stage-arrow { display: flex; align-items: center; justify-content: center; color: var(--border);
+    font-size: 1.2rem; min-width: 24px; }
+  .job { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 0.4rem 0.6rem; font-size: 0.75rem; display: flex; align-items: center; gap: 0.4rem;
+    white-space: nowrap; }
+  .job .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-success { background: var(--green); }
+  .dot-failure { background: var(--red); }
+  .dot-skipped { background: var(--muted); }
+  .dot-pending { background: var(--yellow); animation: pulse 1.5s infinite; }
+  .dot-running { background: var(--yellow); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* Matrix */
+  .matrix { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .matrix th, .matrix td { padding: 0.35rem 0.5rem; border: 1px solid var(--border); text-align: center; }
+  .matrix th { background: var(--surface2); color: var(--muted); font-weight: 500; }
+  .matrix td { font-size: 0.85rem; }
+  .pass { color: var(--green); } .fail { color: var(--red); } .skip { color: var(--muted); }
+  .na { color: var(--border); }
+
+  /* Benchmark summary */
+  .bench-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .bench-table th { text-align: left; color: var(--muted); font-weight: 500; padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid var(--border); }
+  .bench-table td { padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--border); }
+  .bench-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .loading { color: var(--muted); font-size: 0.85rem; padding: 1rem; text-align: center; }
+  .badge-row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+  .badge-row img { height: 20px; }
+  .chart-wrap { height: 180px; }
+  .timestamp { color: var(--muted); font-size: 0.75rem; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>pypaginate CI/CD Dashboard</h1>
+  <p>Real-time pipeline status, test matrix, coverage, and performance benchmarks</p>
+  <div class="links">
+    <a href="https://github.com/CybLow/pypaginate">Repository</a>
+    <a href="https://github.com/CybLow/pypaginate/actions/workflows/ci.yml">CI Runs</a>
+    <a href="https://app.codecov.io/gh/CybLow/pypaginate">Codecov</a>
+    <a href="../dev/bench/">Benchmark Dashboard</a>
+    <a href="https://pypaginate.readthedocs.io">Documentation</a>
+    <a href="https://pypi.org/project/pypaginate/">PyPI</a>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Summary Cards -->
+  <div class="summary" id="summary">
+    <div class="stat"><div class="value" id="s-status">...</div><div class="label">Pipeline</div></div>
+    <div class="stat"><div class="value" id="s-jobs">...</div><div class="label">Total Jobs</div></div>
+    <div class="stat"><div class="value green" id="s-passed">...</div><div class="label">Passed</div></div>
+    <div class="stat"><div class="value red" id="s-failed">...</div><div class="label">Failed</div></div>
+    <div class="stat"><div class="value" id="s-skipped">...</div><div class="label">Skipped</div></div>
+    <div class="stat"><div class="value purple" id="s-duration">...</div><div class="label">Duration</div></div>
+    <div class="stat"><div class="value" id="s-benchmarks">...</div><div class="label">Benchmarks</div></div>
+    <div class="stat"><div class="value" id="s-commit">...</div><div class="label">Commit</div></div>
+  </div>
+
+  <!-- Badges -->
+  <div class="panel" style="margin-bottom: 1rem;">
+    <div class="panel-body badge-row">
+      <img src="https://github.com/CybLow/pypaginate/actions/workflows/ci.yml/badge.svg" alt="CI">
+      <img src="https://codecov.io/gh/CybLow/pypaginate/branch/main/graph/badge.svg" alt="codecov">
+      <img src="https://img.shields.io/pypi/v/pypaginate" alt="PyPI">
+      <img src="https://img.shields.io/pypi/pyversions/pypaginate" alt="Python">
+    </div>
+  </div>
+
+  <!-- Pipeline Visualization -->
+  <div class="panel" style="margin-bottom: 1rem;">
+    <div class="panel-header"><h2>Pipeline Stages (Concurrent Execution)</h2><span class="timestamp" id="run-time"></span></div>
+    <div class="panel-body" style="overflow-x: auto;">
+      <div class="pipeline" id="pipeline"><div class="loading">Loading pipeline...</div></div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-bottom: 1rem;">
+    <!-- Test Matrix -->
+    <div class="panel">
+      <div class="panel-header"><h2>Unit Test Matrix</h2></div>
+      <div class="panel-body" id="unit-matrix"><div class="loading">Loading...</div></div>
+    </div>
+
+    <!-- Integration Matrix -->
+    <div class="panel">
+      <div class="panel-header"><h2>Integration Test Matrix</h2></div>
+      <div class="panel-body" id="int-matrix"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-bottom: 1rem;">
+    <!-- Other Test Suites -->
+    <div class="panel">
+      <div class="panel-header"><h2>Specialized Test Suites</h2></div>
+      <div class="panel-body" id="other-tests"><div class="loading">Loading...</div></div>
+    </div>
+
+    <!-- Benchmark Summary -->
+    <div class="panel">
+      <div class="panel-header"><h2>Performance Benchmarks</h2>
+        <a href="../dev/bench/" style="font-size:0.75rem">Full Dashboard &rarr;</a></div>
+      <div class="panel-body" id="bench-summary"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- Coverage -->
+  <div class="panel" style="margin-bottom: 1rem;">
+    <div class="panel-header"><h2>Coverage</h2>
+      <a href="https://app.codecov.io/gh/CybLow/pypaginate" style="font-size:0.75rem">Codecov &rarr;</a></div>
+    <div class="panel-body" style="text-align: center;">
+      <img src="https://codecov.io/gh/CybLow/pypaginate/graphs/sunburst.svg?token=" alt="Coverage Sunburst"
+        style="max-width: 300px; width: 100%; filter: invert(0.85) hue-rotate(180deg);" onerror="this.parentElement.innerHTML='<p style=color:var(--muted)>Coverage graph available on <a href=https://app.codecov.io/gh/CybLow/pypaginate>Codecov</a></p>'">
+    </div>
+  </div>
+
+  <!-- Recent Runs History -->
+  <div class="panel">
+    <div class="panel-header"><h2>Recent CI Runs</h2></div>
+    <div class="panel-body" id="history"><div class="loading">Loading...</div></div>
+  </div>
+</div>
+
+<script>
+const OWNER = 'CybLow', REPO = 'pypaginate';
+const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
+
+async function fetchJSON(url) {
+  const r = await fetch(url, { headers: { Accept: 'application/vnd.github+json' } });
+  if (!r.ok) throw new Error(`${r.status}`);
+  return r.json();
+}
+
+function dot(conclusion) {
+  const c = conclusion || 'pending';
+  return `<span class="dot dot-${c}"></span>`;
+}
+function icon(conclusion) {
+  if (conclusion === 'success') return '<span class="pass">&#10003;</span>';
+  if (conclusion === 'failure') return '<span class="fail">&#10007;</span>';
+  if (conclusion === 'skipped') return '<span class="skip">&mdash;</span>';
+  return '<span class="yellow">&#9679;</span>';
+}
+function fmtDuration(ms) {
+  const s = Math.round(ms / 1000);
+  if (s < 60) return s + 's';
+  return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+}
+function fmtTime(s) {
+  if (s < 0.000001) return (s * 1e9).toFixed(1) + ' ns';
+  if (s < 0.001) return (s * 1e6).toFixed(1) + ' us';
+  if (s < 1) return (s * 1e3).toFixed(2) + ' ms';
+  return s.toFixed(3) + ' s';
+}
+
+async function loadDashboard() {
+  try {
+    // Fetch latest CI run + jobs
+    const runs = await fetchJSON(`${API}/actions/workflows/ci.yml/runs?per_page=5&branch=main`);
+    const latest = runs.workflow_runs[0];
+    if (!latest) { document.getElementById('pipeline').innerHTML = '<div class="loading">No CI runs found</div>'; return; }
+
+    const jobsData = await fetchJSON(`${API}/actions/runs/${latest.id}/jobs?per_page=100`);
+    const jobs = jobsData.jobs;
+
+    // Summary
+    const passed = jobs.filter(j => j.conclusion === 'success').length;
+    const failed = jobs.filter(j => j.conclusion === 'failure').length;
+    const skipped = jobs.filter(j => j.conclusion === 'skipped').length;
+    const dur = latest.updated_at && latest.run_started_at ?
+      new Date(latest.updated_at) - new Date(latest.run_started_at) : 0;
+
+    document.getElementById('s-status').innerHTML =
+      latest.conclusion === 'success' ? '<span class="green">Passed</span>' :
+      latest.conclusion === 'failure' ? '<span class="red">Failed</span>' :
+      '<span class="yellow">Running</span>';
+    document.getElementById('s-jobs').textContent = jobs.length;
+    document.getElementById('s-passed').textContent = passed;
+    document.getElementById('s-failed').textContent = failed || '0';
+    document.getElementById('s-skipped').textContent = skipped;
+    document.getElementById('s-duration').textContent = fmtDuration(dur);
+    document.getElementById('s-commit').innerHTML =
+      `<a href="${latest.html_url}" style="color:var(--accent);font-size:0.9rem">${latest.head_sha.substring(0, 7)}</a>`;
+    document.getElementById('run-time').textContent =
+      new Date(latest.updated_at).toLocaleString();
+
+    // Pipeline stages (group jobs by dependency / tier)
+    const stages = [
+      { label: 'Setup', jobs: jobs.filter(j => j.name === 'Setup') },
+      { label: 'Quality', jobs: jobs.filter(j => /Quality|Security|Architecture/.test(j.name)) },
+      { label: 'Unit Tests', jobs: jobs.filter(j => /^Unit/.test(j.name)) },
+      { label: 'Tier 2+', jobs: jobs.filter(j => /^Integration|^E2E|^PostgreSQL|^Property/.test(j.name)) },
+      { label: 'Tier 3', jobs: jobs.filter(j => /^Benchmark|^Build/.test(j.name)) },
+      { label: 'Gate', jobs: jobs.filter(j => /CI|Summary/.test(j.name)) },
+    ];
+
+    document.getElementById('pipeline').innerHTML = stages.map((s, i) =>
+      (i > 0 ? '<div class="stage-arrow">&#9654;</div>' : '') +
+      `<div class="stage">
+        <div class="stage-label">${s.label}</div>
+        ${s.jobs.map(j => `<div class="job">${dot(j.conclusion)} ${j.name.replace(/\s*\/\s*/g, '<br>')}</div>`).join('')}
+      </div>`
+    ).join('');
+
+    // Unit matrix
+    const pyVersions = ['3.11', '3.12', '3.13', '3.14'];
+    const oses = ['ubuntu', 'windows', 'macos'];
+    const unitJobs = jobs.filter(j => /^Unit/.test(j.name));
+
+    let unitHTML = '<table class="matrix"><thead><tr><th></th>' +
+      oses.map(o => `<th>${o}</th>`).join('') + '</tr></thead><tbody>';
+    for (const py of pyVersions) {
+      unitHTML += `<tr><th>Py ${py}</th>`;
+      for (const os of oses) {
+        const j = unitJobs.find(j => j.name.includes(py) && j.name.toLowerCase().includes(os));
+        unitHTML += `<td>${j ? icon(j.conclusion) : '<span class="na">-</span>'}</td>`;
+      }
+      unitHTML += '</tr>';
+    }
+    unitHTML += '</tbody></table>';
+    document.getElementById('unit-matrix').innerHTML = unitHTML;
+
+    // Integration matrix
+    const intJobs = jobs.filter(j => /^Integration/.test(j.name));
+    let intHTML = '<table class="matrix"><thead><tr><th></th>' +
+      oses.map(o => `<th>${o}</th>`).join('') + '</tr></thead><tbody>';
+    for (const py of pyVersions) {
+      intHTML += `<tr><th>Py ${py}</th>`;
+      for (const os of oses) {
+        const j = intJobs.find(j => j.name.includes(py) && j.name.toLowerCase().includes(os));
+        intHTML += `<td>${j ? icon(j.conclusion) : '<span class="na">-</span>'}</td>`;
+      }
+      intHTML += '</tr>';
+    }
+    intHTML += '</tbody></table>';
+    document.getElementById('int-matrix').innerHTML = intHTML;
+
+    // Other suites
+    const suites = ['E2E', 'PostgreSQL', 'Property', 'Benchmarks', 'Build', 'Security', 'Architecture'];
+    let otherHTML = '<table class="matrix"><thead><tr><th>Suite</th><th>Status</th><th>Duration</th></tr></thead><tbody>';
+    for (const s of suites) {
+      const j = jobs.find(j => j.name.startsWith(s) || j.name === s);
+      if (j) {
+        const d = j.completed_at && j.started_at ?
+          fmtDuration(new Date(j.completed_at) - new Date(j.started_at)) : '-';
+        otherHTML += `<tr><td style="text-align:left">${j.name}</td><td>${icon(j.conclusion)}</td><td>${d}</td></tr>`;
+      }
+    }
+    otherHTML += '</tbody></table>';
+    document.getElementById('other-tests').innerHTML = otherHTML;
+
+    // Recent runs
+    let histHTML = '<table class="matrix"><thead><tr><th>Commit</th><th>Status</th><th>Duration</th><th>Date</th></tr></thead><tbody>';
+    for (const run of runs.workflow_runs) {
+      const d = run.updated_at && run.run_started_at ?
+        fmtDuration(new Date(run.updated_at) - new Date(run.run_started_at)) : '-';
+      histHTML += `<tr>
+        <td style="text-align:left"><a href="${run.html_url}">${run.head_sha.substring(0, 7)}</a>
+          <span style="color:var(--muted);font-size:0.75rem"> ${run.head_commit?.message?.split('\n')[0].substring(0, 50) || ''}</span></td>
+        <td>${icon(run.conclusion)}</td>
+        <td>${d}</td>
+        <td style="color:var(--muted)">${new Date(run.created_at).toLocaleDateString()}</td>
+      </tr>`;
+    }
+    histHTML += '</tbody></table>';
+    document.getElementById('history').innerHTML = histHTML;
+
+  } catch (e) {
+    console.error(e);
+    document.getElementById('pipeline').innerHTML =
+      `<div class="loading">Failed to load: ${e.message}. <a href="https://github.com/${OWNER}/${REPO}/actions">View on GitHub</a></div>`;
+  }
+
+  // Benchmark summary
+  try {
+    const script = document.createElement('script');
+    script.src = '../dev/bench/data.js';
+    script.onload = () => {
+      const D = window.BENCHMARK_DATA;
+      if (!D?.entries?.Benchmark?.length) {
+        document.getElementById('bench-summary').innerHTML = '<div class="loading">No benchmark data yet</div>';
+        return;
+      }
+      const latest = D.entries.Benchmark[D.entries.Benchmark.length - 1];
+      const benches = latest.benches;
+      document.getElementById('s-benchmarks').textContent = benches.length;
+
+      // Group and summarize
+      const groups = {};
+      for (const b of benches) {
+        const g = b.name.match(/^(test_\w+?)[\[_]/)?.[1]?.replace(/^test_(bench_)?/, '') || 'other';
+        const cat = g.match(/paginate|offset|cursor/) ? 'Pagination' :
+          g.match(/filter/) ? 'Filtering' : g.match(/sort/) ? 'Sorting' :
+          g.match(/search/) ? 'Search' : g.match(/pipeline/) ? 'Pipeline' :
+          g.match(/fastapi/) ? 'FastAPI' : g.match(/serial/) ? 'Serialization' :
+          g.match(/overhead/) ? 'Overhead' : g.match(/scal/) ? 'Scaling' :
+          g.match(/compet|compar|boundary/) ? 'Comparison' : 'Other';
+        if (!groups[cat]) groups[cat] = { count: 0, totalOps: 0 };
+        groups[cat].count++;
+        groups[cat].totalOps += (b.unit === 'iter/sec' ? b.value : 1 / b.value);
+      }
+
+      let html = '<table class="bench-table"><thead><tr><th>Category</th><th class="num">Tests</th><th class="num">Avg ops/sec</th></tr></thead><tbody>';
+      for (const [cat, data] of Object.entries(groups).sort((a, b) => b[1].count - a[1].count)) {
+        const avg = data.totalOps / data.count;
+        const fmt = avg >= 1e6 ? (avg / 1e6).toFixed(1) + 'M' :
+          avg >= 1e3 ? (avg / 1e3).toFixed(1) + 'K' : avg.toFixed(1);
+        html += `<tr><td>${cat}</td><td class="num">${data.count}</td><td class="num">${fmt}</td></tr>`;
+      }
+      html += `<tr style="font-weight:600"><td>Total</td><td class="num">${benches.length}</td><td></td></tr>`;
+      html += '</tbody></table>';
+      document.getElementById('bench-summary').innerHTML = html;
+    };
+    script.onerror = () => {
+      document.getElementById('bench-summary').innerHTML =
+        '<div class="loading">Benchmark data not available. <a href="../dev/bench/">View dashboard</a></div>';
+    };
+    document.head.appendChild(script);
+  } catch (e) {
+    document.getElementById('bench-summary').innerHTML = '<div class="loading">Error loading benchmarks</div>';
+  }
+}
+
+loadDashboard();
+// Auto-refresh every 30s if pipeline is in progress
+setInterval(() => {
+  const status = document.getElementById('s-status')?.textContent;
+  if (status === 'Running') loadDashboard();
+}, 30000);
+</script>
+</body>
+</html>
