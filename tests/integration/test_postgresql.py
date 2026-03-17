@@ -39,7 +39,7 @@ def _pg_available() -> bool:
         else:
             return True
 
-    return asyncio.get_event_loop().run_until_complete(_check())
+    return asyncio.run(_check())
 
 
 _PG_AVAILABLE = _pg_available()
