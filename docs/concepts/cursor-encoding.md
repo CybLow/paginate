@@ -1,8 +1,8 @@
 # Cursor Encoding
 
 Cursors in pypaginate are opaque strings that encode a position in a result set.
-For SQL-backed cursor pagination, pypaginate delegates cursor encoding entirely to
-[sqlakeyset](https://github.com/djrobstep/sqlakeyset).
+For SQL-backed cursor pagination, pypaginate uses a built-in cursor implementation
+based on URL-safe base64-encoded JSON.
 
 ---
 
@@ -32,12 +32,12 @@ graph LR
 
 ---
 
-## sqlakeyset Integration
+## Built-in Cursor Codec
 
-pypaginate uses sqlakeyset for all cursor operations:
+pypaginate uses its own cursor encoding for all cursor operations:
 
-- **`sqlakeyset.select_page()`** -- executes a keyset-paginated query.
-- **`sqlakeyset.serialize_bookmark()` / `unserialize_bookmark()`** -- encodes/decodes cursor strings.
+- **`encode_cursor()`** -- serializes ORDER BY column values to a URL-safe base64 string.
+- **`decode_cursor()`** -- deserializes a cursor string back to column values.
 
 The `SQLAlchemyCursorBackend` (async) and `SyncSQLAlchemyCursorBackend` (sync) wrap
 these calls:
@@ -57,15 +57,15 @@ items, next_cursor, prev_cursor = await backend.fetch_page(
 
 Internally, `fetch_page` does:
 
-1. Deserializes `after`/`before` strings into sqlakeyset bookmark objects via `unserialize_bookmark()`.
-2. Calls `sqlakeyset.asyncio.select_page()` (or `sqlakeyset.select_page()` for sync).
-3. Extracts items and bookmark strings from the returned `Page` object.
+1. Extracts ORDER BY columns from the query via `extract_order_columns()`.
+2. Decodes the cursor string into column values via `decode_cursor()`.
+3. Builds a keyset WHERE clause via `build_keyset_condition()` and fetches limit+1 rows.
 
 ---
 
 ## Cursor Contents
 
-A sqlakeyset cursor encodes the **sort-column values** of the boundary row. For a
+A cursor encodes the **sort-column values** of the boundary row. For a
 query `ORDER BY created_at DESC, id ASC`, the cursor contains both values:
 
 ```
@@ -90,7 +90,7 @@ generate the correct compound WHERE clause:
 -- Single column: simple comparison
 WHERE id > 42
 
--- Multi-column: compound comparison (sqlakeyset handles this)
+-- Multi-column: compound comparison (built-in keyset builder handles this)
 WHERE (created_at, id) > ('2024-01-15', 42)
 ```
 
@@ -103,7 +103,7 @@ deterministic ordering even when other columns have duplicate values.
 
 ## Bidirectional Navigation
 
-sqlakeyset supports both forward (`after`) and backward (`before`) navigation.
+pypaginate supports both forward (`after`) and backward (`before`) navigation.
 Each `CursorPage` provides two cursors:
 
 ```python
@@ -131,7 +131,7 @@ column (email, name), those values are embedded in the cursor string.
 
 - Sort by non-sensitive columns (`id`, `created_at`) when possible.
 - Treat cursors as opaque on the client side.
-- Invalid or tampered cursors cause sqlakeyset to raise an error -- pypaginate does not
+- Invalid or tampered cursors raise a ``ValidationError`` -- pypaginate does not
   silently accept them.
 
 ---

@@ -9,7 +9,7 @@ all driven by SQLAlchemy 2.0+ Select statements.
 SQLAlchemy support is an optional dependency:
 
 ```bash
-uv add pypaginate[sqlalchemy]   # SQLAlchemy + sqlakeyset
+uv add pypaginate[sqlalchemy]   # SQLAlchemy
 uv add pypaginate[all]          # Everything
 ```
 
@@ -140,7 +140,7 @@ page = await paginate(query, params, backend=backend)
 
 ### SQLAlchemyCursorBackend (async)
 
-Uses [sqlakeyset](https://github.com/djrobstep/sqlakeyset) for efficient
+Uses a built-in cursor implementation for efficient
 keyset pagination. Implements the `CursorBackend[T]` protocol.
 
 **Requirement:** The query **must** have an `ORDER BY` clause.

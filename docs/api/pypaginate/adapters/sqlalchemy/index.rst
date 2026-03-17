@@ -18,7 +18,9 @@ Submodules
    /api/pypaginate/adapters/sqlalchemy/backend/index
    /api/pypaginate/adapters/sqlalchemy/columns/index
    /api/pypaginate/adapters/sqlalchemy/cursor/index
+   /api/pypaginate/adapters/sqlalchemy/cursor_codec/index
    /api/pypaginate/adapters/sqlalchemy/filters/index
+   /api/pypaginate/adapters/sqlalchemy/keyset/index
    /api/pypaginate/adapters/sqlalchemy/search/index
    /api/pypaginate/adapters/sqlalchemy/sorting/index
    /api/pypaginate/adapters/sqlalchemy/types/index
@@ -74,23 +76,23 @@ Package Contents
    Bases: :py:obj:`Generic`\ [\ :py:obj:`ItemT`\ ]
 
 
-   Async cursor/keyset pagination backend using sqlakeyset.
+   Async cursor/keyset pagination backend.
 
    Satisfies ``CursorBackend[ItemT]`` protocol.
 
    :param session: An async SQLAlchemy session.
 
 
-   .. py:method:: fetch_page(query: object, *, limit: int, after: str | None = None, before: str | None = None) -> tuple[list[ItemT], str | None, str | None]
+   .. py:method:: fetch_page(query: sqlalchemy.sql.Select[Any], *, limit: int, after: str | None = None, before: str | None = None) -> tuple[list[ItemT], str | None, str | None]
       :async:
 
 
-      Fetch a keyset-paginated page via sqlakeyset.
+      Fetch a keyset-paginated page.
 
       :param query: A SQLAlchemy Select with ORDER BY.
       :param limit: Maximum items per page.
-      :param after: Bookmark cursor for the next page.
-      :param before: Bookmark cursor for the previous page.
+      :param after: Cursor for the next page.
+      :param before: Cursor for the previous page.
 
       :returns: Tuple of (items, next_cursor, prev_cursor).
 
@@ -184,21 +186,21 @@ Package Contents
    Bases: :py:obj:`Generic`\ [\ :py:obj:`ItemT`\ ]
 
 
-   Sync cursor/keyset pagination backend using sqlakeyset.
+   Sync cursor/keyset pagination backend.
 
    Satisfies cursor backend contract for synchronous sessions.
 
    :param session: A synchronous SQLAlchemy session.
 
 
-   .. py:method:: fetch_page(query: object, *, limit: int, after: str | None = None, before: str | None = None) -> tuple[list[ItemT], str | None, str | None]
+   .. py:method:: fetch_page(query: sqlalchemy.sql.Select[Any], *, limit: int, after: str | None = None, before: str | None = None) -> tuple[list[ItemT], str | None, str | None]
 
-      Fetch a keyset-paginated page via sqlakeyset.
+      Fetch a keyset-paginated page.
 
       :param query: A SQLAlchemy Select with ORDER BY.
       :param limit: Maximum items per page.
-      :param after: Bookmark cursor for the next page.
-      :param before: Bookmark cursor for the previous page.
+      :param after: Cursor for the next page.
+      :param before: Cursor for the previous page.
 
       :returns: Tuple of (items, next_cursor, prev_cursor).
 

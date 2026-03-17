@@ -33,7 +33,7 @@ uv sync --all-extras --dev
 This installs:
 
 - **Core:** pydantic
-- **Optional extras:** sqlalchemy, sqlakeyset, rapidfuzz, fastapi, msgspec, google-re2
+- **Optional extras:** sqlalchemy, rapidfuzz, fastapi, msgspec, google-re2
 - **Dev tools:** pytest, mypy, ruff, hypothesis, pytest-benchmark
 - **Docs:** sphinx, myst-parser
 
@@ -127,7 +127,7 @@ uv run pytest tests/perf/test_comparison.py --benchmark-enable --benchmark-only 
 
 | Extra | Packages | Purpose |
 |---|---|---|
-| `pypaginate[sqlalchemy]` | SQLAlchemy, sqlakeyset | ORM pagination |
+| `pypaginate[sqlalchemy]` | SQLAlchemy | ORM pagination |
 | `pypaginate[search]` | rapidfuzz | Fast fuzzy string matching |
 | `pypaginate[fastapi]` | FastAPI | Dependency injection helpers |
 | `pypaginate[fast]` | msgspec | Near-zero page construction |

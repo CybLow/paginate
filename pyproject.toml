@@ -57,7 +57,6 @@ dependencies = [
 # Individual features
 sqlalchemy = [
     "SQLAlchemy[asyncio]>=2.0.0",
-    "sqlakeyset>=2.0",
 ]
 search = [
     "rapidfuzz>=3.0.0",
@@ -203,7 +202,6 @@ docs = [
     
     # All optional dependencies for complete autodoc
     "SQLAlchemy>=2.0.45",
-    "sqlakeyset>=2.0.1762907931",
     "rapidfuzz>=3.14.3",
     "json-logic-qubit>=0.9.1",
     "jmespath>=1.0.1",
@@ -344,7 +342,6 @@ module = [
     "jmespath.*",
     "text_unidecode.*",
     "rapidfuzz.*",
-    "sqlakeyset.*",
     "sqlalchemy.*",
     "fastapi.*",
     "pydantic.*",

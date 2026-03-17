@@ -56,7 +56,7 @@ No `total` or `page` number -- these are offset-only concepts.
 
 ## SQLAlchemy Usage (Async)
 
-Keyset pagination requires the `sqlakeyset` library and an ordered query:
+Keyset pagination requires an ordered query:
 
 ```python
 from sqlalchemy import select
@@ -71,7 +71,7 @@ async def list_users(
 ):
     backend = SQLAlchemyCursorBackend(session)
 
-    # Query MUST have ORDER BY (sqlakeyset requirement)
+    # Query MUST have ORDER BY (keyset pagination requirement)
     stmt = select(User).order_by(User.created_at.desc(), User.id.desc())
 
     params = CursorParams(limit=limit, after=cursor)
@@ -110,7 +110,7 @@ def list_users(session: Session, cursor: str | None = None, limit: int = 20):
 
 ## How Cursors Work
 
-Cursors are opaque tokens that encode the position of the last item in the sort order. Under the hood, pypaginate uses `sqlakeyset` to serialize and deserialize bookmark positions.
+Cursors are opaque tokens that encode the position of the last item in the sort order. Under the hood, pypaginate uses a built-in cursor codec to serialize and deserialize bookmark positions.
 
 ```python
 # Response from first page:
@@ -201,7 +201,7 @@ Keyset pagination handles concurrent inserts/deletes better than offset:
 1. **No random page access** -- cannot jump to "page 50"
 2. **No total count** -- by design (counting defeats the purpose)
 3. **Requires stable ordering** -- changing ORDER BY invalidates existing cursors
-4. **Requires sqlakeyset** -- the `sqlakeyset` library handles bookmark serialization
+4. **Requires SQLAlchemy** -- the built-in cursor implementation handles bookmark serialization
 
 ## Indexed Columns
 

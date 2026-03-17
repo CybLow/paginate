@@ -51,8 +51,7 @@ pip install pypaginate[sqlalchemy]
 
 Includes:
 
-- `SQLAlchemy[asyncio]>=2.0.0` -- ORM and async database toolkit
-- `sqlakeyset>=2.0` -- Keyset/cursor pagination support
+- `SQLAlchemy[asyncio]>=2.0.0` -- ORM and async database toolkit (includes built-in cursor/keyset pagination)
 
 ### Search Features
 

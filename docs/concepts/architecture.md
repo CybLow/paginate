@@ -108,7 +108,7 @@ src/pypaginate/
     │
     ├── sqlalchemy/          # SQLAlchemy backends
     │   ├── backend.py       # SQLAlchemyBackend, SyncSQLAlchemyBackend
-    │   ├── cursor.py        # SQLAlchemyCursorBackend (via sqlakeyset)
+    │   ├── cursor.py        # SQLAlchemyCursorBackend (built-in keyset)
     │   ├── filters.py       # SQLAlchemyFilterBackend
     │   ├── search.py        # SQLAlchemySearchBackend
     │   ├── sorting.py       # SQLAlchemySortBackend

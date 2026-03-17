@@ -1,191 +1,226 @@
 """Tests for SQLAlchemy cursor backends (async and sync).
 
-Uses mocks only. sqlakeyset requires specific ORDER BY handling
-and bookmark serialization that does not work reliably with
-SQLite (no native cursor/keyset support in SQLite).
+Uses an in-memory SQLite database with real SQLAlchemy ORM objects
+to validate keyset pagination end-to-end.
 """
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
-
 import pytest
+from sqlalchemy import Column, Integer, String, create_engine, select
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from pypaginate.adapters.sqlalchemy.cursor import (
     SQLAlchemyCursorBackend,
     SyncSQLAlchemyCursorBackend,
+    _compute_cursors,
+    _prepare_query,
 )
+from pypaginate.adapters.sqlalchemy.cursor_codec import decode_cursor
+from pypaginate.adapters.sqlalchemy.keyset import OrderColumn
+
+
+# -- ORM setup ---------------------------------------------------------------
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class Item(Base):
+    __tablename__ = "items"
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50), nullable=False)
+
+
+# -- Fixtures ----------------------------------------------------------------
 
 
 @pytest.fixture()
-def cursor_backend() -> SQLAlchemyCursorBackend:
-    """Backend with a mocked async session."""
-    return SQLAlchemyCursorBackend(session=AsyncMock())
+def sync_engine():
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    return engine
 
 
 @pytest.fixture()
-def sync_cursor_backend() -> SyncSQLAlchemyCursorBackend:
-    """Backend with a mocked sync session."""
-    return SyncSQLAlchemyCursorBackend(session=MagicMock())
+def sync_session(sync_engine):
+    with Session(sync_engine) as session:
+        _seed_items(session)
+        yield session
 
 
-# -- Mock tests: fetch_page -------------------------------------------------
+@pytest.fixture()
+async def async_engine():
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    return engine
 
 
-class TestFetchPage:
-    @pytest.mark.asyncio()
-    @patch("pypaginate.adapters.sqlalchemy.cursor._async_select_page")
-    async def test_returns_items_and_cursors(
-        self,
-        mock_select: AsyncMock,
-        cursor_backend: SQLAlchemyCursorBackend,
-    ) -> None:
-        page = _make_page(["a", "b"], has_next=True, has_prev=False)
-        mock_select.return_value = page
-        query = MagicMock()
-
-        items, nxt, prev = await cursor_backend.fetch_page(query, limit=2)
-
-        assert items == ["a", "b"]
-        assert nxt == "next_cursor"
-        assert prev is None
-
-    @pytest.mark.asyncio()
-    @patch("pypaginate.adapters.sqlalchemy.cursor._async_select_page")
-    async def test_no_next_returns_none_cursor(
-        self,
-        mock_select: AsyncMock,
-        cursor_backend: SQLAlchemyCursorBackend,
-    ) -> None:
-        page = _make_page(["x"], has_next=False, has_prev=False)
-        mock_select.return_value = page
-
-        _, nxt, prev = await cursor_backend.fetch_page(MagicMock(), limit=10)
-
-        assert nxt is None
-        assert prev is None
-
-    @pytest.mark.asyncio()
-    @patch("pypaginate.adapters.sqlalchemy.cursor._async_select_page")
-    async def test_passes_after_and_before(
-        self,
-        mock_select: AsyncMock,
-        cursor_backend: SQLAlchemyCursorBackend,
-    ) -> None:
-        mock_select.return_value = _make_page([], has_next=False, has_prev=True)
-
-        await cursor_backend.fetch_page(
-            MagicMock(),
-            limit=5,
-            after="abc",
-            before="xyz",
-        )
-
-        call_kwargs = mock_select.call_args
-        assert call_kwargs[0][2] == 5
-        assert call_kwargs[0][3] == "abc"
-        assert call_kwargs[0][4] == "xyz"
+@pytest.fixture()
+async def async_session(async_engine):
+    async with AsyncSession(async_engine) as session:
+        await _async_seed_items(session)
+        yield session
 
 
-# -- Tests: extract_results via fetch_page -----------------------------------
+def _seed_items(session: Session) -> None:
+    session.add_all([Item(id=i, name=f"item-{i}") for i in range(1, 11)])
+    session.commit()
 
 
-class TestExtractResults:
-    @pytest.mark.asyncio()
-    @patch("pypaginate.adapters.sqlalchemy.cursor._async_select_page")
-    async def test_extracts_plain_rows(
-        self,
-        mock_select: AsyncMock,
-        cursor_backend: SQLAlchemyCursorBackend,
-    ) -> None:
-        page = _make_page(["a", "b"], has_next=True, has_prev=True)
-        mock_select.return_value = page
-
-        items, nxt, prev = await cursor_backend.fetch_page(MagicMock(), limit=2)
-
-        assert items == ["a", "b"]
-        assert nxt == "next_cursor"
-        assert prev == "prev_cursor"
+async def _async_seed_items(session: AsyncSession) -> None:
+    session.add_all([Item(id=i, name=f"item-{i}") for i in range(1, 11)])
+    await session.commit()
 
 
-# -- Helpers -----------------------------------------------------------------
-
-
-def _make_page(
-    rows: list[object],
-    *,
-    has_next: bool,
-    has_prev: bool,
-) -> MagicMock:
-    """Build a mock sqlakeyset Page."""
-    page = MagicMock()
-    page.__iter__ = MagicMock(return_value=iter(rows))
-    page.paging.has_next = has_next
-    page.paging.has_previous = has_prev
-    page.paging.bookmark_next = "next_cursor" if has_next else None
-    page.paging.bookmark_previous = "prev_cursor" if has_prev else None
-    return page
-
-
-# -- Sync mock tests ---------------------------------------------------------
+# -- Sync backend tests ------------------------------------------------------
 
 
 class TestSyncFetchPage:
-    @patch("pypaginate.adapters.sqlalchemy.cursor._sync_select_page")
-    def test_returns_items_and_cursors(
-        self,
-        mock_select: MagicMock,
-        sync_cursor_backend: SyncSQLAlchemyCursorBackend,
-    ) -> None:
-        page = _make_page(["a", "b"], has_next=True, has_prev=False)
-        mock_select.return_value = page
+    def test_first_page(self, sync_session: Session) -> None:
+        backend = SyncSQLAlchemyCursorBackend(sync_session)
+        query = select(Item).order_by(Item.id.asc())
 
-        items, nxt, prev = sync_cursor_backend.fetch_page(
-            MagicMock(),
-            limit=2,
-        )
+        items, nxt, prev = backend.fetch_page(query, limit=3)
 
-        assert items == ["a", "b"]
-        assert nxt == "next_cursor"
+        assert len(items) == 3
+        assert [i.id for i in items] == [1, 2, 3]
+        assert nxt is not None
         assert prev is None
 
-    @patch("pypaginate.adapters.sqlalchemy.cursor._sync_select_page")
-    def test_no_next_returns_none_cursor(
-        self,
-        mock_select: MagicMock,
-        sync_cursor_backend: SyncSQLAlchemyCursorBackend,
-    ) -> None:
-        page = _make_page(["x"], has_next=False, has_prev=False)
-        mock_select.return_value = page
+    def test_second_page_via_after(self, sync_session: Session) -> None:
+        backend = SyncSQLAlchemyCursorBackend(sync_session)
+        query = select(Item).order_by(Item.id.asc())
 
-        _, nxt, prev = sync_cursor_backend.fetch_page(
-            MagicMock(),
-            limit=10,
-        )
+        _, nxt, _ = backend.fetch_page(query, limit=3)
+        items, nxt2, prev = backend.fetch_page(query, limit=3, after=nxt)
 
+        assert [i.id for i in items] == [4, 5, 6]
+        assert nxt2 is not None
+        assert prev is not None
+
+    def test_last_page_no_next(self, sync_session: Session) -> None:
+        backend = SyncSQLAlchemyCursorBackend(sync_session)
+        query = select(Item).order_by(Item.id.asc())
+
+        # Navigate to page 4 (items 10 only)
+        _, c1, _ = backend.fetch_page(query, limit=3)
+        _, c2, _ = backend.fetch_page(query, limit=3, after=c1)
+        _, c3, _ = backend.fetch_page(query, limit=3, after=c2)
+        items, nxt, prev = backend.fetch_page(query, limit=3, after=c3)
+
+        assert [i.id for i in items] == [10]
+        assert nxt is None
+        assert prev is not None
+
+    def test_backward_navigation(self, sync_session: Session) -> None:
+        backend = SyncSQLAlchemyCursorBackend(sync_session)
+        query = select(Item).order_by(Item.id.asc())
+
+        _, nxt, _ = backend.fetch_page(query, limit=3)
+        _, _, prev = backend.fetch_page(query, limit=3, after=nxt)
+        items, _, _ = backend.fetch_page(query, limit=3, before=prev)
+
+        assert [i.id for i in items] == [1, 2, 3]
+
+    def test_empty_result(self, sync_session: Session) -> None:
+        backend = SyncSQLAlchemyCursorBackend(sync_session)
+        query = select(Item).where(Item.id > 100).order_by(Item.id.asc())
+
+        items, nxt, prev = backend.fetch_page(query, limit=3)
+
+        assert items == []
         assert nxt is None
         assert prev is None
 
-    @patch("pypaginate.adapters.sqlalchemy.cursor._sync_select_page")
-    def test_passes_after_and_before(
+    def test_descending_order(self, sync_session: Session) -> None:
+        backend = SyncSQLAlchemyCursorBackend(sync_session)
+        query = select(Item).order_by(Item.id.desc())
+
+        items, nxt, prev = backend.fetch_page(query, limit=3)
+
+        assert [i.id for i in items] == [10, 9, 8]
+        assert nxt is not None
+        assert prev is None
+
+
+# -- Async backend tests -----------------------------------------------------
+
+
+class TestAsyncFetchPage:
+    @pytest.mark.asyncio()
+    async def test_first_page(self, async_session: AsyncSession) -> None:
+        backend = SQLAlchemyCursorBackend(async_session)
+        query = select(Item).order_by(Item.id.asc())
+
+        items, nxt, prev = await backend.fetch_page(query, limit=3)
+
+        assert len(items) == 3
+        assert [i.id for i in items] == [1, 2, 3]
+        assert nxt is not None
+        assert prev is None
+
+    @pytest.mark.asyncio()
+    async def test_forward_then_back(
         self,
-        mock_select: MagicMock,
-        sync_cursor_backend: SyncSQLAlchemyCursorBackend,
+        async_session: AsyncSession,
     ) -> None:
-        mock_select.return_value = _make_page(
-            [],
-            has_next=False,
-            has_prev=True,
-        )
+        backend = SQLAlchemyCursorBackend(async_session)
+        query = select(Item).order_by(Item.id.asc())
 
-        sync_cursor_backend.fetch_page(
-            MagicMock(),
-            limit=5,
-            after="abc",
-            before="xyz",
-        )
+        _, nxt, _ = await backend.fetch_page(query, limit=3)
+        _, _, prev = await backend.fetch_page(query, limit=3, after=nxt)
+        items, _, _ = await backend.fetch_page(query, limit=3, before=prev)
 
-        call_args = mock_select.call_args[0]
-        assert call_args[2] == 5
-        assert call_args[3] == "abc"
-        assert call_args[4] == "xyz"
+        assert [i.id for i in items] == [1, 2, 3]
+
+    @pytest.mark.asyncio()
+    async def test_empty_result(
+        self,
+        async_session: AsyncSession,
+    ) -> None:
+        backend = SQLAlchemyCursorBackend(async_session)
+        query = select(Item).where(Item.id > 100).order_by(Item.id.asc())
+
+        items, nxt, prev = await backend.fetch_page(query, limit=5)
+
+        assert items == []
+        assert nxt is None
+        assert prev is None
+
+
+# -- Helper function tests ---------------------------------------------------
+
+
+class TestPrepareQuery:
+    def test_no_cursor(self) -> None:
+        query = select(Item).order_by(Item.id.asc())
+        stmt, cols, backwards = _prepare_query(
+            query, limit=5, after=None, before=None,
+        )
+        assert not backwards
+        assert len(cols) == 1
+
+    def test_with_after_cursor(self) -> None:
+        from pypaginate.adapters.sqlalchemy.cursor_codec import encode_cursor
+
+        query = select(Item).order_by(Item.id.asc())
+        cursor = encode_cursor((3,))
+        stmt, cols, backwards = _prepare_query(
+            query, limit=5, after=cursor, before=None,
+        )
+        assert not backwards
+        assert len(cols) == 1
+
+
+class TestComputeCursors:
+    def test_empty_rows(self) -> None:
+        nxt, prev = _compute_cursors(
+            [], [],
+            has_more=False, backwards=False, has_cursor=False,
+        )
+        assert nxt is None
+        assert prev is None

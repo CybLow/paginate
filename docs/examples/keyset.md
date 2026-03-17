@@ -49,7 +49,7 @@ page.previous_cursor    # str | None
 
 ## SQLAlchemy Cursor Pagination
 
-Requires `pypaginate[sqlalchemy]` (includes `sqlakeyset`):
+Requires `pypaginate[sqlalchemy]`:
 
 ```bash
 pip install pypaginate[sqlalchemy]
@@ -110,7 +110,7 @@ async def setup():
 async def paginate_forward():
     """Walk forward through events using cursor pagination."""
     async with async_session() as session:
-        # Query MUST have ORDER BY (sqlakeyset requirement)
+        # Query MUST have ORDER BY (keyset pagination requirement)
         query = select(Event).order_by(Event.id)
         backend = SQLAlchemyCursorBackend(session)
 
@@ -242,7 +242,7 @@ Request: `GET /events?limit=20&after=eyJpZCI6IDEwMH0=`
 
 ## Best Practices
 
-1. **Always include ORDER BY** -- sqlakeyset requires it
+1. **Always include ORDER BY** -- keyset pagination requires it
 2. **Use indexed columns** for the sort key
 3. **End with a unique column** (e.g., `id`) as the final sort key for deterministic ordering
 4. **Cursors are opaque** -- clients should not parse or construct them

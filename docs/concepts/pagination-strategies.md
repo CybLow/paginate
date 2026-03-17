@@ -72,7 +72,7 @@ The `clamp(total)` method returns new params clamped to valid bounds when `Overf
 ## Cursor Pagination
 
 Cursor (keyset) pagination uses an opaque cursor string to resume from a specific
-position. pypaginate uses [sqlakeyset](https://github.com/djrobstep/sqlakeyset) for
+position. pypaginate uses a built-in cursor implementation for
 SQL-backed cursor pagination.
 
 ```python
@@ -99,7 +99,7 @@ if page.has_next:
 -- First page: no cursor
 SELECT * FROM users ORDER BY created_at, id LIMIT 20;
 
--- Next page: WHERE after cursor position (sqlakeyset handles this)
+-- Next page: WHERE after cursor position (built-in keyset builder handles this)
 SELECT * FROM users
 WHERE (created_at, id) > ('2024-01-15', 42)
 ORDER BY created_at, id LIMIT 20;
@@ -117,7 +117,7 @@ The WHERE clause uses an efficient index seek instead of scanning and discarding
 
 - **No random access** -- cannot jump to "page 50" directly.
 - **No total count** -- can only say "has more" (by design: `CursorPage` has no `total` field).
-- **Requires ORDER BY** -- the query must have an ORDER BY clause for sqlakeyset.
+- **Requires ORDER BY** -- the query must have an ORDER BY clause for keyset pagination.
 
 ### CursorParams Fields
 

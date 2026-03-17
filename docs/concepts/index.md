@@ -35,7 +35,7 @@ Offset vs cursor pagination, their trade-offs, and when to use each.
 :link: cursor-encoding
 :link-type: doc
 
-How cursor values work with sqlakeyset for keyset pagination.
+How cursor values work with the built-in cursor codec for keyset pagination.
 :::
 
 :::{grid-item-card} Filter Expressions

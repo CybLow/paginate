@@ -6,7 +6,7 @@ framework-specific concepts and the library's domain types.
 :::{tip} Installation
 ```bash
 uv add pypaginate[fastapi]      # FastAPI dependencies
-uv add pypaginate[sqlalchemy]   # SQLAlchemy + sqlakeyset
+uv add pypaginate[sqlalchemy]   # SQLAlchemy
 uv add pypaginate[all]          # Everything
 ```
 :::
@@ -29,7 +29,7 @@ uv add pypaginate[all]          # Everything
   AsyncPipeline.execute()        ← applies specs to the SA Select
         |
   SQLAlchemyBackend              ← COUNT + OFFSET/LIMIT
-  SQLAlchemyCursorBackend        ← keyset via sqlakeyset
+  SQLAlchemyCursorBackend        ← built-in keyset cursor
         |
   OffsetPage[T] / CursorPage[T] ← returned to caller
 ```
