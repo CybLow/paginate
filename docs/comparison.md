@@ -162,12 +162,12 @@ async def get_users(
 | Aspect | fastapi-pagination + filter | pypaginate |
 |---|---|---|
 | Libraries needed | 2 | 1 |
-| Filter declaration | Declarative (class) | Explicit (FilterSpec list) |
-| Sorting | Built into filter class | Separate SortSpec |
-| Search | Basic (ilike only) | Full (fuzzy, Unicode, tokens) |
+| Filter declaration | Declarative (class) | Declarative (`FilterDep` with `FilterField`) |
+| Sorting | Built into filter class | `SortDep` (`?sort=name,-age`) |
+| Search | Basic (ilike only) | `SearchDep` + full fuzzy/Unicode/tokens |
 | Type safety | Partial (string operators) | Full (Literal types, protocols) |
 | In-memory support | No | Yes (same API) |
-| Auto OpenAPI for filters | Yes | Manual Query params |
+| Auto OpenAPI for filters | Yes | Yes (`FilterDep` generates OpenAPI via Pydantic) |
 | Nested filter groups | No | Yes (And/Or builders) |
 
 ---
@@ -175,7 +175,7 @@ async def get_users(
 ## Where pypaginate Wins
 
 1. **Performance**: #1 for pagination (1.2us vs paginate-lib 1.4us vs fp 44.5us).
-2. **SA Performance**: Faster than raw SQLAlchemy pagination (330us vs 360us).
+2. **SA Performance**: Faster than sqlakeyset and raw SA pagination (330us vs 379us).
 3. **Unified library**: Filter + sort + search + paginate in one `pip install`.
 4. **Search**: Only library with fuzzy matching, Unicode normalization, accent removal.
 5. **Type safety**: `mypy --strict`, Elysia-style type inference, Literal operator types.
@@ -185,17 +185,15 @@ async def get_users(
 
 ## Where pypaginate Lags
 
-1. **Declarative filters**: No `FilterModel` class -- users write FilterSpec lists manually.
-2. **DB backends**: SQLAlchemy only (competitors support 19 backends).
-3. **Full pipeline speed**: Behind competitors that use raw Python for filter+sort.
-4. **Auto OpenAPI**: Filter params must be declared manually as FastAPI Query params.
-5. **Zero-config middleware**: No `add_pagination(app)` -- explicit setup required.
+1. **DB backends**: SQLAlchemy only (competitors support 19 backends).
+2. **Full pipeline speed**: Behind competitors that use raw Python for filter+sort.
+3. **Zero-config middleware**: No `add_pagination(app)` -- explicit setup required.
 
 ## Roadmap
 
 | Version | Focus | Status |
 |---|---|---|
-| **v0.2.0** | Hexagonal architecture, protocol backends, unified paginate(), full docs | **Done** |
-| **v0.3.0** | Declarative FilterModel, LimitOffset mode, query param parser | Planned |
-| **v0.4.0** | Multi-backend (Beanie, Tortoise), `add_pagination(app)`, HATEOAS | Planned |
+| **v0.2.0** | Hexagonal architecture, protocol backends, unified paginate(), FilterDep, SortDep, SearchDep | **Done** |
+| **v0.3.0** | JSON Logic parser, `add_pagination(app)`, HATEOAS links | Planned |
+| **v0.4.0** | Multi-backend (Beanie, Tortoise), additional ORM support | Planned |
 | **v1.0.0** | Rust core extension for 10x filter/search speed | Planned |

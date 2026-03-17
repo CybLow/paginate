@@ -88,7 +88,7 @@ tests/
 │   └── test_sorting.py            # Invariant: sorted output is actually sorted
 │
 ├── architecture/                  # 69 tests — code quality enforcement
-│   ├── test_file_limits.py        # All source files ≤ 200 lines (code only)
+│   ├── test_file_limits.py        # All source files ≤ 250 lines (code only)
 │   ├── test_imports.py            # No circular imports
 │   └── test_protocols.py          # All backends implement protocol interfaces
 │
@@ -281,7 +281,7 @@ The `tests/architecture/` directory enforces code quality at CI level:
 
 ### File Limits (`test_file_limits.py`)
 
-Every source file in `src/pypaginate/` (excluding `_cli/`) must be ≤ 200 lines of code (comments, docstrings, blanks excluded). This prevents files from growing unbounded.
+Every source file in `src/pypaginate/` (excluding `_cli/`) must be ≤ 250 lines of code (comments, docstrings, blanks excluded). This prevents files from growing unbounded.
 
 ### Import Cycles (`test_imports.py`)
 

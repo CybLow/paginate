@@ -26,7 +26,7 @@ graph TB
         Pipeline["pipeline.py — SyncPipeline, AsyncPipeline"]
         FilterEng["filtering/engine.py — FilterEngine"]
         SearchEng["search/engine.py — SearchEngine"]
-        SortEng["sorting/engine.py — (via backends)"]
+        SortEng["sorting/engine.py — SortEngine"]
     end
 
     subgraph "Adapter Layer (backend implementations)"
@@ -93,7 +93,7 @@ src/pypaginate/
 │   └── parser.py            # TokenParser — query tokenization
 │
 ├── sorting/                 # In-memory sort support
-│   ├── engine.py            # (via backends)
+│   ├── engine.py            # SortEngine — multi-key stable sorting
 │   └── keys.py              # Sort key helpers
 │
 ├── text/                    # Text processing utilities

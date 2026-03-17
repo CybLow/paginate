@@ -189,8 +189,8 @@
 | `MemoryFilterBackend` | `adapters/memory/filters.py` | `("_registry",)` |
 | `MemorySearchBackend` | `adapters/memory/search.py` | `()` |
 | `MemorySortBackend` | `adapters/memory/sorting.py` | `()` |
-| `SQLAlchemyBackend` | `adapters/sqlalchemy/backend.py` | `("_session",)` |
-| `SyncSQLAlchemyBackend` | `adapters/sqlalchemy/backend.py` | `("_session",)` |
+| `SQLAlchemyBackend` | `adapters/sqlalchemy/backend.py` | `("_count_query", "_session", "_unique")` |
+| `SyncSQLAlchemyBackend` | `adapters/sqlalchemy/backend.py` | `("_count_query", "_session", "_unique")` |
 | `SQLAlchemyFilterBackend` | `adapters/sqlalchemy/filters.py` | `("_operators",)` |
 
 - **Verify**: `uv run pytest tests/ --ignore=tests/perf -q` (any dynamic attr assignment would fail)

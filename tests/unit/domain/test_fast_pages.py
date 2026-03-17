@@ -6,6 +6,7 @@ import json
 
 import pytest
 
+
 msgspec = pytest.importorskip("msgspec")
 
 from pypaginate.domain.fast_pages import FastCursorPage, FastOffsetPage

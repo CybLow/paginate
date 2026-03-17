@@ -141,7 +141,10 @@ src/pypaginate/
     │   └── types.py         # SQLAlchemy type mapping
     │
     └── fastapi/             # FastAPI integration
-        └── dependencies.py  # OffsetDep, CursorDep (Annotated dependencies)
+        ├── dependencies.py  # OffsetDep, CursorDep (Annotated dependencies)
+        ├── filters.py       # FilterDep, FilterField (declarative filters)
+        ├── sorting.py       # SortDep (sort parsing)
+        └── search.py        # SearchDep (search parsing)
 ```
 
 ---

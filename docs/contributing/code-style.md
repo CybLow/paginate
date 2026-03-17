@@ -30,8 +30,9 @@ Enforced by `tests/architecture/test_file_limits.py`:
 
 | Metric | Hard Limit | Preferred |
 |---|---|---|
-| Lines per file | **200** | 150 |
-| Lines per function | **12** | 10 |
+| Lines per file (code, excl. comments/docstrings) | **250** | 180 |
+| Lines per function (body, excl. docstring) | **15** | 10 |
+| Lines per class | **250** | 150 |
 | Parameters per function | **4** | 3 |
 | Indentation levels | **2** | 1 |
 | Public methods per class | 10 | 5-7 |

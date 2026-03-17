@@ -220,33 +220,7 @@ Multi-word queries generate AND-combined conditions:
 
 ## Pipeline Integration
 
-Combine search with filtering, sorting, and pagination:
-
-```python
-from pypaginate import (
-    FilterSpec, SortSpec, SortDirection, SearchSpec, OffsetParams,
-)
-from pypaginate.adapters.memory import (
-    MemoryBackend, MemoryFilterBackend, MemorySortBackend, MemorySearchBackend,
-)
-from pypaginate.engine.paginator import Paginator
-from pypaginate.engine.pipeline import SyncPipeline
-
-pipeline = SyncPipeline(
-    Paginator(MemoryBackend()),
-    filter_backend=MemoryFilterBackend(),
-    sort_backend=MemorySortBackend(),
-    search_backend=MemorySearchBackend(),
-)
-
-page = pipeline.execute(
-    users,
-    OffsetParams(page=1, limit=20),
-    filters=[FilterSpec(field="status", value="active")],
-    sorting=[SortSpec(field="name")],
-    search=SearchSpec(query="alice", fields=("name", "email")),
-)
-```
+Pass a `SearchSpec` to `SyncPipeline.execute()` or `AsyncPipeline.execute()` via the `search=` parameter. See [In-Memory Pagination](../pagination/memory.md) for a full pipeline example combining filters, sorting, search, and pagination.
 
 ## Text Normalization
 

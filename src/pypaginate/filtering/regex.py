@@ -9,8 +9,8 @@ from __future__ import annotations
 import re as _stdlib_re
 from typing import Any
 
-
 from pypaginate.domain.exceptions import FilterError
+
 
 try:
     import re2 as _re_mod  # type: ignore[import-untyped,import-not-found]

@@ -33,7 +33,7 @@ users = [
 
 spec = SearchSpec(query="alice", fields=("name", "email"))
 results = engine.apply(users, spec)
-# [Alice Smith, Alicia Keys] (sorted by relevance)
+# [Alice Smith, Alicia Keys] (ranked by relevance score)
 ```
 
 ## SearchSpec

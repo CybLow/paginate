@@ -138,9 +138,9 @@ graph LR
 
 ```python
 from pypaginate.filtering.engine import FilterEngine
-from pypaginate.filtering.registry import OperatorRegistry
+from pypaginate.filtering.registry import create_default_registry
 
-engine = FilterEngine(OperatorRegistry.default())
+engine = FilterEngine(create_default_registry())
 filtered = engine.apply(items, [
     FilterSpec(field="age", operator="gte", value=18),
     FilterSpec(field="status", value="active"),

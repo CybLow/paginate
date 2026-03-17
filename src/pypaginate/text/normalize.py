@@ -58,9 +58,7 @@ def clear_normalize_cache() -> None:
 
 def _strip_accents(value: str) -> str:
     """Remove combining diacritical marks from decomposed text."""
-    return "".join(
-        char for char in value if unicodedata.category(char) != "Mn"
-    )
+    return "".join(char for char in value if unicodedata.category(char) != "Mn")
 
 
 __all__ = ["clear_normalize_cache", "normalize_text"]

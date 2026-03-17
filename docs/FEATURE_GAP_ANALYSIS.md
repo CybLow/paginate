@@ -38,12 +38,11 @@
 
 ## FILTERING GAPS
 
-### GAP F1: Missing Operators — empty, not_empty, exists
+### GAP F1: Missing Operators — empty, not_empty, exists -- IMPLEMENTED in v0.2.0
 
 - **v0.1**: `empty` (checks `None`, `""`, `[]`), `not_empty`, `exists` (field present)
-- **v0.2**: Only `is_null` / `is_not_null` (checks `None` only)
-- **Impact**: Medium. Users need to check for empty strings/lists, not just None.
-- **Verdict**: **SHOULD ADD** — 3 small operator classes
+- **v0.2**: `empty`, `not_empty`, `exists` operators registered in `OperatorRegistry`
+- **Status**: **IMPLEMENTED** in v0.2.0. All three operators are available.
 
 ### GAP F2: Operator Aliases (==, !=, >, >=, <, <=)
 
@@ -59,17 +58,15 @@
 - **Impact**: Low. Niche use case for array-typed fields.
 - **Verdict**: **SKIP for v0.2** — consider for v0.3 if users request it
 
-### GAP F4: JSON Logic Evaluation
+### GAP F4: JSON Logic Evaluation -- PARTIALLY ADDRESSED in v0.2.0
 
 - **v0.1**: Full JSON Logic with `{"and": [{"or": [...]}]}` nested expressions
-- **v0.2**: Flat FilterSpec list with AND/OR logic enum
-- **Impact**: Medium. JSON Logic supports nested groups that FilterSpec cannot express:
-  `(a OR b) AND (c OR d)` — impossible with flat AND + OR partition.
-- **Difference from v0.2**:
-  - JSON Logic: unlimited nesting depth, standard format, frontend-compatible
-  - FilterSpec: type-safe, 15x faster, IDE autocomplete, but flat AND/OR only
-- **Verdict**: **CONSIDER for v0.3** — add optional JSON Logic parser that converts dicts to FilterSpec.
-  Keep FilterSpec as primary API (performance + type safety). JSON Logic as convenience layer.
+- **v0.2**: `FilterGroup` with `And()` / `Or()` builders support nested groups up to 5 levels deep.
+  Flat `FilterSpec` lists still use AND/OR logic enum for simple cases.
+- **Status**: Nested group expressions like `(a OR b) AND (c OR d)` are now possible via
+  `And(Or(...), Or(...))`. JSON Logic dict format is not supported -- users use typed builders instead.
+- **Verdict**: **CONSIDER for v0.3** -- add optional JSON Logic parser that converts dicts to FilterGroup.
+  FilterGroup is the primary API (type-safe, compiled predicates).
 
 ### GAP F5: Array Field Access (JMESPath `[*]` notation)
 
@@ -169,12 +166,12 @@
 - **Impact**: Low. OffsetPage IS the response model.
 - **Verdict**: **SKIP** — OffsetPage serves this purpose
 
-### GAP FA3: FilterDepends / OrderingDepends / SearchDepends
+### GAP FA3: FilterDepends / OrderingDepends / SearchDepends -- IMPLEMENTED in v0.2.0
 
 - **v0.1 docs**: Planned declarative filter/ordering/search dependencies
-- **v0.2**: Not implemented — users build FilterSpec/SortSpec/SearchSpec manually
-- **Impact**: Medium. More endpoint boilerplate than competitors.
-- **Verdict**: **CONSIDER for v0.3** — needs proper API design, not a quick hack
+- **v0.2**: `FilterDep`, `SortDep`, `SearchDep` implemented in `pypaginate.adapters.fastapi`
+- **Status**: **IMPLEMENTED** in v0.2.0. `FilterDep` uses `FilterField()` for declarative filters.
+  `SortDep` parses `?sort=name,-age`. `SearchDep` parses `?q=alice&search_fields=name,email`.
 
 ### GAP FA4: add_pagination(app)
 
@@ -227,9 +224,8 @@ Same as GAP P2. See Pagination Gaps section.
 
 | # | Feature | Effort | Impact |
 |---|---|---|---|
-| F4 | JSON Logic parser (dict → FilterSpec) | High | Medium — frontend integration |
+| F4 | JSON Logic parser (dict → FilterGroup) | High | Medium — frontend integration |
 | F6 | Django `__` filter format parser | Medium | Medium — Django developer DX |
-| FA3 | FilterDepends / OrderingDepends | High | Medium — endpoint boilerplate |
 | FA4 | add_pagination(app) | High | Medium — zero-config setup |
 
 ### Skip Permanently
@@ -293,31 +289,23 @@ result = engine.filter(items, filters)
 | **Debugging** | Hard — nested dicts, runtime errors only | Easy — each FilterSpec is a clear object |
 | **Dependencies** | json-logic-qubit (external lib) | None — Pydantic models only |
 | **Serialization** | Native JSON — frontend can send directly | Pydantic model — needs API parsing |
-| **Nesting depth** | Unlimited — `(a OR b) AND (c OR d)` works | **Flat only** — all ANDs then any OR |
-| **Dynamic rules** | Yes — rule engines, form builders | Limited — must build FilterSpec list |
+| **Nesting depth** | Unlimited — `(a OR b) AND (c OR d)` works | Up to 5 levels via `And()`/`Or()` `FilterGroup` builders |
+| **Dynamic rules** | Yes — rule engines, form builders | Yes — build `FilterGroup` trees programmatically |
 
-**The nesting limitation is REAL:**
+**The nesting limitation was addressed in v0.2.0 with `FilterGroup`:**
 ```python
-# JSON Logic can express:
-# (a=1 OR b=2) AND (c=3 OR d=4)
-{"and": [
-    {"or": [{"a": {"eq": 1}}, {"b": {"eq": 2}}]},
-    {"or": [{"c": {"eq": 3}}, {"d": {"eq": 4}}]},
-]}
+# v0.2 can now express: (a=1 OR b=2) AND (c=3 OR d=4)
+from pypaginate import And, Or, FilterSpec
 
-# FilterSpec CANNOT express this — it uses flat AND + OR partition:
-# All ANDs must pass, THEN at least one OR must pass
-# It can do: (a AND b) OR c OR d
-# It CANNOT do: (a OR b) AND (c OR d)
+group = And(
+    Or(FilterSpec(field="a", value=1), FilterSpec(field="b", value=2)),
+    Or(FilterSpec(field="c", value=3), FilterSpec(field="d", value=4)),
+)
 ```
 
-**Use cases needing nested groups:**
-- E-commerce: "((category=shoes OR category=boots) AND (price<100 OR on_sale=true))"
-- User management: "((role=admin OR role=moderator) AND (department=engineering OR department=product))"
-- Form builders: user-created filter rules with arbitrary nesting
-
-**Recommendation:** Keep FilterSpec as primary (15x faster, typed). Add optional JSON Logic PARSER
-that converts dict → FilterSpec for the 10% that need nesting. Best of both worlds.
+**Remaining difference:** JSON Logic uses plain dicts (frontend-friendly), while FilterGroup uses
+typed Python builders. A JSON Logic dict-to-FilterGroup parser could be added in v0.3 for
+frontend integration use cases.
 
 ### DA2: Dot Notation vs JMESPath — With Examples
 
@@ -525,15 +513,15 @@ Every feature mentioned in old docs with its actual status:
 | `SqlFilterAdapter` | `pypaginate.filters.sql_adapter` | Removed | `SQLAlchemyFilterBackend` |
 | JSON Logic dicts | `FilterEngine.filter(items, {...})` | Removed | `FilterEngine.apply(items, [FilterSpec])` |
 | `decode_cursor()` | `pypaginate.engines.keyset.decode_cursor` | Not public | Internal to `AsyncCursorPaginator` |
-| `count_statement` param | `paginate_entities(..., count_statement=)` | **Missing** | Not in v0.2 API |
-| `unique=True` param | `paginate_entities(..., unique=True)` | **Missing** | Not in v0.2 API |
-| `empty` operator | Registry | **Missing** | Not registered |
-| `exists` operator | Registry | **Missing** | Not registered |
-| `any`/`all` operators | Registry | **Missing** | Not registered |
-| Weighted search fields | `SearchOptions(fields={...})` | **Missing** | Not in SearchSpec |
-| token_sort_ratio | `SearchOptions(fuzzy_threshold=)` | **Missing** | Only partial_ratio |
-| `min_query_length` | `SearchOptions(min_query_length=)` | **Missing** | Not in SearchSpec |
-| `max_results` | `SearchOptions(max_results=)` | **Missing** | Not in SearchSpec |
-| TF-IDF scoring | Concept docs | **Missing** | Simple token scoring |
-| Highlighting | `highlight_tag="<mark>"` | **Missing** | Not implemented |
-| Operator aliases | `==`, `!=`, `>` etc. | **Missing** | Only primary names |
+| `count_statement` param | `paginate_entities(..., count_statement=)` | **Implemented** | `SQLAlchemyBackend(session, count_query=...)` |
+| `unique=True` param | `paginate_entities(..., unique=True)` | **Implemented** | `SQLAlchemyBackend(session, unique=True)` |
+| `empty` operator | Registry | **Implemented** | `FilterSpec(operator="empty")` |
+| `exists` operator | Registry | **Implemented** | `FilterSpec(operator="exists")` |
+| `any`/`all` operators | Registry | Skipped | Not registered (niche use case) |
+| Weighted search fields | `SearchOptions(fields={...})` | **Implemented** | `SearchSpec(weights={"name": 2.0})` |
+| token_sort_ratio | `SearchOptions(fuzzy_threshold=)` | **Implemented** | `FuzzyMode.TOKEN_SORT` |
+| `min_query_length` | `SearchOptions(min_query_length=)` | **Implemented** | `SearchSpec(min_length=2)` |
+| `max_results` | `SearchOptions(max_results=)` | **Implemented** | `SearchSpec(max_results=100)` |
+| TF-IDF scoring | Concept docs | Skipped | Simple token scoring (sufficient for in-memory) |
+| Highlighting | `highlight_tag="<mark>"` | Skipped | UI concern, not pagination library |
+| Operator aliases | `==`, `!=`, `>` etc. | Skipped | One canonical name per operator |

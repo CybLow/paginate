@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from pypaginate.domain.pages import OffsetPage
 from pypaginate.domain.params import OffsetParams
 from tests.fixtures.backends import BackendEnv
 from tests.fixtures.helpers import run

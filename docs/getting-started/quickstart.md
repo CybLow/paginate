@@ -82,7 +82,7 @@ pip install pypaginate[fastapi]
 ```
 
 ```python
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -94,7 +94,7 @@ app = FastAPI()
 
 
 @app.get("/users")
-async def list_users(params: OffsetDep, session: AsyncSession = Depends(get_session)):
+async def list_users(params: OffsetDep, session: AsyncSession = Depends(get_session)) -> OffsetPage:
     query = select(User).order_by(User.id)
     backend = SQLAlchemyBackend(session)
     return await paginate(query, params, backend=backend)
@@ -104,65 +104,12 @@ Your API now accepts `?page=1&limit=20` query parameters automatically.
 
 ## Core Concepts
 
-### OffsetParams
-
-Immutable pagination input:
-
-```python
-from pypaginate import OffsetParams
-
-params = OffsetParams(page=2, limit=20)
-
-params.page    # 2
-params.limit   # 20
-params.offset  # 20  (computed: (page - 1) * limit)
-```
-
-### OffsetPage
-
-The pagination result:
-
-```python
-from pypaginate import OffsetPage
-
-# OffsetPage fields:
-# - items: list[T]       -- items for this page
-# - total: int           -- total count across all pages
-# - page: int            -- current page number
-# - pages: int           -- total number of pages
-# - limit: int           -- items per page
-# - has_next: bool       -- True if more pages exist
-# - has_previous: bool   -- True if not on first page
-```
-
-### CursorParams / CursorPage
-
-For keyset/cursor pagination (large datasets, real-time feeds):
-
-```python
-from pypaginate import CursorParams, CursorPage
-
-params = CursorParams(limit=20)                  # first page
-params = CursorParams(limit=20, after="abc123")   # next page
-params = CursorParams(limit=20, before="xyz789")  # previous page
-
-# CursorPage fields:
-# - items, limit, has_next, has_previous (same as OffsetPage)
-# - next_cursor: str | None
-# - previous_cursor: str | None
-# (no total, no page -- those are offset-only concepts)
-```
-
-## Error Handling
-
-```python
-from pypaginate import OffsetParams, ValidationError
-
-try:
-    params = OffsetParams(page=0, limit=20)  # page must be >= 1
-except ValidationError as e:
-    print(e)  # "page must be >= 1"
-```
+| Concept | Description | Details |
+|---------|-------------|---------|
+| `OffsetParams` | Immutable pagination input (`page`, `limit`, computed `offset`) | [Basic Pagination](../examples/basic-pagination.md#offsetparams) |
+| `OffsetPage` | Result with `items`, `total`, `page`, `pages`, `has_next`, `has_previous` | [Basic Pagination](../examples/basic-pagination.md#offsetpage) |
+| `CursorParams` | Cursor input (`limit`, `after`, `before`) | [Keyset Pagination](../examples/keyset.md#cursorparams-and-cursorpage) |
+| `CursorPage` | Result with `items`, `next_cursor`, `previous_cursor` (no `total`/`page`) | [Keyset Pagination](../examples/keyset.md#cursorparams-and-cursorpage) |
 
 ## Next Steps
 

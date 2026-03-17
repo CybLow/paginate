@@ -128,25 +128,7 @@ The backend generates proper SQLAlchemy expressions:
 
 ## Pipeline Usage
 
-Sort specs integrate with `SyncPipeline` and `AsyncPipeline`:
-
-```python
-from pypaginate import SortSpec, SortDirection, OffsetParams
-from pypaginate.adapters.memory import MemoryBackend, MemorySortBackend
-from pypaginate.engine.paginator import Paginator
-from pypaginate.engine.pipeline import SyncPipeline
-
-pipeline = SyncPipeline(
-    Paginator(MemoryBackend()),
-    sort_backend=MemorySortBackend(),
-)
-
-page = pipeline.execute(
-    products,
-    OffsetParams(page=1, limit=10),
-    sorting=[SortSpec(field="price", direction=SortDirection.DESC)],
-)
-```
+Pass sorting specs to `SyncPipeline.execute()` or `AsyncPipeline.execute()` via the `sorting=` parameter. See [Multi-Column Sorting](multi-column.md) for pipeline examples with sorting, filtering, and pagination combined.
 
 ## Common Patterns
 
@@ -184,11 +166,17 @@ SortSpec(field="score", direction=SortDirection.ASC)
 
 ## Error Handling
 
+`SortError` is raised when field values cannot be compared (e.g., mixed types):
+
 ```python
-from pypaginate import SortError
+from pypaginate import SortError, SortSpec
+from pypaginate.sorting.engine import SortEngine
+
+engine = SortEngine()
+items = [{"val": "abc"}, {"val": 123}]
 
 try:
-    result = engine.apply(items, [SortSpec(field="nonexistent")])
+    engine.apply(items, [SortSpec(field="val")])
 except SortError as e:
     print(f"Sort error: {e}")
 ```

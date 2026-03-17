@@ -171,41 +171,9 @@ async def list_products(session: AsyncSession, category: str | None = None):
 
 ## FastAPI FilterDep
 
-Use `FilterDep` for declarative filter parameters in FastAPI:
+`FilterDep` lets you declare filters as FastAPI query parameters. Subclass it, define fields with `FilterField`, and non-None values are automatically converted to `FilterSpec` objects via `.to_specs()`.
 
-```python
-from typing import Annotated
-
-from fastapi import FastAPI, Query
-
-from pypaginate.adapters.fastapi import FilterDep, FilterField, OffsetDep
-
-app = FastAPI()
-
-
-class ProductFilters(FilterDep):
-    """Filter products by category, price range, and stock."""
-
-    category: str | None = FilterField(None, operator="eq")
-    min_price: float | None = FilterField(None, field="price", operator="gte")
-    max_price: float | None = FilterField(None, field="price", operator="lte")
-    in_stock: bool | None = FilterField(None, field="stock", operator="gt")
-
-
-@app.get("/products")
-async def list_products(
-    params: OffsetDep,
-    filters: Annotated[ProductFilters, Query()],
-):
-    # filters.to_specs() returns [FilterSpec, ...] for non-None fields
-    specs = filters.to_specs()
-    # Pass to pipeline or apply manually
-    ...
-```
-
-Request: `GET /products?category=Electronics&min_price=100&page=1&limit=10`
-
-The `FilterDep.to_specs()` method converts non-None fields to a `list[FilterSpec]` automatically. The pipeline also auto-detects `FilterDep` objects and calls `to_specs()` for you.
+For a complete runnable example with `FilterDep`, `SortDep`, and `SearchDep`, see [FastAPI Integration](fastapi.md).
 
 ## Next Steps
 

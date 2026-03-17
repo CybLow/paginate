@@ -39,7 +39,9 @@ _INLINE: dict[str, Callable[..., Predicate]] = {
     "starts_with": lambda a, v: (lambda item: str(a(item)).startswith(str(v))),
     "ends_with": lambda a, v: (lambda item: str(a(item)).endswith(str(v))),
     "empty": lambda a, _v: (lambda item: a(item) is None or a(item) == "" or a(item) == []),
-    "not_empty": lambda a, _v: (lambda item: a(item) is not None and a(item) != "" and a(item) != []),
+    "not_empty": lambda a, _v: (
+        lambda item: a(item) is not None and a(item) != "" and a(item) != []
+    ),
     "exists": lambda _a, _v: (lambda _item: True),
 }
 

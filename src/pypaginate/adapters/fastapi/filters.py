@@ -9,6 +9,7 @@ Example::
         name: str | None = FilterField(None, operator="contains")
         age_min: int | None = FilterField(None, field="age", operator="gte")
 
+
     @app.get("/users")
     async def get_users(params: OffsetDep, filters: Annotated[UserFilters, Query()]):
         return pipeline.execute(data, params, filters=filters).model_dump()
@@ -62,7 +63,9 @@ class FilterDep(BaseModel):
             value = getattr(self, name)
             if value is None:
                 continue
-            meta = (info.json_schema_extra or {}) if isinstance(info.json_schema_extra, dict) else {}
+            meta = (
+                (info.json_schema_extra or {}) if isinstance(info.json_schema_extra, dict) else {}
+            )
             operator = str(meta.get("filter_operator", "eq"))
             target = str(meta.get("filter_field") or name)
             specs.append(FilterSpec(field=target, operator=operator, value=value))  # type: ignore[arg-type]

@@ -163,7 +163,8 @@ class TestIlikeComplexGlob:
         assert result[0]["name"] == "Bob Smith"
 
     def test_ilike_underscore_with_percent(
-        self, filter_engine: FilterEngine,
+        self,
+        filter_engine: FilterEngine,
     ) -> None:
         spec = FilterSpec(field="name", operator="ilike", value="%B_B%")
         result = filter_engine.apply(_ITEMS, [spec])

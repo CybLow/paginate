@@ -118,7 +118,7 @@ def compile_dict_accessor(field_path: str) -> Callable[[object], object]:
         key = segments[0]
 
         def _access(item: object) -> object:
-            v = item.get(key, _SENTINEL)  # type: ignore[union-attr]
+            v = item.get(key, _SENTINEL)  # type: ignore[attr-defined]
             if v is not _SENTINEL:
                 return v
             return _raise_not_found(key, field_path, item)

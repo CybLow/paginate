@@ -204,7 +204,7 @@ def list_events(session: Session):
 ## FastAPI with CursorDep
 
 ```python
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 

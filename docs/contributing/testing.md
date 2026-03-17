@@ -85,7 +85,7 @@ These catch edge cases that unit tests miss.
 
 Automated enforcement of structural rules:
 
-- **File limits** -- no source file exceeds 200 lines
+- **File limits** -- no source file exceeds 250 code lines (excluding comments, docstrings, blanks)
 - **Import rules** -- no circular imports, layer violations detected
 - **Protocol compliance** -- all backends satisfy their declared protocols
 

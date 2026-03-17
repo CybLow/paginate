@@ -181,7 +181,7 @@ Used for: `rapidfuzz` (search), `msgspec` (page construction), `google-re2` (reg
 
 1. **Read** existing code in the target module
 2. **Check** similar implementations for patterns to follow
-3. **Keep** functions <=12 lines, files <=200 lines
+3. **Keep** functions <=15 lines, files <=250 lines (code only)
 4. **Add** `__slots__` to any new class with instance attributes
 5. **Write** tests in the matching `tests/unit/` directory
 6. **Run** all quality checks:

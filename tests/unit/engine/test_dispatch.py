@@ -8,7 +8,6 @@ from typing import Any, Generic, TypeVar
 import pytest
 
 from pypaginate import paginate
-from pypaginate.domain.pages import OffsetPage
 from pypaginate.domain.params import CursorParams, OffsetParams
 
 
@@ -199,8 +198,6 @@ class TestPaginateAsyncAwaited:
 
     @pytest.mark.asyncio()
     async def test_cursor_paginate_returns_cursor_page(self) -> None:
-        from pypaginate.domain.pages import CursorPage
-
         backend: _AsyncCursorBackend[int] = _AsyncCursorBackend(
             items=[1, 2],
             next_cursor="nxt",

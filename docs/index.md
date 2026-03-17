@@ -197,7 +197,7 @@ Learn offset, cursor, and in-memory pagination strategies.
 :link: filtering/index
 :link-type: doc
 
-Filter data with JSON Logic operators.
+Filter data with 20 typed operators and nested And/Or groups.
 :::
 
 :::{grid-item-card} Search

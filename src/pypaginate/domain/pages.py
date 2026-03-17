@@ -11,6 +11,7 @@ duck-types as a Pydantic model with ``.model_dump()`` support.
 from __future__ import annotations
 
 import math
+from collections.abc import Iterator
 from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict
@@ -38,7 +39,7 @@ class BasePage(BaseModel, Generic[ItemT]):
     has_next: bool
     has_previous: bool
 
-    def __iter__(self):  # type: ignore[override]  # noqa: ANN204
+    def __iter__(self) -> Iterator[ItemT]:  # type: ignore[override]
         """Iterate over items."""
         return iter(self.items)
 

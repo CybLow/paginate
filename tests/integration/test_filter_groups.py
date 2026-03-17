@@ -12,7 +12,7 @@ from tests.fixtures.helpers import run
 
 async def test_and_group_narrows_results() -> None:
     """And() group returns only items matching all conditions."""
-    env = await setup_memory()
+    await setup_memory()
     engine = FilterEngine(create_default_registry())
     group = And(
         FilterSpec(field="name", operator="contains", value="a"),

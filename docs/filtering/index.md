@@ -21,37 +21,6 @@ filters = [
 | [Operators Reference](operators.md) | All 20 built-in operators with examples |
 | [JSON Logic](json-logic.md) | Nested groups via `And()` / `Or()` builders |
 
-## Quick Example
-
-```python
-from pypaginate import FilterSpec, paginate, OffsetParams
-
-users = [
-    {"name": "Alice", "age": 30, "status": "active"},
-    {"name": "Bob", "age": 25, "status": "inactive"},
-    {"name": "Charlie", "age": 35, "status": "active"},
-]
-
-# Filter + paginate in one call using the pipeline
-from pypaginate.adapters.memory import MemoryBackend, MemoryFilterBackend
-from pypaginate.engine.pipeline import SyncPipeline
-from pypaginate.engine.paginator import Paginator
-
-pipeline = SyncPipeline(
-    Paginator(MemoryBackend()),
-    filter_backend=MemoryFilterBackend(),
-)
-page = pipeline.execute(
-    users,
-    OffsetParams(page=1, limit=10),
-    filters=[
-        FilterSpec(field="status", operator="eq", value="active"),
-        FilterSpec(field="age", operator="gte", value=30),
-    ],
-)
-# page.items = [{"name": "Alice", ...}, {"name": "Charlie", ...}]
-```
-
 ## FilterSpec
 
 `FilterSpec` is an immutable Pydantic model describing a single filter condition:

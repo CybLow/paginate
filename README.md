@@ -232,6 +232,7 @@ result = engine.apply(users, group)
 | `between` | Range | `FilterSpec(field="price", operator="between", value=[10, 100])` |
 | `is_null`, `is_not_null` | Null checks | `FilterSpec(field="notes", operator="is_null")` |
 | `empty`, `not_empty` | Empty checks | `FilterSpec(field="tags", operator="not_empty")` |
+| `exists` | Field existence | `FilterSpec(field="id", operator="exists")` |
 | `regex` | Regex matching | `FilterSpec(field="code", operator="regex", value="^A\\d+")` |
 
 ## Sorting

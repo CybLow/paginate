@@ -18,6 +18,7 @@ from typing import Any
 
 import pytest
 
+
 _PG_URL = os.environ.get(
     "PYPAGINATE_PG_URL",
     "postgresql+asyncpg://pypaginate:pypaginate@localhost:5433/pypaginate_test",

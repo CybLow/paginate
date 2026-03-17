@@ -50,7 +50,7 @@ uv run pytest
 <!-- Ensure all items are checked before requesting review -->
 
 - [ ] I have read the [CONTRIBUTING](../CONTRIBUTING.md) guidelines
-- [ ] My code follows the project's coding standards (see [AGENTS.md](../AGENTS.md))
+- [ ] My code follows the project's coding standards (see [CLAUDE.md](../CLAUDE.md))
 - [ ] I have run the quality checks (`uv run ruff format . && uv run ruff check . && uv run mypy src/`)
 - [ ] I have added/updated tests for my changes
 - [ ] All tests pass locally (`uv run pytest`)

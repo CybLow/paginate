@@ -48,12 +48,23 @@ class SearchEngine:
 
         if len(accessors) == 1:
             result = _rank_single(
-                items, norm_tokens, accessors[0], fuzzy_mode, mode, threshold,
+                items,
+                norm_tokens,
+                accessors[0],
+                fuzzy_mode,
+                mode,
+                threshold,
             )
         else:
             result = _rank_multi(
-                items, norm_tokens, accessors, spec.fields, weights,
-                fuzzy_mode, mode, threshold,
+                items,
+                norm_tokens,
+                accessors,
+                spec.fields,
+                weights,
+                fuzzy_mode,
+                mode,
+                threshold,
             )
         if spec.max_results is not None:
             return result[: spec.max_results]
@@ -125,8 +136,15 @@ def _rank_multi(
     scored = []
     for item in items:
         s = _score_multi(
-            item, norm_tokens, accessors, field_names, weights,
-            is_fuzzy, fuzzy_mode, mode, threshold,
+            item,
+            norm_tokens,
+            accessors,
+            field_names,
+            weights,
+            is_fuzzy,
+            fuzzy_mode,
+            mode,
+            threshold,
         )
         if s > 0:
             scored.append((s, item))

@@ -89,7 +89,9 @@ async def list_users(
 ## SQLAlchemy Usage (Sync)
 
 ```python
+from sqlalchemy import select
 from sqlalchemy.orm import Session
+from pypaginate import CursorParams
 from pypaginate.adapters.sqlalchemy import SyncSQLAlchemyCursorBackend
 
 def list_users(session: Session, cursor: str | None = None, limit: int = 20):
@@ -97,14 +99,13 @@ def list_users(session: Session, cursor: str | None = None, limit: int = 20):
     stmt = select(User).order_by(User.created_at.desc(), User.id.desc())
     params = CursorParams(limit=limit, after=cursor)
 
-    page = backend.fetch_page(
+    # Sync cursor uses the backend directly (not paginate())
+    items, next_cursor, prev_cursor = backend.fetch_page(
         stmt,
         limit=params.limit,
         after=params.after,
         before=params.before,
     )
-    # page is (items, next_cursor, prev_cursor)
-    items, next_cursor, prev_cursor = page
 ```
 
 ## How Cursors Work

@@ -101,7 +101,7 @@ class SearchSpec(BaseModel):
     @field_validator("query")
     @classmethod
     def _check_query_length(cls, v: str) -> str:
-        if len(v) > 500:  # noqa: PLR2004
+        if len(v) > 500:
             msg = "Query must not exceed 500 characters"
             raise ValueError(msg)
         return v
@@ -130,7 +130,7 @@ class FilterGroup(BaseModel):
     @model_validator(mode="after")
     def _check_depth(self) -> FilterGroup:
         depth = _measure_depth(self)
-        if depth > 5:  # noqa: PLR2004
+        if depth > 5:
             msg = "FilterGroup nesting must not exceed 5 levels"
             raise ValueError(msg)
         return self

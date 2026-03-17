@@ -16,6 +16,7 @@ pypaginate.adapters.fastapi.filters
            name: str | None = FilterField(None, operator="contains")
            age_min: int | None = FilterField(None, field="age", operator="gte")
 
+
        @app.get("/users")
        async def get_users(params: OffsetDep, filters: Annotated[UserFilters, Query()]):
            return pipeline.execute(data, params, filters=filters).model_dump()

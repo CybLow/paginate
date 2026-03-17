@@ -201,7 +201,7 @@ uv add pypaginate[sqlalchemy]   # Install with SQLAlchemy only
 | `ImportError` on tests | `uv sync --all-extras --dev` |
 | mypy missing stubs | `uv run mypy src/ --install-types` |
 | Flaky benchmarks | Close background apps, use `--benchmark-min-rounds=10` |
-| Architecture test fails | File exceeds 200 lines -- extract a helper module |
+| Architecture test fails | File exceeds 250 code lines -- extract a helper module |
 | Pre-commit hook fails | `uv run ruff format . && uv run ruff check --fix .` |
 
 ---

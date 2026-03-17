@@ -8,6 +8,7 @@ and ``.to_pydantic()`` for compatibility.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 
 import msgspec
@@ -39,7 +40,7 @@ class FastOffsetPage(msgspec.Struct, frozen=True, gc=False):
 
         return OffsetPage(**asdict(self))
 
-    def __iter__(self):  # noqa: ANN204
+    def __iter__(self) -> Iterator[Any]:
         """Iterate over items."""
         return iter(self.items)
 
@@ -76,7 +77,7 @@ class FastCursorPage(msgspec.Struct, frozen=True, gc=False):
 
         return CursorPage(**asdict(self))
 
-    def __iter__(self):  # noqa: ANN204
+    def __iter__(self) -> Iterator[Any]:
         """Iterate over items."""
         return iter(self.items)
 

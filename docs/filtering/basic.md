@@ -185,28 +185,7 @@ FilterSpec(field="profile.email", operator="contains", value="@example.com")
 
 ## Pipeline Usage
 
-Filters integrate naturally with the pagination pipeline:
-
-```python
-from pypaginate import FilterSpec, OffsetParams
-from pypaginate.adapters.memory import MemoryBackend, MemoryFilterBackend
-from pypaginate.engine.paginator import Paginator
-from pypaginate.engine.pipeline import SyncPipeline
-
-pipeline = SyncPipeline(
-    Paginator(MemoryBackend()),
-    filter_backend=MemoryFilterBackend(),
-)
-
-page = pipeline.execute(
-    users,
-    OffsetParams(page=1, limit=20),
-    filters=[
-        FilterSpec(field="status", value="active"),
-        FilterSpec(field="age", operator="gte", value=18),
-    ],
-)
-```
+Pass filters to `SyncPipeline.execute()` or `AsyncPipeline.execute()` alongside pagination params. See [In-Memory Pagination](../pagination/memory.md) for a full pipeline example combining filters, sorting, search, and pagination.
 
 ## Custom Operators
 
@@ -233,12 +212,25 @@ engine = FilterEngine(registry=registry)
 
 ## Error Handling
 
+Invalid operators are caught at construction time by Pydantic:
+
+```python
+from pydantic import ValidationError
+
+try:
+    FilterSpec(field="age", operator="unknown_op", value=5)
+except ValidationError as e:
+    print(e)  # operator must be one of the 20 built-in operators
+```
+
+Runtime filter errors (e.g., invalid regex patterns) raise `FilterError`:
+
 ```python
 from pypaginate import FilterError
 
 try:
     result = engine.apply(users, [
-        FilterSpec(field="age", operator="unknown_op", value=5),
+        FilterSpec(field="code", operator="regex", value="[invalid"),
     ])
 except FilterError as e:
     print(f"Filter error: {e}")

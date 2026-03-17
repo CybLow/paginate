@@ -8,7 +8,7 @@ pypaginate is a modern, framework-agnostic pagination toolkit for Python 3.11+ t
 
 - **Universal `paginate()` function** -- one call for lists, SQLAlchemy queries, and custom backends
 - **Type-safe inference** -- `OffsetParams` produces `OffsetPage`, `CursorParams` produces `CursorPage`
-- **Declarative filtering** -- `FilterSpec`, composable `And`/`Or` groups, 20+ operators
+- **Declarative filtering** -- `FilterSpec`, composable `And`/`Or` groups, 20 operators
 - **Sorting and search** -- `SortSpec` and `SearchSpec` with fuzzy matching
 - **FastAPI dependencies** -- `OffsetDep`, `CursorDep`, `FilterDep`, `SortDep`, `SearchDep`
 - **Pipeline composition** -- filter, sort, search, then paginate in one call

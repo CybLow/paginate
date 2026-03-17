@@ -202,6 +202,7 @@ def _unpack_pair(value: object) -> tuple[Any, Any]:
         )
     return seq[0], seq[1]
 
+
 __all__ = [
     "Between",
     "Contains",

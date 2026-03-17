@@ -7,8 +7,7 @@ min_length short query returns all.
 
 from __future__ import annotations
 
-from hypothesis import given, settings
-from hypothesis import strategies as st
+from hypothesis import given, settings, strategies as st
 
 from pypaginate.domain.specs import SearchSpec
 from pypaginate.search.engine import SearchEngine

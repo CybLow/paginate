@@ -6,7 +6,6 @@ from typing import Any, Generic, TypeVar
 
 import pytest
 
-from pypaginate.domain.pages import CursorPage
 from pypaginate.domain.params import CursorParams
 from pypaginate.engine.cursor import AsyncCursorPaginator
 

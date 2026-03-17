@@ -68,7 +68,7 @@ uv run pytest tests/ --ignore=tests/perf -q
    git checkout -b feature/your-feature-name
    ```
 
-2. **Make changes** -- keep functions <=12 lines, files <=200 lines, add type hints
+2. **Make changes** -- keep functions <=15 lines, files <=250 lines (code only), add type hints
 
 3. **Run quality checks** before every commit:
    ```bash

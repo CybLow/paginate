@@ -147,39 +147,7 @@ page.page          # 1
 
 ## Step-by-Step Pipeline
 
-If you prefer explicit control over each step:
-
-```python
-from pypaginate import (
-    FilterSpec, SortSpec, SortDirection, SearchSpec, paginate, OffsetParams,
-)
-from pypaginate.filtering.engine import FilterEngine
-from pypaginate.filtering.registry import create_default_registry
-from pypaginate.sorting.engine import SortEngine
-from pypaginate.search.engine import SearchEngine
-
-# 1. Filter
-filter_engine = FilterEngine(registry=create_default_registry())
-filtered = filter_engine.apply(users, [
-    FilterSpec(field="status", value="active"),
-])
-
-# 2. Sort
-sort_engine = SortEngine()
-sorted_items = sort_engine.apply(filtered, [
-    SortSpec(field="name", direction=SortDirection.ASC),
-])
-
-# 3. Search
-search_engine = SearchEngine()
-searched = search_engine.apply(sorted_items, SearchSpec(
-    query="alice",
-    fields=("name", "email"),
-))
-
-# 4. Paginate
-page = paginate(searched, OffsetParams(page=1, limit=20))
-```
+For explicit control over each step, use `FilterEngine`, `SortEngine`, and `SearchEngine` individually, then pass the result to `paginate()`. See [First Steps](../getting-started/first-steps.md) for a walkthrough.
 
 ## Edge Cases
 

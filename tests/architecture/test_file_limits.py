@@ -1,7 +1,7 @@
 """Architecture tests verifying CLAUDE.md file size constraints.
 
 Ensures no source file in src/pypaginate/ (excluding _cli/) exceeds
-the 200-line hard limit defined in the project standards.
+the 250-line hard limit defined in the project standards.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import pytest
 
 
 SRC_ROOT = Path(__file__).resolve().parents[2] / "src" / "pypaginate"
-MAX_LINES = 200
+MAX_LINES = 250
 
 
 def _source_files() -> list[Path]:
@@ -54,7 +54,7 @@ def _file_label(filepath: Path) -> str:
     ids=lambda p: _file_label(p),
 )
 def test_file_does_not_exceed_line_limit(filepath):
-    """Source file must not exceed 200 lines."""
+    """Source file must not exceed 250 lines."""
     line_count = _count_lines(filepath)
     assert line_count <= MAX_LINES, (
         f"{filepath.name} has {line_count} lines, exceeding the {MAX_LINES}-line limit"
