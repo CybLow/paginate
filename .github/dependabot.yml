@@ -41,7 +41,7 @@ updates:
           - "coverage*"
           - "twine"
           - "build"
-          - "mkdocs*"
+          - "sphinx*"
         update-types:
           - "minor"
           - "patch"
@@ -51,8 +51,8 @@ updates:
           - "SQLAlchemy"
           - "fastapi"
           - "rapidfuzz"
-          - "jmespath"
-          - "pyparsing"
+          - "pydantic"
+          - "msgspec"
     open-pull-requests-limit: 10
     ignore:
       # Skip major versions that might break API
