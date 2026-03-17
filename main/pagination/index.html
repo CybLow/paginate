@@ -1,0 +1,429 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="Pagination" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://cyblow.github.io/pypaginate/pagination/index.html" />
+<meta property="og:site_name" content="pypaginate Documentation" />
+<meta property="og:description" content="pypaginate provides offset and cursor pagination with a unified paginate() entry point. Overview:,,, Strategy, Best For, Performance,,, Offset, Small-medium datasets, UI with page numbers, O(n) for..." />
+<meta property="og:image" content="https://cyblow.github.io/pypaginate/_static/logo.svg" />
+<meta property="og:image:alt" content="pypaginate Documentation" />
+<meta name="description" content="pypaginate provides offset and cursor pagination with a unified paginate() entry point. Overview:,,, Strategy, Best For, Performance,,, Offset, Small-medium datasets, UI with page numbers, O(n) for..." />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pagination &mdash; pypaginate 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=e0a04398" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.svg"/>
+    <link rel="canonical" href="https://cyblow.github.io/pypaginate/pagination/index.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=437722b7"></script>
+      <script src="../_static/design-tabs.js?v=f930bc37"></script>
+      <script src="../_static/custom.js?v=60c56439"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Offset Pagination" href="offset.html" />
+    <link rel="prev" title="First Steps" href="../getting-started/first-steps.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pypaginate
+              <img src="../_static/logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/first-steps.html">First Steps</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Pagination</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#universal-paginate-function">Universal paginate() Function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#offsetparams">OffsetParams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cursorparams">CursorParams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#offsetpage">OffsetPage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cursorpage">CursorPage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#overflowstrategy">OverflowStrategy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#quick-comparison">Quick Comparison</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="offset.html">Offset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="keyset.html">Cursor/Keyset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="memory.html">In-Memory Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/index.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/basic.html">Basic Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/json-logic.html">Nested Filter Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/operators.html">Operators Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/index.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/text-search.html">Text Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/fuzzy.html">Fuzzy Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sorting/index.html">Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sorting/basic.html">Basic Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sorting/multi-column.html">Multi-Column Sorting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Framework Integrations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/sqlalchemy.html">SQLAlchemy Integration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/overview.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/pypaginate/index.html">pypaginate</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/basic-pagination.html">Basic Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/filtering.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/keyset.html">Keyset (Cursor) Pagination</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/index.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/pagination-strategies.html">Pagination Strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/cursor-encoding.html">Cursor Encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/filter-expressions.html">Filter Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/search-relevance.html">Search &amp; Relevance</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/index.html">Contributing to pypaginate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/development.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/code-style.html">Code Style</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/testing.html">Testing Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/architecture.html">Architecture Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/roadmap.html">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CODE_OF_CONDUCT.html">Contributor Covenant Code of Conduct</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../comparison.html">Competitive Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../benchmarks.html">Performance Benchmarks</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pypaginate</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Pagination</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/CybLow/pypaginate/blob/main/docs/pagination/index.md" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pagination">
+<h1>Pagination<a class="headerlink" href="#pagination" title="Link to this heading"></a></h1>
+<p>pypaginate provides offset and cursor pagination with a unified <code class="docutils literal notranslate"><span class="pre">paginate()</span></code> entry point.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Quick Decision Guide</p>
+<ul class="simple">
+<li><p><strong>Small datasets (&lt;100k rows)?</strong> – Use <a class="reference internal" href="offset.html"><span class="std std-doc">Offset Pagination</span></a></p></li>
+<li><p><strong>Large datasets or infinite scroll?</strong> – Use <a class="reference internal" href="keyset.html"><span class="std std-doc">Cursor/Keyset Pagination</span></a></p></li>
+<li><p><strong>In-memory data?</strong> – Use <a class="reference internal" href="memory.html"><span class="std std-doc">Memory Pagination</span></a></p></li>
+</ul>
+</div>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Strategy</p></th>
+<th class="head"><p>Best For</p></th>
+<th class="head"><p>Performance</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="offset.html"><span class="std std-doc">Offset</span></a></p></td>
+<td><p>Small-medium datasets, UI with page numbers</p></td>
+<td><p>O(n) for deep pages</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="keyset.html"><span class="std std-doc">Cursor/Keyset</span></a></p></td>
+<td><p>Large datasets, infinite scroll</p></td>
+<td><p>O(1) constant time</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="memory.html"><span class="std std-doc">In-Memory</span></a></p></td>
+<td><p>Python collections, cached data</p></td>
+<td><p>Depends on collection size</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="universal-paginate-function">
+<h2>Universal paginate() Function<a class="headerlink" href="#universal-paginate-function" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">paginate()</span></code> function auto-detects the backend and returns the correct page type based on the params type:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">paginate</span><span class="p">,</span> <span class="n">OffsetParams</span><span class="p">,</span> <span class="n">CursorParams</span>
+
+<span class="c1"># Offset: OffsetParams -&gt; OffsetPage</span>
+<span class="n">page</span> <span class="o">=</span> <span class="n">paginate</span><span class="p">(</span><span class="n">users</span><span class="p">,</span> <span class="n">OffsetParams</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">))</span>
+<span class="n">page</span><span class="o">.</span><span class="n">total</span>    <span class="c1"># int</span>
+<span class="n">page</span><span class="o">.</span><span class="n">pages</span>    <span class="c1"># int</span>
+
+<span class="c1"># Cursor: CursorParams -&gt; CursorPage (async)</span>
+<span class="n">page</span> <span class="o">=</span> <span class="k">await</span> <span class="n">paginate</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">CursorParams</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">after</span><span class="o">=</span><span class="s2">&quot;abc&quot;</span><span class="p">),</span> <span class="n">backend</span><span class="o">=</span><span class="n">cursor_backend</span><span class="p">)</span>
+<span class="n">page</span><span class="o">.</span><span class="n">next_cursor</span>  <span class="c1"># str | None</span>
+</pre></div>
+</div>
+</section>
+<section id="offsetparams">
+<h2>OffsetParams<a class="headerlink" href="#offsetparams" title="Link to this heading"></a></h2>
+<p>Immutable parameters for offset-based pagination:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">OffsetParams</span>
+
+<span class="n">params</span> <span class="o">=</span> <span class="n">OffsetParams</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+
+<span class="n">params</span><span class="o">.</span><span class="n">page</span>    <span class="c1"># 2 (1-indexed)</span>
+<span class="n">params</span><span class="o">.</span><span class="n">limit</span>   <span class="c1"># 20 (items per page, max 1000)</span>
+<span class="n">params</span><span class="o">.</span><span class="n">offset</span>  <span class="c1"># 20 (computed: (page - 1) * limit)</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Attribute</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">page</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">int</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+<td><p>Page number (&gt;= 1)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">limit</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">int</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">20</span></code></p></td>
+<td><p>Items per page (1-1000)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">offset</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">int</span></code></p></td>
+<td><p>computed</p></td>
+<td><p>Zero-based offset for queries</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="cursorparams">
+<h2>CursorParams<a class="headerlink" href="#cursorparams" title="Link to this heading"></a></h2>
+<p>Parameters for cursor-based pagination:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CursorParams</span>
+
+<span class="c1"># First page</span>
+<span class="n">params</span> <span class="o">=</span> <span class="n">CursorParams</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+
+<span class="c1"># Next page</span>
+<span class="n">params</span> <span class="o">=</span> <span class="n">CursorParams</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">after</span><span class="o">=</span><span class="s2">&quot;cursor_token&quot;</span><span class="p">)</span>
+
+<span class="c1"># Previous page</span>
+<span class="n">params</span> <span class="o">=</span> <span class="n">CursorParams</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">before</span><span class="o">=</span><span class="s2">&quot;cursor_token&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Attribute</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">limit</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">int</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">20</span></code></p></td>
+<td><p>Items per page (1-1000)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">after</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>Cursor for the next page</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">before</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>Cursor for the previous page</p></td>
+</tr>
+</tbody>
+</table>
+<p><code class="docutils literal notranslate"><span class="pre">after</span></code> and <code class="docutils literal notranslate"><span class="pre">before</span></code> are mutually exclusive.</p>
+</section>
+<section id="offsetpage">
+<h2>OffsetPage<a class="headerlink" href="#offsetpage" title="Link to this heading"></a></h2>
+<p>Result from offset pagination:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">OffsetPage</span>
+
+<span class="n">page</span><span class="o">.</span><span class="n">items</span>         <span class="c1"># list[T] -- items for this page</span>
+<span class="n">page</span><span class="o">.</span><span class="n">total</span>         <span class="c1"># int -- total count across all pages</span>
+<span class="n">page</span><span class="o">.</span><span class="n">page</span>          <span class="c1"># int -- current page number</span>
+<span class="n">page</span><span class="o">.</span><span class="n">pages</span>         <span class="c1"># int -- total number of pages</span>
+<span class="n">page</span><span class="o">.</span><span class="n">limit</span>         <span class="c1"># int -- items per page</span>
+<span class="n">page</span><span class="o">.</span><span class="n">has_next</span>      <span class="c1"># bool -- True if more pages exist</span>
+<span class="n">page</span><span class="o">.</span><span class="n">has_previous</span>  <span class="c1"># bool -- True if not on first page</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">OffsetPage</span></code> supports iteration and indexing:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">page</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+<span class="n">first</span> <span class="o">=</span> <span class="n">page</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">page</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="cursorpage">
+<h2>CursorPage<a class="headerlink" href="#cursorpage" title="Link to this heading"></a></h2>
+<p>Result from cursor pagination:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CursorPage</span>
+
+<span class="n">page</span><span class="o">.</span><span class="n">items</span>            <span class="c1"># list[T] -- items for this page</span>
+<span class="n">page</span><span class="o">.</span><span class="n">limit</span>            <span class="c1"># int -- items per page</span>
+<span class="n">page</span><span class="o">.</span><span class="n">has_next</span>         <span class="c1"># bool -- True if next page exists</span>
+<span class="n">page</span><span class="o">.</span><span class="n">has_previous</span>     <span class="c1"># bool -- True if previous page exists</span>
+<span class="n">page</span><span class="o">.</span><span class="n">next_cursor</span>      <span class="c1"># str | None -- cursor for the next page</span>
+<span class="n">page</span><span class="o">.</span><span class="n">previous_cursor</span>  <span class="c1"># str | None -- cursor for the previous page</span>
+</pre></div>
+</div>
+<p>No <code class="docutils literal notranslate"><span class="pre">total</span></code> or <code class="docutils literal notranslate"><span class="pre">page</span></code> number – those are offset-only concepts.</p>
+</section>
+<section id="overflowstrategy">
+<h2>OverflowStrategy<a class="headerlink" href="#overflowstrategy" title="Link to this heading"></a></h2>
+<p>Controls what happens when page exceeds total pages:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">OverflowStrategy</span>
+
+<span class="n">OverflowStrategy</span><span class="o">.</span><span class="n">EMPTY</span>  <span class="c1"># return empty page (default)</span>
+<span class="n">OverflowStrategy</span><span class="o">.</span><span class="n">CLAMP</span>  <span class="c1"># clamp to last valid page</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">paginate</span><span class="p">,</span> <span class="n">OffsetParams</span><span class="p">,</span> <span class="n">OverflowStrategy</span>
+
+<span class="c1"># Request page 999 of a 10-page dataset</span>
+<span class="n">page</span> <span class="o">=</span> <span class="n">paginate</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">OffsetParams</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="mi">999</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">),</span> <span class="n">overflow</span><span class="o">=</span><span class="n">OverflowStrategy</span><span class="o">.</span><span class="n">CLAMP</span><span class="p">)</span>
+<span class="c1"># page.page == 10 (clamped to last page)</span>
+
+<span class="n">page</span> <span class="o">=</span> <span class="n">paginate</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">OffsetParams</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="mi">999</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">),</span> <span class="n">overflow</span><span class="o">=</span><span class="n">OverflowStrategy</span><span class="o">.</span><span class="n">EMPTY</span><span class="p">)</span>
+<span class="c1"># page.items == [] (empty result)</span>
+</pre></div>
+</div>
+</section>
+<section id="quick-comparison">
+<h2>Quick Comparison<a class="headerlink" href="#quick-comparison" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">OffsetParams</span><span class="p">,</span> <span class="n">CursorParams</span>
+
+<span class="c1"># Offset: &quot;Give me page 5 with 20 items&quot;</span>
+<span class="n">offset_params</span> <span class="o">=</span> <span class="n">OffsetParams</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="c1"># SQL: SELECT ... OFFSET 80 LIMIT 20</span>
+
+<span class="c1"># Cursor: &quot;Give me 20 items after this cursor&quot;</span>
+<span class="n">cursor_params</span> <span class="o">=</span> <span class="n">CursorParams</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">after</span><span class="o">=</span><span class="s2">&quot;eyJpZCI6MTAwfQ==&quot;</span><span class="p">)</span>
+<span class="c1"># SQL: WHERE (sort_cols) &gt; (cursor_values) LIMIT 20</span>
+</pre></div>
+</div>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="offset.html"><span class="std std-doc">Offset Pagination</span></a> – Detailed guide with examples</p></li>
+<li><p><a class="reference internal" href="keyset.html"><span class="std std-doc">Cursor/Keyset Pagination</span></a> – For large datasets</p></li>
+<li><p><a class="reference internal" href="memory.html"><span class="std std-doc">In-Memory Pagination</span></a> – For Python collections</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../getting-started/first-steps.html" class="btn btn-neutral float-left" title="First Steps" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="offset.html" class="btn btn-neutral float-right" title="Offset Pagination" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024-2026 CybLow.
+      <span class="lastupdated">Last updated on Mar 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"></span>
+    v: 0.2.0
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>On GitHub</dt>
+      <dd><a href="https://github.com/CybLow/pypaginate">View Source</a></dd>
+      <dd><a href="https://github.com/CybLow/pypaginate/issues">Issues</a></dd>
+    </dl>
+  </div>
+</div><script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

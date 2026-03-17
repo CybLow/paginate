@@ -1,0 +1,714 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="pypaginate" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://cyblow.github.io/pypaginate/api/pypaginate/index.html" />
+<meta property="og:site_name" content="pypaginate Documentation" />
+<meta property="og:description" content="pypaginate — Universal pagination toolkit for Python. Input type determines output type (Elysia-style inference): Submodules: pypaginate.adapters, pypaginate.domain, pypaginate.engine, pypaginate.f..." />
+<meta property="og:image" content="https://cyblow.github.io/pypaginate/_static/logo.svg" />
+<meta property="og:image:alt" content="pypaginate Documentation" />
+<meta name="description" content="pypaginate — Universal pagination toolkit for Python. Input type determines output type (Elysia-style inference): Submodules: pypaginate.adapters, pypaginate.domain, pypaginate.engine, pypaginate.f..." />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pypaginate &mdash; pypaginate 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=e0a04398" />
+
+  
+    <link rel="shortcut icon" href="../../_static/favicon.svg"/>
+    <link rel="canonical" href="https://cyblow.github.io/pypaginate/api/pypaginate/index.html" />
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=437722b7"></script>
+      <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+      <script src="../../_static/custom.js?v=60c56439"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="pypaginate.adapters" href="adapters/index.html" />
+    <link rel="prev" title="API Reference" href="../overview.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            pypaginate
+              <img src="../../_static/logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started/first-steps.html">First Steps</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../pagination/index.html">Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../pagination/offset.html">Offset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../pagination/keyset.html">Cursor/Keyset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../pagination/memory.html">In-Memory Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../filtering/index.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../filtering/basic.html">Basic Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../filtering/json-logic.html">Nested Filter Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../filtering/operators.html">Operators Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../search/index.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../search/text-search.html">Text Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../search/fuzzy.html">Fuzzy Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../sorting/index.html">Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../sorting/basic.html">Basic Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../sorting/multi-column.html">Multi-Column Sorting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/index.html">Framework Integrations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrations/sqlalchemy.html">SQLAlchemy Integration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">API Reference</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">pypaginate</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="adapters/index.html">pypaginate.adapters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="domain/index.html">pypaginate.domain</a></li>
+<li class="toctree-l3"><a class="reference internal" href="engine/index.html">pypaginate.engine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="filtering/index.html">pypaginate.filtering</a></li>
+<li class="toctree-l3"><a class="reference internal" href="search/index.html">pypaginate.search</a></li>
+<li class="toctree-l3"><a class="reference internal" href="sorting/index.html">pypaginate.sorting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="text/index.html">pypaginate.text</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#exceptions">Exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#classes">Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#functions">Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#package-contents">Package Contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.ConfigurationError"><code class="docutils literal notranslate"><span class="pre">ConfigurationError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.FilterError"><code class="docutils literal notranslate"><span class="pre">FilterError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.FilterValidationError"><code class="docutils literal notranslate"><span class="pre">FilterValidationError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.PaginationError"><code class="docutils literal notranslate"><span class="pre">PaginationError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.SearchError"><code class="docutils literal notranslate"><span class="pre">SearchError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.SearchQueryError"><code class="docutils literal notranslate"><span class="pre">SearchQueryError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.SortError"><code class="docutils literal notranslate"><span class="pre">SortError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.ValidationError"><code class="docutils literal notranslate"><span class="pre">ValidationError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.CursorPage"><code class="docutils literal notranslate"><span class="pre">CursorPage</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pypaginate.CursorPage.create"><code class="docutils literal notranslate"><span class="pre">CursorPage.create()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.CursorParams"><code class="docutils literal notranslate"><span class="pre">CursorParams</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.FilterGroup"><code class="docutils literal notranslate"><span class="pre">FilterGroup</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pypaginate.FilterGroup.model_config"><code class="docutils literal notranslate"><span class="pre">FilterGroup.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.FilterLogic"><code class="docutils literal notranslate"><span class="pre">FilterLogic</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.FilterSpec"><code class="docutils literal notranslate"><span class="pre">FilterSpec</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pypaginate.FilterSpec.model_config"><code class="docutils literal notranslate"><span class="pre">FilterSpec.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.FuzzyMode"><code class="docutils literal notranslate"><span class="pre">FuzzyMode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.NullsPosition"><code class="docutils literal notranslate"><span class="pre">NullsPosition</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.OffsetPage"><code class="docutils literal notranslate"><span class="pre">OffsetPage</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pypaginate.OffsetPage.create"><code class="docutils literal notranslate"><span class="pre">OffsetPage.create()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.OffsetParams"><code class="docutils literal notranslate"><span class="pre">OffsetParams</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pypaginate.OffsetParams.clamp"><code class="docutils literal notranslate"><span class="pre">OffsetParams.clamp()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pypaginate.OffsetParams.offset"><code class="docutils literal notranslate"><span class="pre">OffsetParams.offset</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.OverflowStrategy"><code class="docutils literal notranslate"><span class="pre">OverflowStrategy</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.SearchFieldMode"><code class="docutils literal notranslate"><span class="pre">SearchFieldMode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.SearchSpec"><code class="docutils literal notranslate"><span class="pre">SearchSpec</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pypaginate.SearchSpec.model_config"><code class="docutils literal notranslate"><span class="pre">SearchSpec.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.SortDirection"><code class="docutils literal notranslate"><span class="pre">SortDirection</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.SortSpec"><code class="docutils literal notranslate"><span class="pre">SortSpec</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pypaginate.SortSpec.model_config"><code class="docutils literal notranslate"><span class="pre">SortSpec.model_config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.And"><code class="docutils literal notranslate"><span class="pre">And()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.Or"><code class="docutils literal notranslate"><span class="pre">Or()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pypaginate.paginate"><code class="docutils literal notranslate"><span class="pre">paginate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/basic-pagination.html">Basic Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/filtering.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/keyset.html">Keyset (Cursor) Pagination</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts/index.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts/pagination-strategies.html">Pagination Strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts/cursor-encoding.html">Cursor Encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts/filter-expressions.html">Filter Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts/search-relevance.html">Search &amp; Relevance</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/index.html">Contributing to pypaginate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/development.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/code-style.html">Code Style</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/testing.html">Testing Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/architecture.html">Architecture Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing/roadmap.html">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../CODE_OF_CONDUCT.html">Contributor Covenant Code of Conduct</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../comparison.html">Competitive Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../benchmarks.html">Performance Benchmarks</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">pypaginate</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">pypaginate</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/CybLow/pypaginate/blob/main/docs/api/pypaginate/index.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-pypaginate">
+<span id="pypaginate"></span><h1>pypaginate<a class="headerlink" href="#module-pypaginate" title="Link to this heading"></a></h1>
+<p>pypaginate — Universal pagination toolkit for Python.</p>
+<p>Input type determines output type (Elysia-style inference):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">paginate</span><span class="p">,</span> <span class="n">OffsetParams</span>
+
+<span class="n">page</span> <span class="o">=</span> <span class="n">paginate</span><span class="p">(</span><span class="n">users</span><span class="p">,</span> <span class="n">OffsetParams</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">))</span>
+<span class="n">page</span><span class="o">.</span><span class="n">total</span>  <span class="c1"># int — auto-inferred as OffsetPage</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">CursorParams</span>
+
+<span class="n">page</span> <span class="o">=</span> <span class="k">await</span> <span class="n">paginate</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">CursorParams</span><span class="p">(</span><span class="n">after</span><span class="o">=</span><span class="s2">&quot;abc&quot;</span><span class="p">),</span> <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span>
+<span class="n">page</span><span class="o">.</span><span class="n">next_cursor</span>  <span class="c1"># str | None — auto-inferred as CursorPage</span>
+</pre></div>
+</div>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="adapters/index.html">pypaginate.adapters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="domain/index.html">pypaginate.domain</a></li>
+<li class="toctree-l1"><a class="reference internal" href="engine/index.html">pypaginate.engine</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filtering/index.html">pypaginate.filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search/index.html">pypaginate.search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sorting/index.html">pypaginate.sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="text/index.html">pypaginate.text</a></li>
+</ul>
+</div>
+</section>
+<section id="exceptions">
+<h2>Exceptions<a class="headerlink" href="#exceptions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pypaginate.ConfigurationError" title="pypaginate.ConfigurationError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ConfigurationError</span></code></a></p></td>
+<td><p>Raised when pagination configuration is invalid.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pypaginate.FilterError" title="pypaginate.FilterError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FilterError</span></code></a></p></td>
+<td><p>Raised when filtering operations fail.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pypaginate.FilterValidationError" title="pypaginate.FilterValidationError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FilterValidationError</span></code></a></p></td>
+<td><p>Raised when filter specification validation fails.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pypaginate.PaginationError" title="pypaginate.PaginationError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PaginationError</span></code></a></p></td>
+<td><p>Base exception for all pypaginate errors.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pypaginate.SearchError" title="pypaginate.SearchError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SearchError</span></code></a></p></td>
+<td><p>Raised when search operations fail.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pypaginate.SearchQueryError" title="pypaginate.SearchQueryError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SearchQueryError</span></code></a></p></td>
+<td><p>Raised when search query processing fails.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pypaginate.SortError" title="pypaginate.SortError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SortError</span></code></a></p></td>
+<td><p>Raised when sort operations fail.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pypaginate.ValidationError" title="pypaginate.ValidationError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ValidationError</span></code></a></p></td>
+<td><p>Raised when generic validation fails.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pypaginate.CursorPage" title="pypaginate.CursorPage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CursorPage</span></code></a></p></td>
+<td><p>Cursor pagination result.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pypaginate.CursorParams" title="pypaginate.CursorParams"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CursorParams</span></code></a></p></td>
+<td><p>Cursor pagination input.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pypaginate.FilterGroup" title="pypaginate.FilterGroup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FilterGroup</span></code></a></p></td>
+<td><p>Composite filter for nested AND/OR expressions.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pypaginate.FilterLogic" title="pypaginate.FilterLogic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FilterLogic</span></code></a></p></td>
+<td><p>Logical operator for combining filter conditions.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pypaginate.FilterSpec" title="pypaginate.FilterSpec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FilterSpec</span></code></a></p></td>
+<td><p>Declarative filter specification.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pypaginate.FuzzyMode" title="pypaginate.FuzzyMode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FuzzyMode</span></code></a></p></td>
+<td><p>Fuzzy matching strategy for search.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pypaginate.NullsPosition" title="pypaginate.NullsPosition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NullsPosition</span></code></a></p></td>
+<td><p>Where to place NULL values in sorted results.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pypaginate.OffsetPage" title="pypaginate.OffsetPage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">OffsetPage</span></code></a></p></td>
+<td><p>Offset pagination result.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pypaginate.OffsetParams" title="pypaginate.OffsetParams"><code class="xref py py-obj docutils literal notranslate"><span class="pre">OffsetParams</span></code></a></p></td>
+<td><p>Offset pagination input.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pypaginate.OverflowStrategy" title="pypaginate.OverflowStrategy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">OverflowStrategy</span></code></a></p></td>
+<td><p>How to handle page numbers exceeding total pages.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pypaginate.SearchFieldMode" title="pypaginate.SearchFieldMode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SearchFieldMode</span></code></a></p></td>
+<td><p>How to match search terms against fields.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pypaginate.SearchSpec" title="pypaginate.SearchSpec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SearchSpec</span></code></a></p></td>
+<td><p>Declarative search specification.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pypaginate.SortDirection" title="pypaginate.SortDirection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SortDirection</span></code></a></p></td>
+<td><p>Sort direction for ordering.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pypaginate.SortSpec" title="pypaginate.SortSpec"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SortSpec</span></code></a></p></td>
+<td><p>Declarative sort specification.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pypaginate.And" title="pypaginate.And"><code class="xref py py-obj docutils literal notranslate"><span class="pre">And</span></code></a>(→ FilterGroup)</p></td>
+<td><p>Create an AND group of filter conditions.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#pypaginate.Or" title="pypaginate.Or"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Or</span></code></a>(→ FilterGroup)</p></td>
+<td><p>Create an OR group of filter conditions.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#pypaginate.paginate" title="pypaginate.paginate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">paginate</span></code></a>(…)</p></td>
+<td><p>Universal pagination entry point.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="package-contents">
+<h2>Package Contents<a class="headerlink" href="#package-contents" title="Link to this heading"></a></h2>
+<dl class="py exception">
+<dt class="sig sig-object py" id="pypaginate.ConfigurationError">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">ConfigurationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.ConfigurationError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pypaginate.PaginationError" title="pypaginate.PaginationError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PaginationError</span></code></a></p>
+<p>Raised when pagination configuration is invalid.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="pypaginate.FilterError">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">FilterError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.FilterError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pypaginate.PaginationError" title="pypaginate.PaginationError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PaginationError</span></code></a></p>
+<p>Raised when filtering operations fail.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="pypaginate.FilterValidationError">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">FilterValidationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.FilterValidationError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pypaginate.FilterError" title="pypaginate.FilterError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FilterError</span></code></a></p>
+<p>Raised when filter specification validation fails.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="pypaginate.PaginationError">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">PaginationError</span></span><a class="headerlink" href="#pypaginate.PaginationError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Exception</span></code></a></p>
+<p>Base exception for all pypaginate errors.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="pypaginate.SearchError">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">SearchError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.SearchError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pypaginate.PaginationError" title="pypaginate.PaginationError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PaginationError</span></code></a></p>
+<p>Raised when search operations fail.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="pypaginate.SearchQueryError">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">SearchQueryError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.SearchQueryError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pypaginate.SearchError" title="pypaginate.SearchError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SearchError</span></code></a></p>
+<p>Raised when search query processing fails.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="pypaginate.SortError">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">SortError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.SortError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pypaginate.PaginationError" title="pypaginate.PaginationError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PaginationError</span></code></a></p>
+<p>Raised when sort operations fail.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="pypaginate.ValidationError">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">ValidationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.ValidationError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pypaginate.PaginationError" title="pypaginate.PaginationError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PaginationError</span></code></a></p>
+<p>Raised when generic validation fails.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pypaginate.CursorPage">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">CursorPage</span></span><a class="headerlink" href="#pypaginate.CursorPage" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">BasePage</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">ItemT</span></code>]</p>
+<p>Cursor pagination result.</p>
+<p>No total, no page — those are offset-only concepts.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pypaginate.CursorPage.create">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">items</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ItemT</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="domain/params/index.html#pypaginate.domain.params.CursorParams" title="pypaginate.domain.params.CursorParams"><span class="pre">pypaginate.domain.params.CursorParams</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">next_cursor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previous_cursor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#pypaginate.CursorPage.create" title="Link to this definition"></a></dt>
+<dd><p>Build from cursor pagination results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>items</strong> – Items for this page.</p></li>
+<li><p><strong>params</strong> – Cursor parameters used.</p></li>
+<li><p><strong>next_cursor</strong> – Cursor for the next page.</p></li>
+<li><p><strong>previous_cursor</strong> – Cursor for the previous page.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>CursorPage or FastCursorPage (if msgspec installed).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pypaginate.CursorParams">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">CursorParams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.CursorParams" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">BaseParams</span></code></p>
+<p>Cursor pagination input.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">CursorParams</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">after</span><span class="o">=</span><span class="s2">&quot;abc123&quot;</span><span class="p">)</span>
+<span class="n">CursorParams</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">before</span><span class="o">=</span><span class="s2">&quot;xyz789&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pypaginate.FilterGroup">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">FilterGroup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.FilterGroup" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.pydantic.dev/latest/api/base_model/#pydantic.BaseModel" title="(in Pydantic Validation v0.0.0)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pydantic.BaseModel</span></code></a></p>
+<p>Composite filter for nested AND/OR expressions.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">And()</span></code> and <code class="docutils literal notranslate"><span class="pre">Or()</span></code> builder functions instead of
+constructing directly.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">And</span><span class="p">(</span>
+    <span class="n">Or</span><span class="p">(</span><span class="n">FilterSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">FilterSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">2</span><span class="p">)),</span>
+    <span class="n">Or</span><span class="p">(</span><span class="n">FilterSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">3</span><span class="p">),</span> <span class="n">FilterSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;d&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">4</span><span class="p">)),</span>
+<span class="p">)</span>
+<span class="c1"># = (a=1 OR b=2) AND (c=3 OR d=4)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pypaginate.FilterGroup.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><a class="headerlink" href="#pypaginate.FilterGroup.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pypaginate.FilterLogic">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">FilterLogic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwds</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.FilterLogic" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
+<p>Logical operator for combining filter conditions.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pypaginate.FilterSpec">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">FilterSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.FilterSpec" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.pydantic.dev/latest/api/base_model/#pydantic.BaseModel" title="(in Pydantic Validation v0.0.0)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pydantic.BaseModel</span></code></a></p>
+<p>Declarative filter specification.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">FilterSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;age&quot;</span><span class="p">,</span> <span class="n">operator</span><span class="o">=</span><span class="s2">&quot;gte&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">18</span><span class="p">)</span>
+<span class="n">FilterSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">operator</span><span class="o">=</span><span class="s2">&quot;contains&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">&quot;john&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pypaginate.FilterSpec.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><a class="headerlink" href="#pypaginate.FilterSpec.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pypaginate.FuzzyMode">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">FuzzyMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwds</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.FuzzyMode" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
+<p>Fuzzy matching strategy for search.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pypaginate.NullsPosition">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">NullsPosition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwds</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.NullsPosition" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
+<p>Where to place NULL values in sorted results.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pypaginate.OffsetPage">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">OffsetPage</span></span><a class="headerlink" href="#pypaginate.OffsetPage" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">BasePage</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">ItemT</span></code>]</p>
+<p>Offset pagination result.</p>
+<p>All fields are non-optional — clean serialization.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pypaginate.OffsetPage.create">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">items</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ItemT</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="domain/params/index.html#pypaginate.domain.params.OffsetParams" title="pypaginate.domain.params.OffsetParams"><span class="pre">pypaginate.domain.params.OffsetParams</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="headerlink" href="#pypaginate.OffsetPage.create" title="Link to this definition"></a></dt>
+<dd><p>Build from offset pagination results.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>items</strong> – Items for this page.</p></li>
+<li><p><strong>total</strong> – Total item count across all pages.</p></li>
+<li><p><strong>params</strong> – Offset parameters used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>OffsetPage or FastOffsetPage (if msgspec installed).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pypaginate.OffsetParams">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">OffsetParams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.OffsetParams" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">BaseParams</span></code></p>
+<p>Offset pagination input.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">OffsetParams</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pypaginate.OffsetParams.clamp">
+<span class="sig-name descname"><span class="pre">clamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#pypaginate.OffsetParams.clamp" title="Link to this definition"></a></dt>
+<dd><p>Clamp page number to valid bounds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>total</strong> – Total number of items available.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>New params clamped to valid range, or self if valid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pypaginate.OffsetParams.offset">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">offset</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#pypaginate.OffsetParams.offset" title="Link to this definition"></a></dt>
+<dd><p>Zero-based offset for database queries.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pypaginate.OverflowStrategy">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">OverflowStrategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwds</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.OverflowStrategy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
+<p>How to handle page numbers exceeding total pages.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pypaginate.SearchFieldMode">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">SearchFieldMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwds</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.SearchFieldMode" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
+<p>How to match search terms against fields.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pypaginate.SearchSpec">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">SearchSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.SearchSpec" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.pydantic.dev/latest/api/base_model/#pydantic.BaseModel" title="(in Pydantic Validation v0.0.0)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pydantic.BaseModel</span></code></a></p>
+<p>Declarative search specification.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SearchSpec</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;john doe&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">))</span>
+<span class="n">SearchSpec</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;jhn&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,),</span> <span class="n">fuzzy</span><span class="o">=</span><span class="n">FuzzyMode</span><span class="o">.</span><span class="n">FUZZY</span><span class="p">)</span>
+<span class="n">SearchSpec</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;alice&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;bio&quot;</span><span class="p">),</span> <span class="n">weights</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">})</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pypaginate.SearchSpec.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><a class="headerlink" href="#pypaginate.SearchSpec.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pypaginate.SortDirection">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">SortDirection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwds</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.SortDirection" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">enum.Enum</span></code></a></p>
+<p>Sort direction for ordering.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pypaginate.SortSpec">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">SortSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#pypaginate.SortSpec" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.pydantic.dev/latest/api/base_model/#pydantic.BaseModel" title="(in Pydantic Validation v0.0.0)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pydantic.BaseModel</span></code></a></p>
+<p>Declarative sort specification.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+<span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pypaginate.SortSpec.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><a class="headerlink" href="#pypaginate.SortSpec.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pypaginate.And">
+<span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">And</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">conditions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pypaginate.FilterSpec" title="pypaginate.FilterSpec"><span class="pre">FilterSpec</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#pypaginate.FilterGroup" title="pypaginate.FilterGroup"><span class="pre">FilterGroup</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#pypaginate.FilterGroup" title="pypaginate.FilterGroup"><span class="pre">FilterGroup</span></a></span></span><a class="headerlink" href="#pypaginate.And" title="Link to this definition"></a></dt>
+<dd><p>Create an AND group of filter conditions.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pypaginate.Or">
+<span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">Or</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">conditions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pypaginate.FilterSpec" title="pypaginate.FilterSpec"><span class="pre">FilterSpec</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="#pypaginate.FilterGroup" title="pypaginate.FilterGroup"><span class="pre">FilterGroup</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#pypaginate.FilterGroup" title="pypaginate.FilterGroup"><span class="pre">FilterGroup</span></a></span></span><a class="headerlink" href="#pypaginate.Or" title="Link to this definition"></a></dt>
+<dd><p>Create an OR group of filter conditions.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pypaginate.paginate">
+<span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">paginate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.14)"><span class="pre">collections.abc.Sequence</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ItemT</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="domain/params/index.html#pypaginate.domain.params.OffsetParams" title="pypaginate.domain.params.OffsetParams"><span class="pre">pypaginate.domain.params.OffsetParams</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">overflow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="domain/enums/index.html#pypaginate.domain.enums.OverflowStrategy" title="pypaginate.domain.enums.OverflowStrategy"><span class="pre">pypaginate.domain.enums.OverflowStrategy</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">...</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="domain/pages/index.html#pypaginate.domain.pages.OffsetPage" title="pypaginate.domain.pages.OffsetPage"><span class="pre">pypaginate.domain.pages.OffsetPage</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ItemT</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#pypaginate.paginate" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">paginate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><span class="pre">object</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="domain/params/index.html#pypaginate.domain.params.OffsetParams" title="pypaginate.domain.params.OffsetParams"><span class="pre">pypaginate.domain.params.OffsetParams</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="domain/protocols/index.html#pypaginate.domain.protocols.SyncPaginationBackend" title="pypaginate.domain.protocols.SyncPaginationBackend"><span class="pre">pypaginate.domain.protocols.SyncPaginationBackend</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ItemT</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overflow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="domain/enums/index.html#pypaginate.domain.enums.OverflowStrategy" title="pypaginate.domain.enums.OverflowStrategy"><span class="pre">pypaginate.domain.enums.OverflowStrategy</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">...</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="domain/pages/index.html#pypaginate.domain.pages.OffsetPage" title="pypaginate.domain.pages.OffsetPage"><span class="pre">pypaginate.domain.pages.OffsetPage</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ItemT</span><span class="p"><span class="pre">]</span></span></span></span></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">paginate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><span class="pre">object</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="domain/params/index.html#pypaginate.domain.params.OffsetParams" title="pypaginate.domain.params.OffsetParams"><span class="pre">pypaginate.domain.params.OffsetParams</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="domain/protocols/index.html#pypaginate.domain.protocols.PaginationBackend" title="pypaginate.domain.protocols.PaginationBackend"><span class="pre">pypaginate.domain.protocols.PaginationBackend</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ItemT</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overflow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="domain/enums/index.html#pypaginate.domain.enums.OverflowStrategy" title="pypaginate.domain.enums.OverflowStrategy"><span class="pre">pypaginate.domain.enums.OverflowStrategy</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">...</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Awaitable" title="(in Python v3.14)"><span class="pre">collections.abc.Awaitable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="domain/pages/index.html#pypaginate.domain.pages.OffsetPage" title="pypaginate.domain.pages.OffsetPage"><span class="pre">pypaginate.domain.pages.OffsetPage</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ItemT</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">pypaginate.</span></span><span class="sig-name descname"><span class="pre">paginate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><span class="pre">object</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="domain/params/index.html#pypaginate.domain.params.CursorParams" title="pypaginate.domain.params.CursorParams"><span class="pre">pypaginate.domain.params.CursorParams</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="domain/protocols/index.html#pypaginate.domain.protocols.CursorBackend" title="pypaginate.domain.protocols.CursorBackend"><span class="pre">pypaginate.domain.protocols.CursorBackend</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ItemT</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Awaitable" title="(in Python v3.14)"><span class="pre">collections.abc.Awaitable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="domain/pages/index.html#pypaginate.domain.pages.CursorPage" title="pypaginate.domain.pages.CursorPage"><span class="pre">pypaginate.domain.pages.CursorPage</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ItemT</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span></dt>
+<dd><p>Universal pagination entry point.</p>
+<p>The return type is automatically inferred from the params type:
+- <code class="docutils literal notranslate"><span class="pre">OffsetParams</span></code> → <code class="docutils literal notranslate"><span class="pre">OffsetPage</span></code>
+- <code class="docutils literal notranslate"><span class="pre">CursorParams</span></code> → <code class="docutils literal notranslate"><span class="pre">CursorPage</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> – Data source (Sequence for in-memory, or query).</p></li>
+<li><p><strong>params</strong> – OffsetParams or CursorParams.</p></li>
+<li><p><strong>backend</strong> – Optional backend. Auto-detected from source if None.</p></li>
+<li><p><strong>overflow</strong> – How to handle out-of-range pages (offset only).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>OffsetPage for sync, Awaitable[OffsetPage|CursorPage] for async.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.14)"><strong>TypeError</strong></a> – If source is not a Sequence and no backend given.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.14)"><strong>TypeError</strong></a> – If cursor params used with a sync backend.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../overview.html" class="btn btn-neutral float-left" title="API Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="adapters/index.html" class="btn btn-neutral float-right" title="pypaginate.adapters" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024-2026 CybLow.
+      <span class="lastupdated">Last updated on Mar 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"></span>
+    v: 0.2.0
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>On GitHub</dt>
+      <dd><a href="https://github.com/CybLow/pypaginate">View Source</a></dd>
+      <dd><a href="https://github.com/CybLow/pypaginate/issues">Issues</a></dd>
+    </dl>
+  </div>
+</div><script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

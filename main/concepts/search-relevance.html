@@ -1,0 +1,978 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="Search & Relevance" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://cyblow.github.io/pypaginate/concepts/search-relevance.html" />
+<meta property="og:site_name" content="pypaginate Documentation" />
+<meta property="og:description" content="pypaginate provides a search engine that tokenizes queries, matches them against fields, scores results by relevance, and supports optional fuzzy matching via rapidfuzz. Search Pipeline: Parse – th..." />
+<meta property="og:image" content="https://cyblow.github.io/pypaginate/_static/logo.svg" />
+<meta property="og:image:alt" content="pypaginate Documentation" />
+<meta name="description" content="pypaginate provides a search engine that tokenizes queries, matches them against fields, scores results by relevance, and supports optional fuzzy matching via rapidfuzz. Search Pipeline: Parse – th..." />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Search &amp; Relevance &mdash; pypaginate 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=e0a04398" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.svg"/>
+    <link rel="canonical" href="https://cyblow.github.io/pypaginate/concepts/search-relevance.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=437722b7"></script>
+      <script src="../_static/design-tabs.js?v=f930bc37"></script>
+      <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10.6.0/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}`;
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        all_mermaids.forEach((el) => {
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+        await mermaid.run();
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);</script>
+      <script src="../_static/custom.js?v=60c56439"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Contributing to pypaginate" href="../contributing/index.html" />
+    <link rel="prev" title="Filter Expressions" href="filter-expressions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pypaginate
+              <img src="../_static/logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/first-steps.html">First Steps</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/index.html">Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/offset.html">Offset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/keyset.html">Cursor/Keyset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/memory.html">In-Memory Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/index.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/basic.html">Basic Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/json-logic.html">Nested Filter Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/operators.html">Operators Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/index.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/text-search.html">Text Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/fuzzy.html">Fuzzy Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sorting/index.html">Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sorting/basic.html">Basic Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sorting/multi-column.html">Multi-Column Sorting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Framework Integrations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/sqlalchemy.html">SQLAlchemy Integration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/overview.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/pypaginate/index.html">pypaginate</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/basic-pagination.html">Basic Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/filtering.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/keyset.html">Keyset (Cursor) Pagination</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pagination-strategies.html">Pagination Strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cursor-encoding.html">Cursor Encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filter-expressions.html">Filter Expressions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Search &amp; Relevance</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#search-pipeline">Search Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#searchspec">SearchSpec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#search-modes-searchfieldmode">Search Modes (SearchFieldMode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fuzzy-modes-fuzzymode">Fuzzy Modes (FuzzyMode)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#scoring">Scoring</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#exact-scoring">Exact Scoring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fuzzy-scoring">Fuzzy Scoring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#weighted-scoring">Weighted Scoring</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#scoring-example">Scoring Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#single-field-vs-multi-field">Single-Field vs Multi-Field</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#text-normalization">Text Normalization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#in-memory-search">In-Memory Search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sqlalchemy-search">SQLAlchemy Search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pipeline-integration">Pipeline Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-tips">Performance Tips</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/index.html">Contributing to pypaginate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/development.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/code-style.html">Code Style</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/testing.html">Testing Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/architecture.html">Architecture Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/roadmap.html">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CODE_OF_CONDUCT.html">Contributor Covenant Code of Conduct</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../comparison.html">Competitive Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../benchmarks.html">Performance Benchmarks</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pypaginate</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Search &amp; Relevance</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/CybLow/pypaginate/blob/main/docs/concepts/search-relevance.md" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="search-relevance">
+<h1>Search &amp; Relevance<a class="headerlink" href="#search-relevance" title="Link to this heading"></a></h1>
+<p>pypaginate provides a search engine that tokenizes queries, matches them against
+fields, scores results by relevance, and supports optional fuzzy matching via
+<a class="reference external" href="https://github.com/maxbachmann/RapidFuzz">rapidfuzz</a>.</p>
+<hr class="docutils" />
+<section id="search-pipeline">
+<h2>Search Pipeline<a class="headerlink" href="#search-pipeline" title="Link to this heading"></a></h2>
+<pre  class="mermaid">
+        graph LR
+    Q[&quot;SearchSpec&quot;] --&gt; T[&quot;TokenParser.parse()&quot;]
+    T --&gt; N[&quot;normalize_text()&quot;]
+    N --&gt; M[&quot;Match &amp; score per item&quot;]
+    M --&gt; R[&quot;Sort by score (descending)&quot;]
+    R --&gt; O[&quot;Ranked results&quot;]
+    </pre><ol class="arabic simple">
+<li><p><strong>Parse</strong> – the <code class="docutils literal notranslate"><span class="pre">TokenParser</span></code> splits the query into tokens (handles quotes, whitespace).</p></li>
+<li><p><strong>Normalize</strong> – each token and field value is Unicode-normalized (lowercased, accents removed).</p></li>
+<li><p><strong>Match</strong> – each item is scored across the specified fields.</p></li>
+<li><p><strong>Rank</strong> – items are sorted by score (highest first), then optionally truncated by <code class="docutils literal notranslate"><span class="pre">max_results</span></code>.</p></li>
+</ol>
+</section>
+<hr class="docutils" />
+<section id="searchspec">
+<h2>SearchSpec<a class="headerlink" href="#searchspec" title="Link to this heading"></a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">SearchSpec</span></code> is an immutable Pydantic model:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">SearchSpec</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.domain.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">FuzzyMode</span><span class="p">,</span> <span class="n">SearchFieldMode</span>
+
+<span class="c1"># Basic search</span>
+<span class="n">SearchSpec</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;john doe&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">))</span>
+
+<span class="c1"># Fuzzy search with weights</span>
+<span class="n">SearchSpec</span><span class="p">(</span>
+    <span class="n">query</span><span class="o">=</span><span class="s2">&quot;jhn&quot;</span><span class="p">,</span>
+    <span class="n">fields</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">),</span>
+    <span class="n">weights</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">},</span>
+    <span class="n">fuzzy</span><span class="o">=</span><span class="n">FuzzyMode</span><span class="o">.</span><span class="n">FUZZY</span><span class="p">,</span>
+    <span class="n">threshold</span><span class="o">=</span><span class="mi">75</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Token-sort matching (word-order agnostic)</span>
+<span class="n">SearchSpec</span><span class="p">(</span>
+    <span class="n">query</span><span class="o">=</span><span class="s2">&quot;doe john&quot;</span><span class="p">,</span>
+    <span class="n">fields</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,),</span>
+    <span class="n">fuzzy</span><span class="o">=</span><span class="n">FuzzyMode</span><span class="o">.</span><span class="n">TOKEN_SORT</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">query</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">str</span></code></p></td>
+<td><p>required</p></td>
+<td><p>Search query (max 500 characters)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fields</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tuple[str,</span> <span class="pre">...]</span></code></p></td>
+<td><p>required</p></td>
+<td><p>Fields to search</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">weights</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">dict[str,</span> <span class="pre">float]</span> <span class="pre">|</span> <span class="pre">None</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>Per-field weight multipliers</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mode</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SearchFieldMode</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CONTAINS</span></code></p></td>
+<td><p>How tokens match field values</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fuzzy</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">FuzzyMode</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">EXACT</span></code></p></td>
+<td><p>Fuzzy matching strategy</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">threshold</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">int</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">75</span></code></p></td>
+<td><p>Minimum fuzzy score (0-100)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">min_length</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">int</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+<td><p>Minimum query length (below this, all items returned)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">max_results</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>Limit number of results</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<hr class="docutils" />
+<section id="search-modes-searchfieldmode">
+<h2>Search Modes (SearchFieldMode)<a class="headerlink" href="#search-modes-searchfieldmode" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Mode</p></th>
+<th class="head"><p>Behavior</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">EXACT</span></code></p></td>
+<td><p>Field value must equal the normalized token</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;john&quot;</span> <span class="pre">matches</span> <span class="pre">&quot;john&quot;</span></code> only</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">PREFIX</span></code></p></td>
+<td><p>Field value must start with the token</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;joh&quot;</span> <span class="pre">matches</span> <span class="pre">&quot;john&quot;,</span> <span class="pre">&quot;johnson&quot;</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CONTAINS</span></code></p></td>
+<td><p>Token must appear anywhere in the field value</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;ohn&quot;</span> <span class="pre">matches</span> <span class="pre">&quot;john&quot;,</span> <span class="pre">&quot;johnson&quot;</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<hr class="docutils" />
+<section id="fuzzy-modes-fuzzymode">
+<h2>Fuzzy Modes (FuzzyMode)<a class="headerlink" href="#fuzzy-modes-fuzzymode" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Mode</p></th>
+<th class="head"><p>Algorithm</p></th>
+<th class="head"><p>Use Case</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">EXACT</span></code></p></td>
+<td><p>No fuzzy – exact/prefix/contains matching only</p></td>
+<td><p>Fast, precise results</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FUZZY</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">rapidfuzz.fuzz.partial_ratio</span></code> (substring matching)</p></td>
+<td><p>Typo tolerance</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TOKEN_SORT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">rapidfuzz.fuzz.token_sort_ratio</span></code> (word-order agnostic)</p></td>
+<td><p>“John Doe” matches “Doe John”</p></td>
+</tr>
+</tbody>
+</table>
+<p>When rapidfuzz is not installed (<code class="docutils literal notranslate"><span class="pre">pypaginate[search]</span></code> not added), fuzzy modes fall
+back to simple substring matching.</p>
+</section>
+<hr class="docutils" />
+<section id="scoring">
+<h2>Scoring<a class="headerlink" href="#scoring" title="Link to this heading"></a></h2>
+<section id="exact-scoring">
+<h3>Exact Scoring<a class="headerlink" href="#exact-scoring" title="Link to this heading"></a></h3>
+<p>In exact mode (<code class="docutils literal notranslate"><span class="pre">FuzzyMode.EXACT</span></code>), each matching token contributes a fixed score of 100.
+All tokens must match (AND logic) – if any token fails to match any field, the item
+scores 0.</p>
+</section>
+<section id="fuzzy-scoring">
+<h3>Fuzzy Scoring<a class="headerlink" href="#fuzzy-scoring" title="Link to this heading"></a></h3>
+<p>In fuzzy mode, <code class="docutils literal notranslate"><span class="pre">rapidfuzz.fuzz.partial_ratio</span></code> returns a score from 0-100 for each
+(token, field_value) pair. Only scores at or above the <code class="docutils literal notranslate"><span class="pre">threshold</span></code> count as a match.
+A score below threshold is treated as 0 (no match).</p>
+</section>
+<section id="weighted-scoring">
+<h3>Weighted Scoring<a class="headerlink" href="#weighted-scoring" title="Link to this heading"></a></h3>
+<p>When <code class="docutils literal notranslate"><span class="pre">weights</span></code> are provided, each field’s score is multiplied by its weight:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">SearchSpec</span><span class="p">(</span>
+    <span class="n">query</span><span class="o">=</span><span class="s2">&quot;john&quot;</span><span class="p">,</span>
+    <span class="n">fields</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">,</span> <span class="s2">&quot;bio&quot;</span><span class="p">),</span>
+    <span class="n">weights</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;bio&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">},</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>For multi-field search, the engine finds the <strong>best weighted score</strong> across all fields
+for each token, then sums across tokens.</p>
+</section>
+<section id="scoring-example">
+<h3>Scoring Example<a class="headerlink" href="#scoring-example" title="Link to this heading"></a></h3>
+<p>Given <code class="docutils literal notranslate"><span class="pre">weights={&quot;name&quot;:</span> <span class="pre">2.0,</span> <span class="pre">&quot;email&quot;:</span> <span class="pre">1.0}</span></code> and query <code class="docutils literal notranslate"><span class="pre">&quot;john&quot;</span></code>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Item</p></th>
+<th class="head"><p>Name Score</p></th>
+<th class="head"><p>Email Score</p></th>
+<th class="head"><p>Best Weighted</p></th>
+<th class="head"><p>Total</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">name=&quot;John</span> <span class="pre">Doe&quot;,</span> <span class="pre">email=&quot;john&#64;x.com&quot;</span></code></p></td>
+<td><p>100 * 2.0 = 200</p></td>
+<td><p>100 * 1.0 = 100</p></td>
+<td><p>200</p></td>
+<td><p>200</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">name=&quot;Jane&quot;,</span> <span class="pre">email=&quot;john.doe&#64;x.com&quot;</span></code></p></td>
+<td><p>0</p></td>
+<td><p>100 * 1.0 = 100</p></td>
+<td><p>100</p></td>
+<td><p>100</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">name=&quot;Bob&quot;,</span> <span class="pre">email=&quot;bob&#64;x.com&quot;</span></code></p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>0 (excluded)</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<hr class="docutils" />
+<section id="single-field-vs-multi-field">
+<h2>Single-Field vs Multi-Field<a class="headerlink" href="#single-field-vs-multi-field" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">SearchEngine</span></code> has two optimized paths:</p>
+<ul class="simple">
+<li><p><strong>Single field</strong> – avoids list allocation per item, direct accessor call.</p></li>
+<li><p><strong>Multi-field</strong> – extracts and normalizes all field values, finds best weighted match.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Single field (fast path)</span>
+<span class="n">SearchSpec</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;john&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,))</span>
+
+<span class="c1"># Multi-field with weights</span>
+<span class="n">SearchSpec</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;john&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">,</span> <span class="s2">&quot;bio&quot;</span><span class="p">),</span> <span class="n">weights</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">})</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="text-normalization">
+<h2>Text Normalization<a class="headerlink" href="#text-normalization" title="Link to this heading"></a></h2>
+<p>All text (queries and field values) is normalized before matching:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.text.normalize</span><span class="w"> </span><span class="kn">import</span> <span class="n">normalize_text</span>
+
+<span class="n">normalize_text</span><span class="p">(</span><span class="s2">&quot;Cafe</span><span class="se">\u0301</span><span class="s2">&quot;</span><span class="p">)</span>   <span class="c1"># &quot;cafe&quot;  (accent removed, lowercased)</span>
+<span class="n">normalize_text</span><span class="p">(</span><span class="s2">&quot;HELLO World&quot;</span><span class="p">)</span>  <span class="c1"># &quot;hello world&quot;</span>
+</pre></div>
+</div>
+<p>Normalization includes:</p>
+<ul class="simple">
+<li><p>Unicode NFKD decomposition</p></li>
+<li><p>Accent/diacritic removal</p></li>
+<li><p>Lowercase conversion</p></li>
+</ul>
+<p>This makes search accent-insensitive and case-insensitive by default.</p>
+</section>
+<hr class="docutils" />
+<section id="in-memory-search">
+<h2>In-Memory Search<a class="headerlink" href="#in-memory-search" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.search.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">SearchEngine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">SearchSpec</span>
+
+<span class="n">engine</span> <span class="o">=</span> <span class="n">SearchEngine</span><span class="p">()</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+    <span class="n">items</span><span class="p">,</span>
+    <span class="n">SearchSpec</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;john doe&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">)),</span>
+<span class="p">)</span>
+<span class="c1"># Returns items sorted by relevance score (highest first)</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="sqlalchemy-search">
+<h2>SQLAlchemy Search<a class="headerlink" href="#sqlalchemy-search" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">SQLAlchemySearchBackend</span></code> translates <code class="docutils literal notranslate"><span class="pre">SearchSpec</span></code> into SQL LIKE/ILIKE conditions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.adapters.sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQLAlchemySearchBackend</span>
+
+<span class="n">backend</span> <span class="o">=</span> <span class="n">SQLAlchemySearchBackend</span><span class="p">()</span>
+<span class="n">modified_query</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">apply_search</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">User</span><span class="p">),</span> <span class="n">search_spec</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="pipeline-integration">
+<h2>Pipeline Integration<a class="headerlink" href="#pipeline-integration" title="Link to this heading"></a></h2>
+<p>Search integrates with the pipeline alongside filters and sorting:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.engine.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.engine.paginator</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncPaginator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.adapters.sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SQLAlchemyBackend</span><span class="p">,</span> <span class="n">SQLAlchemyFilterBackend</span><span class="p">,</span>
+    <span class="n">SQLAlchemySortBackend</span><span class="p">,</span> <span class="n">SQLAlchemySearchBackend</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">OffsetParams</span><span class="p">,</span> <span class="n">FilterSpec</span><span class="p">,</span> <span class="n">SortSpec</span><span class="p">,</span> <span class="n">SearchSpec</span>
+
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">AsyncPipeline</span><span class="p">(</span>
+    <span class="n">AsyncPaginator</span><span class="p">(</span><span class="n">SQLAlchemyBackend</span><span class="p">(</span><span class="n">session</span><span class="p">)),</span>
+    <span class="n">filter_backend</span><span class="o">=</span><span class="n">SQLAlchemyFilterBackend</span><span class="p">(),</span>
+    <span class="n">sort_backend</span><span class="o">=</span><span class="n">SQLAlchemySortBackend</span><span class="p">(),</span>
+    <span class="n">search_backend</span><span class="o">=</span><span class="n">SQLAlchemySearchBackend</span><span class="p">(),</span>
+<span class="p">)</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+    <span class="n">select</span><span class="p">(</span><span class="n">User</span><span class="p">),</span>
+    <span class="n">OffsetParams</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">),</span>
+    <span class="n">filters</span><span class="o">=</span><span class="p">[</span><span class="n">FilterSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;status&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)],</span>
+    <span class="n">sorting</span><span class="o">=</span><span class="p">[</span><span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">)],</span>
+    <span class="n">search</span><span class="o">=</span><span class="n">SearchSpec</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;john&quot;</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">)),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The pipeline applies operations in order: <strong>filter -&gt; sort -&gt; search -&gt; paginate</strong>.</p>
+</section>
+<hr class="docutils" />
+<section id="performance-tips">
+<h2>Performance Tips<a class="headerlink" href="#performance-tips" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Search fewer fields for faster results.</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">EXACT</span></code> mode when fuzzy matching is not needed.</p></li>
+<li><p>Set <code class="docutils literal notranslate"><span class="pre">max_results</span></code> to limit scoring work on large datasets.</p></li>
+<li><p>Install <code class="docutils literal notranslate"><span class="pre">pypaginate[search]</span></code> for rapidfuzz – without it, fuzzy modes fall back to
+simple substring matching.</p></li>
+<li><p>For SQL backends, ensure searched columns have appropriate indexes (GIN for
+PostgreSQL full-text, trigram for fuzzy).</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="filter-expressions.html" class="btn btn-neutral float-left" title="Filter Expressions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../contributing/index.html" class="btn btn-neutral float-right" title="Contributing to pypaginate" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024-2026 CybLow.
+      <span class="lastupdated">Last updated on Mar 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"></span>
+    v: 0.2.0
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>On GitHub</dt>
+      <dd><a href="https://github.com/CybLow/pypaginate">View Source</a></dd>
+      <dd><a href="https://github.com/CybLow/pypaginate/issues">Issues</a></dd>
+    </dl>
+  </div>
+</div><script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

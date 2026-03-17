@@ -1,0 +1,303 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="pypaginate Documentation" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://cyblow.github.io/pypaginate/README.html" />
+<meta property="og:site_name" content="pypaginate Documentation" />
+<meta property="og:description" content="This directory contains the Sphinx documentation for pypaginate. Quick Start: Install dependencies:, Build the documentation:, View locally:. Development: For live preview with auto-rebuild: Build ..." />
+<meta property="og:image" content="https://cyblow.github.io/pypaginate/_static/logo.svg" />
+<meta property="og:image:alt" content="pypaginate Documentation" />
+<meta name="description" content="This directory contains the Sphinx documentation for pypaginate. Quick Start: Install dependencies:, Build the documentation:, View locally:. Development: For live preview with auto-rebuild: Build ..." />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pypaginate Documentation &mdash; pypaginate 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=e0a04398" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon.svg"/>
+    <link rel="canonical" href="https://cyblow.github.io/pypaginate/README.html" />
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=437722b7"></script>
+      <script src="_static/design-tabs.js?v=f930bc37"></script>
+      <script src="_static/custom.js?v=60c56439"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pypaginate
+              <img src="_static/logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started/index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started/first-steps.html">First Steps</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pagination/index.html">Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pagination/offset.html">Offset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pagination/keyset.html">Cursor/Keyset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pagination/memory.html">In-Memory Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filtering/index.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filtering/basic.html">Basic Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filtering/json-logic.html">Nested Filter Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filtering/operators.html">Operators Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search/index.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search/text-search.html">Text Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search/fuzzy.html">Fuzzy Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sorting/index.html">Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sorting/basic.html">Basic Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sorting/multi-column.html">Multi-Column Sorting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="integrations/index.html">Framework Integrations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integrations/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integrations/sqlalchemy.html">SQLAlchemy Integration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/overview.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/pypaginate/index.html">pypaginate</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/basic-pagination.html">Basic Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/filtering.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/keyset.html">Keyset (Cursor) Pagination</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="concepts/index.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/pagination-strategies.html">Pagination Strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/cursor-encoding.html">Cursor Encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/filter-expressions.html">Filter Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/search-relevance.html">Search &amp; Relevance</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing/index.html">Contributing to pypaginate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing/development.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing/code-style.html">Code Style</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing/testing.html">Testing Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing/architecture.html">Architecture Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing/roadmap.html">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CODE_OF_CONDUCT.html">Contributor Covenant Code of Conduct</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="comparison.html">Competitive Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Performance Benchmarks</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pypaginate</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">pypaginate Documentation</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/CybLow/pypaginate/blob/main/docs/README.md" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pypaginate-documentation">
+<h1>pypaginate Documentation<a class="headerlink" href="#pypaginate-documentation" title="Link to this heading"></a></h1>
+<p>This directory contains the Sphinx documentation for pypaginate.</p>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<ol class="arabic">
+<li><p>Install dependencies:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>sync<span class="w"> </span>--group<span class="w"> </span>docs
+</pre></div>
+</div>
+</li>
+<li><p>Build the documentation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>sphinx-build<span class="w"> </span>-b<span class="w"> </span>html<span class="w"> </span>docs<span class="w"> </span>docs/_build/html
+</pre></div>
+</div>
+</li>
+<li><p>View locally:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>http.server<span class="w"> </span><span class="m">8000</span><span class="w"> </span>-d<span class="w"> </span>docs/_build/html
+<span class="c1"># Open http://localhost:8000</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="development">
+<h2>Development<a class="headerlink" href="#development" title="Link to this heading"></a></h2>
+<p>For live preview with auto-rebuild:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>sphinx-autobuild<span class="w"> </span>docs<span class="w"> </span>docs/_build/html
+</pre></div>
+</div>
+<p>Build with warnings as errors (CI mode):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>sphinx-build<span class="w"> </span>-W<span class="w"> </span>-b<span class="w"> </span>html<span class="w"> </span>docs<span class="w"> </span>docs/_build/html
+</pre></div>
+</div>
+</section>
+<section id="multi-version-builds">
+<h2>Multi-Version Builds<a class="headerlink" href="#multi-version-builds" title="Link to this heading"></a></h2>
+<p>For building documentation across multiple versions/tags:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>sphinx-polyversion<span class="w"> </span>docs/poly.py
+</pre></div>
+</div>
+</section>
+<section id="structure">
+<h2>Structure<a class="headerlink" href="#structure" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Directory</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">api/</span></code></p></td>
+<td><p>Auto-generated API reference</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">concepts/</span></code></p></td>
+<td><p>Core concepts and architecture</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">examples/</span></code></p></td>
+<td><p>Code examples and tutorials</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">filtering/</span></code></p></td>
+<td><p>Filter system documentation</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">getting-started/</span></code></p></td>
+<td><p>Quick start guides</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">_static/</span></code></p></td>
+<td><p>Static assets (CSS, images, logo)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">_templates/</span></code></p></td>
+<td><p>Jinja2 templates</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">conf.py</span></code></p></td>
+<td><p>Sphinx configuration</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">poly.py</span></code></p></td>
+<td><p>sphinx-polyversion config</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">index.md</span></code></p></td>
+<td><p>Documentation home page</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="writing-docs">
+<h2>Writing Docs<a class="headerlink" href="#writing-docs" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Use MyST Markdown (<code class="docutils literal notranslate"><span class="pre">.md</span></code> files)</p></li>
+<li><p>Follow Google-style docstrings for API docs</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">{py:class}</span></code>, <code class="docutils literal notranslate"><span class="pre">{py:func}</span></code>, etc. for cross-references</p></li>
+<li><p>Admonitions: <code class="docutils literal notranslate"><span class="pre">:::{note}</span></code>, <code class="docutils literal notranslate"><span class="pre">:::{warning}</span></code>, <code class="docutils literal notranslate"><span class="pre">:::{tip}</span></code></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024-2026 CybLow.
+      <span class="lastupdated">Last updated on Mar 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"></span>
+    v: 0.2.0
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>On GitHub</dt>
+      <dd><a href="https://github.com/CybLow/pypaginate">View Source</a></dd>
+      <dd><a href="https://github.com/CybLow/pypaginate/issues">Issues</a></dd>
+    </dl>
+  </div>
+</div><script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

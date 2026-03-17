@@ -1,0 +1,404 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="Basic Sorting" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://cyblow.github.io/pypaginate/sorting/basic.html" />
+<meta property="og:site_name" content="pypaginate Documentation" />
+<meta property="og:description" content="This guide covers single-field sorting with SortSpec for both in-memory collections and SQLAlchemy queries. SortSpec: Create a SortSpec to describe how to sort: In-Memory Sorting: Using SortEngine:..." />
+<meta property="og:image" content="https://cyblow.github.io/pypaginate/_static/logo.svg" />
+<meta property="og:image:alt" content="pypaginate Documentation" />
+<meta name="description" content="This guide covers single-field sorting with SortSpec for both in-memory collections and SQLAlchemy queries. SortSpec: Create a SortSpec to describe how to sort: In-Memory Sorting: Using SortEngine:..." />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Basic Sorting &mdash; pypaginate 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=e0a04398" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.svg"/>
+    <link rel="canonical" href="https://cyblow.github.io/pypaginate/sorting/basic.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=437722b7"></script>
+      <script src="../_static/design-tabs.js?v=f930bc37"></script>
+      <script src="../_static/custom.js?v=60c56439"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Multi-Column Sorting" href="multi-column.html" />
+    <link rel="prev" title="Sorting" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pypaginate
+              <img src="../_static/logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/first-steps.html">First Steps</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pagination/index.html">Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/offset.html">Offset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/keyset.html">Cursor/Keyset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/memory.html">In-Memory Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/index.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/basic.html">Basic Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/json-logic.html">Nested Filter Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/operators.html">Operators Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/index.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/text-search.html">Text Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/fuzzy.html">Fuzzy Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Sorting</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Basic Sorting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#sortspec">SortSpec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#in-memory-sorting">In-Memory Sorting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#using-sortengine">Using SortEngine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-memorysortbackend">Using MemorySortBackend</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#null-value-handling">Null Value Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sqlalchemy-sorting">SQLAlchemy Sorting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pipeline-usage">Pipeline Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#common-patterns">Common Patterns</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sort-by-date">Sort by Date</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#alphabetical-sort">Alphabetical Sort</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#numeric-sort">Numeric Sort</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#error-handling">Error Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="multi-column.html">Multi-Column Sorting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Framework Integrations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/sqlalchemy.html">SQLAlchemy Integration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/overview.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/pypaginate/index.html">pypaginate</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/basic-pagination.html">Basic Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/filtering.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/keyset.html">Keyset (Cursor) Pagination</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/index.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/pagination-strategies.html">Pagination Strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/cursor-encoding.html">Cursor Encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/filter-expressions.html">Filter Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/search-relevance.html">Search &amp; Relevance</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/index.html">Contributing to pypaginate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/development.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/code-style.html">Code Style</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/testing.html">Testing Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/architecture.html">Architecture Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/roadmap.html">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CODE_OF_CONDUCT.html">Contributor Covenant Code of Conduct</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../comparison.html">Competitive Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../benchmarks.html">Performance Benchmarks</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pypaginate</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Basic Sorting</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/CybLow/pypaginate/blob/main/docs/sorting/basic.md" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="basic-sorting">
+<h1>Basic Sorting<a class="headerlink" href="#basic-sorting" title="Link to this heading"></a></h1>
+<p>This guide covers single-field sorting with <code class="docutils literal notranslate"><span class="pre">SortSpec</span></code> for both in-memory collections and SQLAlchemy queries.</p>
+<section id="sortspec">
+<h2>SortSpec<a class="headerlink" href="#sortspec" title="Link to this heading"></a></h2>
+<p>Create a <code class="docutils literal notranslate"><span class="pre">SortSpec</span></code> to describe how to sort:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortSpec</span><span class="p">,</span> <span class="n">SortDirection</span><span class="p">,</span> <span class="n">NullsPosition</span>
+
+<span class="c1"># Sort by name ascending (defaults)</span>
+<span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>
+
+<span class="c1"># Sort by created_at descending, nulls last</span>
+<span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">,</span> <span class="n">nulls</span><span class="o">=</span><span class="n">NullsPosition</span><span class="o">.</span><span class="n">LAST</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="in-memory-sorting">
+<h2>In-Memory Sorting<a class="headerlink" href="#in-memory-sorting" title="Link to this heading"></a></h2>
+<section id="using-sortengine">
+<h3>Using SortEngine<a class="headerlink" href="#using-sortengine" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">SortEngine</span></code> sorts Python sequences directly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortSpec</span><span class="p">,</span> <span class="n">SortDirection</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.sorting.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortEngine</span>
+
+<span class="n">engine</span> <span class="o">=</span> <span class="n">SortEngine</span><span class="p">()</span>
+
+<span class="n">products</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Widget&quot;</span><span class="p">,</span> <span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="mf">29.99</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Gadget&quot;</span><span class="p">,</span> <span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="mf">49.99</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Gizmo&quot;</span><span class="p">,</span> <span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="mf">19.99</span><span class="p">},</span>
+<span class="p">]</span>
+
+<span class="c1"># Sort by price ascending</span>
+<span class="n">sorted_products</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">products</span><span class="p">,</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;price&quot;</span><span class="p">),</span>
+<span class="p">])</span>
+<span class="c1"># [Gizmo(19.99), Widget(29.99), Gadget(49.99)]</span>
+
+<span class="c1"># Sort by price descending</span>
+<span class="n">sorted_products</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">products</span><span class="p">,</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;price&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">),</span>
+<span class="p">])</span>
+<span class="c1"># [Gadget(49.99), Widget(29.99), Gizmo(19.99)]</span>
+</pre></div>
+</div>
+</section>
+<section id="using-memorysortbackend">
+<h3>Using MemorySortBackend<a class="headerlink" href="#using-memorysortbackend" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">MemorySortBackend</span></code> satisfies the <code class="docutils literal notranslate"><span class="pre">SortBackend</span></code> protocol for pipeline use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortSpec</span><span class="p">,</span> <span class="n">SortDirection</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.adapters.memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemorySortBackend</span>
+
+<span class="n">backend</span> <span class="o">=</span> <span class="n">MemorySortBackend</span><span class="p">()</span>
+
+<span class="n">sorted_items</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">apply_sorting</span><span class="p">(</span><span class="n">products</span><span class="p">,</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;price&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">),</span>
+<span class="p">])</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="null-value-handling">
+<h2>Null Value Handling<a class="headerlink" href="#null-value-handling" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">NullsPosition</span></code> controls where <code class="docutils literal notranslate"><span class="pre">None</span></code> values appear in sorted results:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortSpec</span><span class="p">,</span> <span class="n">SortDirection</span><span class="p">,</span> <span class="n">NullsPosition</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.sorting.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortEngine</span>
+
+<span class="n">engine</span> <span class="o">=</span> <span class="n">SortEngine</span><span class="p">()</span>
+
+<span class="n">products</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Widget&quot;</span><span class="p">,</span> <span class="s2">&quot;stock&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Gadget&quot;</span><span class="p">,</span> <span class="s2">&quot;stock&quot;</span><span class="p">:</span> <span class="mi">25</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Gizmo&quot;</span><span class="p">,</span> <span class="s2">&quot;stock&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">},</span>
+<span class="p">]</span>
+
+<span class="c1"># Nulls first</span>
+<span class="n">sorted_products</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">products</span><span class="p">,</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;stock&quot;</span><span class="p">,</span> <span class="n">nulls</span><span class="o">=</span><span class="n">NullsPosition</span><span class="o">.</span><span class="n">FIRST</span><span class="p">),</span>
+<span class="p">])</span>
+<span class="c1"># [Widget(None), Gadget(25), Gizmo(50)]</span>
+
+<span class="c1"># Nulls last (default)</span>
+<span class="n">sorted_products</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">products</span><span class="p">,</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;stock&quot;</span><span class="p">,</span> <span class="n">nulls</span><span class="o">=</span><span class="n">NullsPosition</span><span class="o">.</span><span class="n">LAST</span><span class="p">),</span>
+<span class="p">])</span>
+<span class="c1"># [Gadget(25), Gizmo(50), Widget(None)]</span>
+</pre></div>
+</div>
+<p>Null positioning is independent of sort direction:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Descending sort with nulls last</span>
+<span class="n">sorted_products</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">products</span><span class="p">,</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;stock&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">,</span> <span class="n">nulls</span><span class="o">=</span><span class="n">NullsPosition</span><span class="o">.</span><span class="n">LAST</span><span class="p">),</span>
+<span class="p">])</span>
+<span class="c1"># [Gizmo(50), Gadget(25), Widget(None)]</span>
+</pre></div>
+</div>
+</section>
+<section id="sqlalchemy-sorting">
+<h2>SQLAlchemy Sorting<a class="headerlink" href="#sqlalchemy-sorting" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">SQLAlchemySortBackend</span></code> translates <code class="docutils literal notranslate"><span class="pre">SortSpec</span></code> to ORDER BY clauses:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">select</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortSpec</span><span class="p">,</span> <span class="n">SortDirection</span><span class="p">,</span> <span class="n">NullsPosition</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.adapters.sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQLAlchemySortBackend</span>
+
+<span class="n">backend</span> <span class="o">=</span> <span class="n">SQLAlchemySortBackend</span><span class="p">()</span>
+
+<span class="n">stmt</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">Product</span><span class="p">)</span>
+<span class="n">sorted_stmt</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">apply_sorting</span><span class="p">(</span><span class="n">stmt</span><span class="p">,</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;price&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">,</span> <span class="n">nulls</span><span class="o">=</span><span class="n">NullsPosition</span><span class="o">.</span><span class="n">LAST</span><span class="p">),</span>
+<span class="p">])</span>
+<span class="c1"># SELECT * FROM product ORDER BY price DESC NULLS LAST</span>
+</pre></div>
+</div>
+<p>The backend generates proper SQLAlchemy expressions:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SortDirection.ASC</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">column.asc()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SortDirection.DESC</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">column.desc()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">NullsPosition.FIRST</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">.nulls_first()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">NullsPosition.LAST</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">.nulls_last()</span></code></p></li>
+</ul>
+</section>
+<section id="pipeline-usage">
+<h2>Pipeline Usage<a class="headerlink" href="#pipeline-usage" title="Link to this heading"></a></h2>
+<p>Pass sorting specs to <code class="docutils literal notranslate"><span class="pre">SyncPipeline.execute()</span></code> or <code class="docutils literal notranslate"><span class="pre">AsyncPipeline.execute()</span></code> via the <code class="docutils literal notranslate"><span class="pre">sorting=</span></code> parameter. See <a class="reference internal" href="multi-column.html"><span class="std std-doc">Multi-Column Sorting</span></a> for pipeline examples with sorting, filtering, and pagination combined.</p>
+</section>
+<section id="common-patterns">
+<h2>Common Patterns<a class="headerlink" href="#common-patterns" title="Link to this heading"></a></h2>
+<section id="sort-by-date">
+<h3>Sort by Date<a class="headerlink" href="#sort-by-date" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortSpec</span><span class="p">,</span> <span class="n">SortDirection</span>
+
+<span class="c1"># Most recent first</span>
+<span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">)</span>
+
+<span class="c1"># Oldest first</span>
+<span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">ASC</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="alphabetical-sort">
+<h3>Alphabetical Sort<a class="headerlink" href="#alphabetical-sort" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># A-Z</span>
+<span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">ASC</span><span class="p">)</span>
+
+<span class="c1"># Z-A</span>
+<span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="numeric-sort">
+<h3>Numeric Sort<a class="headerlink" href="#numeric-sort" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Highest price first</span>
+<span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;price&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">)</span>
+
+<span class="c1"># Lowest score first</span>
+<span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;score&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">ASC</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">SortError</span></code> is raised when field values cannot be compared (e.g., mixed types):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortError</span><span class="p">,</span> <span class="n">SortSpec</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.sorting.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortEngine</span>
+
+<span class="n">engine</span> <span class="o">=</span> <span class="n">SortEngine</span><span class="p">()</span>
+<span class="n">items</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;val&quot;</span><span class="p">:</span> <span class="s2">&quot;abc&quot;</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;val&quot;</span><span class="p">:</span> <span class="mi">123</span><span class="p">}]</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">engine</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="p">[</span><span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;val&quot;</span><span class="p">)])</span>
+<span class="k">except</span> <span class="n">SortError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sort error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="multi-column.html"><span class="std std-doc">Multi-Column Sorting</span></a> – Sort by multiple fields with priority</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Sorting" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="multi-column.html" class="btn btn-neutral float-right" title="Multi-Column Sorting" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024-2026 CybLow.
+      <span class="lastupdated">Last updated on Mar 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"></span>
+    v: 0.2.0
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>On GitHub</dt>
+      <dd><a href="https://github.com/CybLow/pypaginate">View Source</a></dd>
+      <dd><a href="https://github.com/CybLow/pypaginate/issues">Issues</a></dd>
+    </dl>
+  </div>
+</div><script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,700 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="Competitive Analysis" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://cyblow.github.io/pypaginate/comparison.html" />
+<meta property="og:site_name" content="pypaginate Documentation" />
+<meta property="og:description" content="pypaginate v0.2.0 vs the Python pagination ecosystem – an honest, benchmark-backed assessment. The Ecosystem:,,,, Library, Stars, Focus, Backends,,, fastapi-pagination, 1,635, Pagination, 19 (SA, B..." />
+<meta property="og:image" content="https://cyblow.github.io/pypaginate/_static/logo.svg" />
+<meta property="og:image:alt" content="pypaginate Documentation" />
+<meta name="description" content="pypaginate v0.2.0 vs the Python pagination ecosystem – an honest, benchmark-backed assessment. The Ecosystem:,,,, Library, Stars, Focus, Backends,,, fastapi-pagination, 1,635, Pagination, 19 (SA, B..." />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Competitive Analysis &mdash; pypaginate 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=e0a04398" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon.svg"/>
+    <link rel="canonical" href="https://cyblow.github.io/pypaginate/comparison.html" />
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=437722b7"></script>
+      <script src="_static/design-tabs.js?v=f930bc37"></script>
+      <script src="_static/custom.js?v=60c56439"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Performance Benchmarks" href="benchmarks.html" />
+    <link rel="prev" title="Contributor Covenant Code of Conduct" href="CODE_OF_CONDUCT.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pypaginate
+              <img src="_static/logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started/index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started/first-steps.html">First Steps</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pagination/index.html">Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pagination/offset.html">Offset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pagination/keyset.html">Cursor/Keyset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pagination/memory.html">In-Memory Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filtering/index.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filtering/basic.html">Basic Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filtering/json-logic.html">Nested Filter Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filtering/operators.html">Operators Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search/index.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search/text-search.html">Text Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search/fuzzy.html">Fuzzy Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sorting/index.html">Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sorting/basic.html">Basic Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sorting/multi-column.html">Multi-Column Sorting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="integrations/index.html">Framework Integrations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integrations/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integrations/sqlalchemy.html">SQLAlchemy Integration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/overview.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/pypaginate/index.html">pypaginate</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/basic-pagination.html">Basic Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/filtering.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/keyset.html">Keyset (Cursor) Pagination</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="concepts/index.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/pagination-strategies.html">Pagination Strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/cursor-encoding.html">Cursor Encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/filter-expressions.html">Filter Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/search-relevance.html">Search &amp; Relevance</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing/index.html">Contributing to pypaginate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing/development.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing/code-style.html">Code Style</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing/testing.html">Testing Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing/architecture.html">Architecture Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing/roadmap.html">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CODE_OF_CONDUCT.html">Contributor Covenant Code of Conduct</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Competitive Analysis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-ecosystem">The Ecosystem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#feature-comparison">Feature Comparison</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-benchmarks-10k-items">Performance Benchmarks (10K items)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#paginate-only-all-libraries-can-do-this">Paginate Only (all libraries can do this)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sa-paginate-sync-count-offset-limit-on-same-sqlite-db">SA Paginate Sync (COUNT + OFFSET/LIMIT on same SQLite DB)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#full-pipeline-filter-sort-paginate">Full Pipeline: filter + sort + paginate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sa-filter-where-clause-pagination">SA Filter (WHERE clause + pagination)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#overhead-breakdown-10k-items">Overhead Breakdown (10K items)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dx-comparison-endpoint-code">DX Comparison: Endpoint Code</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#with-fastapi-pagination-fastapi-filter-2-libraries">With fastapi-pagination + fastapi-filter (2 libraries)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#with-pypaginate-v0-2-0-1-library">With pypaginate v0.2.0 (1 library)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#comparison">Comparison</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#where-pypaginate-wins">Where pypaginate Wins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#where-pypaginate-lags">Where pypaginate Lags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#roadmap">Roadmap</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Performance Benchmarks</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pypaginate</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Competitive Analysis</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/CybLow/pypaginate/blob/main/docs/comparison.md" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="competitive-analysis">
+<h1>Competitive Analysis<a class="headerlink" href="#competitive-analysis" title="Link to this heading"></a></h1>
+<p>pypaginate v0.2.0 vs the Python pagination ecosystem – an honest, benchmark-backed assessment.</p>
+<hr class="docutils" />
+<section id="the-ecosystem">
+<h2>The Ecosystem<a class="headerlink" href="#the-ecosystem" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Library</p></th>
+<th class="head"><p>Stars</p></th>
+<th class="head"><p>Focus</p></th>
+<th class="head"><p>Backends</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/uriyyo/fastapi-pagination">fastapi-pagination</a></p></td>
+<td><p>1,635</p></td>
+<td><p>Pagination</p></td>
+<td><p>19 (SA, Beanie, Tortoise…)</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/arthurio/fastapi-filter">fastapi-filter</a></p></td>
+<td><p>302</p></td>
+<td><p>SA filtering</p></td>
+<td><p>SQLAlchemy, MongoEngine</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/djrobstep/sqlakeyset">sqlakeyset</a></p></td>
+<td><p>–</p></td>
+<td><p>Keyset pagination</p></td>
+<td><p>SQLAlchemy</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://github.com/wizeline/sqlalchemy-pagination">sqlalchemy-pagination</a></p></td>
+<td><p>80</p></td>
+<td><p>Offset pagination</p></td>
+<td><p>SQLAlchemy</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://github.com/Pylons/paginate">paginate</a></p></td>
+<td><p>–</p></td>
+<td><p>In-memory pagination</p></td>
+<td><p>Any sequence</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>pypaginate</strong></p></td>
+<td><p>–</p></td>
+<td><p><strong>All-in-one</strong></p></td>
+<td><p>Memory, SQLAlchemy, FastAPI</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<hr class="docutils" />
+<section id="feature-comparison">
+<h2>Feature Comparison<a class="headerlink" href="#feature-comparison" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Feature</p></th>
+<th class="head"><p>pypaginate</p></th>
+<th class="head"><p>fastapi-pagination</p></th>
+<th class="head"><p>fastapi-filter</p></th>
+<th class="head"><p>paginate-lib</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Offset pagination</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>yes</p></td>
+</tr>
+<tr class="row-odd"><td><p>Cursor/keyset pagination</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-even"><td><p>In-memory filtering (20 ops)</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-odd"><td><p>In-memory sorting (null-aware)</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-even"><td><p>In-memory search (fuzzy+Unicode)</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-odd"><td><p>SA filtering (WHERE)</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-even"><td><p>SA sorting (ORDER BY)</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-odd"><td><p>SA search (LIKE/ILIKE)</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-even"><td><p>Full pipeline (filter+sort+search+paginate)</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-odd"><td><p>Nested filter groups (And/Or)</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>partial</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-even"><td><p>Sync + async auto-detection</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-odd"><td><p>FastAPI integration</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-even"><td><p>msgspec fast pages</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-odd"><td><p>Type-safe (Elysia-style inference)</p></td>
+<td><p>yes</p></td>
+<td><p>partial</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mypy</span> <span class="pre">--strict</span></code></p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+<td><p>no</p></td>
+<td><p>no</p></td>
+</tr>
+</tbody>
+</table>
+<p>pypaginate is the only library that does filter + sort + search + paginate in one call.</p>
+</section>
+<hr class="docutils" />
+<section id="performance-benchmarks-10k-items">
+<h2>Performance Benchmarks (10K items)<a class="headerlink" href="#performance-benchmarks-10k-items" title="Link to this heading"></a></h2>
+<p>All benchmarks run on the same machine, same data, same operations.
+Competitors that cannot filter/sort use raw Python for those steps plus their own pagination.</p>
+<section id="paginate-only-all-libraries-can-do-this">
+<h3>Paginate Only (all libraries can do this)<a class="headerlink" href="#paginate-only-all-libraries-can-do-this" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Rank</p></th>
+<th class="head"><p>Library</p></th>
+<th class="head"><p>Median</p></th>
+<th class="head"><p>vs #1</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>#1</strong></p></td>
+<td><p><strong>pypaginate</strong></p></td>
+<td><p><strong>1.2 us</strong></p></td>
+<td><p>–</p></td>
+</tr>
+<tr class="row-odd"><td><p>#2</p></td>
+<td><p>paginate-lib</p></td>
+<td><p>1.4 us</p></td>
+<td><p>1.2x</p></td>
+</tr>
+<tr class="row-even"><td><p>#3</p></td>
+<td><p>fastapi-pagination</p></td>
+<td><p>44.5 us</p></td>
+<td><p>37.6x</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="sa-paginate-sync-count-offset-limit-on-same-sqlite-db">
+<h3>SA Paginate Sync (COUNT + OFFSET/LIMIT on same SQLite DB)<a class="headerlink" href="#sa-paginate-sync-count-offset-limit-on-same-sqlite-db" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Rank</p></th>
+<th class="head"><p>Library</p></th>
+<th class="head"><p>Median</p></th>
+<th class="head"><p>vs #1</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>#1</strong></p></td>
+<td><p><strong>pypaginate sync</strong></p></td>
+<td><p><strong>330 us</strong></p></td>
+<td><p>–</p></td>
+</tr>
+<tr class="row-odd"><td><p>#2</p></td>
+<td><p>sqlakeyset</p></td>
+<td><p>379 us</p></td>
+<td><p>1.1x</p></td>
+</tr>
+<tr class="row-even"><td><p>#3</p></td>
+<td><p>sqlalchemy-pagination</p></td>
+<td><p>487 us</p></td>
+<td><p>1.5x</p></td>
+</tr>
+<tr class="row-odd"><td><p>#4</p></td>
+<td><p>fastapi-pagination SA</p></td>
+<td><p>572 us</p></td>
+<td><p>1.7x</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="full-pipeline-filter-sort-paginate">
+<h3>Full Pipeline: filter + sort + paginate<a class="headerlink" href="#full-pipeline-filter-sort-paginate" title="Link to this heading"></a></h3>
+<p>All libraries do the same work. Competitors use raw Python for filter+sort, then their paginate.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Rank</p></th>
+<th class="head"><p>Library</p></th>
+<th class="head"><p>Median</p></th>
+<th class="head"><p>How filter+sort is done</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>#1</p></td>
+<td><p>paginate-lib</p></td>
+<td><p>682 us</p></td>
+<td><p>Raw Python list comp + sorted()</p></td>
+</tr>
+<tr class="row-odd"><td><p>#2</p></td>
+<td><p>fastapi-pagination</p></td>
+<td><p>756 us</p></td>
+<td><p>Raw Python list comp + sorted()</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>#3</strong></p></td>
+<td><p><strong>pypaginate</strong></p></td>
+<td><p><strong>2.50 ms</strong></p></td>
+<td><p>Built-in compiled pipeline</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why the gap?</strong> Competitors use raw Python list comprehension + <code class="docutils literal notranslate"><span class="pre">sorted()</span></code> for filter+sort – zero abstraction overhead. pypaginate uses compiled predicates + null-aware sorting – features that have a cost in CPython.</p>
+</section>
+<section id="sa-filter-where-clause-pagination">
+<h3>SA Filter (WHERE clause + pagination)<a class="headerlink" href="#sa-filter-where-clause-pagination" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Rank</p></th>
+<th class="head"><p>Library</p></th>
+<th class="head"><p>Median</p></th>
+<th class="head"><p>Note</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>#1</p></td>
+<td><p>fastapi-filter</p></td>
+<td><p>320 us</p></td>
+<td><p>Builds WHERE clause only (no COUNT/OFFSET)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>#2</strong></p></td>
+<td><p><strong>pypaginate SA</strong></p></td>
+<td><p><strong>816 us</strong></p></td>
+<td><p>Full pipeline (WHERE + COUNT + OFFSET/LIMIT)</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why the gap?</strong> fastapi-filter only builds the SQL WHERE clause – no database execution. pypaginate does the full pipeline: WHERE + COUNT + OFFSET/LIMIT.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="overhead-breakdown-10k-items">
+<h2>Overhead Breakdown (10K items)<a class="headerlink" href="#overhead-breakdown-10k-items" title="Link to this heading"></a></h2>
+<p>Paginate + serialize adds near-zero overhead. The HTTP layer dominates.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Step</p></th>
+<th class="head"><p>Filter</p></th>
+<th class="head"><p>Sort</p></th>
+<th class="head"><p>Search</p></th>
+<th class="head"><p>Paginate</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Ops only</p></td>
+<td><p>928 us</p></td>
+<td><p>1.73 ms</p></td>
+<td><p>8.98 ms</p></td>
+<td><p>1.2 us</p></td>
+</tr>
+<tr class="row-odd"><td><p>+ Paginate</p></td>
+<td><p>942 us (+14us)</p></td>
+<td><p>1.71 ms (+0)</p></td>
+<td><p>7.76 ms (+0)</p></td>
+<td><p>–</p></td>
+</tr>
+<tr class="row-even"><td><p>+ Serialize</p></td>
+<td><p>918 us (+0)</p></td>
+<td><p>1.78 ms (+71us)</p></td>
+<td><p>8.94 ms (+0)</p></td>
+<td><p>3.9 us (+2.7us)</p></td>
+</tr>
+<tr class="row-odd"><td><p>+ Full HTTP</p></td>
+<td><p>11.51 ms (+10.6ms)</p></td>
+<td><p>10.43 ms (+8.7ms)</p></td>
+<td><p>18.69 ms (+9.8ms)</p></td>
+<td><p>8.91 ms (+8.9ms)</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key finding:</strong> Paginate and serialize add essentially <strong>zero overhead</strong>. The HTTP layer (FastAPI request/response encoding) adds roughly 9ms constant – this is FastAPI’s cost, not pypaginate’s.</p>
+</section>
+<hr class="docutils" />
+<section id="dx-comparison-endpoint-code">
+<h2>DX Comparison: Endpoint Code<a class="headerlink" href="#dx-comparison-endpoint-code" title="Link to this heading"></a></h2>
+<section id="with-fastapi-pagination-fastapi-filter-2-libraries">
+<h3>With fastapi-pagination + fastapi-filter (2 libraries)<a class="headerlink" href="#with-fastapi-pagination-fastapi-filter-2-libraries" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_pagination</span><span class="w"> </span><span class="kn">import</span> <span class="n">Page</span><span class="p">,</span> <span class="n">add_pagination</span><span class="p">,</span> <span class="n">paginate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_filter</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilterDepends</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi_filter.contrib.sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Filter</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
+<span class="n">add_pagination</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">UserFilter</span><span class="p">(</span><span class="n">Filter</span><span class="p">):</span>
+    <span class="n">name__ilike</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">age__gte</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">class</span><span class="w"> </span><span class="nc">Constants</span><span class="p">(</span><span class="n">Filter</span><span class="o">.</span><span class="n">Constants</span><span class="p">):</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">User</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/users&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">Page</span><span class="p">[</span><span class="n">UserSchema</span><span class="p">])</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_users</span><span class="p">(</span>
+    <span class="n">user_filter</span><span class="p">:</span> <span class="n">UserFilter</span> <span class="o">=</span> <span class="n">FilterDepends</span><span class="p">(</span><span class="n">UserFilter</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="n">user_filter</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">User</span><span class="p">))</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">paginate</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-pypaginate-v0-2-0-1-library">
+<h3>With pypaginate v0.2.0 (1 library)<a class="headerlink" href="#with-pypaginate-v0-2-0-1-library" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">paginate</span><span class="p">,</span> <span class="n">OffsetParams</span><span class="p">,</span> <span class="n">FilterSpec</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.adapters.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">OffsetDep</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.adapters.sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQLAlchemyBackend</span><span class="p">,</span> <span class="n">SQLAlchemyFilterBackend</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.engine.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncPipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.engine.paginator</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncPaginator</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/users&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_users</span><span class="p">(</span>
+    <span class="n">params</span><span class="p">:</span> <span class="n">OffsetDep</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="n">AsyncSession</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_session</span><span class="p">),</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Query</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
+    <span class="n">min_age</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">Query</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span>
+<span class="p">):</span>
+    <span class="n">filters</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">name</span><span class="p">:</span>
+        <span class="n">filters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FilterSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">operator</span><span class="o">=</span><span class="s2">&quot;contains&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">name</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">min_age</span><span class="p">:</span>
+        <span class="n">filters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">FilterSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;age&quot;</span><span class="p">,</span> <span class="n">operator</span><span class="o">=</span><span class="s2">&quot;gte&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">min_age</span><span class="p">))</span>
+
+    <span class="n">backend</span> <span class="o">=</span> <span class="n">SQLAlchemyBackend</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+    <span class="n">pipeline</span> <span class="o">=</span> <span class="n">AsyncPipeline</span><span class="p">(</span>
+        <span class="n">AsyncPaginator</span><span class="p">(</span><span class="n">backend</span><span class="p">),</span>
+        <span class="n">filter_backend</span><span class="o">=</span><span class="n">SQLAlchemyFilterBackend</span><span class="p">(),</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">select</span><span class="p">(</span><span class="n">User</span><span class="p">),</span> <span class="n">params</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="comparison">
+<h3>Comparison<a class="headerlink" href="#comparison" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Aspect</p></th>
+<th class="head"><p>fastapi-pagination + filter</p></th>
+<th class="head"><p>pypaginate</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Libraries needed</p></td>
+<td><p>2</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-odd"><td><p>Filter declaration</p></td>
+<td><p>Declarative (class)</p></td>
+<td><p>Declarative (<code class="docutils literal notranslate"><span class="pre">FilterDep</span></code> with <code class="docutils literal notranslate"><span class="pre">FilterField</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p>Sorting</p></td>
+<td><p>Built into filter class</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SortDep</span></code> (<code class="docutils literal notranslate"><span class="pre">?sort=name,-age</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Search</p></td>
+<td><p>Basic (ilike only)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SearchDep</span></code> + full fuzzy/Unicode/tokens</p></td>
+</tr>
+<tr class="row-even"><td><p>Type safety</p></td>
+<td><p>Partial (string operators)</p></td>
+<td><p>Full (Literal types, protocols)</p></td>
+</tr>
+<tr class="row-odd"><td><p>In-memory support</p></td>
+<td><p>No</p></td>
+<td><p>Yes (same API)</p></td>
+</tr>
+<tr class="row-even"><td><p>Auto OpenAPI for filters</p></td>
+<td><p>Yes</p></td>
+<td><p>Yes (<code class="docutils literal notranslate"><span class="pre">FilterDep</span></code> generates OpenAPI via Pydantic)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Nested filter groups</p></td>
+<td><p>No</p></td>
+<td><p>Yes (And/Or builders)</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<hr class="docutils" />
+<section id="where-pypaginate-wins">
+<h2>Where pypaginate Wins<a class="headerlink" href="#where-pypaginate-wins" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Performance</strong>: #1 for pagination (1.2us vs paginate-lib 1.4us vs fp 44.5us).</p></li>
+<li><p><strong>SA Performance</strong>: Faster than sqlakeyset and raw SA pagination (330us vs 379us).</p></li>
+<li><p><strong>Unified library</strong>: Filter + sort + search + paginate in one <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span></code>.</p></li>
+<li><p><strong>Search</strong>: Only library with fuzzy matching, Unicode normalization, accent removal.</p></li>
+<li><p><strong>Type safety</strong>: <code class="docutils literal notranslate"><span class="pre">mypy</span> <span class="pre">--strict</span></code>, Elysia-style type inference, Literal operator types.</p></li>
+<li><p><strong>Architecture</strong>: Protocol-based backends, compile-once strategy, <code class="docutils literal notranslate"><span class="pre">__slots__</span></code> everywhere.</p></li>
+<li><p><strong>msgspec acceleration</strong>: Near-zero page construction with <code class="docutils literal notranslate"><span class="pre">pypaginate[fast]</span></code>.</p></li>
+<li><p><strong>Nested filters</strong>: <code class="docutils literal notranslate"><span class="pre">And()</span></code> / <code class="docutils literal notranslate"><span class="pre">Or()</span></code> groups up to 5 levels deep.</p></li>
+</ol>
+</section>
+<section id="where-pypaginate-lags">
+<h2>Where pypaginate Lags<a class="headerlink" href="#where-pypaginate-lags" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>DB backends</strong>: SQLAlchemy only (competitors support 19 backends).</p></li>
+<li><p><strong>Full pipeline speed</strong>: Behind competitors that use raw Python for filter+sort.</p></li>
+<li><p><strong>Zero-config middleware</strong>: No <code class="docutils literal notranslate"><span class="pre">add_pagination(app)</span></code> – explicit setup required.</p></li>
+</ol>
+</section>
+<section id="roadmap">
+<h2>Roadmap<a class="headerlink" href="#roadmap" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Version</p></th>
+<th class="head"><p>Focus</p></th>
+<th class="head"><p>Status</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>v0.2.0</strong></p></td>
+<td><p>Hexagonal architecture, protocol backends, unified paginate(), FilterDep, SortDep, SearchDep</p></td>
+<td><p><strong>Done</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>v0.3.0</strong></p></td>
+<td><p>JSON Logic parser, <code class="docutils literal notranslate"><span class="pre">add_pagination(app)</span></code>, HATEOAS links</p></td>
+<td><p>Planned</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>v0.4.0</strong></p></td>
+<td><p>Multi-backend (Beanie, Tortoise), additional ORM support</p></td>
+<td><p>Planned</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>v1.0.0</strong></p></td>
+<td><p>Rust core extension for 10x filter/search speed</p></td>
+<td><p>Planned</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="CODE_OF_CONDUCT.html" class="btn btn-neutral float-left" title="Contributor Covenant Code of Conduct" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="benchmarks.html" class="btn btn-neutral float-right" title="Performance Benchmarks" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024-2026 CybLow.
+      <span class="lastupdated">Last updated on Mar 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"></span>
+    v: 0.2.0
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>On GitHub</dt>
+      <dd><a href="https://github.com/CybLow/pypaginate">View Source</a></dd>
+      <dd><a href="https://github.com/CybLow/pypaginate/issues">Issues</a></dd>
+    </dl>
+  </div>
+</div><script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

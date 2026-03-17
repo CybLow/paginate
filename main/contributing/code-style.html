@@ -1,0 +1,605 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="Code Style" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://cyblow.github.io/pypaginate/contributing/code-style.html" />
+<meta property="og:site_name" content="pypaginate Documentation" />
+<meta property="og:description" content="Standards enforced across pypaginate by tooling, architecture tests, and convention. The canonical reference is CLAUDE.md in the repository root. This page summarizes the key rules. Tools:,,, Tool,..." />
+<meta property="og:image" content="https://cyblow.github.io/pypaginate/_static/logo.svg" />
+<meta property="og:image:alt" content="pypaginate Documentation" />
+<meta name="description" content="Standards enforced across pypaginate by tooling, architecture tests, and convention. The canonical reference is CLAUDE.md in the repository root. This page summarizes the key rules. Tools:,,, Tool,..." />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Code Style &mdash; pypaginate 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=e0a04398" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.svg"/>
+    <link rel="canonical" href="https://cyblow.github.io/pypaginate/contributing/code-style.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=437722b7"></script>
+      <script src="../_static/design-tabs.js?v=f930bc37"></script>
+      <script src="../_static/custom.js?v=60c56439"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Testing Guide" href="testing.html" />
+    <link rel="prev" title="Development Setup" href="development.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pypaginate
+              <img src="../_static/logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/first-steps.html">First Steps</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/index.html">Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/offset.html">Offset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/keyset.html">Cursor/Keyset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/memory.html">In-Memory Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/index.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/basic.html">Basic Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/json-logic.html">Nested Filter Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/operators.html">Operators Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/index.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/text-search.html">Text Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/fuzzy.html">Fuzzy Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sorting/index.html">Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sorting/basic.html">Basic Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sorting/multi-column.html">Multi-Column Sorting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Framework Integrations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/sqlalchemy.html">SQLAlchemy Integration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/overview.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/pypaginate/index.html">pypaginate</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/basic-pagination.html">Basic Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/filtering.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/keyset.html">Keyset (Cursor) Pagination</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/index.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/pagination-strategies.html">Pagination Strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/cursor-encoding.html">Cursor Encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/filter-expressions.html">Filter Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/search-relevance.html">Search &amp; Relevance</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Contributing to pypaginate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development.html">Development Setup</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Code Style</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#tools">Tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#run-all-checks">Run All Checks</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#hard-limits">Hard Limits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#python-version">Python Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#type-hints">Type Hints</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#required-for-all-public-apis">Required for All Public APIs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#use-protocols-not-base-classes">Use Protocols, Not Base Classes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#type-checking-for-import-only-types">TYPE_CHECKING for Import-Only Types</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#class-conventions">Class Conventions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#slots-on-every-class"><code class="docutils literal notranslate"><span class="pre">__slots__</span></code> on Every Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#no-boolean-parameters">No Boolean Parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#function-conventions">Function Conventions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#guard-clauses-no-deep-nesting">Guard Clauses (No Deep Nesting)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#verb-prefixes">Verb Prefixes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#naming">Naming</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#imports">Imports</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#order">Order</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#no-circular-imports">No Circular Imports</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#docstrings-google-style">Docstrings (Google Style)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-patterns">Performance Patterns</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#compile-once-apply-n">Compile-Once, Apply-N</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#lru-cache-for-pure-functions">LRU Cache for Pure Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#optional-dependencies">Optional Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#string-methods-over-regex">String Methods Over Regex</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="roadmap.html">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CODE_OF_CONDUCT.html">Contributor Covenant Code of Conduct</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../comparison.html">Competitive Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../benchmarks.html">Performance Benchmarks</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pypaginate</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Code Style</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/CybLow/pypaginate/blob/main/docs/contributing/code-style.md" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="code-style">
+<h1>Code Style<a class="headerlink" href="#code-style" title="Link to this heading"></a></h1>
+<p>Standards enforced across pypaginate by tooling, architecture tests, and convention.</p>
+<p>The canonical reference is <a class="reference external" href="https://github.com/CybLow/pypaginate/blob/main/CLAUDE.md">CLAUDE.md</a> in the repository root.
+This page summarizes the key rules.</p>
+<hr class="docutils" />
+<section id="tools">
+<h2>Tools<a class="headerlink" href="#tools" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Tool</p></th>
+<th class="head"><p>Purpose</p></th>
+<th class="head"><p>Command</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.astral.sh/ruff/">Ruff</a></p></td>
+<td><p>Lint + format</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">ruff</span> <span class="pre">check</span> <span class="pre">src/</span> <span class="pre">&amp;&amp;</span> <span class="pre">uv</span> <span class="pre">run</span> <span class="pre">ruff</span> <span class="pre">format</span> <span class="pre">.</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://mypy.readthedocs.io/">mypy</a></p></td>
+<td><p>Type checking (strict)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">mypy</span> <span class="pre">src/</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://docs.pytest.org/">pytest</a></p></td>
+<td><p>Testing</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">pytest</span> <span class="pre">tests/</span> <span class="pre">--ignore=tests/perf</span> <span class="pre">-q</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://bandit.readthedocs.io/">bandit</a></p></td>
+<td><p>Security scan</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">bandit</span> <span class="pre">-r</span> <span class="pre">src/</span> <span class="pre">-c</span> <span class="pre">pyproject.toml</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<section id="run-all-checks">
+<h3>Run All Checks<a class="headerlink" href="#run-all-checks" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>format<span class="w"> </span>.<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>check<span class="w"> </span>--fix<span class="w"> </span>.<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>mypy<span class="w"> </span>src/<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/<span class="w"> </span>--ignore<span class="o">=</span>tests/perf<span class="w"> </span>-q
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="hard-limits">
+<h2>Hard Limits<a class="headerlink" href="#hard-limits" title="Link to this heading"></a></h2>
+<p>Enforced by <code class="docutils literal notranslate"><span class="pre">tests/architecture/test_file_limits.py</span></code>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Metric</p></th>
+<th class="head"><p>Hard Limit</p></th>
+<th class="head"><p>Preferred</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Lines per file (code, excl. comments/docstrings)</p></td>
+<td><p><strong>250</strong></p></td>
+<td><p>180</p></td>
+</tr>
+<tr class="row-odd"><td><p>Lines per function (body, excl. docstring)</p></td>
+<td><p><strong>15</strong></p></td>
+<td><p>10</p></td>
+</tr>
+<tr class="row-even"><td><p>Lines per class</p></td>
+<td><p><strong>250</strong></p></td>
+<td><p>150</p></td>
+</tr>
+<tr class="row-odd"><td><p>Parameters per function</p></td>
+<td><p><strong>4</strong></p></td>
+<td><p>3</p></td>
+</tr>
+<tr class="row-even"><td><p>Indentation levels</p></td>
+<td><p><strong>2</strong></p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-odd"><td><p>Public methods per class</p></td>
+<td><p>10</p></td>
+<td><p>5-7</p></td>
+</tr>
+<tr class="row-even"><td><p>Instance attributes</p></td>
+<td><p>5</p></td>
+<td><p>3-4</p></td>
+</tr>
+<tr class="row-odd"><td><p>Cyclomatic complexity</p></td>
+<td><p>10</p></td>
+<td><p>5</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<hr class="docutils" />
+<section id="python-version">
+<h2>Python Version<a class="headerlink" href="#python-version" title="Link to this heading"></a></h2>
+<p><strong>Python 3.11+</strong> required. Use modern syntax:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>  <span class="c1"># Required in all files</span>
+
+<span class="n">X</span> <span class="o">|</span> <span class="kc">None</span>          <span class="c1"># Not Optional[X]</span>
+<span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>         <span class="c1"># Not List[str]</span>
+<span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>    <span class="c1"># Not Dict[str, int]</span>
+<span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>   <span class="c1"># Not Tuple[int, str]</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="type-hints">
+<h2>Type Hints<a class="headerlink" href="#type-hints" title="Link to this heading"></a></h2>
+<section id="required-for-all-public-apis">
+<h3>Required for All Public APIs<a class="headerlink" href="#required-for-all-public-apis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">apply_filters</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span>
+    <span class="n">filters</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FilterSpec</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span> <span class="o">...</span>
+</pre></div>
+</div>
+</section>
+<section id="use-protocols-not-base-classes">
+<h3>Use Protocols, Not Base Classes<a class="headerlink" href="#use-protocols-not-base-classes" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># GOOD -- structural typing</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PaginationBackend</span><span class="p">(</span><span class="n">Protocol</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span>
+
+<span class="c1"># BAD -- inheritance coupling</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BasePaginationBackend</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span>
+</pre></div>
+</div>
+</section>
+<section id="type-checking-for-import-only-types">
+<h3>TYPE_CHECKING for Import-Only Types<a class="headerlink" href="#type-checking-for-import-only-types" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.ext.asyncio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncSession</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="class-conventions">
+<h2>Class Conventions<a class="headerlink" href="#class-conventions" title="Link to this heading"></a></h2>
+<section id="slots-on-every-class">
+<h3><code class="docutils literal notranslate"><span class="pre">__slots__</span></code> on Every Class<a class="headerlink" href="#slots-on-every-class" title="Link to this heading"></a></h3>
+<p>Every class with instance attributes <strong>must</strong> have <code class="docutils literal notranslate"><span class="pre">__slots__</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">SQLAlchemyBackend</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">ItemT</span><span class="p">]):</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;_count_query&quot;</span><span class="p">,</span> <span class="s2">&quot;_session&quot;</span><span class="p">,</span> <span class="s2">&quot;_unique&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">AsyncSession</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_session</span> <span class="o">=</span> <span class="n">session</span>
+</pre></div>
+</div>
+<p>Stateless classes use empty slots:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">SQLAlchemySearchBackend</span><span class="p">:</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="no-boolean-parameters">
+<h3>No Boolean Parameters<a class="headerlink" href="#no-boolean-parameters" title="Link to this heading"></a></h3>
+<p>Use enums or separate methods:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># BAD</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">paginate</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">clamp</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span> <span class="o">...</span>
+
+<span class="c1"># GOOD</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OverflowStrategy</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">CLAMP</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+    <span class="n">EMPTY</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">paginate</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overflow</span><span class="p">:</span> <span class="n">OverflowStrategy</span> <span class="o">=</span> <span class="n">OverflowStrategy</span><span class="o">.</span><span class="n">EMPTY</span><span class="p">):</span> <span class="o">...</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="function-conventions">
+<h2>Function Conventions<a class="headerlink" href="#function-conventions" title="Link to this heading"></a></h2>
+<section id="guard-clauses-no-deep-nesting">
+<h3>Guard Clauses (No Deep Nesting)<a class="headerlink" href="#guard-clauses-no-deep-nesting" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># BAD -- deep nesting</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">data</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;valid&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;order&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Result</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+<span class="c1"># GOOD -- guard clauses</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;valid&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;order&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">Result</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="verb-prefixes">
+<h3>Verb Prefixes<a class="headerlink" href="#verb-prefixes" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Prefix</p></th>
+<th class="head"><p>Returns</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">get_*</span></code></p></td>
+<td><p>Value or raises</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">get_user(id)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">find_*</span></code></p></td>
+<td><p>Value or None</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">find_user_by_email(email)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">create_*</span></code></p></td>
+<td><p>New object</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">create_default_registry()</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">compile_*</span></code></p></td>
+<td><p>Reusable callable</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">compile_accessor(&quot;user.name&quot;)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">apply_*</span></code></p></td>
+<td><p>Transformed input</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">apply_filters(query,</span> <span class="pre">specs)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">build_*</span></code></p></td>
+<td><p>Constructed object</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">build_sort_key(field,</span> <span class="pre">dir,</span> <span class="pre">nulls)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">is_*</span></code> / <code class="docutils literal notranslate"><span class="pre">has_*</span></code></p></td>
+<td><p>bool</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">is_active()</span></code>, <code class="docutils literal notranslate"><span class="pre">has_items()</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<hr class="docutils" />
+<section id="naming">
+<h2>Naming<a class="headerlink" href="#naming" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Element</p></th>
+<th class="head"><p>Convention</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Files</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">snake_case.py</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">filter_engine.py</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Classes</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">PascalCase</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SQLAlchemyBackend</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Functions</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">snake_case</span></code> + verb</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">apply_filters()</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Constants</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UPPER_SNAKE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MAX_LIMIT</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Private</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">_leading_underscore</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">self._session</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Type vars</p></td>
+<td><p>Single uppercase or <code class="docutils literal notranslate"><span class="pre">*T</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">T</span></code>, <code class="docutils literal notranslate"><span class="pre">ItemT</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<hr class="docutils" />
+<section id="imports">
+<h2>Imports<a class="headerlink" href="#imports" title="Link to this heading"></a></h2>
+<section id="order">
+<h3>Order<a class="headerlink" href="#order" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>          <span class="c1"># 1. Future annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>                            <span class="c1"># 2. Stdlib</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.domain.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilterLogic</span>  <span class="c1"># 3. Local</span>
+</pre></div>
+</div>
+</section>
+<section id="no-circular-imports">
+<h3>No Circular Imports<a class="headerlink" href="#no-circular-imports" title="Link to this heading"></a></h3>
+<p>Use <code class="docutils literal notranslate"><span class="pre">TYPE_CHECKING</span></code> guard for type-only imports:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.domain.specs</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilterSpec</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="docstrings-google-style">
+<h2>Docstrings (Google Style)<a class="headerlink" href="#docstrings-google-style" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">apply_filters</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span>
+    <span class="n">filters</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">FilterSpec</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply filter specs to a SQLAlchemy Select.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        query: A SQLAlchemy Select statement.</span>
+<span class="sd">        filters: Filter specifications to apply.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Modified Select with WHERE clauses.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        FilterError: If the operator is unsupported.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="performance-patterns">
+<h2>Performance Patterns<a class="headerlink" href="#performance-patterns" title="Link to this heading"></a></h2>
+<section id="compile-once-apply-n">
+<h3>Compile-Once, Apply-N<a class="headerlink" href="#compile-once-apply-n" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># BAD -- per-item work</span>
+<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+    <span class="n">segments</span> <span class="o">=</span> <span class="n">field_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">:</span> <span class="o">...</span>
+
+<span class="c1"># GOOD -- compile once</span>
+<span class="n">accessor</span> <span class="o">=</span> <span class="n">compile_accessor</span><span class="p">(</span><span class="n">field_path</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">accessor</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="lru-cache-for-pure-functions">
+<h3>LRU Cache for Pure Functions<a class="headerlink" href="#lru-cache-for-pure-functions" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">8192</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">normalize_text</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+</pre></div>
+</div>
+</section>
+<section id="optional-dependencies">
+<h3>Optional Dependencies<a class="headerlink" href="#optional-dependencies" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">rapidfuzz</span><span class="w"> </span><span class="kn">import</span> <span class="n">fuzz</span> <span class="k">as</span> <span class="n">_fuzz</span>
+    <span class="n">_HAS_RAPIDFUZZ</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
+    <span class="n">_HAS_RAPIDFUZZ</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># pragma: no cover</span>
+</pre></div>
+</div>
+</section>
+<section id="string-methods-over-regex">
+<h3>String Methods Over Regex<a class="headerlink" href="#string-methods-over-regex" title="Link to this heading"></a></h3>
+<p>For simple patterns, use string methods (2-10x faster than regex/fnmatch).</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="development.html" class="btn btn-neutral float-left" title="Development Setup" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="testing.html" class="btn btn-neutral float-right" title="Testing Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024-2026 CybLow.
+      <span class="lastupdated">Last updated on Mar 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"></span>
+    v: 0.2.0
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>On GitHub</dt>
+      <dd><a href="https://github.com/CybLow/pypaginate">View Source</a></dd>
+      <dd><a href="https://github.com/CybLow/pypaginate/issues">Issues</a></dd>
+    </dl>
+  </div>
+</div><script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

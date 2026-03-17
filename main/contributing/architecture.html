@@ -1,0 +1,443 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="Architecture Guide" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://cyblow.github.io/pypaginate/contributing/architecture.html" />
+<meta property="og:site_name" content="pypaginate Documentation" />
+<meta property="og:description" content="How pypaginate is structured and why. Hexagonal Architecture: pypaginate follows a hexagonal (ports and adapters) architecture. The core domain defines protocols (ports), and adapters implement the..." />
+<meta property="og:image" content="https://cyblow.github.io/pypaginate/_static/logo.svg" />
+<meta property="og:image:alt" content="pypaginate Documentation" />
+<meta name="description" content="How pypaginate is structured and why. Hexagonal Architecture: pypaginate follows a hexagonal (ports and adapters) architecture. The core domain defines protocols (ports), and adapters implement the..." />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Architecture Guide &mdash; pypaginate 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=e0a04398" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.svg"/>
+    <link rel="canonical" href="https://cyblow.github.io/pypaginate/contributing/architecture.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=437722b7"></script>
+      <script src="../_static/design-tabs.js?v=f930bc37"></script>
+      <script src="../_static/custom.js?v=60c56439"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Roadmap" href="roadmap.html" />
+    <link rel="prev" title="Testing Guide" href="testing.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pypaginate
+              <img src="../_static/logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/first-steps.html">First Steps</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/index.html">Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/offset.html">Offset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/keyset.html">Cursor/Keyset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/memory.html">In-Memory Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/index.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/basic.html">Basic Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/json-logic.html">Nested Filter Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/operators.html">Operators Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/index.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/text-search.html">Text Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/fuzzy.html">Fuzzy Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sorting/index.html">Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sorting/basic.html">Basic Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sorting/multi-column.html">Multi-Column Sorting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Framework Integrations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/sqlalchemy.html">SQLAlchemy Integration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/overview.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/pypaginate/index.html">pypaginate</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/basic-pagination.html">Basic Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/filtering.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/keyset.html">Keyset (Cursor) Pagination</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/index.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/pagination-strategies.html">Pagination Strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/cursor-encoding.html">Cursor Encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/filter-expressions.html">Filter Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/search-relevance.html">Search &amp; Relevance</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="index.html">Contributing to pypaginate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="development.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="code-style.html">Code Style</a></li>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Architecture Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#hexagonal-architecture">Hexagonal Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#directory-structure">Directory Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#layer-rules">Layer Rules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#key-design-patterns">Key Design Patterns</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#protocol-based-backends-dependency-inversion">Protocol-Based Backends (Dependency Inversion)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#elysia-style-type-inference">Elysia-Style Type Inference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compile-once-apply-n-strategy-pattern">Compile-Once, Apply-N (Strategy Pattern)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#optional-acceleration">Optional Acceleration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#adding-a-new-feature">Adding a New Feature</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="roadmap.html">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CODE_OF_CONDUCT.html">Contributor Covenant Code of Conduct</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../comparison.html">Competitive Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../benchmarks.html">Performance Benchmarks</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pypaginate</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Architecture Guide</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/CybLow/pypaginate/blob/main/docs/contributing/architecture.md" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="architecture-guide">
+<h1>Architecture Guide<a class="headerlink" href="#architecture-guide" title="Link to this heading"></a></h1>
+<p>How pypaginate is structured and why.</p>
+<hr class="docutils" />
+<section id="hexagonal-architecture">
+<h2>Hexagonal Architecture<a class="headerlink" href="#hexagonal-architecture" title="Link to this heading"></a></h2>
+<p>pypaginate follows a <strong>hexagonal (ports and adapters)</strong> architecture. The core
+domain defines protocols (ports), and adapters implement them for specific
+backends (SQLAlchemy, FastAPI, in-memory).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>                    ┌──────────────────────────┐
+                    │    FastAPI Adapters       │
+                    │  OffsetDep, FilterDep,    │
+                    │  SortDep, SearchDep       │
+                    └────────────┬─────────────┘
+                                 │
+┌───────────────┐    ┌───────────┴───────────┐    ┌──────────────────┐
+│  SA Adapters  │    │      Engine Layer      │    │  Memory Adapters │
+│  Backend,     ├───►│  Paginator, Pipeline,  │◄───┤  MemoryBackend,  │
+│  Filter,      │    │  CursorPaginator       │    │  FilterEngine,   │
+│  Sort, Search │    └───────────┬───────────┘    │  SortEngine      │
+└───────────────┘                │                 └──────────────────┘
+                     ┌───────────┴───────────┐
+                     │     Domain Layer       │
+                     │  Specs, Params, Pages, │
+                     │  Protocols, Enums,     │
+                     │  Exceptions            │
+                     └────────────────────────┘
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="directory-structure">
+<h2>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>src/pypaginate/
+├── __init__.py          # Public API (exports paginate, pages, params, specs)
+├── _dispatch.py         # Universal paginate() -- type overloads + auto-detection
+│
+├── domain/              # Pure domain -- Pydantic models + protocols
+│   ├── enums.py         # SortDirection, FilterLogic, FuzzyMode, SearchFieldMode, etc.
+│   ├── exceptions.py    # PaginationError hierarchy
+│   ├── pages.py         # OffsetPage, CursorPage (result types)
+│   ├── fast_pages.py    # msgspec.Struct pages (optional acceleration)
+│   ├── params.py        # OffsetParams, CursorParams (input types)
+│   ├── protocols.py     # PaginationBackend, CursorBackend, FilterBackend, etc.
+│   └── specs.py         # FilterSpec, SortSpec, SearchSpec, FilterGroup
+│
+├── engine/              # Core orchestration (backend-agnostic)
+│   ├── paginator.py     # Paginator, AsyncPaginator (offset)
+│   ├── pipeline.py      # SyncPipeline, AsyncPipeline (filter+sort+search+paginate)
+│   └── cursor.py        # AsyncCursorPaginator (keyset)
+│
+├── filtering/           # In-memory filter engine + operators
+│   ├── accessor.py      # compile_accessor() -- field path resolution
+│   ├── engine.py        # FilterEngine (compiled predicates)
+│   ├── operators.py     # Eq, Gt, Like, Regex, Between, etc.
+│   ├── registry.py      # OperatorRegistry + create_default_registry()
+│   ├── like.py          # LIKE pattern classification
+│   └── regex.py         # Optional google-re2 wrapper
+│
+├── sorting/             # In-memory sort engine
+│   ├── engine.py        # SortEngine (stable multi-key)
+│   └── keys.py          # build_sort_key() with null handling
+│
+├── search/              # In-memory search engine
+│   ├── engine.py        # SearchEngine (token-based relevance)
+│   ├── matching.py      # matches_field(), fuzzy_score()
+│   └── parser.py        # TokenParser (shlex-based)
+│
+├── text/                # Text utilities
+│   └── normalize.py     # normalize_text() -- LRU cached + ASCII fast path
+│
+└── adapters/            # Backend implementations
+    ├── memory/          # In-memory (list, tuple) -- MemoryBackend
+    ├── sqlalchemy/      # SQLAlchemy ORM (sync + async)
+    │   ├── backend.py   # SQLAlchemyBackend, SyncSQLAlchemyBackend
+    │   ├── cursor.py    # SQLAlchemyCursorBackend, SyncSQLAlchemyCursorBackend
+    │   ├── filters.py   # SQLAlchemyFilterBackend
+    │   ├── sorting.py   # SQLAlchemySortBackend
+    │   ├── search.py    # SQLAlchemySearchBackend
+    │   └── columns.py   # resolve_column() -- ORM column resolution
+    └── fastapi/         # FastAPI dependency injection
+        ├── dependencies.py  # OffsetDep, CursorDep
+        ├── filters.py       # FilterDep, FilterField
+        ├── sorting.py       # SortDep
+        └── search.py        # SearchDep
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="layer-rules">
+<h2>Layer Rules<a class="headerlink" href="#layer-rules" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Layer</p></th>
+<th class="head"><p>May Import</p></th>
+<th class="head"><p>Must Not Import</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Domain</strong></p></td>
+<td><p>pydantic only</p></td>
+<td><p>Engine, Adapters, Text</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Engine</strong></p></td>
+<td><p>Domain</p></td>
+<td><p>Adapters</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Filtering/Sorting/Search</strong></p></td>
+<td><p>Domain, Text</p></td>
+<td><p>Adapters</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Adapters</strong></p></td>
+<td><p>Domain, Filtering, Sorting, Search</p></td>
+<td><p>Engine (uses protocols)</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Dispatch</strong></p></td>
+<td><p>Domain, Engine, Adapters</p></td>
+<td><p>–</p></td>
+</tr>
+</tbody>
+</table>
+<p>These rules are enforced by <code class="docutils literal notranslate"><span class="pre">tests/architecture/test_imports.py</span></code>.</p>
+<p><strong>Key principle:</strong> The domain layer has <strong>zero</strong> external dependencies beyond
+Pydantic. It defines protocols that adapters implement. The engine layer depends
+only on domain abstractions, never on concrete adapters.</p>
+</section>
+<hr class="docutils" />
+<section id="key-design-patterns">
+<h2>Key Design Patterns<a class="headerlink" href="#key-design-patterns" title="Link to this heading"></a></h2>
+<section id="protocol-based-backends-dependency-inversion">
+<h3>Protocol-Based Backends (Dependency Inversion)<a class="headerlink" href="#protocol-based-backends-dependency-inversion" title="Link to this heading"></a></h3>
+<p>Backends implement protocols, not base classes. Any class with matching method
+signatures satisfies the protocol – no inheritance required.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># domain/protocols.py -- the contract</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PaginationBackend</span><span class="p">(</span><span class="n">Protocol</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span> <span class="o">...</span>
+
+<span class="c1"># adapters/sqlalchemy/backend.py -- one implementation</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SQLAlchemyBackend</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">ItemT</span><span class="p">]):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span> <span class="o">...</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ItemT</span><span class="p">]:</span> <span class="o">...</span>
+</pre></div>
+</div>
+<p>Six protocols are defined in <code class="docutils literal notranslate"><span class="pre">domain/protocols.py</span></code>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Protocol</p></th>
+<th class="head"><p>Methods</p></th>
+<th class="head"><p>Implementations</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PaginationBackend[T]</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">count</span></code>, <code class="docutils literal notranslate"><span class="pre">fetch</span></code> (async)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SQLAlchemyBackend</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SyncPaginationBackend[T]</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">count</span></code>, <code class="docutils literal notranslate"><span class="pre">fetch</span></code> (sync)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SyncSQLAlchemyBackend</span></code>, <code class="docutils literal notranslate"><span class="pre">MemoryBackend</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CursorBackend[T]</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fetch_page</span></code> (async)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SQLAlchemyCursorBackend</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FilterBackend</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">apply_filters</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SQLAlchemyFilterBackend</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SortBackend</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">apply_sorting</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SQLAlchemySortBackend</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SearchBackend</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">apply_search</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SQLAlchemySearchBackend</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="elysia-style-type-inference">
+<h3>Elysia-Style Type Inference<a class="headerlink" href="#elysia-style-type-inference" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">paginate()</span></code> function uses input type to determine output type:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">paginate</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">OffsetParams</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>            <span class="c1"># -&gt; OffsetPage[T]</span>
+<span class="n">paginate</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">CursorParams</span><span class="p">(</span><span class="o">...</span><span class="p">),</span> <span class="n">backend</span><span class="o">=</span><span class="n">b</span><span class="p">)</span> <span class="c1"># -&gt; CursorPage[T]</span>
+</pre></div>
+</div>
+<p>This is implemented via <code class="docutils literal notranslate"><span class="pre">&#64;overload</span></code> signatures in <code class="docutils literal notranslate"><span class="pre">_dispatch.py</span></code>.</p>
+</section>
+<section id="compile-once-apply-n-strategy-pattern">
+<h3>Compile-Once, Apply-N (Strategy Pattern)<a class="headerlink" href="#compile-once-apply-n-strategy-pattern" title="Link to this heading"></a></h3>
+<p>Specs are compiled into closures once, then applied to every item:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">accessor</span> <span class="o">=</span> <span class="n">compile_accessor</span><span class="p">(</span><span class="s2">&quot;user.profile.email&quot;</span><span class="p">)</span>  <span class="c1"># O(1) -- splits once</span>
+<span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">accessor</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>  <span class="c1"># O(1) per call, no string split</span>
+</pre></div>
+</div>
+</section>
+<section id="optional-acceleration">
+<h3>Optional Acceleration<a class="headerlink" href="#optional-acceleration" title="Link to this heading"></a></h3>
+<p>Optional dependencies follow the try/except import pattern:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">rapidfuzz</span><span class="w"> </span><span class="kn">import</span> <span class="n">fuzz</span> <span class="k">as</span> <span class="n">_fuzz</span>
+    <span class="n">_HAS_RAPIDFUZZ</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">_HAS_RAPIDFUZZ</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+</div>
+<p>Used for: <code class="docutils literal notranslate"><span class="pre">rapidfuzz</span></code> (search), <code class="docutils literal notranslate"><span class="pre">msgspec</span></code> (page construction), <code class="docutils literal notranslate"><span class="pre">google-re2</span></code> (regex safety).</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="adding-a-new-feature">
+<h2>Adding a New Feature<a class="headerlink" href="#adding-a-new-feature" title="Link to this heading"></a></h2>
+<ol class="arabic">
+<li><p><strong>Read</strong> existing code in the target module</p></li>
+<li><p><strong>Check</strong> similar implementations for patterns to follow</p></li>
+<li><p><strong>Keep</strong> functions &lt;=15 lines, files &lt;=250 lines (code only)</p></li>
+<li><p><strong>Add</strong> <code class="docutils literal notranslate"><span class="pre">__slots__</span></code> to any new class with instance attributes</p></li>
+<li><p><strong>Write</strong> tests in the matching <code class="docutils literal notranslate"><span class="pre">tests/unit/</span></code> directory</p></li>
+<li><p><strong>Run</strong> all quality checks:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>format<span class="w"> </span>.<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>check<span class="w"> </span>--fix<span class="w"> </span>.<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>mypy<span class="w"> </span>src/<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/<span class="w"> </span>--ignore<span class="o">=</span>tests/perf<span class="w"> </span>-q
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="testing.html" class="btn btn-neutral float-left" title="Testing Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="roadmap.html" class="btn btn-neutral float-right" title="Roadmap" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024-2026 CybLow.
+      <span class="lastupdated">Last updated on Mar 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"></span>
+    v: 0.2.0
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>On GitHub</dt>
+      <dd><a href="https://github.com/CybLow/pypaginate">View Source</a></dd>
+      <dd><a href="https://github.com/CybLow/pypaginate/issues">Issues</a></dd>
+    </dl>
+  </div>
+</div><script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

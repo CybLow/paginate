@@ -1,0 +1,1859 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Index &mdash; pypaginate 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=e0a04398" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon.svg"/>
+    <link rel="canonical" href="https://cyblow.github.io/pypaginate/genindex.html" />
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=437722b7"></script>
+      <script src="_static/design-tabs.js?v=f930bc37"></script>
+      <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10.6.0/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}`;
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        all_mermaids.forEach((el) => {
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+        await mermaid.run();
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);</script>
+      <script src="_static/custom.js?v=60c56439"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="#" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            pypaginate
+              <img src="_static/logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started/index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started/first-steps.html">First Steps</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pagination/index.html">Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pagination/offset.html">Offset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pagination/keyset.html">Cursor/Keyset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pagination/memory.html">In-Memory Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filtering/index.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filtering/basic.html">Basic Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filtering/json-logic.html">Nested Filter Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="filtering/operators.html">Operators Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search/index.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search/text-search.html">Text Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="search/fuzzy.html">Fuzzy Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sorting/index.html">Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sorting/basic.html">Basic Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sorting/multi-column.html">Multi-Column Sorting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="integrations/index.html">Framework Integrations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integrations/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integrations/sqlalchemy.html">SQLAlchemy Integration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/overview.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/pypaginate/index.html">pypaginate</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/basic-pagination.html">Basic Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/filtering.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/keyset.html">Keyset (Cursor) Pagination</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="concepts/index.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/pagination-strategies.html">Pagination Strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/cursor-encoding.html">Cursor Encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/filter-expressions.html">Filter Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="concepts/search-relevance.html">Search &amp; Relevance</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contributing/index.html">Contributing to pypaginate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing/development.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing/code-style.html">Code Style</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing/testing.html">Testing Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing/architecture.html">Architecture Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing/roadmap.html">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CODE_OF_CONDUCT.html">Contributor Covenant Code of Conduct</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="comparison.html">Competitive Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Performance Benchmarks</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">pypaginate</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Index</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/CybLow/pypaginate/blob/main/docs/genindex" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+
+<h1 id="index">Index</h1>
+
+<div class="genindex-jumpbox">
+ <a href="#A"><strong>A</strong></a>
+ | <a href="#B"><strong>B</strong></a>
+ | <a href="#C"><strong>C</strong></a>
+ | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
+ | <a href="#F"><strong>F</strong></a>
+ | <a href="#G"><strong>G</strong></a>
+ | <a href="#I"><strong>I</strong></a>
+ | <a href="#L"><strong>L</strong></a>
+ | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
+ | <a href="#O"><strong>O</strong></a>
+ | <a href="#P"><strong>P</strong></a>
+ | <a href="#R"><strong>R</strong></a>
+ | <a href="#S"><strong>S</strong></a>
+ | <a href="#T"><strong>T</strong></a>
+ | <a href="#V"><strong>V</strong></a>
+ 
+</div>
+<h2 id="A">A</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/index.html#pypaginate.And">And() (in module pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/specs/index.html#pypaginate.domain.specs.And">(in module pypaginate.domain.specs)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/filtering/engine/index.html#pypaginate.filtering.engine.FilterEngine.apply">apply() (pypaginate.filtering.engine.FilterEngine method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/filtering/index.html#pypaginate.filtering.FilterEngine.apply">(pypaginate.filtering.FilterEngine method)</a>
+</li>
+        <li><a href="api/pypaginate/search/engine/index.html#pypaginate.search.engine.SearchEngine.apply">(pypaginate.search.engine.SearchEngine method)</a>
+</li>
+        <li><a href="api/pypaginate/search/index.html#pypaginate.search.SearchEngine.apply">(pypaginate.search.SearchEngine method)</a>
+</li>
+        <li><a href="api/pypaginate/sorting/engine/index.html#pypaginate.sorting.engine.SortEngine.apply">(pypaginate.sorting.engine.SortEngine method)</a>
+</li>
+        <li><a href="api/pypaginate/sorting/index.html#pypaginate.sorting.SortEngine.apply">(pypaginate.sorting.SortEngine method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/memory/filters/index.html#pypaginate.adapters.memory.filters.MemoryFilterBackend.apply_filters">apply_filters() (pypaginate.adapters.memory.filters.MemoryFilterBackend method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/memory/index.html#pypaginate.adapters.memory.MemoryFilterBackend.apply_filters">(pypaginate.adapters.memory.MemoryFilterBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/filters/index.html#pypaginate.adapters.sqlalchemy.filters.SQLAlchemyFilterBackend.apply_filters">(pypaginate.adapters.sqlalchemy.filters.SQLAlchemyFilterBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SQLAlchemyFilterBackend.apply_filters">(pypaginate.adapters.sqlalchemy.SQLAlchemyFilterBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/domain/protocols/index.html#pypaginate.domain.protocols.FilterBackend.apply_filters">(pypaginate.domain.protocols.FilterBackend method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/adapters/memory/index.html#pypaginate.adapters.memory.MemorySearchBackend.apply_search">apply_search() (pypaginate.adapters.memory.MemorySearchBackend static method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/memory/search/index.html#pypaginate.adapters.memory.search.MemorySearchBackend.apply_search">(pypaginate.adapters.memory.search.MemorySearchBackend static method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/search/index.html#pypaginate.adapters.sqlalchemy.search.SQLAlchemySearchBackend.apply_search">(pypaginate.adapters.sqlalchemy.search.SQLAlchemySearchBackend static method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SQLAlchemySearchBackend.apply_search">(pypaginate.adapters.sqlalchemy.SQLAlchemySearchBackend static method)</a>
+</li>
+        <li><a href="api/pypaginate/domain/protocols/index.html#pypaginate.domain.protocols.SearchBackend.apply_search">(pypaginate.domain.protocols.SearchBackend static method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/memory/index.html#pypaginate.adapters.memory.MemorySortBackend.apply_sorting">apply_sorting() (pypaginate.adapters.memory.MemorySortBackend static method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/memory/sorting/index.html#pypaginate.adapters.memory.sorting.MemorySortBackend.apply_sorting">(pypaginate.adapters.memory.sorting.MemorySortBackend static method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/sorting/index.html#pypaginate.adapters.sqlalchemy.sorting.SQLAlchemySortBackend.apply_sorting">(pypaginate.adapters.sqlalchemy.sorting.SQLAlchemySortBackend static method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SQLAlchemySortBackend.apply_sorting">(pypaginate.adapters.sqlalchemy.SQLAlchemySortBackend static method)</a>
+</li>
+        <li><a href="api/pypaginate/domain/protocols/index.html#pypaginate.domain.protocols.SortBackend.apply_sorting">(pypaginate.domain.protocols.SortBackend static method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/engine/cursor/index.html#pypaginate.engine.cursor.AsyncCursorPaginator">AsyncCursorPaginator (class in pypaginate.engine.cursor)</a>
+</li>
+      <li><a href="api/pypaginate/engine/paginator/index.html#pypaginate.engine.paginator.AsyncPaginator">AsyncPaginator (class in pypaginate.engine.paginator)</a>
+</li>
+      <li><a href="api/pypaginate/engine/pipeline/index.html#pypaginate.engine.pipeline.AsyncPipeline">AsyncPipeline (class in pypaginate.engine.pipeline)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="B">B</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/domain/pages/index.html#pypaginate.domain.pages.BasePage">BasePage (class in pypaginate.domain.pages)</a>
+</li>
+      <li><a href="api/pypaginate/domain/params/index.html#pypaginate.domain.params.BaseParams">BaseParams (class in pypaginate.domain.params)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Between">Between (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/adapters/sqlalchemy/keyset/index.html#pypaginate.adapters.sqlalchemy.keyset.build_keyset_condition">build_keyset_condition() (in module pypaginate.adapters.sqlalchemy.keyset)</a>
+</li>
+      <li><a href="api/pypaginate/sorting/keys/index.html#pypaginate.sorting.keys.build_sort_key">build_sort_key() (in module pypaginate.sorting.keys)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="C">C</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/domain/params/index.html#pypaginate.domain.params.OffsetParams.clamp">clamp() (pypaginate.domain.params.OffsetParams method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/index.html#pypaginate.OffsetParams.clamp">(pypaginate.OffsetParams method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/filtering/like/index.html#pypaginate.filtering.like.classify_like">classify_like() (in module pypaginate.filtering.like)</a>
+</li>
+      <li><a href="api/pypaginate/text/normalize/index.html#pypaginate.text.normalize.clear_normalize_cache">clear_normalize_cache() (in module pypaginate.text.normalize)</a>
+</li>
+      <li><a href="api/pypaginate/filtering/accessor/index.html#pypaginate.filtering.accessor.compile_accessor">compile_accessor() (in module pypaginate.filtering.accessor)</a>
+</li>
+      <li><a href="api/pypaginate/filtering/accessor/index.html#pypaginate.filtering.accessor.compile_dict_accessor">compile_dict_accessor() (in module pypaginate.filtering.accessor)</a>
+</li>
+      <li><a href="api/pypaginate/filtering/regex/index.html#pypaginate.filtering.regex.compile_pattern">compile_pattern() (in module pypaginate.filtering.regex)</a>
+</li>
+      <li><a href="api/pypaginate/domain/exceptions/index.html#pypaginate.domain.exceptions.ConfigurationError">ConfigurationError</a>, <a href="api/pypaginate/index.html#pypaginate.ConfigurationError">[1]</a>
+</li>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Contains">Contains (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/adapters/memory/backend/index.html#pypaginate.adapters.memory.backend.MemoryBackend.count">count() (pypaginate.adapters.memory.backend.MemoryBackend method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/memory/index.html#pypaginate.adapters.memory.MemoryBackend.count">(pypaginate.adapters.memory.MemoryBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/backend/index.html#pypaginate.adapters.sqlalchemy.backend.SQLAlchemyBackend.count">(pypaginate.adapters.sqlalchemy.backend.SQLAlchemyBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/backend/index.html#pypaginate.adapters.sqlalchemy.backend.SyncSQLAlchemyBackend.count">(pypaginate.adapters.sqlalchemy.backend.SyncSQLAlchemyBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SQLAlchemyBackend.count">(pypaginate.adapters.sqlalchemy.SQLAlchemyBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SyncSQLAlchemyBackend.count">(pypaginate.adapters.sqlalchemy.SyncSQLAlchemyBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/domain/protocols/index.html#pypaginate.domain.protocols.PaginationBackend.count">(pypaginate.domain.protocols.PaginationBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/domain/protocols/index.html#pypaginate.domain.protocols.SyncPaginationBackend.count">(pypaginate.domain.protocols.SyncPaginationBackend method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/index.html#pypaginate.CursorPage.create">create() (pypaginate.CursorPage class method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/pages/index.html#pypaginate.domain.pages.CursorPage.create">(pypaginate.domain.pages.CursorPage class method)</a>
+</li>
+        <li><a href="api/pypaginate/domain/pages/index.html#pypaginate.domain.pages.OffsetPage.create">(pypaginate.domain.pages.OffsetPage class method)</a>
+</li>
+        <li><a href="api/pypaginate/index.html#pypaginate.OffsetPage.create">(pypaginate.OffsetPage class method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/filtering/index.html#pypaginate.filtering.create_default_registry">create_default_registry() (in module pypaginate.filtering)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/filtering/registry/index.html#pypaginate.filtering.registry.create_default_registry">(in module pypaginate.filtering.registry)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/domain/protocols/index.html#pypaginate.domain.protocols.CursorBackend">CursorBackend (class in pypaginate.domain.protocols)</a>
+</li>
+      <li><a href="api/pypaginate/adapters/fastapi/index.html#pypaginate.adapters.fastapi.CursorDep">CursorDep (in module pypaginate.adapters.fastapi)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/fastapi/dependencies/index.html#pypaginate.adapters.fastapi.dependencies.CursorDep">(in module pypaginate.adapters.fastapi.dependencies)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/index.html#pypaginate.CursorPage">CursorPage (class in pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/pages/index.html#pypaginate.domain.pages.CursorPage">(class in pypaginate.domain.pages)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/index.html#pypaginate.CursorParams">CursorParams (class in pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/params/index.html#pypaginate.domain.params.CursorParams">(class in pypaginate.domain.params)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="D">D</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/engine/cursor_codec/index.html#pypaginate.engine.cursor_codec.decode_cursor">decode_cursor() (in module pypaginate.engine.cursor_codec)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Empty">Empty (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/engine/cursor_codec/index.html#pypaginate.engine.cursor_codec.encode_cursor">encode_cursor() (in module pypaginate.engine.cursor_codec)</a>
+</li>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.EndsWith">EndsWith (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Eq">Eq (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Between.evaluate">evaluate() (pypaginate.filtering.operators.Between static method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Contains.evaluate">(pypaginate.filtering.operators.Contains static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Empty.evaluate">(pypaginate.filtering.operators.Empty static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.EndsWith.evaluate">(pypaginate.filtering.operators.EndsWith static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Eq.evaluate">(pypaginate.filtering.operators.Eq static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Exists.evaluate">(pypaginate.filtering.operators.Exists static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Gt.evaluate">(pypaginate.filtering.operators.Gt static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Gte.evaluate">(pypaginate.filtering.operators.Gte static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.ILike.evaluate">(pypaginate.filtering.operators.ILike static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.In.evaluate">(pypaginate.filtering.operators.In static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.IsNotNull.evaluate">(pypaginate.filtering.operators.IsNotNull static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.IsNull.evaluate">(pypaginate.filtering.operators.IsNull static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Like.evaluate">(pypaginate.filtering.operators.Like static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Lt.evaluate">(pypaginate.filtering.operators.Lt static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Lte.evaluate">(pypaginate.filtering.operators.Lte static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Ne.evaluate">(pypaginate.filtering.operators.Ne static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.NotEmpty.evaluate">(pypaginate.filtering.operators.NotEmpty static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.NotIn.evaluate">(pypaginate.filtering.operators.NotIn static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Operator.evaluate">(pypaginate.filtering.operators.Operator static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Regex.evaluate">(pypaginate.filtering.operators.Regex static method)</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.StartsWith.evaluate">(pypaginate.filtering.operators.StartsWith static method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/engine/pipeline/index.html#pypaginate.engine.pipeline.AsyncPipeline.execute">execute() (pypaginate.engine.pipeline.AsyncPipeline method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/engine/pipeline/index.html#pypaginate.engine.pipeline.SyncPipeline.execute">(pypaginate.engine.pipeline.SyncPipeline method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Exists">Exists (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/adapters/sqlalchemy/keyset/index.html#pypaginate.adapters.sqlalchemy.keyset.extract_order_columns">extract_order_columns() (in module pypaginate.adapters.sqlalchemy.keyset)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="F">F</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/domain/fast_pages/index.html#pypaginate.domain.fast_pages.FastCursorPage">FastCursorPage (class in pypaginate.domain.fast_pages)</a>
+</li>
+      <li><a href="api/pypaginate/domain/fast_pages/index.html#pypaginate.domain.fast_pages.FastOffsetPage">FastOffsetPage (class in pypaginate.domain.fast_pages)</a>
+</li>
+      <li><a href="api/pypaginate/adapters/memory/backend/index.html#pypaginate.adapters.memory.backend.MemoryBackend.fetch">fetch() (pypaginate.adapters.memory.backend.MemoryBackend method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/memory/index.html#pypaginate.adapters.memory.MemoryBackend.fetch">(pypaginate.adapters.memory.MemoryBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/backend/index.html#pypaginate.adapters.sqlalchemy.backend.SQLAlchemyBackend.fetch">(pypaginate.adapters.sqlalchemy.backend.SQLAlchemyBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/backend/index.html#pypaginate.adapters.sqlalchemy.backend.SyncSQLAlchemyBackend.fetch">(pypaginate.adapters.sqlalchemy.backend.SyncSQLAlchemyBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SQLAlchemyBackend.fetch">(pypaginate.adapters.sqlalchemy.SQLAlchemyBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SyncSQLAlchemyBackend.fetch">(pypaginate.adapters.sqlalchemy.SyncSQLAlchemyBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/domain/protocols/index.html#pypaginate.domain.protocols.PaginationBackend.fetch">(pypaginate.domain.protocols.PaginationBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/domain/protocols/index.html#pypaginate.domain.protocols.SyncPaginationBackend.fetch">(pypaginate.domain.protocols.SyncPaginationBackend method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/sqlalchemy/cursor/index.html#pypaginate.adapters.sqlalchemy.cursor.SQLAlchemyCursorBackend.fetch_page">fetch_page() (pypaginate.adapters.sqlalchemy.cursor.SQLAlchemyCursorBackend method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/cursor/index.html#pypaginate.adapters.sqlalchemy.cursor.SyncSQLAlchemyCursorBackend.fetch_page">(pypaginate.adapters.sqlalchemy.cursor.SyncSQLAlchemyCursorBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SQLAlchemyCursorBackend.fetch_page">(pypaginate.adapters.sqlalchemy.SQLAlchemyCursorBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SyncSQLAlchemyCursorBackend.fetch_page">(pypaginate.adapters.sqlalchemy.SyncSQLAlchemyCursorBackend method)</a>
+</li>
+        <li><a href="api/pypaginate/domain/protocols/index.html#pypaginate.domain.protocols.CursorBackend.fetch_page">(pypaginate.domain.protocols.CursorBackend method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/domain/protocols/index.html#pypaginate.domain.protocols.FilterBackend">FilterBackend (class in pypaginate.domain.protocols)</a>
+</li>
+      <li><a href="api/pypaginate/adapters/fastapi/index.html#pypaginate.adapters.fastapi.FilterDep">FilterDep (class in pypaginate.adapters.fastapi)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/fastapi/filters/index.html#pypaginate.adapters.fastapi.filters.FilterDep">(class in pypaginate.adapters.fastapi.filters)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/filtering/index.html#pypaginate.filtering.FilterEngine">FilterEngine (class in pypaginate.filtering)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/filtering/engine/index.html#pypaginate.filtering.engine.FilterEngine">(class in pypaginate.filtering.engine)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/domain/exceptions/index.html#pypaginate.domain.exceptions.FilterError">FilterError</a>, <a href="api/pypaginate/index.html#pypaginate.FilterError">[1]</a>
+</li>
+      <li><a href="api/pypaginate/adapters/fastapi/index.html#pypaginate.adapters.fastapi.FilterField">FilterField() (in module pypaginate.adapters.fastapi)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/fastapi/filters/index.html#pypaginate.adapters.fastapi.filters.FilterField">(in module pypaginate.adapters.fastapi.filters)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/index.html#pypaginate.FilterGroup">FilterGroup (class in pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/specs/index.html#pypaginate.domain.specs.FilterGroup">(class in pypaginate.domain.specs)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/domain/specs/index.html#pypaginate.domain.specs.FilterInput">FilterInput (in module pypaginate.domain.specs)</a>
+</li>
+      <li><a href="api/pypaginate/index.html#pypaginate.FilterLogic">FilterLogic (class in pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/enums/index.html#pypaginate.domain.enums.FilterLogic">(class in pypaginate.domain.enums)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/domain/specs/index.html#pypaginate.domain.specs.FilterOperator">FilterOperator (in module pypaginate.domain.specs)</a>
+</li>
+      <li><a href="api/pypaginate/index.html#pypaginate.FilterSpec">FilterSpec (class in pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/specs/index.html#pypaginate.domain.specs.FilterSpec">(class in pypaginate.domain.specs)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/domain/exceptions/index.html#pypaginate.domain.exceptions.FilterValidationError">FilterValidationError</a>, <a href="api/pypaginate/index.html#pypaginate.FilterValidationError">[1]</a>
+</li>
+      <li><a href="api/pypaginate/search/matching/index.html#pypaginate.search.matching.fuzzy_score">fuzzy_score() (in module pypaginate.search.matching)</a>
+</li>
+      <li><a href="api/pypaginate/index.html#pypaginate.FuzzyMode">FuzzyMode (class in pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/enums/index.html#pypaginate.domain.enums.FuzzyMode">(class in pypaginate.domain.enums)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="G">G</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/filtering/index.html#pypaginate.filtering.OperatorRegistry.get">get() (pypaginate.filtering.OperatorRegistry method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/filtering/registry/index.html#pypaginate.filtering.registry.OperatorRegistry.get">(pypaginate.filtering.registry.OperatorRegistry method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Gt">Gt (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Gte">Gte (class in pypaginate.filtering.operators)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.ILike">ILike (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.In">In (class in pypaginate.filtering.operators)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.IsNotNull">IsNotNull (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.IsNull">IsNull (class in pypaginate.filtering.operators)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="L">L</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Like">Like (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/filtering/like/index.html#pypaginate.filtering.like.like_to_glob">like_to_glob() (in module pypaginate.filtering.like)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Lt">Lt (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Lte">Lte (class in pypaginate.filtering.operators)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="M">M</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/filtering/like/index.html#pypaginate.filtering.like.match_ilike">match_ilike() (in module pypaginate.filtering.like)</a>
+</li>
+      <li><a href="api/pypaginate/filtering/like/index.html#pypaginate.filtering.like.match_like">match_like() (in module pypaginate.filtering.like)</a>
+</li>
+      <li><a href="api/pypaginate/search/matching/index.html#pypaginate.search.matching.matches_field">matches_field() (in module pypaginate.search.matching)</a>
+</li>
+      <li><a href="api/pypaginate/domain/params/index.html#pypaginate.domain.params.MAX_LIMIT">MAX_LIMIT (in module pypaginate.domain.params)</a>
+</li>
+      <li><a href="api/pypaginate/adapters/memory/index.html#pypaginate.adapters.memory.MemoryBackend">MemoryBackend (class in pypaginate.adapters.memory)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/memory/backend/index.html#pypaginate.adapters.memory.backend.MemoryBackend">(class in pypaginate.adapters.memory.backend)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/memory/index.html#pypaginate.adapters.memory.MemoryFilterBackend">MemoryFilterBackend (class in pypaginate.adapters.memory)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/memory/filters/index.html#pypaginate.adapters.memory.filters.MemoryFilterBackend">(class in pypaginate.adapters.memory.filters)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/memory/index.html#pypaginate.adapters.memory.MemorySearchBackend">MemorySearchBackend (class in pypaginate.adapters.memory)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/memory/search/index.html#pypaginate.adapters.memory.search.MemorySearchBackend">(class in pypaginate.adapters.memory.search)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/memory/index.html#pypaginate.adapters.memory.MemorySortBackend">MemorySortBackend (class in pypaginate.adapters.memory)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/memory/sorting/index.html#pypaginate.adapters.memory.sorting.MemorySortBackend">(class in pypaginate.adapters.memory.sorting)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/fastapi/index.html#pypaginate.adapters.fastapi.FilterDep.model_config">model_config (pypaginate.adapters.fastapi.FilterDep attribute)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/fastapi/filters/index.html#pypaginate.adapters.fastapi.filters.FilterDep.model_config">(pypaginate.adapters.fastapi.filters.FilterDep attribute)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/fastapi/search/index.html#pypaginate.adapters.fastapi.search.SearchDep.model_config">(pypaginate.adapters.fastapi.search.SearchDep attribute)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/fastapi/index.html#pypaginate.adapters.fastapi.SearchDep.model_config">(pypaginate.adapters.fastapi.SearchDep attribute)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/fastapi/index.html#pypaginate.adapters.fastapi.SortDep.model_config">(pypaginate.adapters.fastapi.SortDep attribute)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/fastapi/sorting/index.html#pypaginate.adapters.fastapi.sorting.SortDep.model_config">(pypaginate.adapters.fastapi.sorting.SortDep attribute)</a>
+</li>
+        <li><a href="api/pypaginate/domain/pages/index.html#pypaginate.domain.pages.BasePage.model_config">(pypaginate.domain.pages.BasePage attribute)</a>
+</li>
+        <li><a href="api/pypaginate/domain/params/index.html#pypaginate.domain.params.BaseParams.model_config">(pypaginate.domain.params.BaseParams attribute)</a>
+</li>
+        <li><a href="api/pypaginate/domain/specs/index.html#pypaginate.domain.specs.FilterGroup.model_config">(pypaginate.domain.specs.FilterGroup attribute)</a>
+</li>
+        <li><a href="api/pypaginate/domain/specs/index.html#pypaginate.domain.specs.FilterSpec.model_config">(pypaginate.domain.specs.FilterSpec attribute)</a>
+</li>
+        <li><a href="api/pypaginate/domain/specs/index.html#pypaginate.domain.specs.SearchSpec.model_config">(pypaginate.domain.specs.SearchSpec attribute)</a>
+</li>
+        <li><a href="api/pypaginate/domain/specs/index.html#pypaginate.domain.specs.SortSpec.model_config">(pypaginate.domain.specs.SortSpec attribute)</a>
+</li>
+        <li><a href="api/pypaginate/index.html#pypaginate.FilterGroup.model_config">(pypaginate.FilterGroup attribute)</a>
+</li>
+        <li><a href="api/pypaginate/index.html#pypaginate.FilterSpec.model_config">(pypaginate.FilterSpec attribute)</a>
+</li>
+        <li><a href="api/pypaginate/index.html#pypaginate.SearchSpec.model_config">(pypaginate.SearchSpec attribute)</a>
+</li>
+        <li><a href="api/pypaginate/index.html#pypaginate.SortSpec.model_config">(pypaginate.SortSpec attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/domain/fast_pages/index.html#pypaginate.domain.fast_pages.FastCursorPage.model_dump">model_dump() (pypaginate.domain.fast_pages.FastCursorPage method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/fast_pages/index.html#pypaginate.domain.fast_pages.FastOffsetPage.model_dump">(pypaginate.domain.fast_pages.FastOffsetPage method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/domain/fast_pages/index.html#pypaginate.domain.fast_pages.FastCursorPage.model_dump_json">model_dump_json() (pypaginate.domain.fast_pages.FastCursorPage method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/fast_pages/index.html#pypaginate.domain.fast_pages.FastOffsetPage.model_dump_json">(pypaginate.domain.fast_pages.FastOffsetPage method)</a>
+</li>
+      </ul></li>
+      <li>
+    module
+
+      <ul>
+        <li><a href="api/pypaginate/index.html#module-pypaginate">pypaginate</a>
+</li>
+        <li><a href="api/pypaginate/adapters/index.html#module-pypaginate.adapters">pypaginate.adapters</a>
+</li>
+        <li><a href="api/pypaginate/adapters/fastapi/index.html#module-pypaginate.adapters.fastapi">pypaginate.adapters.fastapi</a>
+</li>
+        <li><a href="api/pypaginate/adapters/fastapi/dependencies/index.html#module-pypaginate.adapters.fastapi.dependencies">pypaginate.adapters.fastapi.dependencies</a>
+</li>
+        <li><a href="api/pypaginate/adapters/fastapi/filters/index.html#module-pypaginate.adapters.fastapi.filters">pypaginate.adapters.fastapi.filters</a>
+</li>
+        <li><a href="api/pypaginate/adapters/fastapi/search/index.html#module-pypaginate.adapters.fastapi.search">pypaginate.adapters.fastapi.search</a>
+</li>
+        <li><a href="api/pypaginate/adapters/fastapi/sorting/index.html#module-pypaginate.adapters.fastapi.sorting">pypaginate.adapters.fastapi.sorting</a>
+</li>
+        <li><a href="api/pypaginate/adapters/memory/index.html#module-pypaginate.adapters.memory">pypaginate.adapters.memory</a>
+</li>
+        <li><a href="api/pypaginate/adapters/memory/backend/index.html#module-pypaginate.adapters.memory.backend">pypaginate.adapters.memory.backend</a>
+</li>
+        <li><a href="api/pypaginate/adapters/memory/filters/index.html#module-pypaginate.adapters.memory.filters">pypaginate.adapters.memory.filters</a>
+</li>
+        <li><a href="api/pypaginate/adapters/memory/search/index.html#module-pypaginate.adapters.memory.search">pypaginate.adapters.memory.search</a>
+</li>
+        <li><a href="api/pypaginate/adapters/memory/sorting/index.html#module-pypaginate.adapters.memory.sorting">pypaginate.adapters.memory.sorting</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#module-pypaginate.adapters.sqlalchemy">pypaginate.adapters.sqlalchemy</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/backend/index.html#module-pypaginate.adapters.sqlalchemy.backend">pypaginate.adapters.sqlalchemy.backend</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/columns/index.html#module-pypaginate.adapters.sqlalchemy.columns">pypaginate.adapters.sqlalchemy.columns</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/cursor/index.html#module-pypaginate.adapters.sqlalchemy.cursor">pypaginate.adapters.sqlalchemy.cursor</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/filters/index.html#module-pypaginate.adapters.sqlalchemy.filters">pypaginate.adapters.sqlalchemy.filters</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/keyset/index.html#module-pypaginate.adapters.sqlalchemy.keyset">pypaginate.adapters.sqlalchemy.keyset</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/search/index.html#module-pypaginate.adapters.sqlalchemy.search">pypaginate.adapters.sqlalchemy.search</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/sorting/index.html#module-pypaginate.adapters.sqlalchemy.sorting">pypaginate.adapters.sqlalchemy.sorting</a>
+</li>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/types/index.html#module-pypaginate.adapters.sqlalchemy.types">pypaginate.adapters.sqlalchemy.types</a>
+</li>
+        <li><a href="api/pypaginate/domain/index.html#module-pypaginate.domain">pypaginate.domain</a>
+</li>
+        <li><a href="api/pypaginate/domain/enums/index.html#module-pypaginate.domain.enums">pypaginate.domain.enums</a>
+</li>
+        <li><a href="api/pypaginate/domain/exceptions/index.html#module-pypaginate.domain.exceptions">pypaginate.domain.exceptions</a>
+</li>
+        <li><a href="api/pypaginate/domain/fast_pages/index.html#module-pypaginate.domain.fast_pages">pypaginate.domain.fast_pages</a>
+</li>
+        <li><a href="api/pypaginate/domain/pages/index.html#module-pypaginate.domain.pages">pypaginate.domain.pages</a>
+</li>
+        <li><a href="api/pypaginate/domain/params/index.html#module-pypaginate.domain.params">pypaginate.domain.params</a>
+</li>
+        <li><a href="api/pypaginate/domain/protocols/index.html#module-pypaginate.domain.protocols">pypaginate.domain.protocols</a>
+</li>
+        <li><a href="api/pypaginate/domain/specs/index.html#module-pypaginate.domain.specs">pypaginate.domain.specs</a>
+</li>
+        <li><a href="api/pypaginate/engine/index.html#module-pypaginate.engine">pypaginate.engine</a>
+</li>
+        <li><a href="api/pypaginate/engine/cursor/index.html#module-pypaginate.engine.cursor">pypaginate.engine.cursor</a>
+</li>
+        <li><a href="api/pypaginate/engine/cursor_codec/index.html#module-pypaginate.engine.cursor_codec">pypaginate.engine.cursor_codec</a>
+</li>
+        <li><a href="api/pypaginate/engine/paginator/index.html#module-pypaginate.engine.paginator">pypaginate.engine.paginator</a>
+</li>
+        <li><a href="api/pypaginate/engine/pipeline/index.html#module-pypaginate.engine.pipeline">pypaginate.engine.pipeline</a>
+</li>
+        <li><a href="api/pypaginate/filtering/index.html#module-pypaginate.filtering">pypaginate.filtering</a>
+</li>
+        <li><a href="api/pypaginate/filtering/accessor/index.html#module-pypaginate.filtering.accessor">pypaginate.filtering.accessor</a>
+</li>
+        <li><a href="api/pypaginate/filtering/engine/index.html#module-pypaginate.filtering.engine">pypaginate.filtering.engine</a>
+</li>
+        <li><a href="api/pypaginate/filtering/like/index.html#module-pypaginate.filtering.like">pypaginate.filtering.like</a>
+</li>
+        <li><a href="api/pypaginate/filtering/operators/index.html#module-pypaginate.filtering.operators">pypaginate.filtering.operators</a>
+</li>
+        <li><a href="api/pypaginate/filtering/regex/index.html#module-pypaginate.filtering.regex">pypaginate.filtering.regex</a>
+</li>
+        <li><a href="api/pypaginate/filtering/registry/index.html#module-pypaginate.filtering.registry">pypaginate.filtering.registry</a>
+</li>
+        <li><a href="api/pypaginate/search/index.html#module-pypaginate.search">pypaginate.search</a>
+</li>
+        <li><a href="api/pypaginate/search/engine/index.html#module-pypaginate.search.engine">pypaginate.search.engine</a>
+</li>
+        <li><a href="api/pypaginate/search/matching/index.html#module-pypaginate.search.matching">pypaginate.search.matching</a>
+</li>
+        <li><a href="api/pypaginate/search/parser/index.html#module-pypaginate.search.parser">pypaginate.search.parser</a>
+</li>
+        <li><a href="api/pypaginate/sorting/index.html#module-pypaginate.sorting">pypaginate.sorting</a>
+</li>
+        <li><a href="api/pypaginate/sorting/engine/index.html#module-pypaginate.sorting.engine">pypaginate.sorting.engine</a>
+</li>
+        <li><a href="api/pypaginate/sorting/keys/index.html#module-pypaginate.sorting.keys">pypaginate.sorting.keys</a>
+</li>
+        <li><a href="api/pypaginate/text/index.html#module-pypaginate.text">pypaginate.text</a>
+</li>
+        <li><a href="api/pypaginate/text/normalize/index.html#module-pypaginate.text.normalize">pypaginate.text.normalize</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Ne">Ne (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/text/normalize/index.html#pypaginate.text.normalize.normalize_text">normalize_text() (in module pypaginate.text.normalize)</a>
+</li>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.NotEmpty">NotEmpty (class in pypaginate.filtering.operators)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.NotIn">NotIn (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/index.html#pypaginate.NullsPosition">NullsPosition (class in pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/enums/index.html#pypaginate.domain.enums.NullsPosition">(class in pypaginate.domain.enums)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="O">O</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/domain/params/index.html#pypaginate.domain.params.OffsetParams.offset">offset (pypaginate.domain.params.OffsetParams property)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/index.html#pypaginate.OffsetParams.offset">(pypaginate.OffsetParams property)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/fastapi/index.html#pypaginate.adapters.fastapi.OffsetDep">OffsetDep (in module pypaginate.adapters.fastapi)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/fastapi/dependencies/index.html#pypaginate.adapters.fastapi.dependencies.OffsetDep">(in module pypaginate.adapters.fastapi.dependencies)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/index.html#pypaginate.OffsetPage">OffsetPage (class in pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/pages/index.html#pypaginate.domain.pages.OffsetPage">(class in pypaginate.domain.pages)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/index.html#pypaginate.OffsetParams">OffsetParams (class in pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/params/index.html#pypaginate.domain.params.OffsetParams">(class in pypaginate.domain.params)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Operator">Operator (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/filtering/index.html#pypaginate.filtering.OperatorRegistry">OperatorRegistry (class in pypaginate.filtering)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/filtering/registry/index.html#pypaginate.filtering.registry.OperatorRegistry">(class in pypaginate.filtering.registry)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/index.html#pypaginate.Or">Or() (in module pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/specs/index.html#pypaginate.domain.specs.Or">(in module pypaginate.domain.specs)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/sqlalchemy/keyset/index.html#pypaginate.adapters.sqlalchemy.keyset.OrderColumn.order_clause">order_clause (pypaginate.adapters.sqlalchemy.keyset.OrderColumn property)</a>
+</li>
+      <li><a href="api/pypaginate/adapters/sqlalchemy/keyset/index.html#pypaginate.adapters.sqlalchemy.keyset.OrderColumn">OrderColumn (class in pypaginate.adapters.sqlalchemy.keyset)</a>
+</li>
+      <li><a href="api/pypaginate/index.html#pypaginate.OverflowStrategy">OverflowStrategy (class in pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/enums/index.html#pypaginate.domain.enums.OverflowStrategy">(class in pypaginate.domain.enums)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="P">P</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/index.html#pypaginate.paginate">paginate() (in module pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/engine/cursor/index.html#pypaginate.engine.cursor.AsyncCursorPaginator.paginate">(pypaginate.engine.cursor.AsyncCursorPaginator method)</a>
+</li>
+        <li><a href="api/pypaginate/engine/paginator/index.html#pypaginate.engine.paginator.AsyncPaginator.paginate">(pypaginate.engine.paginator.AsyncPaginator method)</a>
+</li>
+        <li><a href="api/pypaginate/engine/paginator/index.html#pypaginate.engine.paginator.Paginator.paginate">(pypaginate.engine.paginator.Paginator method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/domain/protocols/index.html#pypaginate.domain.protocols.PaginationBackend">PaginationBackend (class in pypaginate.domain.protocols)</a>
+</li>
+      <li><a href="api/pypaginate/domain/exceptions/index.html#pypaginate.domain.exceptions.PaginationError">PaginationError</a>, <a href="api/pypaginate/index.html#pypaginate.PaginationError">[1]</a>
+</li>
+      <li><a href="api/pypaginate/engine/paginator/index.html#pypaginate.engine.paginator.Paginator">Paginator (class in pypaginate.engine.paginator)</a>
+</li>
+      <li><a href="api/pypaginate/search/parser/index.html#pypaginate.search.parser.TokenParser.parse">parse() (pypaginate.search.parser.TokenParser method)</a>
+</li>
+      <li>
+    pypaginate
+
+      <ul>
+        <li><a href="api/pypaginate/index.html#module-pypaginate">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/index.html#module-pypaginate.adapters">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.fastapi
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/fastapi/index.html#module-pypaginate.adapters.fastapi">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.fastapi.dependencies
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/fastapi/dependencies/index.html#module-pypaginate.adapters.fastapi.dependencies">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.fastapi.filters
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/fastapi/filters/index.html#module-pypaginate.adapters.fastapi.filters">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.fastapi.search
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/fastapi/search/index.html#module-pypaginate.adapters.fastapi.search">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.fastapi.sorting
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/fastapi/sorting/index.html#module-pypaginate.adapters.fastapi.sorting">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.memory
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/memory/index.html#module-pypaginate.adapters.memory">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.memory.backend
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/memory/backend/index.html#module-pypaginate.adapters.memory.backend">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.memory.filters
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/memory/filters/index.html#module-pypaginate.adapters.memory.filters">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.memory.search
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/memory/search/index.html#module-pypaginate.adapters.memory.search">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.memory.sorting
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/memory/sorting/index.html#module-pypaginate.adapters.memory.sorting">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.sqlalchemy
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#module-pypaginate.adapters.sqlalchemy">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.sqlalchemy.backend
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/backend/index.html#module-pypaginate.adapters.sqlalchemy.backend">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.sqlalchemy.columns
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/columns/index.html#module-pypaginate.adapters.sqlalchemy.columns">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.sqlalchemy.cursor
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/cursor/index.html#module-pypaginate.adapters.sqlalchemy.cursor">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.sqlalchemy.filters
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/filters/index.html#module-pypaginate.adapters.sqlalchemy.filters">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.sqlalchemy.keyset
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/keyset/index.html#module-pypaginate.adapters.sqlalchemy.keyset">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.sqlalchemy.search
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/search/index.html#module-pypaginate.adapters.sqlalchemy.search">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.sqlalchemy.sorting
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/sorting/index.html#module-pypaginate.adapters.sqlalchemy.sorting">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.adapters.sqlalchemy.types
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/types/index.html#module-pypaginate.adapters.sqlalchemy.types">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.domain
+
+      <ul>
+        <li><a href="api/pypaginate/domain/index.html#module-pypaginate.domain">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.domain.enums
+
+      <ul>
+        <li><a href="api/pypaginate/domain/enums/index.html#module-pypaginate.domain.enums">module</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    pypaginate.domain.exceptions
+
+      <ul>
+        <li><a href="api/pypaginate/domain/exceptions/index.html#module-pypaginate.domain.exceptions">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.domain.fast_pages
+
+      <ul>
+        <li><a href="api/pypaginate/domain/fast_pages/index.html#module-pypaginate.domain.fast_pages">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.domain.pages
+
+      <ul>
+        <li><a href="api/pypaginate/domain/pages/index.html#module-pypaginate.domain.pages">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.domain.params
+
+      <ul>
+        <li><a href="api/pypaginate/domain/params/index.html#module-pypaginate.domain.params">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.domain.protocols
+
+      <ul>
+        <li><a href="api/pypaginate/domain/protocols/index.html#module-pypaginate.domain.protocols">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.domain.specs
+
+      <ul>
+        <li><a href="api/pypaginate/domain/specs/index.html#module-pypaginate.domain.specs">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.engine
+
+      <ul>
+        <li><a href="api/pypaginate/engine/index.html#module-pypaginate.engine">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.engine.cursor
+
+      <ul>
+        <li><a href="api/pypaginate/engine/cursor/index.html#module-pypaginate.engine.cursor">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.engine.cursor_codec
+
+      <ul>
+        <li><a href="api/pypaginate/engine/cursor_codec/index.html#module-pypaginate.engine.cursor_codec">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.engine.paginator
+
+      <ul>
+        <li><a href="api/pypaginate/engine/paginator/index.html#module-pypaginate.engine.paginator">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.engine.pipeline
+
+      <ul>
+        <li><a href="api/pypaginate/engine/pipeline/index.html#module-pypaginate.engine.pipeline">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.filtering
+
+      <ul>
+        <li><a href="api/pypaginate/filtering/index.html#module-pypaginate.filtering">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.filtering.accessor
+
+      <ul>
+        <li><a href="api/pypaginate/filtering/accessor/index.html#module-pypaginate.filtering.accessor">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.filtering.engine
+
+      <ul>
+        <li><a href="api/pypaginate/filtering/engine/index.html#module-pypaginate.filtering.engine">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.filtering.like
+
+      <ul>
+        <li><a href="api/pypaginate/filtering/like/index.html#module-pypaginate.filtering.like">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.filtering.operators
+
+      <ul>
+        <li><a href="api/pypaginate/filtering/operators/index.html#module-pypaginate.filtering.operators">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.filtering.regex
+
+      <ul>
+        <li><a href="api/pypaginate/filtering/regex/index.html#module-pypaginate.filtering.regex">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.filtering.registry
+
+      <ul>
+        <li><a href="api/pypaginate/filtering/registry/index.html#module-pypaginate.filtering.registry">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.search
+
+      <ul>
+        <li><a href="api/pypaginate/search/index.html#module-pypaginate.search">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.search.engine
+
+      <ul>
+        <li><a href="api/pypaginate/search/engine/index.html#module-pypaginate.search.engine">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.search.matching
+
+      <ul>
+        <li><a href="api/pypaginate/search/matching/index.html#module-pypaginate.search.matching">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.search.parser
+
+      <ul>
+        <li><a href="api/pypaginate/search/parser/index.html#module-pypaginate.search.parser">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.sorting
+
+      <ul>
+        <li><a href="api/pypaginate/sorting/index.html#module-pypaginate.sorting">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.sorting.engine
+
+      <ul>
+        <li><a href="api/pypaginate/sorting/engine/index.html#module-pypaginate.sorting.engine">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.sorting.keys
+
+      <ul>
+        <li><a href="api/pypaginate/sorting/keys/index.html#module-pypaginate.sorting.keys">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.text
+
+      <ul>
+        <li><a href="api/pypaginate/text/index.html#module-pypaginate.text">module</a>
+</li>
+      </ul></li>
+      <li>
+    pypaginate.text.normalize
+
+      <ul>
+        <li><a href="api/pypaginate/text/normalize/index.html#module-pypaginate.text.normalize">module</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="R">R</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.Regex">Regex (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/filtering/index.html#pypaginate.filtering.OperatorRegistry.register">register() (pypaginate.filtering.OperatorRegistry method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/filtering/registry/index.html#pypaginate.filtering.registry.OperatorRegistry.register">(pypaginate.filtering.registry.OperatorRegistry method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/adapters/sqlalchemy/columns/index.html#pypaginate.adapters.sqlalchemy.columns.resolve_column">resolve_column() (in module pypaginate.adapters.sqlalchemy.columns)</a>
+</li>
+      <li><a href="api/pypaginate/adapters/sqlalchemy/keyset/index.html#pypaginate.adapters.sqlalchemy.keyset.OrderColumn.reversed">reversed (pypaginate.adapters.sqlalchemy.keyset.OrderColumn property)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="S">S</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/domain/protocols/index.html#pypaginate.domain.protocols.SearchBackend">SearchBackend (class in pypaginate.domain.protocols)</a>
+</li>
+      <li><a href="api/pypaginate/adapters/fastapi/index.html#pypaginate.adapters.fastapi.SearchDep">SearchDep (class in pypaginate.adapters.fastapi)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/fastapi/search/index.html#pypaginate.adapters.fastapi.search.SearchDep">(class in pypaginate.adapters.fastapi.search)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/search/index.html#pypaginate.search.SearchEngine">SearchEngine (class in pypaginate.search)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/search/engine/index.html#pypaginate.search.engine.SearchEngine">(class in pypaginate.search.engine)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/domain/exceptions/index.html#pypaginate.domain.exceptions.SearchError">SearchError</a>, <a href="api/pypaginate/index.html#pypaginate.SearchError">[1]</a>
+</li>
+      <li><a href="api/pypaginate/index.html#pypaginate.SearchFieldMode">SearchFieldMode (class in pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/enums/index.html#pypaginate.domain.enums.SearchFieldMode">(class in pypaginate.domain.enums)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/domain/exceptions/index.html#pypaginate.domain.exceptions.SearchQueryError">SearchQueryError</a>, <a href="api/pypaginate/index.html#pypaginate.SearchQueryError">[1]</a>
+</li>
+      <li><a href="api/pypaginate/index.html#pypaginate.SearchSpec">SearchSpec (class in pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/specs/index.html#pypaginate.domain.specs.SearchSpec">(class in pypaginate.domain.specs)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/sqlalchemy/types/index.html#pypaginate.adapters.sqlalchemy.types.SelectStatement">SelectStatement (in module pypaginate.adapters.sqlalchemy.types)</a>
+</li>
+      <li><a href="api/pypaginate/domain/protocols/index.html#pypaginate.domain.protocols.SortBackend">SortBackend (class in pypaginate.domain.protocols)</a>
+</li>
+      <li><a href="api/pypaginate/adapters/fastapi/index.html#pypaginate.adapters.fastapi.SortDep">SortDep (class in pypaginate.adapters.fastapi)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/fastapi/sorting/index.html#pypaginate.adapters.fastapi.sorting.SortDep">(class in pypaginate.adapters.fastapi.sorting)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/index.html#pypaginate.SortDirection">SortDirection (class in pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/enums/index.html#pypaginate.domain.enums.SortDirection">(class in pypaginate.domain.enums)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/sorting/index.html#pypaginate.sorting.SortEngine">SortEngine (class in pypaginate.sorting)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/sorting/engine/index.html#pypaginate.sorting.engine.SortEngine">(class in pypaginate.sorting.engine)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/domain/exceptions/index.html#pypaginate.domain.exceptions.SortError">SortError</a>, <a href="api/pypaginate/index.html#pypaginate.SortError">[1]</a>
+</li>
+      <li><a href="api/pypaginate/index.html#pypaginate.SortSpec">SortSpec (class in pypaginate)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/specs/index.html#pypaginate.domain.specs.SortSpec">(class in pypaginate.domain.specs)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SQLAlchemyBackend">SQLAlchemyBackend (class in pypaginate.adapters.sqlalchemy)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/backend/index.html#pypaginate.adapters.sqlalchemy.backend.SQLAlchemyBackend">(class in pypaginate.adapters.sqlalchemy.backend)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SQLAlchemyCursorBackend">SQLAlchemyCursorBackend (class in pypaginate.adapters.sqlalchemy)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/cursor/index.html#pypaginate.adapters.sqlalchemy.cursor.SQLAlchemyCursorBackend">(class in pypaginate.adapters.sqlalchemy.cursor)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SQLAlchemyFilterBackend">SQLAlchemyFilterBackend (class in pypaginate.adapters.sqlalchemy)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/filters/index.html#pypaginate.adapters.sqlalchemy.filters.SQLAlchemyFilterBackend">(class in pypaginate.adapters.sqlalchemy.filters)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SQLAlchemySearchBackend">SQLAlchemySearchBackend (class in pypaginate.adapters.sqlalchemy)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/search/index.html#pypaginate.adapters.sqlalchemy.search.SQLAlchemySearchBackend">(class in pypaginate.adapters.sqlalchemy.search)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SQLAlchemySortBackend">SQLAlchemySortBackend (class in pypaginate.adapters.sqlalchemy)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/sorting/index.html#pypaginate.adapters.sqlalchemy.sorting.SQLAlchemySortBackend">(class in pypaginate.adapters.sqlalchemy.sorting)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/filtering/operators/index.html#pypaginate.filtering.operators.StartsWith">StartsWith (class in pypaginate.filtering.operators)</a>
+</li>
+      <li><a href="api/pypaginate/domain/protocols/index.html#pypaginate.domain.protocols.SyncPaginationBackend">SyncPaginationBackend (class in pypaginate.domain.protocols)</a>
+</li>
+      <li><a href="api/pypaginate/engine/pipeline/index.html#pypaginate.engine.pipeline.SyncPipeline">SyncPipeline (class in pypaginate.engine.pipeline)</a>
+</li>
+      <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SyncSQLAlchemyBackend">SyncSQLAlchemyBackend (class in pypaginate.adapters.sqlalchemy)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/backend/index.html#pypaginate.adapters.sqlalchemy.backend.SyncSQLAlchemyBackend">(class in pypaginate.adapters.sqlalchemy.backend)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/sqlalchemy/index.html#pypaginate.adapters.sqlalchemy.SyncSQLAlchemyCursorBackend">SyncSQLAlchemyCursorBackend (class in pypaginate.adapters.sqlalchemy)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/sqlalchemy/cursor/index.html#pypaginate.adapters.sqlalchemy.cursor.SyncSQLAlchemyCursorBackend">(class in pypaginate.adapters.sqlalchemy.cursor)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="T">T</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/domain/fast_pages/index.html#pypaginate.domain.fast_pages.FastCursorPage.to_pydantic">to_pydantic() (pypaginate.domain.fast_pages.FastCursorPage method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/domain/fast_pages/index.html#pypaginate.domain.fast_pages.FastOffsetPage.to_pydantic">(pypaginate.domain.fast_pages.FastOffsetPage method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/adapters/fastapi/search/index.html#pypaginate.adapters.fastapi.search.SearchDep.to_spec">to_spec() (pypaginate.adapters.fastapi.search.SearchDep method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/fastapi/index.html#pypaginate.adapters.fastapi.SearchDep.to_spec">(pypaginate.adapters.fastapi.SearchDep method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/adapters/fastapi/index.html#pypaginate.adapters.fastapi.FilterDep.to_specs">to_specs() (pypaginate.adapters.fastapi.FilterDep method)</a>
+
+      <ul>
+        <li><a href="api/pypaginate/adapters/fastapi/filters/index.html#pypaginate.adapters.fastapi.filters.FilterDep.to_specs">(pypaginate.adapters.fastapi.filters.FilterDep method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/fastapi/index.html#pypaginate.adapters.fastapi.SortDep.to_specs">(pypaginate.adapters.fastapi.SortDep method)</a>
+</li>
+        <li><a href="api/pypaginate/adapters/fastapi/sorting/index.html#pypaginate.adapters.fastapi.sorting.SortDep.to_specs">(pypaginate.adapters.fastapi.sorting.SortDep method)</a>
+</li>
+      </ul></li>
+      <li><a href="api/pypaginate/search/parser/index.html#pypaginate.search.parser.TokenParser">TokenParser (class in pypaginate.search.parser)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/pypaginate/domain/exceptions/index.html#pypaginate.domain.exceptions.ValidationError">ValidationError</a>, <a href="api/pypaginate/index.html#pypaginate.ValidationError">[1]</a>
+</li>
+  </ul></td>
+</tr></table>
+
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024-2026 CybLow.
+      <span class="lastupdated">Last updated on Mar 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"></span>
+    v: 0.2.0
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>On GitHub</dt>
+      <dd><a href="https://github.com/CybLow/pypaginate">View Source</a></dd>
+      <dd><a href="https://github.com/CybLow/pypaginate/issues">Issues</a></dd>
+    </dl>
+  </div>
+</div><script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

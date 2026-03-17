@@ -1,0 +1,462 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="Multi-Column Sorting" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://cyblow.github.io/pypaginate/sorting/multi-column.html" />
+<meta property="og:site_name" content="pypaginate Documentation" />
+<meta property="og:description" content="Multi-column sorting defines a hierarchy of sort criteria. When two items have equal values in the primary sort field, the secondary field determines their order, and so on. How It Works: Pass mult..." />
+<meta property="og:image" content="https://cyblow.github.io/pypaginate/_static/logo.svg" />
+<meta property="og:image:alt" content="pypaginate Documentation" />
+<meta name="description" content="Multi-column sorting defines a hierarchy of sort criteria. When two items have equal values in the primary sort field, the secondary field determines their order, and so on. How It Works: Pass mult..." />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Column Sorting &mdash; pypaginate 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=e0a04398" />
+
+  
+    <link rel="shortcut icon" href="../_static/favicon.svg"/>
+    <link rel="canonical" href="https://cyblow.github.io/pypaginate/sorting/multi-column.html" />
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../_static/copybutton.js?v=437722b7"></script>
+      <script src="../_static/design-tabs.js?v=f930bc37"></script>
+      <script src="../_static/custom.js?v=60c56439"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Framework Integrations" href="../integrations/index.html" />
+    <link rel="prev" title="Basic Sorting" href="basic.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            pypaginate
+              <img src="../_static/logo.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/index.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/quickstart.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started/first-steps.html">First Steps</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../pagination/index.html">Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/offset.html">Offset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/keyset.html">Cursor/Keyset Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../pagination/memory.html">In-Memory Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/index.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/basic.html">Basic Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/json-logic.html">Nested Filter Groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../filtering/operators.html">Operators Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/index.html">Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/text-search.html">Text Search</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../search/fuzzy.html">Fuzzy Matching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Sorting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="basic.html">Basic Sorting</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Multi-Column Sorting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#how-it-works">How It Works</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#stable-sort-guarantee">Stable Sort Guarantee</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#in-memory-multi-column">In-Memory Multi-Column</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#two-level-sort">Two-Level Sort</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#three-level-sort-with-mixed-directions">Three-Level Sort with Mixed Directions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nulls-handling-per-column">Nulls Handling Per-Column</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#sqlalchemy-multi-column">SQLAlchemy Multi-Column</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#with-null-handling">With Null Handling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pipeline-integration">Pipeline Integration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#async-sqlalchemy-pipeline">Async SQLAlchemy Pipeline</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#common-use-cases">Common Use Cases</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#leaderboard">Leaderboard</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#product-catalog">Product Catalog</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#user-directory">User Directory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#deterministic-tie-breaking">Deterministic Tie-Breaking</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-tips">Performance Tips</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#composite-indexes-for-common-sort-patterns">Composite Indexes for Common Sort Patterns</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#see-also">See Also</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Integrations</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/index.html">Framework Integrations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../integrations/sqlalchemy.html">SQLAlchemy Integration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/overview.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/pypaginate/index.html">pypaginate</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/basic-pagination.html">Basic Pagination</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/filtering.html">Filtering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/fastapi.html">FastAPI Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/keyset.html">Keyset (Cursor) Pagination</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/index.html">Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/architecture.html">Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/pagination-strategies.html">Pagination Strategies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/cursor-encoding.html">Cursor Encoding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/filter-expressions.html">Filter Expressions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../concepts/search-relevance.html">Search &amp; Relevance</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Contributing</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/index.html">Contributing to pypaginate</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/development.html">Development Setup</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/code-style.html">Code Style</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/testing.html">Testing Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/architecture.html">Architecture Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing/roadmap.html">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../CODE_OF_CONDUCT.html">Contributor Covenant Code of Conduct</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../comparison.html">Competitive Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../benchmarks.html">Performance Benchmarks</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">pypaginate</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Multi-Column Sorting</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/CybLow/pypaginate/blob/main/docs/sorting/multi-column.md" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="multi-column-sorting">
+<h1>Multi-Column Sorting<a class="headerlink" href="#multi-column-sorting" title="Link to this heading"></a></h1>
+<p>Multi-column sorting defines a hierarchy of sort criteria. When two items have equal values in the primary sort field, the secondary field determines their order, and so on.</p>
+<section id="how-it-works">
+<h2>How It Works<a class="headerlink" href="#how-it-works" title="Link to this heading"></a></h2>
+<p>Pass multiple <code class="docutils literal notranslate"><span class="pre">SortSpec</span></code> objects in priority order – the first spec has the highest priority:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortSpec</span><span class="p">,</span> <span class="n">SortDirection</span><span class="p">,</span> <span class="n">NullsPosition</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.sorting.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortEngine</span>
+
+<span class="n">engine</span> <span class="o">=</span> <span class="n">SortEngine</span><span class="p">()</span>
+
+<span class="n">employees</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Alice&quot;</span><span class="p">,</span> <span class="s2">&quot;department&quot;</span><span class="p">:</span> <span class="s2">&quot;Engineering&quot;</span><span class="p">,</span> <span class="s2">&quot;salary&quot;</span><span class="p">:</span> <span class="mi">120000</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Bob&quot;</span><span class="p">,</span> <span class="s2">&quot;department&quot;</span><span class="p">:</span> <span class="s2">&quot;Engineering&quot;</span><span class="p">,</span> <span class="s2">&quot;salary&quot;</span><span class="p">:</span> <span class="mi">100000</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Charlie&quot;</span><span class="p">,</span> <span class="s2">&quot;department&quot;</span><span class="p">:</span> <span class="s2">&quot;Sales&quot;</span><span class="p">,</span> <span class="s2">&quot;salary&quot;</span><span class="p">:</span> <span class="mi">90000</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Diana&quot;</span><span class="p">,</span> <span class="s2">&quot;department&quot;</span><span class="p">:</span> <span class="s2">&quot;Engineering&quot;</span><span class="p">,</span> <span class="s2">&quot;salary&quot;</span><span class="p">:</span> <span class="mi">110000</span><span class="p">},</span>
+<span class="p">]</span>
+
+<span class="c1"># Sort by department ASC, then by salary DESC within each department</span>
+<span class="n">sorted_employees</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">employees</span><span class="p">,</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;department&quot;</span><span class="p">),</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;salary&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">),</span>
+<span class="p">])</span>
+<span class="c1"># Engineering: Alice(120k), Diana(110k), Bob(100k)</span>
+<span class="c1"># Sales: Charlie(90k)</span>
+</pre></div>
+</div>
+</section>
+<section id="stable-sort-guarantee">
+<h2>Stable Sort Guarantee<a class="headerlink" href="#stable-sort-guarantee" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">SortEngine</span></code> uses Python’s stable sort. Specs are applied in reverse order so the first spec in the list has the highest priority. Items with equal values in a sort field keep their relative order from the previous sort pass.</p>
+</section>
+<section id="in-memory-multi-column">
+<h2>In-Memory Multi-Column<a class="headerlink" href="#in-memory-multi-column" title="Link to this heading"></a></h2>
+<section id="two-level-sort">
+<h3>Two-Level Sort<a class="headerlink" href="#two-level-sort" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortSpec</span><span class="p">,</span> <span class="n">SortDirection</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.sorting.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortEngine</span>
+
+<span class="n">engine</span> <span class="o">=</span> <span class="n">SortEngine</span><span class="p">()</span>
+
+<span class="c1"># Sort by department ASC, then by name ASC</span>
+<span class="n">sorted_items</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">employees</span><span class="p">,</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;department&quot;</span><span class="p">),</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">),</span>
+<span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="three-level-sort-with-mixed-directions">
+<h3>Three-Level Sort with Mixed Directions<a class="headerlink" href="#three-level-sort-with-mixed-directions" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Department ASC, salary DESC, name ASC</span>
+<span class="n">sorted_items</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">employees</span><span class="p">,</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;department&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">ASC</span><span class="p">),</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;salary&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">),</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">ASC</span><span class="p">),</span>
+<span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="nulls-handling-per-column">
+<h3>Nulls Handling Per-Column<a class="headerlink" href="#nulls-handling-per-column" title="Link to this heading"></a></h3>
+<p>Each spec independently controls null placement:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortSpec</span><span class="p">,</span> <span class="n">SortDirection</span><span class="p">,</span> <span class="n">NullsPosition</span>
+
+<span class="n">sorted_items</span> <span class="o">=</span> <span class="n">engine</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">employees</span><span class="p">,</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;department&quot;</span><span class="p">,</span> <span class="n">nulls</span><span class="o">=</span><span class="n">NullsPosition</span><span class="o">.</span><span class="n">LAST</span><span class="p">),</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;manager&quot;</span><span class="p">,</span> <span class="n">nulls</span><span class="o">=</span><span class="n">NullsPosition</span><span class="o">.</span><span class="n">FIRST</span><span class="p">),</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">),</span>
+<span class="p">])</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="sqlalchemy-multi-column">
+<h2>SQLAlchemy Multi-Column<a class="headerlink" href="#sqlalchemy-multi-column" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">SQLAlchemySortBackend.apply_sorting()</span></code> generates multiple ORDER BY clauses:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">select</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortSpec</span><span class="p">,</span> <span class="n">SortDirection</span><span class="p">,</span> <span class="n">NullsPosition</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.adapters.sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQLAlchemySortBackend</span>
+
+<span class="n">backend</span> <span class="o">=</span> <span class="n">SQLAlchemySortBackend</span><span class="p">()</span>
+
+<span class="n">stmt</span> <span class="o">=</span> <span class="n">select</span><span class="p">(</span><span class="n">Employee</span><span class="p">)</span>
+<span class="n">sorted_stmt</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">apply_sorting</span><span class="p">(</span><span class="n">stmt</span><span class="p">,</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;department&quot;</span><span class="p">),</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;salary&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">),</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">),</span>
+<span class="p">])</span>
+<span class="c1"># SELECT * FROM employee</span>
+<span class="c1"># ORDER BY department ASC NULLS LAST, salary DESC NULLS LAST, name ASC NULLS LAST</span>
+</pre></div>
+</div>
+<section id="with-null-handling">
+<h3>With Null Handling<a class="headerlink" href="#with-null-handling" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sorted_stmt</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">apply_sorting</span><span class="p">(</span><span class="n">stmt</span><span class="p">,</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;department&quot;</span><span class="p">,</span> <span class="n">nulls</span><span class="o">=</span><span class="n">NullsPosition</span><span class="o">.</span><span class="n">LAST</span><span class="p">),</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">nulls</span><span class="o">=</span><span class="n">NullsPosition</span><span class="o">.</span><span class="n">FIRST</span><span class="p">),</span>
+<span class="p">])</span>
+<span class="c1"># ORDER BY department ASC NULLS LAST, name ASC NULLS FIRST</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="pipeline-integration">
+<h2>Pipeline Integration<a class="headerlink" href="#pipeline-integration" title="Link to this heading"></a></h2>
+<p>Combine multi-column sorting with filtering and pagination:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilterSpec</span><span class="p">,</span> <span class="n">SortSpec</span><span class="p">,</span> <span class="n">SortDirection</span><span class="p">,</span> <span class="n">OffsetParams</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.adapters.memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryBackend</span><span class="p">,</span> <span class="n">MemoryFilterBackend</span><span class="p">,</span> <span class="n">MemorySortBackend</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.engine.paginator</span><span class="w"> </span><span class="kn">import</span> <span class="n">Paginator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.engine.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">SyncPipeline</span>
+
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">SyncPipeline</span><span class="p">(</span>
+    <span class="n">Paginator</span><span class="p">(</span><span class="n">MemoryBackend</span><span class="p">()),</span>
+    <span class="n">filter_backend</span><span class="o">=</span><span class="n">MemoryFilterBackend</span><span class="p">(),</span>
+    <span class="n">sort_backend</span><span class="o">=</span><span class="n">MemorySortBackend</span><span class="p">(),</span>
+<span class="p">)</span>
+
+<span class="n">page</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+    <span class="n">employees</span><span class="p">,</span>
+    <span class="n">OffsetParams</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">),</span>
+    <span class="n">filters</span><span class="o">=</span><span class="p">[</span><span class="n">FilterSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;status&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)],</span>
+    <span class="n">sorting</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;department&quot;</span><span class="p">),</span>
+        <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;salary&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">),</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<section id="async-sqlalchemy-pipeline">
+<h3>Async SQLAlchemy Pipeline<a class="headerlink" href="#async-sqlalchemy-pipeline" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate</span><span class="w"> </span><span class="kn">import</span> <span class="n">SortSpec</span><span class="p">,</span> <span class="n">SortDirection</span><span class="p">,</span> <span class="n">OffsetParams</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.adapters.sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SQLAlchemyBackend</span><span class="p">,</span>
+    <span class="n">SQLAlchemySortBackend</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.engine.paginator</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncPaginator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pypaginate.engine.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncPipeline</span>
+
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">AsyncPipeline</span><span class="p">(</span>
+    <span class="n">AsyncPaginator</span><span class="p">(</span><span class="n">SQLAlchemyBackend</span><span class="p">(</span><span class="n">session</span><span class="p">)),</span>
+    <span class="n">sort_backend</span><span class="o">=</span><span class="n">SQLAlchemySortBackend</span><span class="p">(),</span>
+<span class="p">)</span>
+
+<span class="n">page</span> <span class="o">=</span> <span class="k">await</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+    <span class="n">select</span><span class="p">(</span><span class="n">Employee</span><span class="p">),</span>
+    <span class="n">OffsetParams</span><span class="p">(</span><span class="n">page</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">),</span>
+    <span class="n">sorting</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;department&quot;</span><span class="p">),</span>
+        <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;hire_date&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">),</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="common-use-cases">
+<h2>Common Use Cases<a class="headerlink" href="#common-use-cases" title="Link to this heading"></a></h2>
+<section id="leaderboard">
+<h3>Leaderboard<a class="headerlink" href="#leaderboard" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Highest score first, earliest achievement for ties</span>
+<span class="n">sorting</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;score&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">),</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;achieved_at&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">ASC</span><span class="p">),</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="product-catalog">
+<h3>Product Catalog<a class="headerlink" href="#product-catalog" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># By category, then cheapest first</span>
+<span class="n">sorting</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;category&quot;</span><span class="p">),</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;price&quot;</span><span class="p">),</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="user-directory">
+<h3>User Directory<a class="headerlink" href="#user-directory" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># By department, then by last name, then by first name</span>
+<span class="n">sorting</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;department&quot;</span><span class="p">,</span> <span class="n">nulls</span><span class="o">=</span><span class="n">NullsPosition</span><span class="o">.</span><span class="n">LAST</span><span class="p">),</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;last_name&quot;</span><span class="p">),</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;first_name&quot;</span><span class="p">),</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="deterministic-tie-breaking">
+<h3>Deterministic Tie-Breaking<a class="headerlink" href="#deterministic-tie-breaking" title="Link to this heading"></a></h3>
+<p>Always include a unique field (like <code class="docutils literal notranslate"><span class="pre">id</span></code>) as the last sort spec to guarantee deterministic ordering:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sorting</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;department&quot;</span><span class="p">),</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;salary&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">SortDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">),</span>
+    <span class="n">SortSpec</span><span class="p">(</span><span class="n">field</span><span class="o">=</span><span class="s2">&quot;id&quot;</span><span class="p">),</span>  <span class="c1"># tie-breaker ensures stable order</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="performance-tips">
+<h2>Performance Tips<a class="headerlink" href="#performance-tips" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Index sort columns</strong> – multi-column sorts benefit from composite indexes</p></li>
+<li><p><strong>Limit sort fields</strong> – each additional field adds overhead</p></li>
+<li><p><strong>Include a unique tie-breaker</strong> – deterministic ordering prevents pagination anomalies</p></li>
+<li><p><strong>Use SQL for databases</strong> – <code class="docutils literal notranslate"><span class="pre">SQLAlchemySortBackend</span></code> pushes sorting to the DB engine</p></li>
+</ol>
+<section id="composite-indexes-for-common-sort-patterns">
+<h3>Composite Indexes for Common Sort Patterns<a class="headerlink" href="#composite-indexes-for-common-sort-patterns" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Index</span>
+
+<span class="n">Index</span><span class="p">(</span>
+    <span class="s2">&quot;idx_employee_dept_salary&quot;</span><span class="p">,</span>
+    <span class="n">Employee</span><span class="o">.</span><span class="n">department</span><span class="p">,</span>
+    <span class="n">Employee</span><span class="o">.</span><span class="n">salary</span><span class="o">.</span><span class="n">desc</span><span class="p">(),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="basic.html"><span class="std std-doc">Basic Sorting</span></a> – Single-field sorting fundamentals</p></li>
+<li><p><a class="reference internal" href="../pagination/index.html"><span class="std std-doc">Pagination</span></a> – Combine sorting with pagination</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="basic.html" class="btn btn-neutral float-left" title="Basic Sorting" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../integrations/index.html" class="btn btn-neutral float-right" title="Framework Integrations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024-2026 CybLow.
+      <span class="lastupdated">Last updated on Mar 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    <span class="fa fa-book"></span>
+    v: 0.2.0
+    <span class="fa fa-caret-down"></span>
+  </span>
+  <div class="rst-other-versions">
+    <dl>
+      <dt>On GitHub</dt>
+      <dd><a href="https://github.com/CybLow/pypaginate">View Source</a></dd>
+      <dd><a href="https://github.com/CybLow/pypaginate/issues">Issues</a></dd>
+    </dl>
+  </div>
+</div><script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
