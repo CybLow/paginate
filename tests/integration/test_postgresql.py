@@ -32,9 +32,7 @@ def _pg_available() -> bool:
 
     async def _check() -> bool:
         try:
-            conn = await asyncpg.connect(
-                _PG_URL.replace("postgresql+asyncpg://", "postgresql://")
-            )
+            conn = await asyncpg.connect(_PG_URL.replace("postgresql+asyncpg://", "postgresql://"))
             await conn.close()
         except Exception:
             return False
