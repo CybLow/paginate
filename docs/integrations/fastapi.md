@@ -368,4 +368,4 @@ Access your docs at `/docs` (Swagger UI) or `/redoc` (ReDoc).
 ## See Also
 
 - [SQLAlchemy Integration](sqlalchemy.md) -- backend configuration and cursor pagination
-- [API Reference](/api/pypaginate/adapters/) -- full adapter API docs
+- API Reference -- see the `adapters` section in the generated API docs

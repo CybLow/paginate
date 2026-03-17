@@ -2,7 +2,7 @@
 
 Standards enforced across pypaginate by tooling, architecture tests, and convention.
 
-The canonical reference is [CLAUDE.md](/CLAUDE.md) in the repository root.
+The canonical reference is [CLAUDE.md](https://github.com/CybLow/pypaginate/blob/main/CLAUDE.md) in the repository root.
 This page summarizes the key rules.
 
 ---

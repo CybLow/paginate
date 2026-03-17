@@ -389,4 +389,4 @@ from pypaginate import (
 ## See Also
 
 - [FastAPI Integration](fastapi.md) -- dependency types and declarative filters
-- [API Reference](/api/pypaginate/adapters/) -- full adapter API docs
+- API Reference -- see the `adapters` section in the generated API docs
