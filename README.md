@@ -3,8 +3,8 @@
 **Universal pagination toolkit for Python -- one function, any backend, auto-detects sync/async.**
 
 [![CI](https://github.com/CybLow/pypaginate/actions/workflows/ci.yml/badge.svg)](https://github.com/CybLow/pypaginate/actions/workflows/ci.yml)
-[![PyPI version](https://img.shields.io/pypi/v/pypaginate.svg)](https://pypi.org/project/pypaginate/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/pypaginate.svg)](https://pypi.org/project/pypaginate/)
+[![PyPI version](https://img.shields.io/pypi/v/pypaginate)](https://pypi.org/project/pypaginate/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/pypaginate)](https://pypi.org/project/pypaginate/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![codecov](https://codecov.io/gh/CybLow/pypaginate/branch/main/graph/badge.svg)](https://codecov.io/gh/CybLow/pypaginate)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)

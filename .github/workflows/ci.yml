@@ -581,6 +581,7 @@ jobs:
         run: |
           uv run pytest tests/perf \
             --run-benchmark \
+            --run-slow \
             --benchmark-enable \
             --benchmark-json=benchmark-results.json \
             --benchmark-autosave \
