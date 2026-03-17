@@ -151,10 +151,10 @@ function shortName(n) {
 }
 function diffBadge(pypag, other) {
   if (!pypag || !other) return '';
-  const ratio = other / pypag;
-  if (ratio > 1.05) return `<span class="badge-slow">pypaginate ${ratio.toFixed(1)}x slower</span>`;
-  if (ratio < 0.95) return `<span class="badge-fast">pypaginate ${(1/ratio).toFixed(1)}x faster</span>`;
-  return `<span class="badge-same">\u2248 same speed</span>`;
+  const ratio = pypag / other;
+  if (ratio > 1.05) return `<span class="badge-fast">${ratio.toFixed(1)}x faster</span>`;
+  if (ratio < 0.95) return `<span class="badge-slow">${(1/ratio).toFixed(1)}x slower</span>`;
+  return `<span class="badge-same">\u2248 same</span>`;
 }
 function barWidth(val, max) {
   return Math.max(2, (val / max) * 100);
@@ -272,76 +272,80 @@ function barWidth(val, max) {
   // Define comparison groups: each is a category × backend with pypaginate and competitors
   const COMPS = [
     { title: 'In-Memory Pagination',
-      subtitle: 'Paginating Python lists with offset/limit — real library comparison',
+      subtitle: 'Paginating Python lists — offset-based, page_size=20',
       rows: [
-        { label: 'pypaginate (memory)', key: 'pypaginate_memory', pypag: true },
+        { label: 'pypaginate (memory)', key: 'pypaginate_memory', color: 'var(--accent)', pypag: true },
+        { label: 'Raw Python slice', key: 'raw_python_slice' },
         { label: 'paginate (lib)', key: 'paginate_lib_memory' },
         { label: 'fastapi-pagination', key: 'fastapi_pagination_memory' },
       ],
       scales: {
         '10K': name => `test_competitors.py::test_${name}`,
         '100K': name => name === 'pypaginate_memory' ? 'test_competitors.py::test_pypaginate_100k' :
+          name === 'raw_python_slice' ? 'test_competitors.py::test_raw_python_100k' :
           name === 'paginate_lib_memory' ? 'test_competitors.py::test_paginate_lib_100k' :
           'test_competitors.py::test_fastapi_pagination_100k',
       }
     },
     { title: 'In-Memory Full Pipeline',
-      subtitle: 'Filter + Sort + Paginate combined — only pypaginate offers this as a single API. Others require manual wiring of filter/sort/paginate steps.',
+      subtitle: 'Filter + Sort + Paginate on 10K items',
       rows: [
         { label: 'pypaginate (pipeline)', key: 'pypaginate_full_pipeline', pypag: true },
+        { label: 'Raw Python (manual)', key: 'raw_python_full_pipeline' },
         { label: 'paginate (lib)', key: 'paginate_lib_full_pipeline' },
         { label: 'fastapi-pagination', key: 'fastapi_pagination_full_pipeline' },
       ],
       scales: { '10K': name => `test_competitors.py::test_${name}` }
     },
     { title: 'In-Memory Filter + Paginate',
-      subtitle: 'Type-safe FilterSpec API vs hand-written list comprehension',
+      subtitle: 'Filter by field then paginate on 10K items',
       rows: [
         { label: 'pypaginate (filter)', key: 'pypaginate_filter_paginate', pypag: true },
-        { label: 'Hand-written comprehension', key: 'raw_python_filter_paginate', baseline: true },
+        { label: 'Raw Python', key: 'raw_python_filter_paginate' },
       ],
       scales: { '10K': name => `test_competitors.py::test_${name}` }
     },
     { title: 'In-Memory Sort + Paginate',
-      subtitle: 'SortSpec API vs hand-written sorted()',
+      subtitle: 'Sort then paginate on 10K items',
       rows: [
         { label: 'pypaginate (sort)', key: 'pypaginate_sort_paginate', pypag: true },
-        { label: 'Hand-written sorted()', key: 'raw_python_sort_paginate', baseline: true },
+        { label: 'Raw Python', key: 'raw_python_sort_paginate' },
       ],
       scales: { '10K': name => `test_competitors.py::test_${name}` }
     },
     { title: 'In-Memory Search + Paginate',
-      subtitle: 'SearchSpec API vs hand-written string matching',
+      subtitle: 'Text search then paginate on 10K items',
       rows: [
         { label: 'pypaginate (search)', key: 'pypaginate_search_paginate', pypag: true },
-        { label: 'Hand-written matching', key: 'raw_python_search_paginate', baseline: true },
+        { label: 'Raw Python', key: 'raw_python_search_paginate' },
       ],
       scales: { '10K': name => `test_competitors.py::test_${name}` }
     },
     { title: 'SQLAlchemy Pagination',
-      subtitle: 'SQL OFFSET/LIMIT — all using the same SA session and database',
+      subtitle: 'SQL OFFSET/LIMIT pagination with SA session',
       rows: [
         { label: 'pypaginate (SA sync)', key: 'pypaginate_sa_sync', pypag: true },
         { label: 'pypaginate (SA async)', key: 'pypaginate_sa_async', pypag: true },
+        { label: 'Raw SQLAlchemy', key: 'raw_sqlalchemy' },
         { label: 'sqlakeyset (keyset)', key: 'sqlakeyset_keyset' },
         { label: 'sqlalchemy-pagination', key: 'sqlalchemy_pagination_lib_10k' },
-        { label: 'Raw SA (manual query)', key: 'raw_sqlalchemy', baseline: true },
       ],
       scales: { '10K': name => `test_competitors.py::test_${name}` }
     },
     { title: 'SQLAlchemy Filter + Paginate',
-      subtitle: 'SQL WHERE + pagination — same SA session',
+      subtitle: 'SQL WHERE + pagination with SA session',
       rows: [
         { label: 'pypaginate (SA filter)', key: 'pypaginate_sa_filter', pypag: true },
+        { label: 'Raw SA (manual WHERE)', key: 'raw_sa_filter' },
         { label: 'fastapi-filter', key: 'fastapi_filter_10k' },
-        { label: 'Raw SA (manual WHERE)', key: 'raw_sa_filter', baseline: true },
       ],
       scales: { '10K': name => `test_competitors.py::test_${name}` }
     },
     { title: 'Scaling: In-Memory Pagination',
-      subtitle: 'How pagination libraries scale across dataset sizes',
+      subtitle: 'List slicing across dataset sizes',
       rows: [
         { label: 'pypaginate', key: 'SCALING_MEM_PAG', pypag: true },
+        { label: 'Raw Python', key: 'raw_python_paginate_scaling' },
         { label: 'paginate (lib)', key: 'paginate_lib_scaling' },
         { label: 'fastapi-pagination', key: 'fp_paginate_scaling' },
       ],
@@ -352,44 +356,26 @@ function barWidth(val, max) {
       }
     },
     { title: 'Scaling: SQLAlchemy Sync Pagination',
-      subtitle: 'SQL pagination across dataset sizes — all using same SQLite backend',
+      subtitle: 'SQL OFFSET/LIMIT across dataset sizes',
       rows: [
-        { label: 'pypaginate (SA sync)', key: 'SCALING_SA_SYNC', pypag: true },
-        { label: 'Raw SQLAlchemy', key: 'raw_sa_paginate_scaling', baseline: true },
+        { label: 'pypaginate (SA sync)', key: 'SCALING_SA_PAG', pypag: true },
+        { label: 'Raw SQLAlchemy', key: 'raw_sa_paginate_scaling' },
         { label: 'sqlakeyset', key: 'sqlakeyset_scaling' },
         { label: 'fastapi-pagination (SA)', key: 'fp_sa_paginate_scaling' },
         { label: 'sqlalchemy-pagination', key: 'sa_pagination_lib_scaling' },
       ],
       scales: {
-        '1K': name => name === 'SCALING_SA_SYNC' ? 'test_scaling.py::test_sa_sync_paginate_scaling[1K]' :
+        '1K': name => name === 'SCALING_SA_PAG' ? 'test_competitor_scaling_sa.py::test_bench_paginate_sa_sync_1k' :
           `test_competitor_scaling_sa.py::test_${name}[1K]`,
-        '10K': name => name === 'SCALING_SA_SYNC' ? 'test_scaling.py::test_sa_sync_paginate_scaling[10K]' :
+        '10K': name => name === 'SCALING_SA_PAG' ? 'test_competitor_scaling_sa.py::test_bench_paginate_sa_sync_10k' :
           `test_competitor_scaling_sa.py::test_${name}[10K]`,
-        '100K': name => name === 'SCALING_SA_SYNC' ? 'test_scaling.py::test_sa_sync_paginate_scaling[100K]' :
-          `test_competitor_scaling_sa.py::test_${name}[100K]`,
-      }
-    },
-    { title: 'Scaling: SQLAlchemy Async Pagination',
-      subtitle: 'Async SQL pagination scaling — pypaginate vs raw async SA',
-      rows: [
-        { label: 'pypaginate (SA async)', key: 'SCALING_SA_ASYNC', pypag: true },
-        { label: 'Raw SA async', key: 'raw_sa_async_paginate_scaling', baseline: true },
-      ],
-      scales: {
-        '1K': name => name === 'SCALING_SA_ASYNC' ? 'test_scaling.py::test_sa_async_paginate_scaling[1K]' :
-          `test_competitor_scaling_sa.py::test_${name}[1K]`,
-        '10K': name => name === 'SCALING_SA_ASYNC' ? 'test_scaling.py::test_sa_async_paginate_scaling[10K]' :
-          `test_competitor_scaling_sa.py::test_${name}[10K]`,
-        '100K': name => name === 'SCALING_SA_ASYNC' ? 'test_scaling.py::test_sa_async_paginate_scaling[100K]' :
-          `test_competitor_scaling_sa.py::test_${name}[100K]`,
       }
     },
   ];
 
   let compHTML = `<p class="comp-note">All benchmarks run on the same CI runner, same dataset, same infrastructure.
     pypaginate uses the same backend as the competitor (SA sync vs SA sync, memory vs memory).
-    Higher ops/sec = better. Bars are relative to the fastest in each group.<br>
-    <span style="color:var(--muted)">&#9679;</span> = baseline ceiling (hand-written code with zero abstraction overhead — not a real library)</p>`;
+    Higher ops/sec = better. Bars are relative to the fastest in each group.</p>`;
 
   for (const comp of COMPS) {
     compHTML += `<div class="comp-section"><h3>${comp.title}</h3>
@@ -419,16 +405,10 @@ function barWidth(val, max) {
         const isBest = r.ops === maxOps && r.ops !== null;
         const cls = isBest ? ' class="winner"' : '';
         const nameCls = r.pypag ? ' class="pypag"' : '';
-        const labelFmt = r.baseline ? `<span style="color:var(--muted)">${r.label} &#9679;</span>` : r.label;
         const opsStr = r.ops !== null ? fmtOps(r.ops) : '<span style="color:var(--muted)">not installed</span>';
         const timeStr = r.ops !== null ? fmtTime(1 / r.ops) : '-';
         let diff = '';
-        if (r.pypag) diff = '<span class="badge-same">reference</span>';
-        else if (r.baseline && r.ops !== null && pypagOps !== null) {
-          const oh = ((r.ops / pypagOps - 1) * 100).toFixed(0);
-          diff = oh > 5 ? `<span style="color:var(--muted)">${oh}% overhead vs raw</span>` :
-            `<span style="color:var(--green)">\u2248 zero overhead</span>`;
-        }
+        if (r.pypag) diff = '<span class="badge-same">baseline</span>';
         else if (r.ops !== null && pypagOps !== null) diff = diffBadge(pypagOps, r.ops);
         else diff = '-';
 
@@ -436,7 +416,7 @@ function barWidth(val, max) {
         const barColor = r.pypag ? 'var(--accent)' : 'var(--muted)';
 
         compHTML += `<tr${cls}>
-          <td${nameCls}>${r.pypag ? r.label : labelFmt}</td>
+          <td${nameCls}>${r.label}</td>
           <td class="num bar-cell">${opsStr}<div class="bar-fill" style="width:${bw}%;background:${barColor}"></div></td>
           <td class="num">${timeStr}</td>
           <td class="num">${diff}</td></tr>`;
@@ -464,7 +444,7 @@ function barWidth(val, max) {
   ];
 
   const sizes = ['1K', '10K', '100K', '500K', '1M'];
-  let scaleHTML = '<p class="comp-note">How pypaginate performance changes as dataset size grows. The "Slowdown" column shows how much slower the operation gets compared to the 1K baseline (1x = no change).</p>';
+  let scaleHTML = '<p class="comp-note">How pypaginate scales from 1K to 1M items. Each row is the same operation at different dataset sizes.</p>';
 
   for (const sg of SCALE_GROUPS) {
     const data = [];
@@ -474,24 +454,18 @@ function barWidth(val, max) {
     }
     if (data.length === 0) continue;
 
-    const baseOps = data[0].ops; // 1K baseline
     const maxOps = Math.max(...data.map(d => d.ops));
     scaleHTML += `<div class="comp-section"><h3>${sg.title}</h3>
       <table class="comp-table"><thead><tr><th>Dataset</th><th class="num">Ops/sec</th>
-        <th class="num">Time/op</th><th class="num">Slowdown</th><th class="num">Throughput</th></tr></thead><tbody>`;
+        <th class="num">Time/op</th><th class="num">Relative</th></tr></thead><tbody>`;
 
     for (const d of data) {
       const bw = barWidth(d.ops, maxOps);
-      const slowdown = baseOps / d.ops;
-      const slowStr = slowdown <= 1.05 ? '<span style="color:var(--green)">1x</span>' :
-        slowdown < 10 ? `<span style="color:var(--yellow)">${slowdown.toFixed(1)}x</span>` :
-        `<span style="color:var(--red)">${slowdown.toFixed(0)}x</span>`;
       const pct = ((d.ops / maxOps) * 100).toFixed(0);
       scaleHTML += `<tr><td style="font-weight:600">${d.size}</td>
         <td class="num bar-cell">${fmtOps(d.ops)}<div class="bar-fill" style="width:${bw}%;background:var(--accent)"></div></td>
         <td class="num">${fmtTime(1 / d.ops)}</td>
-        <td class="num">${slowStr}</td>
-        <td class="num" style="color:var(--muted)">${pct}%</td></tr>`;
+        <td class="num">${pct}%</td></tr>`;
     }
     scaleHTML += '</tbody></table></div>';
   }
