@@ -47,9 +47,48 @@ uv run pytest tests/perf --benchmark-enable --benchmark-compare=0001
 uv run pytest tests/perf --benchmark-enable --benchmark-json=results.json
 ```
 
-## CI Integration
+## CI Pipeline
 
-Benchmarks run automatically in CI:
+The full CI pipeline runs **40+ concurrent jobs** across 4 Python versions and 3 operating systems:
+
+```{mermaid}
+graph TD
+    S[Setup] --> Q[Quality<br>ruff + mypy]
+    S --> SEC[Security<br>bandit + pip-audit]
+    S --> CQL[CodeQL]
+
+    Q --> ARCH[Architecture<br>72 subtests]
+    Q --> U1[Unit 3.11<br>Linux / macOS / Win]
+    Q --> U2[Unit 3.12<br>Linux / macOS / Win]
+    Q --> U3[Unit 3.13<br>Linux / macOS / Win]
+    Q --> U4[Unit 3.14<br>Linux / macOS / Win]
+
+    U1 & U2 & U3 & U4 --> I[Integration<br>4 Py × 3 OS = 12 jobs]
+    U1 & U2 & U3 & U4 --> E2E[E2E Tests<br>6 FastAPI flows]
+    U1 & U2 & U3 & U4 --> PG[PostgreSQL<br>real Postgres 16]
+    U1 & U2 & U3 & U4 --> PROP[Property<br>Hypothesis]
+    U1 & U2 & U3 & U4 --> BENCH[Benchmarks<br>293 data points]
+    U1 & U2 & U3 & U4 --> BUILD[Build<br>hatchling + twine]
+
+    style S fill:#1f6feb,color:#fff
+    style Q fill:#238636,color:#fff
+    style ARCH fill:#238636,color:#fff
+    style BENCH fill:#d29922,color:#fff
+    style PG fill:#8957e5,color:#fff
+```
+
+| Test Suite | Jobs | Coverage |
+|------------|------|----------|
+| Unit | 12 (4 Python × 3 OS) | All modules, parallel execution |
+| Integration | 12 (4 Python × 3 OS) | Cross-module with real SQLite |
+| E2E | 1 | Full FastAPI user journeys |
+| PostgreSQL | 1 | Real Postgres 16 via service container |
+| Property | 1 | Hypothesis invariant checking |
+| Architecture | 1 | File limits, imports, protocols |
+| Benchmarks | 1 | 293 perf benchmarks, PR regression alerts |
+| **Total** | **29+** | **872+ tests, 85% coverage gate** |
+
+Benchmarks run automatically:
 
 - **On `main`**: full benchmark suite, results stored for historical tracking
 - **On pull requests**: full suite with comparison against `main` baseline

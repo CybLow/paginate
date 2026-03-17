@@ -335,6 +335,48 @@ pypaginate/
     └── fastapi/       # Annotated dependencies (OffsetDep, FilterDep, etc.)
 ```
 
+## CI Pipeline
+
+Tiered pipeline with **40+ concurrent jobs** across 4 Python versions and 3 operating systems:
+
+```
+                              ┌─────────┐
+                              │  Setup  │
+                              └────┬────┘
+                 ┌─────────────────┼─────────────────┐
+                 ▼                 ▼                  ▼
+           ┌──────────┐     ┌──────────┐       ┌──────────┐
+           │ Quality  │     │ Security │       │ CodeQL   │
+           │ ruff+mypy│     │ bandit   │       │          │
+           └────┬─────┘     └──────────┘       └──────────┘
+        ┌───────┼────────┐
+        ▼                ▼
+  ┌──────────┐    ┌──────────────────────────────────────────┐
+  │ Arch     │    │ Unit Tests (12 jobs)                     │
+  │ 72 tests │    │ Python 3.11-3.14 × Linux/macOS/Windows   │
+  └──────────┘    └──────────────────┬───────────────────────┘
+            ┌──────────┬─────────────┼──────────┬──────────┐
+            ▼          ▼             ▼          ▼          ▼
+    ┌────────────┐ ┌────────┐ ┌──────────┐ ┌────────┐ ┌───────┐
+    │Integration │ │  E2E   │ │PostgreSQL│ │Property│ │Bench  │
+    │ 12 jobs    │ │ 6 flows│ │ real DB  │ │Hypothe.│ │293 pts│
+    │ 4Py × 3OS │ │        │ │          │ │        │ │       │
+    └────────────┘ └────────┘ └──────────┘ └────────┘ └───────┘
+```
+
+| Test Suite | Jobs | Coverage |
+|------------|------|----------|
+| Unit | 12 (4 Python × 3 OS) | All modules, parallel execution |
+| Integration | 12 (4 Python × 3 OS) | Cross-module with real SQLite |
+| E2E | 1 | Full FastAPI user journeys |
+| PostgreSQL | 1 | Real Postgres 16 via service container |
+| Property | 1 | Hypothesis invariant checking |
+| Architecture | 1 | File limits, imports, protocols |
+| Benchmarks | 1 | 293 perf benchmarks, PR regression alerts |
+| **Total** | **29+** | **872+ tests, 85% coverage gate** |
+
+**[Live Benchmark Dashboard](https://cyblow.github.io/pypaginate/dev/bench/)** -- performance tracked on every commit.
+
 ## Development
 
 ```bash
