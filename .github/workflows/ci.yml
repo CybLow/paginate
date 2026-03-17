@@ -16,9 +16,9 @@
 #   - chore/*           : Maintenance tasks (e.g., chore/update-deps)
 #
 # Pipeline Tiers:
-#   Tier 1 (Fast)     : quality + unit tests         → feature/*, fix/*, etc.
-#   Tier 2 (Standard) : + integration + property     → develop, PRs
-#   Tier 3 (Full)     : + benchmarks + build         → release/*, main
+#   Tier 1 (Fast)     : quality + architecture + unit tests         → feature/*, fix/*, etc.
+#   Tier 2 (Standard) : + integration + e2e + postgresql + property → develop, PRs
+#   Tier 3 (Full)     : + benchmarks + build                       → release/*, main
 # =============================================================================
 
 name: CI
@@ -210,6 +210,44 @@ jobs:
         run: uv run mypy src
 
   # ---------------------------------------------------------------------------
+  # Architecture Tests (Code Quality Gates) - ALL TIERS
+  # ---------------------------------------------------------------------------
+  test-architecture:
+    name: Architecture
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [setup, quality]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras --group test
+
+      - name: Run architecture tests
+        run: |
+          uv run pytest tests/architecture \
+            -p no:benchmark \
+            --junitxml=junit-architecture.xml \
+            -v
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: architecture-results
+          path: junit-architecture.xml
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
   # Unit Tests (Fast, Parallel) - ALL TIERS
   # ---------------------------------------------------------------------------
   test-unit:
@@ -318,6 +356,102 @@ jobs:
           path: |
             junit-integration-*.xml
             coverage-integration-*.xml
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # E2E Tests (Full User Journeys) - TIER 2+
+  # ---------------------------------------------------------------------------
+  test-e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [setup, test-unit]
+    if: needs.setup.outputs.run_integration == 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras --group test
+
+      - name: Run E2E tests
+        run: |
+          uv run pytest tests/e2e \
+            -p no:benchmark \
+            --junitxml=junit-e2e.xml \
+            -v
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-results
+          path: junit-e2e.xml
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Integration Tests - TIER 2+
+  # ---------------------------------------------------------------------------
+  test-postgresql:
+    name: PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [setup, test-unit]
+    if: needs.setup.outputs.run_integration == 'true'
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pypaginate
+          POSTGRES_PASSWORD: pypaginate
+          POSTGRES_DB: pypaginate_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      PYPAGINATE_PG_URL: postgresql+asyncpg://pypaginate:pypaginate@localhost:5433/pypaginate_test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup UV + Python
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras --group test
+
+      - name: Run PostgreSQL tests
+        run: |
+          uv run pytest tests/integration/test_postgresql.py \
+            --benchmark-disable \
+            --junitxml=junit-postgresql.xml \
+            -v
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: postgresql-results
+          path: junit-postgresql.xml
           retention-days: 7
 
   # ---------------------------------------------------------------------------
@@ -516,7 +650,7 @@ jobs:
     name: Test Summary
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [setup, test-unit, test-integration, test-property]
+    needs: [setup, test-unit, test-architecture, test-integration, test-e2e, test-postgresql, test-property]
     if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       checks: write
@@ -544,7 +678,7 @@ jobs:
   ci-status:
     name: CI ✓
     runs-on: ubuntu-latest
-    needs: [setup, quality, test-unit, test-integration, test-property, build, security]
+    needs: [setup, quality, test-unit, test-architecture, test-integration, test-e2e, test-postgresql, test-property, build, security]
     if: always()
 
     steps:
@@ -553,17 +687,20 @@ jobs:
           echo "📋 Job Results:"
           echo "   Setup: ${{ needs.setup.result }}"
           echo "   Quality: ${{ needs.quality.result }}"
+          echo "   Architecture: ${{ needs.test-architecture.result }}"
           echo "   Unit Tests: ${{ needs.test-unit.result }}"
           echo "   Integration: ${{ needs.test-integration.result }}"
+          echo "   E2E: ${{ needs.test-e2e.result }}"
+          echo "   PostgreSQL: ${{ needs.test-postgresql.result }}"
           echo "   Property: ${{ needs.test-property.result }}"
           echo "   Build: ${{ needs.build.result }}"
           echo "   Security: ${{ needs.security.result }}"
 
-          # Required jobs
-          REQUIRED=("${{ needs.quality.result }}" "${{ needs.test-unit.result }}")
+          # Required jobs (ALL tiers)
+          REQUIRED=("${{ needs.quality.result }}" "${{ needs.test-unit.result }}" "${{ needs.test-architecture.result }}")
 
           # Optional jobs (may be skipped based on tier)
-          OPTIONAL=("${{ needs.test-integration.result }}" "${{ needs.test-property.result }}" "${{ needs.build.result }}" "${{ needs.security.result }}")
+          OPTIONAL=("${{ needs.test-integration.result }}" "${{ needs.test-e2e.result }}" "${{ needs.test-postgresql.result }}" "${{ needs.test-property.result }}" "${{ needs.build.result }}" "${{ needs.security.result }}")
 
           for result in "${REQUIRED[@]}"; do
             if [[ "$result" != "success" ]]; then
