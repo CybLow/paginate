@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Numeric, String, Text
+from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -38,7 +38,9 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(200))
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
 
     # Relationships
     orders: Mapped[list[Order]] = relationship(back_populates="user", cascade="all, delete-orphan")
@@ -67,7 +69,9 @@ class Product(Base):
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     category: Mapped[str] = mapped_column(String(100))
     in_stock: Mapped[bool] = mapped_column(default=True)
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
 
     def __repr__(self) -> str:
         return f"Product(id={self.id}, name={self.name!r}, price={self.price})"
@@ -90,7 +94,9 @@ class Order(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     total: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     status: Mapped[str] = mapped_column(String(50), default="pending")
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )
 
     # Relationships
     user: Mapped[User] = relationship(back_populates="orders")
