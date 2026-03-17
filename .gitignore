@@ -93,3 +93,6 @@ DOCS_REFACTOR_PLAN.md
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+
+# AutoAPI generated RST (regenerated on every build)
+docs/api/pypaginate/

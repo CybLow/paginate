@@ -18,7 +18,6 @@ Submodules
    /api/pypaginate/adapters/sqlalchemy/backend/index
    /api/pypaginate/adapters/sqlalchemy/columns/index
    /api/pypaginate/adapters/sqlalchemy/cursor/index
-   /api/pypaginate/adapters/sqlalchemy/cursor_codec/index
    /api/pypaginate/adapters/sqlalchemy/filters/index
    /api/pypaginate/adapters/sqlalchemy/keyset/index
    /api/pypaginate/adapters/sqlalchemy/search/index

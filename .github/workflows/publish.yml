@@ -92,8 +92,8 @@ jobs:
       - name: 📜 Generate SBOM
         run: |
           uv run pip install cyclonedx-bom
-          uv run cyclonedx-py environment -o sbom.json --format json
-          uv run cyclonedx-py environment -o sbom.xml --format xml
+          uv run cyclonedx-py environment --of json -o sbom.json
+          uv run cyclonedx-py environment --of xml -o sbom.xml
 
       - name: 🔏 Generate build attestation
         uses: actions/attest-build-provenance@v4
