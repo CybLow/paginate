@@ -8,7 +8,7 @@ from uuid import UUID
 
 import pytest
 
-from pypaginate.adapters.sqlalchemy.cursor_codec import (
+from pypaginate.engine.cursor_codec import (
     decode_cursor,
     encode_cursor,
 )

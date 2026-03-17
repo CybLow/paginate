@@ -17,7 +17,7 @@ from pypaginate.adapters.sqlalchemy.cursor import (
     _compute_cursors,
     _prepare_query,
 )
-from pypaginate.adapters.sqlalchemy.cursor_codec import decode_cursor
+from pypaginate.engine.cursor_codec import decode_cursor
 from pypaginate.adapters.sqlalchemy.keyset import OrderColumn
 
 
@@ -205,7 +205,7 @@ class TestPrepareQuery:
         assert len(cols) == 1
 
     def test_with_after_cursor(self) -> None:
-        from pypaginate.adapters.sqlalchemy.cursor_codec import encode_cursor
+        from pypaginate.engine.cursor_codec import encode_cursor
 
         query = select(Item).order_by(Item.id.asc())
         cursor = encode_cursor((3,))

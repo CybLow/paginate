@@ -9,12 +9,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-from pypaginate.adapters.sqlalchemy.cursor_codec import decode_cursor, encode_cursor
 from pypaginate.adapters.sqlalchemy.keyset import (
     OrderColumn,
     build_keyset_condition,
     extract_order_columns,
 )
+from pypaginate.engine.cursor_codec import decode_cursor, encode_cursor
 
 
 ItemT = TypeVar("ItemT")
