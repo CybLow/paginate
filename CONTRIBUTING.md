@@ -99,8 +99,8 @@ Please follow these limits (see [AGENTS.md](AGENTS.md) for complete guidelines):
 
 | Metric | Limit |
 |--------|-------|
-| Lines per function | ≤12 |
-| Lines per file | ≤200 |
+| Lines per function | ≤15 |
+| Lines per file | ≤250 |
 | Parameters per function | ≤4 |
 | Nesting levels | ≤2 |
 

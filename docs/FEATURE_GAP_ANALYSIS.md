@@ -22,23 +22,17 @@
 
 ## PAGINATION GAPS
 
-### GAP P1: Custom Count Query
+### GAP P1: Custom Count Query -- IMPLEMENTED in v0.2.0
 
 - **v0.1**: `paginate_entities(session, stmt, params, count_statement=custom_count)`
-- **v0.2**: No equivalent — COUNT(*) always auto-generated via subquery
-- **Impact**: Production-critical. Complex JOINs produce slow COUNT(*) subqueries.
-- **Competitors**: fastapi-pagination has `count_query` parameter
-- **Verdict**: **MUST ADD** — blocks production SA users with complex queries
-- **Design**: Add `count_query` param to `paginate()` and pipeline, pass to SA backend
+- **v0.2**: `paginate(stmt, params, backend=SQLAlchemyBackend(session, count_query=custom))`
+- **Status**: **IMPLEMENTED** in v0.2.0. SA backends accept a `count_query` parameter.
 
-### GAP P2: Deduplication (unique=True)
+### GAP P2: Deduplication (unique=True) -- IMPLEMENTED in v0.2.0
 
 - **v0.1**: `paginate_entities(session, stmt, params, unique=True)`
-- **v0.2**: Not available — one-to-many JOINs return duplicate rows
-- **Impact**: Production-critical. Users with relationship eager loading get wrong results.
-- **Competitors**: fastapi-pagination has `unique` parameter
-- **Verdict**: **MUST ADD** — SA backend should call `result.unique()` when flag is set
-- **Design**: Add `unique` param to SA backend's `fetch()` method
+- **v0.2**: `paginate(stmt, params, backend=SQLAlchemyBackend(session, unique=True))`
+- **Status**: **IMPLEMENTED** in v0.2.0. SA backends accept a `unique` parameter for row deduplication.
 
 ---
 
@@ -102,46 +96,29 @@
 
 ## SEARCH GAPS
 
-### GAP S1: Weighted Field Search
+### GAP S1: Weighted Field Search -- IMPLEMENTED in v0.2.0
 
 - **v0.1**: `SearchOptions(fields={"name": 2.0, "bio": 0.5})`
-- **v0.2**: `SearchSpec(fields=("name", "bio"))` — all fields equal weight
-- **Impact**: High. Name matches should score higher than bio matches.
-- **How it would work**: Multiply field score by weight in `_best_score()`:
-  ```python
-  score = match_score(norm_value, norm_token, mode) * weight
-  ```
-- **Verdict**: **SHOULD ADD** — real DX win, simple to implement
-- **Design**: Change `SearchSpec.fields` from `tuple[str, ...]` to `tuple[str, ...] | dict[str, float]`
+- **v0.2**: `SearchSpec(fields=("name", "bio"), weights={"name": 2.0, "bio": 0.5})`
+- **Status**: **IMPLEMENTED** in v0.2.0. SearchSpec accepts a `weights` dict for per-field scoring.
 
-### GAP S2: Token Sort Ratio (fuzzy matching mode)
+### GAP S2: Token Sort Ratio (fuzzy matching mode) -- IMPLEMENTED in v0.2.0
 
 - **v0.1**: Configurable fuzzy strategy (ratio, partial_ratio, token_sort_ratio)
-- **v0.2**: Hardcoded `partial_ratio` only
-- **Difference**:
-  - `partial_ratio("Alice Smith", "Alice")` → 100 (substring match) ✓
-  - `partial_ratio("Smith Alice", "Alice Smith")` → 72 ✗
-  - `token_sort_ratio("Smith Alice", "Alice Smith")` → 100 ✓ (sorts words first)
-- **Use case**: Name search where "John Doe" should match "Doe, John"
-- **Impact**: Medium. Real value for name/address search.
-- **Verdict**: **SHOULD ADD** — extend FuzzyMode enum with TOKEN_SORT
-- **Design**: `FuzzyMode.FUZZY` (partial_ratio), `FuzzyMode.TOKEN_SORT` (token_sort_ratio)
+- **v0.2**: `FuzzyMode.FUZZY` (partial_ratio), `FuzzyMode.TOKEN_SORT` (token_sort_ratio)
+- **Status**: **IMPLEMENTED** in v0.2.0. FuzzyMode enum includes TOKEN_SORT.
 
-### GAP S3: min_query_length
+### GAP S3: min_query_length -- IMPLEMENTED in v0.2.0
 
 - **v0.1**: `SearchOptions(min_query_length=2)` — reject short queries
-- **v0.2**: No minimum — 1-char queries return everything
-- **Impact**: Safety. Short queries cause full table scans.
-- **Verdict**: **SHOULD ADD** — trivial check in SearchEngine.apply()
-- **Design**: Add `min_length: int = 1` to SearchSpec
+- **v0.2**: `SearchSpec(query="a", min_length=2)` — rejects queries shorter than min_length
+- **Status**: **IMPLEMENTED** in v0.2.0. SearchSpec accepts `min_length` parameter.
 
-### GAP S4: max_results Limit
+### GAP S4: max_results Limit -- IMPLEMENTED in v0.2.0
 
 - **v0.1**: `SearchOptions(max_results=100)` — cap results
-- **v0.2**: No limit — search returns ALL matches
-- **Impact**: Safety. Prevents returning 1M results from search.
-- **Verdict**: **SHOULD ADD** — trivial slice in _rank_items()
-- **Design**: Add `max_results: int | None = None` to SearchSpec
+- **v0.2**: `SearchSpec(query="alice", max_results=100)` — caps ranked results
+- **Status**: **IMPLEMENTED** in v0.2.0. SearchSpec accepts `max_results` parameter.
 
 ### GAP S5: TF-IDF Scoring
 
@@ -229,22 +206,22 @@ Same as GAP P2. See Pagination Gaps section.
 
 ## IMPLEMENTATION PRIORITY
 
-### Must Add (Production Blockers)
+### Must Add (Production Blockers) -- ALL IMPLEMENTED in v0.2.0
 
-| # | Feature | Effort | Impact |
-|---|---|---|---|
-| P1 | Custom count query for SA | Medium | Critical — blocks complex JOIN pagination |
-| P2 | Deduplication (unique) for SA | Low | Critical — blocks eager-loaded relations |
+| # | Feature | Status |
+|---|---|---|
+| P1 | Custom count query for SA | **IMPLEMENTED** in v0.2.0 |
+| P2 | Deduplication (unique) for SA | **IMPLEMENTED** in v0.2.0 |
 
-### Should Add (DX Improvements)
+### Should Add (DX Improvements) -- MOSTLY IMPLEMENTED in v0.2.0
 
-| # | Feature | Effort | Impact |
-|---|---|---|---|
-| S1 | Weighted field search | Low | High — real relevance improvement |
-| S2 | Token sort ratio fuzzy mode | Low | Medium — name/address search |
-| S3 | min_query_length | Trivial | Medium — safety |
-| S4 | max_results limit | Trivial | Medium — safety |
-| F1 | empty/not_empty/exists operators | Low | Medium — common filter patterns |
+| # | Feature | Status |
+|---|---|---|
+| S1 | Weighted field search | **IMPLEMENTED** in v0.2.0 |
+| S2 | Token sort ratio fuzzy mode | **IMPLEMENTED** in v0.2.0 |
+| S3 | min_query_length | **IMPLEMENTED** in v0.2.0 |
+| S4 | max_results limit | **IMPLEMENTED** in v0.2.0 |
+| F1 | empty/not_empty/exists operators | **IMPLEMENTED** in v0.2.0 |
 
 ### Consider for v0.3
 
@@ -283,10 +260,10 @@ Same as GAP P2. See Pagination Gaps section.
 | **Page construction** | PaginationSnapshot.to_page() | Direct return | v0.2 |
 | **FastAPI deps** | Function-based Depends | Annotated types | v0.2 |
 | **Architecture** | Monolithic engines | Protocol-based backends | v0.2 |
-| **Nested groups** | JSON Logic (unlimited) | Flat AND/OR | v0.1 |
+| **Nested groups** | JSON Logic (unlimited) | And()/Or() nested groups (max 5 deep) | v0.2 (typed) |
 | **Array access** | JMESPath (powerful) | Dot notation (simple) | v0.1 for power |
-| **Fuzzy modes** | 3+ strategies | partial_ratio only | v0.1 |
-| **Field weights** | SearchOptions(fields={...}) | Equal weight only | v0.1 |
+| **Fuzzy modes** | 3+ strategies | EXACT, FUZZY, TOKEN_SORT | v0.2 (typed) |
+| **Field weights** | SearchOptions(fields={...}) | SearchSpec(weights={...}) | v0.2 (typed) |
 
 ---
 

@@ -1,6 +1,6 @@
-# pypaginate Optimization Audit — Rounds 1-5
+# pypaginate Optimization Audit — Rounds 1-7
 
-> **Purpose**: Comprehensive audit of all performance optimizations applied across 5 rounds.
+> **Purpose**: Comprehensive audit of all performance optimizations applied across 7 rounds.
 > Each optimization is documented with: what changed, why, where, and how to verify.
 
 ---
@@ -394,6 +394,95 @@ uv run pytest tests/perf/test_scaling.py --benchmark-enable --benchmark-only -q
 - **File**: `src/pypaginate/_dispatch.py`
 - **What**: `_ASYNC_CACHE: dict[type, bool]` caches `inspect.iscoroutinefunction()` result per backend class. First call: ~2us (introspection). Subsequent: ~50ns (dict lookup).
 - **Verify**: `uv run pytest tests/unit/engine/test_dispatch.py -v`
+
+## Optimization 29: rapidfuzz `score_cutoff` + `processor=None`
+
+- **Round**: 6
+- **File**: `src/pypaginate/search/matching.py`
+- **What**: Pass `score_cutoff` to `rapidfuzz.fuzz.ratio()` so it can short-circuit on strings that cannot possibly reach the threshold. Also pass `processor=None` to skip rapidfuzz's internal preprocessing (we already normalize).
+- **Why**: Without `score_cutoff`, rapidfuzz computes the full Levenshtein distance even for obviously non-matching pairs. With it, the C implementation can bail out early. Skipping the processor avoids a redundant `str.strip().lower()` call per comparison.
+- **Impact**: 15-30% speedup on fuzzy search operations.
+- **Verify**: `uv run pytest tests/unit/search/test_matching.py -v`
+
+## Optimization 30: `frozenset` for `in`/`not_in` Membership Operators
+
+- **Round**: 6
+- **File**: `src/pypaginate/adapters/memory/filters.py`
+- **What**: At predicate compile time, convert `in`/`not_in` value lists to `frozenset` for O(1) membership testing instead of O(n) list scan.
+- **Why**: `value in [1, 2, 3, ..., 100]` is O(n). `value in frozenset({1, 2, 3, ..., 100})` is O(1). For large value sets this is a dramatic improvement.
+- **Impact**: 2-5x speedup for large value sets in `in`/`not_in` operators.
+- **Verify**: `uv run pytest tests/unit/adapters/memory/test_filters.py -v`
+
+## Optimization 31: Sort Try-Sort Pattern (Eliminate Double Accessor Call)
+
+- **Round**: 6
+- **File**: `src/pypaginate/adapters/memory/sorting.py`
+- **What**: The partition-sort pattern called the accessor twice per item: once to check for null, once to extract the sort key. Replaced with a try-sort pattern that calls the accessor once, catching `TypeError` on null comparisons.
+- **Why**: For non-null data (the common case), this eliminates 50% of accessor calls.
+- **Impact**: 15-25% speedup on sort operations.
+- **Verify**: `uv run pytest tests/unit/adapters/memory/test_sorting.py -v`
+
+## Optimization 32: `compile_dict_accessor` for Memory Backends
+
+- **Round**: 6
+- **File**: `src/pypaginate/filtering/accessor.py`
+- **What**: Added `compile_dict_accessor(field)` that skips the `isinstance` check for object vs dict access. Memory backends always receive dicts, so the accessor can use `item[field]` directly.
+- **Why**: `isinstance(item, dict)` in the hot path costs ~10-20% of accessor time when called millions of times.
+- **Impact**: 10-20% speedup on memory backend filter/sort/search operations.
+- **Verify**: `uv run pytest tests/unit/filtering/test_accessor.py -v`
+
+## Optimization 33: Fused `_extract` + `_best_weighted` in Multi-Field Search
+
+- **Round**: 7
+- **File**: `src/pypaginate/search/engine.py`
+- **What**: Instead of extracting all field values into a list and then finding the best match, fused the extraction and scoring into a single loop that tracks the running best score.
+- **Why**: Eliminates intermediate list allocation and a second iteration pass per item.
+- **Impact**: 5-8% speedup on multi-field search.
+- **Verify**: `uv run pytest tests/unit/search/test_engine.py -v`
+
+## Optimization 34: Dict Accessor `.get()` Sentinel
+
+- **Round**: 7
+- **File**: `src/pypaginate/filtering/accessor.py`
+- **What**: Replace `if field in item: return item[field]` with `val = item.get(field, _SENTINEL); if val is not _SENTINEL: return val`. Single hash lookup instead of two.
+- **Why**: `field in item` hashes the key, then `item[field]` hashes it again. `.get()` with a sentinel does one hash lookup.
+- **Impact**: ~5% accessor speedup (measurable at 100K+ items).
+- **Verify**: `uv run pytest tests/unit/filtering/test_accessor.py -v`
+
+## Optimization 35: Pre-convert `str(v)` in String Filter Factories
+
+- **Round**: 7
+- **File**: `src/pypaginate/adapters/memory/filters.py`
+- **What**: For string operators (`contains`, `startswith`, `endswith`, `like`, `ilike`), pre-convert the comparison value to `str` at compile time rather than per-item.
+- **Why**: The value is constant for a given filter spec. Converting once saves `str()` call overhead per item.
+- **Verify**: `uv run pytest tests/unit/adapters/memory/test_filters.py -v`
+
+## Optimization 36: Walrus Operator for `empty`/`not_empty` Operators
+
+- **Round**: 7
+- **File**: `src/pypaginate/filtering/operators.py`
+- **What**: Use walrus operator (`:=`) to combine accessor call and None check in a single expression for `empty`/`not_empty` operators.
+- **Why**: Saves one local variable assignment and makes the intent clearer. Minor micro-optimization.
+- **Verify**: `uv run pytest tests/unit/filtering/test_operators.py -v`
+
+## Optimization 37: `heapq.nlargest` for Top-K Search Results
+
+- **Round**: 7
+- **File**: `src/pypaginate/search/engine.py`
+- **What**: When the caller only needs the top K results (common with pagination), use `heapq.nlargest(k, scored)` instead of `sorted(scored, reverse=True)[:k]`.
+- **Why**: `heapq.nlargest` is O(n log k) vs O(n log n) for full sort. When k << n, this is significantly faster.
+- **Impact**: Measurable at large result sets with small page sizes.
+- **Verify**: `uv run pytest tests/unit/search/test_engine.py -v`
+
+## Optimization 38: Normalize Cache Clear-on-Full Eviction Strategy
+
+- **Round**: 7
+- **File**: `src/pypaginate/text/normalize.py`
+- **What**: The manual dict cache (Optimization 25) now uses a clear-on-full eviction strategy: when the cache reaches `maxsize`, it clears entirely rather than doing LRU tracking.
+- **Why**: LRU tracking requires a doubly-linked list with O(1) move-to-front, adding complexity. Clear-on-full is simpler, uses less memory, and for the normalize_text use case (field values repeat heavily), the cache refills quickly after a clear.
+- **Verify**: `uv run pytest tests/unit/text/test_normalize.py -v`
+
+---
 
 ## Rejected Optimizations (Proven Not Worth It)
 

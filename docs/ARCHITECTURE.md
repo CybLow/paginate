@@ -288,11 +288,11 @@ class MyORMBackend:
 
 | Metric | Value |
 |---|---|
-| Source files | 51 |
-| Source lines | ~4,400 |
-| Test files | 74 |
-| Test lines | ~14,200 |
-| Tests (non-perf) | 714 |
-| Benchmark functions | ~150 |
+| Source files | 55 |
+| Source lines | ~4,975 |
+| Test files | 116 |
+| Test lines | ~15,726 |
+| Tests (non-perf) | 837 |
+| Benchmark functions | ~388 |
 | Core dependency | Pydantic only |
 | Optional extras | 5 (sqlalchemy, search, fastapi, fast, security) |

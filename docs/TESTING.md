@@ -1,6 +1,6 @@
 # pypaginate Testing Architecture
 
-> **714 tests** across 5 categories + ~150 benchmark functions
+> **837 tests** across 6 categories + ~388 benchmark functions
 
 ---
 
@@ -8,17 +8,17 @@
 
 ```
               ╱╲
-             ╱  ╲           E2E (6 tests — full workflows with FastAPI)
+             ╱  ╲           E2E (52 tests — full workflows with FastAPI)
             ╱    ╲
-           ╱──────╲         Integration (8 tests — cross-module + DB)
+           ╱──────╲         Integration (108 tests — cross-module + DB)
           ╱        ╲
-         ╱──────────╲       Property (3 tests — Hypothesis invariants)
+         ╱──────────╲       Property (20 tests — Hypothesis invariants)
         ╱            ╲
-       ╱──────────────╲     Architecture (3 tests — file limits, imports, protocols)
+       ╱──────────────╲     Architecture (69 tests — file limits, imports, protocols)
       ╱                ╲
-     ╱──────────────────╲   Benchmarks (~150 functions — perf regression, competitors)
+     ╱──────────────────╲   Benchmarks (~388 functions — perf regression, competitors)
     ╱                    ╲
-   ╱──────────────────────╲ Unit (694 tests — 100% module coverage)
+   ╱──────────────────────╲ Unit (588 tests — 100% module coverage)
 ```
 
 ---
@@ -37,11 +37,15 @@ tests/
 │   ├── database.py                # Async engine/session fixtures
 │   └── helpers.py                 # Test utilities
 │
-├── unit/                          # 694 tests — isolated per-module coverage
+├── unit/                          # 588 tests — isolated per-module coverage
 │   ├── conftest.py                # sample_users (Alice, Bob, Charlie, Diana), search_items
 │   ├── domain/                    # params, pages, specs, enums, exceptions, protocols
+│   │   └── test_fast_pages.py     # FastOffsetPage/FastCursorPage (msgspec)
 │   ├── engine/                    # paginator, cursor, pipeline, dispatch
 │   ├── filtering/                 # operators, engine, registry, accessor
+│   │   ├── test_like.py           # LIKE pattern classification + string methods
+│   │   ├── test_engine_like.py    # LIKE/ILIKE integration with FilterEngine
+│   │   └── test_groups.py         # Nested filter groups (AND/OR composition)
 │   ├── sorting/                   # engine, keys
 │   ├── search/                    # engine, parser, matching
 │   ├── text/                      # normalize (LRU cache, ASCII fast path)
@@ -49,19 +53,24 @@ tests/
 │       ├── memory/                # backend, filters, sorting, search
 │       ├── sqlalchemy/            # backend, filters, sorting, search, cursor, columns
 │       └── fastapi/               # dependencies (OffsetDep, CursorDep)
+│           ├── test_filter_dep.py # FilterDep declarative dependency
+│           ├── test_sort_dep.py   # SortDep declarative dependency
+│           └── test_search_dep.py # SearchDep declarative dependency
 │
-├── integration/                   # 8 tests — cross-module composition
+├── integration/                   # 108 tests — cross-module composition
 │   ├── conftest.py                # SQLite async engine fixture
 │   ├── test_smoke.py              # Basic sanity: paginate([1,2,3], params)
 │   ├── test_pagination.py         # Full offset + cursor flows
 │   ├── test_filtering.py          # FilterEngine + MemoryBackend composition
+│   ├── test_filter_groups.py      # Nested filter groups end-to-end
 │   ├── test_sorting.py            # SortEngine + MemoryBackend
 │   ├── test_search.py             # SearchEngine + MemoryBackend
 │   ├── test_pipeline.py           # Full pipeline (filter → sort → search → paginate)
+│   ├── test_postgresql.py         # PostgreSQL-specific integration
 │   ├── test_custom_backend.py     # User-defined backend protocol compliance
 │   └── test_fastapi.py            # Full FastAPI app with TestClient
 │
-├── e2e/                           # 6 tests — real-world workflows
+├── e2e/                           # 52 tests — real-world workflows
 │   ├── conftest.py                # 100-item dataset
 │   ├── test_offset_flows.py       # Offset pagination edge cases
 │   ├── test_filter_flows.py       # Filter → paginate chains
@@ -70,19 +79,20 @@ tests/
 │   ├── test_completeness.py       # No data loss across pages
 │   └── test_fastapi_flows.py      # Full HTTP endpoint scenarios
 │
-├── property/                      # 3 tests — Hypothesis-based invariants
+├── property/                      # 20 tests — Hypothesis-based invariants
 │   ├── conftest.py                # Hypothesis settings (deadline=500ms)
 │   ├── strategies.py              # Custom strategies for specs, params, data
 │   ├── test_pagination.py         # Invariant: total == sum(page.items for all pages)
 │   ├── test_filtering.py          # Invariant: filtered <= original
+│   ├── test_search.py             # Invariant: search results relevance ordering
 │   └── test_sorting.py            # Invariant: sorted output is actually sorted
 │
-├── architecture/                  # 3 tests — code quality enforcement
+├── architecture/                  # 69 tests — code quality enforcement
 │   ├── test_file_limits.py        # All source files ≤ 200 lines (code only)
 │   ├── test_imports.py            # No circular imports
 │   └── test_protocols.py          # All backends implement protocol interfaces
 │
-└── perf/                          # ~150 benchmark functions (excluded from normal runs)
+└── perf/                          # ~388 benchmark functions (excluded from normal runs)
     ├── conftest.py                # Dataset fixtures (1K→1M), backend setup helpers
     ├── test_comparison.py         # Side-by-side: memory vs SA vs raw at 10K
     ├── test_competitors.py        # vs paginate-lib, fastapi-pagination, sqlakeyset

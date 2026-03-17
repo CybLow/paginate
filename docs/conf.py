@@ -99,7 +99,6 @@ exclude_patterns = [
     "FEATURE_GAP_ANALYSIS.md",
     "OPTIMIZATION_AUDIT.md",
     "TESTING.md",
-    "contributing/refactoring-plan-v0.1.1.md",
 ]
 
 # =============================================================================

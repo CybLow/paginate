@@ -72,8 +72,8 @@ Build your first paginated API with FastAPI and SQLAlchemy.
 :::{grid-item-card} Advanced Filtering
 :class-card: sd-rounded-3
 
-- JSON Logic with 20+ operators
-- JMESPath for nested fields
+- 20 operators (eq, gte, contains, between, regex, etc.)
+- Dot notation for nested fields
 - Type-safe with mypy strict
 :::
 
@@ -119,28 +119,29 @@ Build your first paginated API with FastAPI and SQLAlchemy.
 
 :::{tab-item} SQLAlchemy
 ```python
-from pypaginate import PageParams, paginate_entities
+from pypaginate import paginate, OffsetParams
+from pypaginate.adapters.sqlalchemy import SQLAlchemyBackend
 from sqlalchemy import select
 
 async def list_users(session, page: int = 1, limit: int = 20):
-    params = PageParams(page=page, limit=limit)
+    params = OffsetParams(page=page, limit=limit)
     stmt = select(User).order_by(User.created_at.desc())
-    
-    result = await paginate_entities(session, stmt, params)
-    
+    backend = SQLAlchemyBackend(session)
+
+    page = await paginate(stmt, params, backend=backend)
+
     return {
-        "items": result.items,
-        "total": result.total,
-        "page": result.page,
-        "pages": result.pages,
+        "items": page.items,
+        "total": page.total,
+        "page": page.page,
+        "pages": page.pages,
     }
 ```
 :::
 
 :::{tab-item} In-Memory
 ```python
-from pypaginate import PageParams
-from pypaginate.engines import MemoryPaginator
+from pypaginate import paginate, OffsetParams
 
 users = [
     {"name": "Alice", "age": 30},
@@ -148,10 +149,7 @@ users = [
     {"name": "Charlie", "age": 35},
 ]
 
-paginator = MemoryPaginator()
-params = PageParams(page=1, limit=2)
-
-page = paginator.paginate(users, params).to_page()
+page = paginate(users, OffsetParams(page=1, limit=2))
 print(page.items)  # [Alice, Bob]
 print(page.total)  # 3
 ```
@@ -159,9 +157,10 @@ print(page.total)  # 3
 
 :::{tab-item} Filtering
 ```python
-from pypaginate.filters.predicates import FilterEngine
+from pypaginate import FilterSpec, And
+from pypaginate.filtering import FilterEngine, create_default_registry
 
-engine = FilterEngine()
+engine = FilterEngine(create_default_registry())
 
 users = [
     {"name": "Alice", "age": 30, "status": "active"},
@@ -170,12 +169,10 @@ users = [
 ]
 
 # Filter for active users aged 30+
-filtered = engine.filter(users, {
-    "and": [
-        {"age": {"gte": 30}},
-        {"status": {"eq": "active"}}
-    ]
-})
+filtered = engine.apply(users, And(
+    FilterSpec(field="age", operator="gte", value=30),
+    FilterSpec(field="status", value="active"),
+))
 # Result: [Alice, Charlie]
 ```
 :::
@@ -315,5 +312,4 @@ CODE_OF_CONDUCT
 :caption: Project
 
 comparison
-changelog
 ```

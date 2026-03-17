@@ -260,5 +260,6 @@ a `py.typed` marker (PEP 561).
 
 ## Versioning
 
-This documentation is for pypaginate version **0.2.0**. See the [Changelog](../changelog.md)
+This documentation is for pypaginate version **0.2.0**. See the
+[Changelog](https://github.com/CybLow/pypaginate/blob/main/CHANGELOG.md)
 for version history.

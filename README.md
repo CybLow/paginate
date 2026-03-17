@@ -16,7 +16,7 @@ pypaginate provides a single `paginate()` function that works with lists, SQLAlc
 
 - **One function** -- `paginate()` handles lists, SQLAlchemy queries, sync and async
 - **Type-safe inference** -- `OffsetParams` returns `OffsetPage`, `CursorParams` returns `CursorPage`
-- **Filtering** -- 20+ operators (eq, gte, contains, between, regex, etc.)
+- **Filtering** -- 20 operators (eq, gte, contains, between, regex, etc.)
 - **Sorting** -- multi-column with direction and null placement control
 - **Search** -- full-text with optional fuzzy matching (RapidFuzz)
 - **FastAPI** -- `Annotated` dependencies for pagination, filtering, sorting, and search
