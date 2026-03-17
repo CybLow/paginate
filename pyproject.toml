@@ -17,15 +17,16 @@ maintainers = [{ name = "CybLow", email = "cyber_lolow@protonmail.com" }]
 keywords = [
     "pagination",
     "filtering",
+    "sorting",
     "search",
     "sqlalchemy",
-    "async",
-    "cursor",
-    "keyset",
-    "jsonlogic",
-    "orm",
-    "database",
     "fastapi",
+    "async",
+    "cursor-pagination",
+    "keyset-pagination",
+    "offset-pagination",
+    "orm",
+    "pydantic",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -41,6 +42,8 @@ classifiers = [
     "Topic :: Database",
     "Topic :: Database :: Front-Ends",
     "Framework :: FastAPI",
+    "Framework :: Pydantic",
+    "Framework :: Pydantic :: 2",
     "Typing :: Typed",
     "Environment :: Web Environment",
 ]
