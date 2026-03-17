@@ -16,6 +16,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
+import asyncpg
 import pytest
 
 
@@ -27,27 +28,20 @@ _PG_URL = os.environ.get(
 
 def _pg_available() -> bool:
     """Check if asyncpg is installed AND PostgreSQL is reachable."""
-    try:
-        import asyncpg
-    except ImportError:
-        return False
-    try:
-        import asyncio
+    import asyncio
 
-        async def _check() -> bool:
-            try:
-                conn = await asyncpg.connect(
-                    _PG_URL.replace("postgresql+asyncpg://", "postgresql://")
-                )
-                await conn.close()
-            except Exception:
-                return False
-            else:
-                return True
+    async def _check() -> bool:
+        try:
+            conn = await asyncpg.connect(
+                _PG_URL.replace("postgresql+asyncpg://", "postgresql://")
+            )
+            await conn.close()
+        except Exception:
+            return False
+        else:
+            return True
 
-        return asyncio.get_event_loop().run_until_complete(_check())
-    except Exception:
-        return False
+    return asyncio.get_event_loop().run_until_complete(_check())
 
 
 _PG_AVAILABLE = _pg_available()
@@ -60,7 +54,7 @@ _SKIP = pytest.mark.skipif(
 pytestmark = [_SKIP, pytest.mark.postgresql]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 async def pg_engine():
     """Create async PG engine and seed test data."""
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
