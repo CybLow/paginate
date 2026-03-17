@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID
 
 import pytest
 
+from pypaginate.domain.exceptions import ValidationError
 from pypaginate.engine.cursor_codec import (
     decode_cursor,
     encode_cursor,
 )
-from pypaginate.domain.exceptions import ValidationError
 
 
 # -- Round-trip tests --------------------------------------------------------
@@ -42,7 +42,7 @@ class TestRoundTrip:
         assert decode_cursor(encode_cursor(values)) == values
 
     def test_datetime(self) -> None:
-        dt = datetime(2025, 6, 15, 12, 30, 45)
+        dt = datetime(2025, 6, 15, 12, 30, 45, tzinfo=UTC)
         values = (dt,)
         assert decode_cursor(encode_cursor(values)) == values
 
@@ -68,7 +68,7 @@ class TestTupleShape:
     """Multiple values and empty tuples."""
 
     def test_multiple_values(self) -> None:
-        values = (42, "alice", datetime(2025, 1, 1), None)
+        values = (42, "alice", datetime(2025, 1, 1, tzinfo=UTC), None)
         assert decode_cursor(encode_cursor(values)) == values
 
     def test_empty_tuple(self) -> None:

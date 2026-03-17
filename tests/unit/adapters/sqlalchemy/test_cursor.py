@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 from sqlalchemy import Column, Integer, String, create_engine, select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session
 
 from pypaginate.adapters.sqlalchemy.cursor import (
     SQLAlchemyCursorBackend,
@@ -17,8 +17,6 @@ from pypaginate.adapters.sqlalchemy.cursor import (
     _compute_cursors,
     _prepare_query,
 )
-from pypaginate.engine.cursor_codec import decode_cursor
-from pypaginate.adapters.sqlalchemy.keyset import OrderColumn
 
 
 # -- ORM setup ---------------------------------------------------------------
@@ -198,7 +196,7 @@ class TestAsyncFetchPage:
 class TestPrepareQuery:
     def test_no_cursor(self) -> None:
         query = select(Item).order_by(Item.id.asc())
-        stmt, cols, backwards = _prepare_query(
+        _stmt, cols, backwards = _prepare_query(
             query,
             limit=5,
             after=None,
@@ -212,7 +210,7 @@ class TestPrepareQuery:
 
         query = select(Item).order_by(Item.id.asc())
         cursor = encode_cursor((3,))
-        stmt, cols, backwards = _prepare_query(
+        _stmt, cols, backwards = _prepare_query(
             query,
             limit=5,
             after=cursor,

@@ -24,16 +24,37 @@ _PG_URL = os.environ.get(
     "postgresql+asyncpg://pypaginate:pypaginate@localhost:5433/pypaginate_test",
 )
 
-try:
-    import asyncpg  # noqa: F401
 
-    _HAS_DRIVER = True
-except ImportError:
-    _HAS_DRIVER = False
+def _pg_available() -> bool:
+    """Check if asyncpg is installed AND PostgreSQL is reachable."""
+    try:
+        import asyncpg
+    except ImportError:
+        return False
+    try:
+        import asyncio
+
+        async def _check() -> bool:
+            try:
+                conn = await asyncpg.connect(
+                    _PG_URL.replace("postgresql+asyncpg://", "postgresql://")
+                )
+                await conn.close()
+            except Exception:
+                return False
+            else:
+                return True
+
+        return asyncio.get_event_loop().run_until_complete(_check())
+    except Exception:
+        return False
+
+
+_PG_AVAILABLE = _pg_available()
 
 _SKIP = pytest.mark.skipif(
-    not _HAS_DRIVER,
-    reason="asyncpg not installed — pip install asyncpg",
+    not _PG_AVAILABLE,
+    reason="PostgreSQL not available (install asyncpg + run docker-compose.test.yml)",
 )
 
 pytestmark = [_SKIP, pytest.mark.postgresql]
