@@ -146,6 +146,7 @@ test = [
 
     # Database testing
     "aiosqlite>=0.20.0",
+    "asyncpg>=0.30.0",
 
     # HTTP testing
     "httpx>=0.28.1",
