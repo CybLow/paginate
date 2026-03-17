@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pypaginate - Performance Benchmarks</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --yellow: #d29922; --red: #f85149;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .header { background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 1.5rem 2rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .header h1 { font-size: 1.4rem; font-weight: 600; }
+  .header .meta { color: var(--muted); font-size: 0.85rem; margin-left: auto; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem; margin-bottom: 2rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 1rem; text-align: center; }
+  .card .value { font-size: 1.8rem; font-weight: 700; color: var(--accent); }
+  .card .label { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .group { background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    margin-bottom: 1rem; overflow: hidden; }
+  .group-header { padding: 0.75rem 1rem; cursor: pointer; display: flex;
+    align-items: center; gap: 0.5rem; user-select: none; }
+  .group-header:hover { background: rgba(88,166,255,0.05); }
+  .group-header h2 { font-size: 1rem; font-weight: 600; flex: 1; }
+  .group-header .count { background: var(--border); color: var(--muted); border-radius: 10px;
+    padding: 0.1rem 0.5rem; font-size: 0.75rem; }
+  .group-header .arrow { transition: transform 0.2s; color: var(--muted); }
+  .group-header.open .arrow { transform: rotate(90deg); }
+  .group-body { display: none; padding: 0 1rem 1rem; }
+  .group-body.open { display: block; }
+
+  .chart-wrap { height: 250px; margin-bottom: 1rem; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th { text-align: left; color: var(--muted); font-weight: 500; padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .fast { color: var(--green); } .slow { color: var(--red); }
+
+  .empty { text-align: center; padding: 3rem; color: var(--muted); }
+  .filter-bar { margin-bottom: 1.5rem; }
+  .filter-bar input { background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); padding: 0.5rem 0.75rem; width: 100%; max-width: 400px; font-size: 0.9rem; }
+  .filter-bar input::placeholder { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>pypaginate Performance</h1>
+  <span id="lastUpdate" class="meta"></span>
+  <a id="repoLink" class="meta" target="_blank">GitHub</a>
+</div>
+<div class="container">
+  <div id="summary" class="summary"></div>
+  <div class="filter-bar">
+    <input id="search" type="text" placeholder="Filter benchmarks...">
+  </div>
+  <div id="groups"></div>
+  <div id="empty" class="empty" style="display:none">
+    No benchmark data available yet. Push to <code>main</code> to generate.
+  </div>
+</div>
+<script src="data.js"></script>
+<script>
+(function() {
+  const D = window.BENCHMARK_DATA;
+  if (!D || !D.entries || !D.entries.Benchmark || !D.entries.Benchmark.length) {
+    document.getElementById('empty').style.display = 'block'; return;
+  }
+
+  const commits = D.entries.Benchmark;
+  const latest = commits[commits.length - 1];
+  const benches = latest.benches;
+
+  // Header
+  document.getElementById('lastUpdate').textContent =
+    'Updated ' + new Date(D.lastUpdate).toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'});
+  const link = document.getElementById('repoLink');
+  link.href = D.repoUrl; link.textContent = 'View on GitHub';
+
+  // Categorize benchmarks by name prefix
+  const CATEGORIES = [
+    { key: 'paginate',      label: 'Pagination',     match: b => /paginate|pagination|offset|cursor/.test(b) },
+    { key: 'filter',        label: 'Filtering',       match: b => /filter/.test(b) },
+    { key: 'sort',          label: 'Sorting',         match: b => /sort/.test(b) },
+    { key: 'search',        label: 'Search',          match: b => /search/.test(b) },
+    { key: 'pipeline',      label: 'Pipeline',        match: b => /pipeline/.test(b) },
+    { key: 'fastapi',       label: 'FastAPI',         match: b => /fastapi/.test(b) },
+    { key: 'serialization', label: 'Serialization',   match: b => /serial/.test(b) },
+    { key: 'overhead',      label: 'Overhead',        match: b => /overhead/.test(b) },
+    { key: 'scaling',       label: 'Scaling',         match: b => /scal/.test(b) && !/fastapi/.test(b) },
+    { key: 'comparison',    label: 'Comparison',      match: b => /comparison|competitor|boundary/.test(b) },
+    { key: 'error',         label: 'Error Handling',  match: b => /error/.test(b) },
+  ];
+
+  function categorize(name) {
+    const n = name.toLowerCase();
+    for (const c of CATEGORIES) if (c.match(n)) return c;
+    return { key: 'other', label: 'Other' };
+  }
+
+  // Group benchmarks
+  const groups = {};
+  for (const b of benches) {
+    const cat = categorize(b.name);
+    if (!groups[cat.key]) groups[cat.key] = { label: cat.label, items: [] };
+    groups[cat.key].items.push(b);
+  }
+
+  // Sort groups by category order, then sort items by value (fastest first)
+  const ordered = CATEGORIES.map(c => groups[c.key]).filter(Boolean);
+  if (groups.other) ordered.push(groups.other);
+  for (const g of ordered) g.items.sort((a, b) => a.value - b.value);
+
+  // Summary cards
+  const sumEl = document.getElementById('summary');
+  const fastest = benches.reduce((a, b) => a.value < b.value ? a : b);
+  const median = [...benches].sort((a, b) => a.value - b.value)[Math.floor(benches.length / 2)];
+  const cards = [
+    { value: benches.length, label: 'Benchmarks' },
+    { value: ordered.length, label: 'Categories' },
+    { value: commits.length, label: 'Data Points' },
+    { value: fmtTime(median.value), label: 'Median Time' },
+  ];
+  sumEl.innerHTML = cards.map(c =>
+    `<div class="card"><div class="value">${c.value}</div><div class="label">${c.label}</div></div>`
+  ).join('');
+
+  // Render groups
+  const container = document.getElementById('groups');
+  for (const g of ordered) {
+    const id = 'g-' + g.label.toLowerCase().replace(/\s+/g, '-');
+    const div = document.createElement('div');
+    div.className = 'group';
+    div.dataset.label = g.label.toLowerCase();
+    div.innerHTML = `
+      <div class="group-header" onclick="toggle('${id}')">
+        <span class="arrow">&#9654;</span>
+        <h2>${g.label}</h2>
+        <span class="count">${g.items.length}</span>
+      </div>
+      <div class="group-body" id="${id}">
+        ${commits.length > 1 ? `<div class="chart-wrap"><canvas id="chart-${id}"></canvas></div>` : ''}
+        <table>
+          <thead><tr>
+            <th>Benchmark</th>
+            <th class="num">Time</th>
+            <th class="num">Ops/sec</th>
+            <th class="num">Stddev</th>
+            <th class="num">Rounds</th>
+          </tr></thead>
+          <tbody>${g.items.map(b => {
+            const ops = b.unit === 'iter/sec' ? b.value : (1 / b.value);
+            const stddev = b.range ? b.range.replace(/^stddev:\s*/i, '') : '-';
+            const rounds = b.extra ? (b.extra.match(/rounds:\s*(\d+)/i) || [])[1] || '-' : '-';
+            const time = b.unit === 'iter/sec' ? (1 / b.value) : b.value;
+            return `<tr>
+              <td>${shortName(b.name)}</td>
+              <td class="num">${fmtTime(time)}</td>
+              <td class="num">${fmtOps(ops)}</td>
+              <td class="num">${stddev}</td>
+              <td class="num">${rounds}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>`;
+    container.appendChild(div);
+
+    // Chart for groups with history
+    if (commits.length > 1) {
+      const names = g.items.map(i => i.name);
+      requestAnimationFrame(() => renderChart(id, names, commits));
+    }
+  }
+
+  // Search filter
+  document.getElementById('search').addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('.group').forEach(g => {
+      const match = !q || g.dataset.label.includes(q) ||
+        Array.from(g.querySelectorAll('td:first-child')).some(td => td.textContent.toLowerCase().includes(q));
+      g.style.display = match ? '' : 'none';
+    });
+  });
+
+  // Helpers
+  function fmtTime(s) {
+    if (s < 0.000001) return (s * 1e9).toFixed(1) + ' ns';
+    if (s < 0.001) return (s * 1e6).toFixed(1) + ' us';
+    if (s < 1) return (s * 1e3).toFixed(2) + ' ms';
+    return s.toFixed(3) + ' s';
+  }
+  function fmtOps(v) {
+    if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+    if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+    return v.toFixed(1);
+  }
+  function shortName(n) {
+    return n.replace(/^tests?\/perf\//, '').replace(/^test_bench_/, '').replace(/^test_/, '');
+  }
+
+  function renderChart(id, names, commits) {
+    const canvas = document.getElementById('chart-' + id);
+    if (!canvas) return;
+    const labels = commits.map(c => c.commit.id.substring(0, 7));
+    const datasets = names.slice(0, 8).map((name, i) => {
+      const hue = (i * 360 / 8) | 0;
+      return {
+        label: shortName(name),
+        data: commits.map(c => {
+          const b = c.benches.find(b => b.name === name);
+          return b ? (b.unit === 'iter/sec' ? b.value : 1 / b.value) : null;
+        }),
+        borderColor: `hsl(${hue}, 70%, 60%)`,
+        backgroundColor: `hsla(${hue}, 70%, 60%, 0.1)`,
+        borderWidth: 2, pointRadius: 3, tension: 0.3, fill: false,
+      };
+    });
+    new Chart(canvas, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#8b949e', boxWidth: 12, padding: 8, font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              title: (items) => {
+                const c = commits[items[0].dataIndex].commit;
+                return c.id.substring(0, 7) + ': ' + c.message.split('\n')[0].substring(0, 60);
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { color: '#30363d' } },
+          y: { title: { display: true, text: 'ops/sec', color: '#8b949e' },
+            ticks: { color: '#8b949e' }, grid: { color: '#30363d' } }
+        }
+      }
+    });
+  }
+})();
+
+function toggle(id) {
+  const body = document.getElementById(id);
+  const header = body.previousElementSibling;
+  body.classList.toggle('open');
+  header.classList.toggle('open');
+}
+</script>
+</body>
+</html>

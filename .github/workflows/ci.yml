@@ -602,6 +602,25 @@ jobs:
           alert-threshold: '120%'
           fail-on-alert: false
 
+      - name: Deploy custom benchmark dashboard
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SHA=$(gh api /repos/{owner}/{repo}/contents/dev/bench/index.html?ref=gh-pages --jq '.sha' 2>/dev/null || echo "")
+          CONTENT=$(base64 -w0 .github/pages/bench/index.html)
+          if [ -n "$SHA" ]; then
+            gh api /repos/{owner}/{repo}/contents/dev/bench/index.html \
+              --method PUT \
+              -f message="chore: update benchmark dashboard" \
+              -f content="$CONTENT" -f sha="$SHA" -f branch=gh-pages
+          else
+            gh api /repos/{owner}/{repo}/contents/dev/bench/index.html \
+              --method PUT \
+              -f message="chore: add benchmark dashboard" \
+              -f content="$CONTENT" -f branch=gh-pages
+          fi
+
   # ---------------------------------------------------------------------------
   # Build Package - TIER 2+
   # ---------------------------------------------------------------------------
