@@ -16,6 +16,7 @@ mod parser;
 use std::collections::BTreeMap;
 
 use crate::accessor::{compile_path, resolve_opt};
+use crate::coerce;
 use crate::error::Result;
 use crate::normalize::normalize_text;
 use crate::value::Value;
@@ -199,6 +200,49 @@ fn weight_for(spec: &SearchSpec, field_index: usize) -> f64 {
             .copied()
             .unwrap_or(1.0),
         None => 1.0,
+    }
+}
+
+/// Match-filter search (pypaginate's `MemorySearchBackend` semantics): normalize
+/// the **whole** query, then keep items where **any** field contains / prefixes
+/// / equals it, in original order (unranked, non-fuzzy). An empty normalized
+/// query returns every item.
+///
+/// # Errors
+/// [`crate::CoreError::Filter`] if a field path segment starts with `_`.
+pub fn match_indices(
+    items: &[Value],
+    query: &str,
+    fields: &[String],
+    mode: SearchFieldMode,
+) -> Result<Vec<usize>> {
+    let normalized_query = normalize_text(query);
+    if normalized_query.is_empty() {
+        return Ok((0..items.len()).collect());
+    }
+    let paths: Vec<Vec<String>> = fields
+        .iter()
+        .map(|f| compile_path(f))
+        .collect::<Result<_>>()?;
+    let mut matched = Vec::new();
+    for (index, item) in items.iter().enumerate() {
+        for path in &paths {
+            if let Some(value) = resolve_opt(item, path) {
+                if matches_field(&normalize_value(value), &normalized_query, mode) {
+                    matched.push(index);
+                    break;
+                }
+            }
+        }
+    }
+    Ok(matched)
+}
+
+/// Normalize a value's string form (mirrors `normalize_text(str(v))`).
+fn normalize_value(value: &Value) -> String {
+    match value {
+        Value::Str(s) => normalize_text(s),
+        other => normalize_text(&coerce::to_py_str(other)),
     }
 }
 
