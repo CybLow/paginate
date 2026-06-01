@@ -104,6 +104,16 @@ pure-Python pipeline (a single int filter ~28×, single-key sort ~9×) — all
 diverge from the row engine). The same `Dataset` exists for Node/TS; there V8
 wins the single ops but the fused `page()` still wins ~6×. See
 [BENCHMARKS.md](https://github.com/CybLow/paginate-core/blob/main/BENCHMARKS.md).
+The columnar path also covers multi-key sort and multi-filter `AND`.
+
+## Typed stubs & exceptions
+
+The wheel ships PEP 561 type information (`paginate_core/__init__.pyi` + `py.typed`,
+auto-detected by maturin), so consumers and mypy type-check against the native
+module directly — pypaginate dropped its `ignore_missing_imports` override. Errors
+surface as a typed hierarchy — `PaginateError` (a `ValueError`) with
+`FilterError`/`SortError`/`SearchError`/`InvalidCursorError` — and the resident
+`Dataset` is a `#[pyclass(frozen)]` with a `__repr__`.
 
 ## Verification
 
@@ -116,10 +126,11 @@ wins the single ops but the fused `page()` still wins ~6×. See
 
 ## Status & next steps
 
-Done: pure core (62 cargo tests + 8 property), `abi3` wheel, PyO3 + napi-rs
-bindings, cursor codec + ranked search integrated with fallback, and the
-**resident `Dataset`** — filter/sort/paginate in one call with a columnar fast
-path (int/float/str) — exposed as the public `pypaginate.Dataset` (native +
+Done: pure core (65 cargo tests + 8 property), `abi3` wheel with PEP 561 stubs,
+PyO3 + napi-rs bindings (typed exceptions), cursor codec + ranked search
+integrated with fallback, and the **resident `Dataset`** — filter/sort/paginate
+in one call with a columnar fast path (int/float/str, multi-key sort,
+multi-filter `AND`) — exposed as the public `pypaginate.Dataset` (native +
 pure-Python fallback, identical `OffsetPage`) and as a Node/TS `Dataset`.
 
 Next: `rapidfuzz` crate parity for fuzzy/token-sort search → publish the wheel +
