@@ -1,11 +1,13 @@
 //! Field matching and fuzzy scoring on pre-normalized strings, ported from
 //! pypaginate's `search/matching.py`.
 //!
-//! Fuzzy scoring currently mirrors pypaginate's behaviour **when rapidfuzz is
-//! not installed**: substring containment scores 100, otherwise 0 (gated by the
-//! threshold). Wiring the `rapidfuzz` crate for `partial_ratio` /
-//! `token_sort_ratio` score parity with the installed-rapidfuzz path is a
-//! tracked follow-up.
+//! Fuzzy scoring mirrors pypaginate's behaviour **when rapidfuzz is not
+//! installed**: substring containment scores 100, otherwise 0 (gated by the
+//! threshold). Full parity with Python's rapidfuzz is blocked upstream — the
+//! `rapidfuzz` Rust crate (0.5) implements only `ratio`, not `partial_ratio` /
+//! `token_sort_ratio` — so those would need a byte-exact reimplementation.
+//! Until then the Python integration keeps fuzzy search on the pure-Python path
+//! (the native search gate excludes fuzzy).
 
 use super::{FuzzyMode, SearchFieldMode};
 
