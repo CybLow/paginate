@@ -1,0 +1,5 @@
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy"]
+# wasm32 is kept installed so the same core crate can target the future JS/TS port.
+targets = ["wasm32-unknown-unknown"]
