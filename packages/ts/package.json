@@ -1,0 +1,30 @@
+{
+  "name": "paginate",
+  "version": "0.1.0",
+  "description": "Idiomatic TypeScript consumer of paginate-core: maps Prisma/Drizzle/TypeORM models to DTOs and runs them through the native engine. Scaffold.",
+  "type": "module",
+  "license": "MIT",
+  "author": "pypaginate Contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CybLow/paginate-core.git",
+    "directory": "packages/ts"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "paginate-core": "^0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
