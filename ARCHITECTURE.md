@@ -13,11 +13,13 @@ a local optimum for pure Python — the next step-change requires native code.
 The audit explicitly **rejected mypyc/Cython** for "build complexity, C
 extension distribution issues."
 
-A **Rust core** changes that calculus: it captures the native speed *and* is
-reusable across runtimes. A Python-only native extension would not be — but the
-same Rust crate drives a CPython extension (PyO3) and a Node/TS addon
-(napi-rs) without reimplementing a line of engine logic. One core, many
-adapters; behaviour can never drift between languages.
+A **Rust core** gives **one implementation reusable across runtimes** — and
+native speed where the FFI boundary is cheap. A Python-only native extension
+would not be reusable; the same Rust crate drives a CPython extension (PyO3) and
+a Node/TS addon (napi-rs) without reimplementing a line of engine logic. One
+core, many adapters; **behaviour can never drift between languages** — which, as
+the [benchmarks](BENCHMARKS.md) show, is the core's main value (raw in-memory
+speed mostly stays with the JIT'd host).
 
 ## Native-first
 
@@ -169,8 +171,13 @@ the FFI in **Python**, where the pure engines are already 7-round-optimized:
 | ranked `SearchEngine` | ✅ integrated, gated (non-fuzzy, unweighted, ≥1000 items); native == pure verified |
 | filter · sort · match-filter | ❌ pure-Python wins (marshalling-bound) |
 
-For **JS/TS** the calculus flips — a naive JS engine has nothing to beat, so the
-native adapter wins across the board, which is the core's primary payoff.
+The same boundary cost applies to **JS** — measured, naive V8 `Array` operations
+beat the native engines by **40–230×** (whole-object napi marshalling dwarfs the
+tiny per-item work). So the core's **primary payoff is cross-language behaviour
+consistency** — identical cursor wire format and identical filter/sort/search
+semantics across runtimes — *not* raw in-memory speed, which JIT'd hosts already
+do well. Native *speed* wins are targeted: the cursor codec, and Python's ranked
+search. See [BENCHMARKS.md](BENCHMARKS.md).
 
 ## JS/TS adapter (native-first)
 

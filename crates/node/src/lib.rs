@@ -165,9 +165,11 @@ pub fn clamp_page(page: u32, limit: u32, total: u32) -> i64 {
 //
 // Items arrive as a JS array of objects; napi marshals them to serde_json and
 // we map to core Values. The engines return indices; the JS caller selects from
-// its original array. Unlike pypaginate's 7-round-optimized pure-Python engines
-// (where FFI marshalling can dominate), a naive JS engine has nothing to beat —
-// so native wins here across the board.
+// its original array. PERF: for raw in-memory speed a JS caller should use
+// native Array methods — benchmarks show V8 beats this by 40-230x, since
+// marshalling 10K objects across napi dwarfs the tiny per-item work. These
+// bindings exist for *behaviour parity* with pypaginate's exact semantics (the
+// 20 operators, null-aware sort, ranked search), not for speed.
 
 fn json_array_to_values(items: &Json) -> Result<Vec<core::Value>> {
     match items {
