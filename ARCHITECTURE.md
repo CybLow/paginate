@@ -75,18 +75,18 @@ paginate-core/
 │   │       └── search/              # tokenizer + matching + ranking
 │   ├── py/                          # PyO3 adapter -> `paginate_core` module
 │   │   └── src/{lib.rs, conv.rs}
-│   └── node/                        # napi-rs adapter -> Node/TS .node addon  (planned)
+│   └── node/                        # napi-rs adapter -> Node/TS .node addon
 │       └── src/lib.rs
 └── packages/
     ├── python/                      # consumed by the pypaginate package + its
-    │                                #   ORMs (e.g. SQLAlchemy)               (planned)
-    └── ts/                          # future npm package + its ORMs
-                                     #   (e.g. Prisma / Drizzle / TypeORM)    (planned)
+    │                                #   ORMs (e.g. SQLAlchemy)
+    └── ts/                          # npm package skeleton + its ORMs
+                                     #   (e.g. Prisma / Drizzle / TypeORM)
 ```
 
-`crates/core` and `crates/py` exist today. `crates/node` and `packages/` are
-the agreed target shape; the core engine is complete and the adapters layer on
-top of it without engine changes.
+`crates/core`, `crates/py`, and `crates/node` are built and validated;
+`packages/` holds consumer scaffolding. The core engine is complete and the
+adapters layer on top without engine changes.
 
 ## Ports & adapters — the strict boundary rule
 
@@ -152,8 +152,25 @@ never invalidates a client's existing cursors.
 | `filter` (20 ops, groups) | ✅ | ✅ 9/9 cases |
 | `sort` (multi-key, nulls) | ✅ | ✅ 13/13 cases (with search) |
 | `search` (rank, weights) | ✅ | ✅ (fuzzy uses fallback; rapidfuzz parity tracked) |
-| **PyO3 adapter** (`crates/py`) | cursor, normalize, pagination ✅ | filter/sort/search bindings: planned |
-| **napi-rs adapter** (`crates/node`) | planned | — |
+| **PyO3 adapter** (`crates/py`) | cursor, normalize, pagination, filter, sort, search ✅ | — |
+| **napi-rs adapter** (`crates/node`) | full surface ✅ | validated from Node (cursor wire-identical) |
+
+> Plus 8 `proptest` properties (cursor round-trip, filter-never-adds,
+> sort-permutation/monotonic/idempotent, search-subset, max_results cap).
+
+### Native acceleration in pypaginate (benchmark-gated)
+
+A full benchmark ([BENCHMARKS.md](BENCHMARKS.md)) settled which paths are worth
+the FFI in **Python**, where the pure engines are already 7-round-optimized:
+
+| Path | Native in Python? |
+|------|-------------------|
+| cursor codec | ✅ integrated (both-path verified) |
+| ranked `SearchEngine` | ✅ integrated, gated (non-fuzzy, unweighted, ≥1000 items); native == pure verified |
+| filter · sort · match-filter | ❌ pure-Python wins (marshalling-bound) |
+
+For **JS/TS** the calculus flips — a naive JS engine has nothing to beat, so the
+native adapter wins across the board, which is the core's primary payoff.
 
 ## JS/TS adapter (native-first)
 
@@ -171,11 +188,11 @@ It is a future option, never the foundation.
 
 ## Known follow-ups
 
-- Filter/sort/search PyO3 bindings (projected extraction over host items).
-- napi-rs adapter (`crates/node`) + the `packages/ts` npm package.
-- Wire the `rapidfuzz` Rust crate for fuzzy score parity with Python's rapidfuzz.
-- Publish the `paginate-core` Python module so `pip install paginate-core`
-  enables native acceleration for the `pypaginate` package.
+- Flesh out the `packages/ts` npm package consuming the `.node` addon.
+- Fuzzy parity is blocked upstream — the `rapidfuzz` Rust crate (0.5) lacks
+  `partial_ratio` / `token_sort_ratio`, so fuzzy search stays pure-Python.
+- Publish the `paginate-core` wheel + npm addon so consumers get native
+  acceleration with automatic pure-language fallback.
 
 ## Develop
 
@@ -184,8 +201,8 @@ cargo test --workspace                      # unit + golden-vector tests
 cargo clippy --workspace --all-targets -- -D warnings
 maturin build -r -m crates/py/Cargo.toml    # Python module (paginate_core)
 
-# Node/TS adapter (planned crate):
-napi build --release --cargo-cwd crates/node
+# Node/TS adapter:
+( cd crates/node && npm install && npm run build )   # -> .node + index.js/.d.ts
 
 # Optional browser/edge portability check (not a release target):
 cargo build -p paginate-core --target wasm32-unknown-unknown
