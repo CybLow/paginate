@@ -27,25 +27,52 @@ optimized (38 rounds). So before wiring anything, we measured.
 | Match-filter (`MemorySearchBackend`, the pipeline path) | 1 field | 1235 µs | 2771 µs | 0.45× | **pure-Python** |
 | Match-filter (pipeline) | 2 fields            | 4088 µs | 4039 µs | 1.01× | tie |
 
+## Results — JS/Node (naive pure-JS vs native addon, 10K objects)
+
+| Engine | naive pure-JS | native (+napi marshalling) | speedup | winner |
+|--------|---------------|----------------------------|---------|--------|
+| Filter (2 ops)    |  54 µs | 12,536 µs | 0.004× | **naive JS (~230×)** |
+| Sort (1 key)      | 322 µs | 13,396 µs | 0.024× | **naive JS (~42×)** |
+| Search (contains) | 154 µs | 12,826 µs | 0.012× | **naive JS (~83×)** |
+
+V8's JIT runs `Array.filter`/`sort` on native objects in microseconds, while the
+napi boundary must marshal **whole** 10K objects (JS → serde_json → `Value`),
+costing ~12 ms. For JS the in-memory engines lose *catastrophically* — the
+opposite of a win.
+
 ## Conclusion
 
-The boundary cost is decided by **compute-per-item vs marshalling-per-item**:
+The boundary cost is decided by **compute-per-item vs marshalling-per-item**,
+and the data is unambiguous in *both* languages:
 
-- **Compute-heavy → native wins.** Ranked search (`SearchEngine`) tokenizes,
-  scores, and ranks per field per item — native wins up to **2.1×**.
-- **Lightweight → marshalling dominates, native loses or ties.** Filter, sort,
-  and the pipeline's *match-filter* search are little more than an accessor +
-  compare/substring per item; projecting 10K items to `Value` costs more than
-  it saves. (Single-field match-filter is 2.2× *slower* native.)
+- **Crossing the FFI to filter/sort an in-memory list is not worth it.** The
+  per-item work (accessor + compare) is tiny; marshalling 10K items dominates.
+  Optimized Python is roughly even; JIT'd V8 beats native by **40–230×**.
+- **Native wins only when marshalling is cheap or the host is slow:** the
+  **cursor codec** (a few scalars, no per-item marshalling) and Python's
+  **ranked `SearchEngine`** (heavy tokenize/score/rank per item; CPython is
+  slower than V8).
 
-So in **Python**, native helps exactly two paths: the **cursor codec** and the
-**ranked `SearchEngine`**. Everything else stays pure-Python.
+> **This corrects an earlier assumption.** Native does *not* "win across the
+> board for JS" — measured, the opposite is true: naive JS wins the in-memory
+> engines decisively.
 
-> **The bigger picture:** native barely moves pypaginate's already-optimized
-> Python in-memory engines — the Rust core's primary value is the **polyglot
-> story** (a *naive* JS/TS engine has no 7-round optimization, so native will
-> win there across the board) plus the cursor codec. The bindings for filter /
-> sort / match-filter are retained for exactly that reason.
+### So why a shared Rust core at all?
+
+Its primary value is **cross-language behaviour consistency**, not raw in-memory
+speed:
+
+1. **One implementation** of the cursor codec, the 20 filter operators, the
+   null-aware sort, and ranked search — Python and JS share *identical
+   semantics*, with no drift from reimplementation.
+2. **Cursor wire-compatibility** — a cursor minted by the Python service decodes
+   byte-for-byte in the JS service and back (verified). This alone justifies the
+   core for a polyglot system.
+3. **Targeted speed** where it measurably helps: Python cursor + ranked search.
+
+The filter/sort/search **bindings are kept for behaviour parity** (a caller who
+needs pypaginate's *exact* semantics can use them), but for raw speed a host
+should use its own array operations — and the README/ARCHITECTURE say so plainly.
 
 ### Decision & status (Python package)
 
