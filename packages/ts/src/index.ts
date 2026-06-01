@@ -71,9 +71,26 @@ export const normalize = (value: string): string => core.normalizeText(value);
 // -- in-memory engines (behaviour parity; prefer native Array ops for speed) --
 
 export type FilterOp =
-  | "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "in" | "not_in"
-  | "contains" | "starts_with" | "ends_with" | "like" | "ilike"
-  | "between" | "is_null" | "is_not_null" | "regex" | "empty" | "not_empty" | "exists";
+  | "eq"
+  | "ne"
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte"
+  | "in"
+  | "not_in"
+  | "contains"
+  | "starts_with"
+  | "ends_with"
+  | "like"
+  | "ilike"
+  | "between"
+  | "is_null"
+  | "is_not_null"
+  | "regex"
+  | "empty"
+  | "not_empty"
+  | "exists";
 
 export interface FilterSpec {
   field: string;

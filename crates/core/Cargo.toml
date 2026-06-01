@@ -24,3 +24,6 @@ unicode-normalization = { workspace = true }
 
 [dev-dependencies]
 proptest = "1.8.0"
+
+[lints]
+workspace = true

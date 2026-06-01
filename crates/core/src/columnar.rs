@@ -75,31 +75,49 @@ impl Columns {
         }
     }
 
-    /// Sort an existing index list by a single typed column, preserving relative
-    /// order for equal keys (stable). Returns `None` for the fallback case (the
-    /// field is not a typed column). A typed column has no nulls, so null
-    /// placement is irrelevant; the result matches [`crate::sort::sort_indices`]
-    /// for a single key.
+    /// Sort an existing index list by one or more typed-column keys, preserving
+    /// relative order for equal keys (stable). Returns `None` unless **every**
+    /// key is a typed column. Keys are applied highest-priority first (matching
+    /// [`crate::sort::sort_indices`]); typed columns have no nulls, so null
+    /// placement is irrelevant.
     #[must_use]
     pub fn sort_subset(
         &self,
         order: &[usize],
-        field: &str,
-        direction: SortDirection,
+        keys: &[(&str, SortDirection)],
     ) -> Option<Vec<usize>> {
-        let column = self.columns.get(field)?; // unknown field -> fall back, no clone
+        if keys.is_empty() {
+            return None;
+        }
+        // Resolve every key first; if any field is not a typed column, fall back
+        // (and avoid cloning `order`).
+        let resolved: Vec<(&Column, bool)> = keys
+            .iter()
+            .map(|(field, direction)| {
+                self.columns
+                    .get(*field)
+                    .map(|column| (column, *direction == SortDirection::Desc))
+            })
+            .collect::<Option<Vec<_>>>()?;
         let mut order = order.to_vec();
-        let desc = direction == SortDirection::Desc;
-        match column {
-            Column::Int(col) => order.sort_by(|&a, &b| oriented(col[a].cmp(&col[b]), desc)),
-            // No NaN in the column (build disqualifies it), so `partial_cmp` is
-            // total; `Equal` is an unreachable safety default.
-            Column::Float(col) => order.sort_by(|&a, &b| {
-                oriented(col[a].partial_cmp(&col[b]).unwrap_or(Ordering::Equal), desc)
-            }),
-            Column::Str(col) => order.sort_by(|&a, &b| oriented(col[a].cmp(&col[b]), desc)),
+        // Apply keys in reverse so the first key wins under a stable sort —
+        // exactly how the row engine layers its `sort_by` calls.
+        for (column, desc) in resolved.iter().rev() {
+            sort_one(&mut order, column, *desc);
         }
         Some(order)
+    }
+}
+
+/// Stable-sort `order` in place by one typed column, oriented for descending.
+fn sort_one(order: &mut [usize], column: &Column, desc: bool) {
+    match column {
+        Column::Int(col) => order.sort_by(|&a, &b| oriented(col[a].cmp(&col[b]), desc)),
+        // A built float column has no NaN, so `partial_cmp` is total.
+        Column::Float(col) => order.sort_by(|&a, &b| {
+            oriented(col[a].partial_cmp(&col[b]).unwrap_or(Ordering::Equal), desc)
+        }),
+        Column::Str(col) => order.sort_by(|&a, &b| oriented(col[a].cmp(&col[b]), desc)),
     }
 }
 
@@ -209,194 +227,4 @@ fn comparison<T: PartialOrd + ?Sized>(op: FilterOp) -> Option<fn(&T, &T) -> bool
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::filter::{filter_indices, FilterInput, FilterLogic, FilterSpec};
-    use crate::sort::{sort_indices, NullsPosition, SortSpec};
-
-    fn item(pairs: &[(&str, Value)]) -> Value {
-        let mut map = BTreeMap::new();
-        for (key, value) in pairs {
-            map.insert((*key).to_owned(), value.clone());
-        }
-        Value::Map(map)
-    }
-
-    fn row_filter(items: &[Value], field: &str, op: FilterOp, value: Value) -> Vec<usize> {
-        filter_indices(
-            items,
-            &FilterInput::Flat(vec![FilterSpec {
-                field: field.into(),
-                op,
-                value,
-                logic: FilterLogic::And,
-            }]),
-        )
-        .unwrap()
-    }
-
-    const OPS: [FilterOp; 6] = [
-        FilterOp::Gt,
-        FilterOp::Gte,
-        FilterOp::Lt,
-        FilterOp::Lte,
-        FilterOp::Eq,
-        FilterOp::Ne,
-    ];
-
-    #[test]
-    fn int_columnar_matches_row_engine() {
-        let items: Vec<Value> = (0..50).map(|i| item(&[("age", Value::Int(i))])).collect();
-        let cols = Columns::build(&items);
-        for op in OPS {
-            let columnar = cols.filter("age", op, &Value::Int(30)).unwrap();
-            assert_eq!(
-                columnar,
-                row_filter(&items, "age", op, Value::Int(30)),
-                "{op:?}"
-            );
-        }
-    }
-
-    #[test]
-    fn float_columnar_matches_row_engine() {
-        let items: Vec<Value> = (0..50)
-            .map(|i| item(&[("p", Value::Float(f64::from(i) / 2.0))]))
-            .collect();
-        let cols = Columns::build(&items);
-        // Float needle and an int needle (cross-type coercion, `p > 5`).
-        for needle in [Value::Float(9.5), Value::Int(5)] {
-            for op in OPS {
-                let columnar = cols.filter("p", op, &needle).unwrap();
-                let row = row_filter(&items, "p", op, needle.clone());
-                assert_eq!(columnar, row, "{op:?} {needle:?}");
-            }
-        }
-    }
-
-    #[test]
-    fn str_columnar_matches_row_engine() {
-        let names = ["alice", "bob", "carol", "bob", "dave"];
-        let items: Vec<Value> = names
-            .iter()
-            .map(|n| item(&[("name", Value::Str((*n).into()))]))
-            .collect();
-        let cols = Columns::build(&items);
-        for op in OPS {
-            let needle = Value::Str("bob".into());
-            let columnar = cols.filter("name", op, &needle).unwrap();
-            assert_eq!(columnar, row_filter(&items, "name", op, needle), "{op:?}");
-        }
-    }
-
-    #[test]
-    fn columnar_sort_matches_row_engine() {
-        let items = vec![
-            item(&[("n", Value::Int(3)), ("s", Value::Str("c".into()))]),
-            item(&[("n", Value::Int(1)), ("s", Value::Str("a".into()))]),
-            item(&[("n", Value::Int(2)), ("s", Value::Str("b".into()))]),
-        ];
-        let cols = Columns::build(&items);
-        for (field, dir) in [
-            ("n", SortDirection::Asc),
-            ("n", SortDirection::Desc),
-            ("s", SortDirection::Asc),
-            ("s", SortDirection::Desc),
-        ] {
-            let order: Vec<usize> = (0..items.len()).collect();
-            let columnar = cols.sort_subset(&order, field, dir).unwrap();
-            let row = sort_indices(
-                &items,
-                &[SortSpec {
-                    field: field.into(),
-                    direction: dir,
-                    nulls: NullsPosition::Last,
-                }],
-            )
-            .unwrap();
-            assert_eq!(columnar, row, "{field} {dir:?}");
-        }
-    }
-
-    #[test]
-    fn float_sort_is_stable_and_matches_row_engine() {
-        // Ties on the float key must preserve input order (stable), like the row
-        // engine's repeated stable sort.
-        let items: Vec<Value> = [1.0, 1.0, 0.5, 2.0, 0.5]
-            .iter()
-            .map(|f| item(&[("p", Value::Float(*f))]))
-            .collect();
-        let cols = Columns::build(&items);
-        let order: Vec<usize> = (0..items.len()).collect();
-        let columnar = cols.sort_subset(&order, "p", SortDirection::Asc).unwrap();
-        let row = sort_indices(
-            &items,
-            &[SortSpec {
-                field: "p".into(),
-                direction: SortDirection::Asc,
-                nulls: NullsPosition::Last,
-            }],
-        )
-        .unwrap();
-        assert_eq!(columnar, row);
-    }
-
-    #[test]
-    fn disqualifies_mixed_null_or_nan_fields() {
-        // A null in an otherwise-int field disqualifies it.
-        let with_null = vec![item(&[("a", Value::Int(1))]), item(&[("a", Value::Null)])];
-        assert!(Columns::build(&with_null)
-            .filter("a", FilterOp::Gte, &Value::Int(0))
-            .is_none());
-        // Mixed int/float disqualifies (row engine coerces; column can't be typed).
-        let mixed = vec![
-            item(&[("a", Value::Int(1))]),
-            item(&[("a", Value::Float(2.0))]),
-        ];
-        assert!(Columns::build(&mixed)
-            .filter("a", FilterOp::Gte, &Value::Int(0))
-            .is_none());
-        // A NaN disqualifies a float field.
-        let nan = vec![
-            item(&[("a", Value::Float(1.0))]),
-            item(&[("a", Value::Float(f64::NAN))]),
-        ];
-        assert!(Columns::build(&nan)
-            .filter("a", FilterOp::Lt, &Value::Float(5.0))
-            .is_none());
-    }
-
-    #[test]
-    fn unsupported_ops_and_fields_fall_back() {
-        let items: Vec<Value> = (0..5).map(|i| item(&[("age", Value::Int(i))])).collect();
-        let cols = Columns::build(&items);
-        // String operator on an int column -> not handled.
-        assert!(cols
-            .filter("age", FilterOp::Contains, &Value::Int(1))
-            .is_none());
-        // Unknown field / non-int needle on int column -> fall back.
-        assert!(cols
-            .filter("missing", FilterOp::Eq, &Value::Int(1))
-            .is_none());
-        assert!(cols
-            .filter("age", FilterOp::Eq, &Value::Float(1.5))
-            .is_none());
-        assert!(cols
-            .sort_subset(&[0], "missing", SortDirection::Asc)
-            .is_none());
-    }
-
-    #[test]
-    fn large_integers_filter_exactly() {
-        // Two ints that collapse to one f64; exact i64 eq must distinguish them.
-        let items = vec![
-            item(&[("id", Value::Int(9_007_199_254_740_992))]),
-            item(&[("id", Value::Int(9_007_199_254_740_993))]),
-        ];
-        let cols = Columns::build(&items);
-        let needle = Value::Int(9_007_199_254_740_992);
-        let columnar = cols.filter("id", FilterOp::Eq, &needle).unwrap();
-        assert_eq!(columnar, vec![0]);
-        assert_eq!(columnar, row_filter(&items, "id", FilterOp::Eq, needle));
-    }
-}
+mod tests;
