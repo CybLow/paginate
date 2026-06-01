@@ -78,6 +78,33 @@ maturin build -r -m crates/py/Cargo.toml   # in the paginate-core repo
 uv pip install path/to/paginate_core-*.whl
 ```
 
+## The resident `Dataset` — one call, columnar speed
+
+The headline optimization is a **resident** dataset: marshal rows into the core
+**once**, then run filter → sort → paginate natively in a single call. Exposed as
+the public `pypaginate.Dataset` (native one-call when available, pure-Python
+fallback otherwise — an identical `OffsetPage` either way):
+
+```python
+from pypaginate import Dataset, FilterSpec, OffsetParams, SortSpec
+
+ds = Dataset(rows)  # rows marshalled into the core once
+page = ds.paginate(
+    OffsetParams(page=1, limit=20),
+    filters=[FilterSpec(field="age", operator="gte", value=18)],
+    sorting=[SortSpec(field="age")],
+)  # one native FFI crossing -> OffsetPage
+```
+
+Fields that hold the same scalar (`int`/`float`/`str`) in *every* row get a dense
+typed column, so the filter and sort stages skip the per-row map lookup and
+`Value` dispatch. On 10K rows the one-call pipeline is **~36× faster** than the
+pure-Python pipeline (a single int filter ~28×, single-key sort ~9×) — all
+**verified identical** to pure-Python (a column is built only when it can't
+diverge from the row engine). The same `Dataset` exists for Node/TS; there V8
+wins the single ops but the fused `page()` still wins ~6×. See
+[BENCHMARKS.md](https://github.com/CybLow/paginate-core/blob/main/BENCHMARKS.md).
+
 ## Verification
 
 * Cursor wire format is **byte-identical** to the Python codec (golden vectors,
@@ -89,11 +116,11 @@ uv pip install path/to/paginate_core-*.whl
 
 ## Status & next steps
 
-Done: pure core (50 cargo tests), `abi3` wheel, PyO3 bindings for
-cursor/normalize/pagination, cursor codec integrated with fallback, `crates/node`
-napi-rs adapter scaffolded.
+Done: pure core (62 cargo tests + 8 property), `abi3` wheel, PyO3 + napi-rs
+bindings, cursor codec + ranked search integrated with fallback, and the
+**resident `Dataset`** — filter/sort/paginate in one call with a columnar fast
+path (int/float/str) — exposed as the public `pypaginate.Dataset` (native +
+pure-Python fallback, identical `OffsetPage`) and as a Node/TS `Dataset`.
 
-Next: filter/sort/search bindings — **benchmark-gated** (per-item FFI marshalling
-may not beat the already-optimized pure-Python engines; wire only where Rust
-demonstrably wins) → full property suite on the native path → `rapidfuzz` parity
-→ publish the wheel + npm addon.
+Next: `rapidfuzz` crate parity for fuzzy/token-sort search → publish the wheel +
+npm addon → optional grouped-filter / multi-key columnar in the one-call path.
