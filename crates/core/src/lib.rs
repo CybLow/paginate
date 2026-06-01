@@ -30,6 +30,7 @@ pub mod error;
 pub mod filter;
 pub mod normalize;
 pub mod pagination;
+pub mod pipeline;
 pub mod search;
 pub mod sort;
 pub mod value;
