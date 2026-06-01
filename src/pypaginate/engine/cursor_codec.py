@@ -19,7 +19,7 @@ from pypaginate.domain.exceptions import ValidationError
 _TYPE_KEY = "__type__"
 
 
-def encode_cursor(values: tuple[Any, ...]) -> str:
+def _encode_cursor_python(values: tuple[Any, ...]) -> str:
     """Encode cursor values to a URL-safe string.
 
     Args:
@@ -33,7 +33,7 @@ def encode_cursor(values: tuple[Any, ...]) -> str:
     return base64.urlsafe_b64encode(payload.encode()).decode().rstrip("=")
 
 
-def decode_cursor(cursor: str) -> tuple[Any, ...]:
+def _decode_cursor_python(cursor: str) -> tuple[Any, ...]:
     """Decode a cursor string back to a values tuple.
 
     Args:
@@ -102,6 +102,46 @@ def _deserialize_value(value: Any) -> Any:
     try:
         return deserializer(raw)
     except (ValueError, TypeError, InvalidOperation) as exc:
+        raise ValidationError("Invalid cursor") from exc
+
+
+# -- Optional native acceleration (pypaginate-core, Rust) --------------------
+# When the compiled ``pypaginate_core`` extension is installed, delegate to its
+# byte-compatible Rust implementation; otherwise use the pure-Python codec
+# above. Same graceful-degradation pattern as msgspec / rapidfuzz / google-re2.
+try:
+    from paginate_core import (  # type: ignore[import-not-found]
+        decode_cursor as _native_decode,
+        encode_cursor as _native_encode,
+    )
+
+    _HAS_NATIVE = True
+except ImportError:
+    _HAS_NATIVE = False
+
+
+def encode_cursor(values: tuple[Any, ...]) -> str:
+    """Encode cursor values to a URL-safe string.
+
+    Uses the native ``pypaginate-core`` extension when available, falling back
+    to the pure-Python codec. The wire format is identical either way.
+    """
+    if _HAS_NATIVE:
+        return str(_native_encode(values))
+    return _encode_cursor_python(values)
+
+
+def decode_cursor(cursor: str) -> tuple[Any, ...]:
+    """Decode a cursor string back to a values tuple.
+
+    Raises:
+        ValidationError: If the cursor is malformed or tampered with.
+    """
+    if not _HAS_NATIVE:
+        return _decode_cursor_python(cursor)
+    try:
+        return tuple(_native_decode(cursor))
+    except ValueError as exc:
         raise ValidationError("Invalid cursor") from exc
 
 
