@@ -74,6 +74,36 @@ The filter/sort/search **bindings are kept for behaviour parity** (a caller who
 needs pypaginate's *exact* semantics can use them), but for raw speed a host
 should use its own array operations — and the README/ARCHITECTURE say so plainly.
 
+## Making Rust actually win — the resident `Dataset`
+
+The one-shot bindings re-marshal every item on every call, so the FFI tax is
+paid per query. The fix is **marshal once, query many**: `paginate_core.Dataset`
+holds the rows as `Value` in Rust, built once, then answers filter/sort/search
+queries natively (returning indices) with **no re-marshalling**.
+
+Once resident, Rust's compute advantage is real and large (10K rows, `age >= 50`):
+
+| | per query | vs pure-Python |
+|---|-----------|----------------|
+| pure-Python `FilterEngine` | 1029 µs | — |
+| native `Dataset.filter` | **102 µs** | **10.1× faster** |
+
+Amortizing the one-time ~6 ms build over N queries gives a clean crossover:
+
+| queries | native (build + N) | pure-Python | winner |
+|--------:|--------------------|-------------|--------|
+| 1   | 6.2 ms  | 1.0 ms   | pure (build not amortized) |
+| 10  | 7.2 ms  | 10.1 ms  | **native 1.4×** |
+| 50  | 12.0 ms | 50.7 ms  | **native 4.2×** |
+| 100 | 17.9 ms | 101.6 ms | **native 5.7×** (→ 10× as N grows) |
+
+**So Rust *is* faster — the trick is not paying the FFI toll on every query.**
+Use `Dataset` for a stable in-memory dataset served by many paginated/filtered
+requests (an in-memory cache, a config table, a search index); one-shot calls on
+data that lives in the host should stay in the host. A *columnar* `Dataset`
+(typed per-field arrays instead of `Value` maps) is the next lever for an even
+larger per-query win.
+
 ### Decision & status (Python package)
 
 | Path | Native in Python? | Status |
