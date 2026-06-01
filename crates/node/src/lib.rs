@@ -160,3 +160,135 @@ pub fn offset_meta(page: u32, limit: u32, total: u32) -> OffsetMeta {
 pub fn clamp_page(page: u32, limit: u32, total: u32) -> i64 {
     core::pagination::clamp_page(page.into(), limit.into(), total.into()) as i64
 }
+
+// -- in-memory engines (filter / sort / search) ------------------------------
+//
+// Items arrive as a JS array of objects; napi marshals them to serde_json and
+// we map to core Values. The engines return indices; the JS caller selects from
+// its original array. Unlike pypaginate's 7-round-optimized pure-Python engines
+// (where FFI marshalling can dominate), a naive JS engine has nothing to beat —
+// so native wins here across the board.
+
+fn json_array_to_values(items: &Json) -> Result<Vec<core::Value>> {
+    match items {
+        Json::Array(array) => Ok(array.iter().map(json_to_value).collect()),
+        _ => Err(Error::new(Status::InvalidArg, "items must be an array")),
+    }
+}
+
+fn spec_object(spec: &Json) -> Result<&Map<String, Json>> {
+    spec.as_object()
+        .ok_or_else(|| Error::new(Status::InvalidArg, "each spec must be an object"))
+}
+
+fn required_str(obj: &Map<String, Json>, key: &str) -> Result<String> {
+    obj.get(key)
+        .and_then(Json::as_str)
+        .map(str::to_owned)
+        .ok_or_else(|| Error::new(Status::InvalidArg, format!("spec.{key} must be a string")))
+}
+
+fn parse_filter_specs(specs: &Json) -> Result<Vec<core::filter::FilterSpec>> {
+    let array = specs
+        .as_array()
+        .ok_or_else(|| Error::new(Status::InvalidArg, "specs must be an array"))?;
+    let mut out = Vec::with_capacity(array.len());
+    for spec in array {
+        let obj = spec_object(spec)?;
+        let op_name = required_str(obj, "op")?;
+        let op = core::filter::FilterOp::from_name(&op_name).ok_or_else(|| {
+            Error::new(Status::InvalidArg, format!("unknown operator: {op_name}"))
+        })?;
+        let logic = match obj.get("logic").and_then(Json::as_str) {
+            Some("or") => core::filter::FilterLogic::Or,
+            _ => core::filter::FilterLogic::And,
+        };
+        out.push(core::filter::FilterSpec {
+            field: required_str(obj, "field")?,
+            op,
+            value: obj.get("value").map_or(core::Value::Null, json_to_value),
+            logic,
+        });
+    }
+    Ok(out)
+}
+
+/// Indices of items matching flat filter specs `[{field, op, value, logic?}]`.
+#[napi]
+pub fn filter_indices(items: Json, specs: Json) -> Result<Vec<u32>> {
+    let values = json_array_to_values(&items)?;
+    let core_specs = parse_filter_specs(&specs)?;
+    let indices =
+        core::filter::filter_indices(&values, &core::filter::FilterInput::Flat(core_specs))
+            .map_err(|e| core_err(&e))?;
+    Ok(indices.into_iter().map(|i| i as u32).collect())
+}
+
+fn parse_sort_specs(specs: &Json) -> Result<Vec<core::sort::SortSpec>> {
+    let array = specs
+        .as_array()
+        .ok_or_else(|| Error::new(Status::InvalidArg, "specs must be an array"))?;
+    let mut out = Vec::with_capacity(array.len());
+    for spec in array {
+        let obj = spec_object(spec)?;
+        let direction = match obj.get("direction").and_then(Json::as_str) {
+            Some("desc") => core::sort::SortDirection::Desc,
+            _ => core::sort::SortDirection::Asc,
+        };
+        let nulls = match obj.get("nulls").and_then(Json::as_str) {
+            Some("first") => core::sort::NullsPosition::First,
+            _ => core::sort::NullsPosition::Last,
+        };
+        out.push(core::sort::SortSpec {
+            field: required_str(obj, "field")?,
+            direction,
+            nulls,
+        });
+    }
+    Ok(out)
+}
+
+/// A permutation of item indices for sort specs `[{field, direction?, nulls?}]`.
+#[napi]
+pub fn sort_indices(items: Json, specs: Json) -> Result<Vec<u32>> {
+    let values = json_array_to_values(&items)?;
+    let core_specs = parse_sort_specs(&specs)?;
+    let indices = core::sort::sort_indices(&values, &core_specs).map_err(|e| core_err(&e))?;
+    Ok(indices.into_iter().map(|i| i as u32).collect())
+}
+
+/// Ranked search: indices of items by relevance of `query` over `fields`.
+#[napi]
+#[allow(clippy::too_many_arguments)]
+pub fn search_indices(
+    items: Json,
+    query: String,
+    fields: Vec<String>,
+    mode: Option<String>,
+    fuzzy: Option<String>,
+    threshold: Option<i64>,
+    min_length: Option<u32>,
+    max_results: Option<u32>,
+) -> Result<Vec<u32>> {
+    let values = json_array_to_values(&items)?;
+    let spec = core::search::SearchSpec {
+        query,
+        fields,
+        weights: None,
+        mode: match mode.as_deref() {
+            Some("prefix") => core::search::SearchFieldMode::Prefix,
+            Some("exact") => core::search::SearchFieldMode::Exact,
+            _ => core::search::SearchFieldMode::Contains,
+        },
+        fuzzy: match fuzzy.as_deref() {
+            Some("fuzzy") => core::search::FuzzyMode::Fuzzy,
+            Some("token_sort") => core::search::FuzzyMode::TokenSort,
+            _ => core::search::FuzzyMode::Exact,
+        },
+        threshold: threshold.unwrap_or(75),
+        min_length: min_length.unwrap_or(1) as usize,
+        max_results: max_results.map(|m| m as usize),
+    };
+    let indices = core::search::search_indices(&values, &spec).map_err(|e| core_err(&e))?;
+    Ok(indices.into_iter().map(|i| i as u32).collect())
+}
