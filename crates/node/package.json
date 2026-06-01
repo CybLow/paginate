@@ -1,7 +1,7 @@
 {
   "name": "paginate-core",
   "version": "0.1.0",
-  "description": "Node/TypeScript native bindings for paginate-core (cursor codec, text normalization, offset pagination math).",
+  "description": "Node/TypeScript native bindings for paginate-core (cursor codec, text normalization, pagination math, filtering, sorting, search).",
   "license": "MIT",
   "repository": {
     "type": "git",
