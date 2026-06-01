@@ -25,6 +25,7 @@
 mod accessor;
 
 pub mod coerce;
+pub mod columnar;
 pub mod cursor;
 pub mod error;
 pub mod filter;

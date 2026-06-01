@@ -107,9 +107,11 @@ crossover:
 **So Rust *is* faster — the trick is not paying the FFI toll on every query.**
 Use `Dataset` for a stable in-memory dataset served by many paginated/filtered
 requests (an in-memory cache, a config table, a search index); one-shot calls on
-data that lives in the host should stay in the host. A *columnar* `Dataset`
-(typed per-field arrays instead of `Value` maps) is the next lever for an even
-larger per-query win.
+data that lives in the host should stay in the host. And a **columnar** fast
+path — a dense `Vec<i64>` for fields that are integers in *every* row — takes a
+single integer filter from 10.8× to **29×** (36 µs vs 1022 µs; no map lookup, no
+`Value` dispatch, results identical to pure-Python). Extending columnar to
+float/string columns and to the sort + pipeline stages is the remaining lever.
 
 ### One call, the whole pipeline
 
