@@ -16,6 +16,7 @@ Input type determines output type (Elysia-style inference)::
 from __future__ import annotations
 
 from pypaginate._dispatch import paginate
+from pypaginate.dataset import Dataset
 from pypaginate.domain.enums import (
     FilterLogic,
     FuzzyMode,
@@ -46,6 +47,7 @@ __all__ = [
     "ConfigurationError",
     "CursorPage",
     "CursorParams",
+    "Dataset",
     "FilterError",
     "FilterGroup",
     "FilterLogic",
