@@ -1,0 +1,13 @@
+# The PyO3 and napi-rs extension-module cdylibs deliberately do NOT link
+# libpython / libnode — the host process provides those symbols at load time.
+# On macOS the linker rejects the resulting undefined symbols unless told to
+# resolve them dynamically, so plain `cargo build` / `cargo test` of the whole
+# workspace fail without this. maturin and @napi-rs/cli set the same flag
+# themselves (and override these via env), and Linux permits undefined symbols
+# in cdylibs by default — so this is a macOS-only developer-experience fix that
+# makes `cargo test --workspace` "just work" here.
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]
+
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]
