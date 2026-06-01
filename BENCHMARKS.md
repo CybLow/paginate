@@ -108,21 +108,51 @@ crossover:
 Use `Dataset` for a stable in-memory dataset served by many paginated/filtered
 requests (an in-memory cache, a config table, a search index); one-shot calls on
 data that lives in the host should stay in the host. And a **columnar** fast
-path — a dense `Vec<i64>` for fields that are integers in *every* row — takes a
-single integer filter from 10.8× to **29×** (36 µs vs 1022 µs; no map lookup, no
-`Value` dispatch, results identical to pure-Python). Extending columnar to
-float/string columns and to the sort + pipeline stages is the remaining lever.
+path — a dense typed `Vec` for fields that hold the same scalar (`i64`/`f64`/
+`String`) in *every* row — now backs the filter **and** sort stages, with
+results identical to pure-Python:
+
+| op (10K rows)               | pure-Python | native columnar | speedup |
+|-----------------------------|-------------|-----------------|---------|
+| filter int (`age >= n`)     | 1022 µs     | 36 µs           | **28×** |
+| filter float (`price > x`)  |  527 µs     | 36 µs           | **14.5×** |
+| filter str (`name == x`)    |  556 µs     | 20 µs           | **28×** |
+| sort int (single key)       | 1068 µs     | 115 µs          | **9.3×** |
+
+A column is built only when the field is that exact scalar in every row, so the
+typed scan (no map lookup, no `Value` dispatch) can't diverge from the row engine.
 
 ### One call, the whole pipeline
 
 Better still, the core runs **filter → sort → paginate in a single call**
 (`Dataset.page`), returning the page's indices + offset metadata. The host
 passes specs once and maps the returned indices back to its own rows — no
-orchestration in the host language. On 10K rows (filter + 2-key sort + page),
-that one call is **4.7× faster** than the pure-Python pipeline and is a single
-FFI crossing per request. This is the "powerful core, thin adapter" shape: the
-engine lives in Rust; the host only marshals the dataset once and selects by
-index.
+orchestration in the host language. Because the pipeline routes its filter and
+sort stages through the columnar path, on 10K rows (int filter + float sort +
+page) that one call is **35.7× faster** than the pure-Python pipeline (30 µs vs
+1069 µs) — up from 4.7× before columnar — and is a single FFI crossing per
+request. This is the "powerful core, thin adapter" shape: the engine lives in
+Rust; the host only marshals the dataset once and selects by index.
+
+### The resident Dataset in JS, too
+
+The same `Dataset` exists for Node/TS. JS is the harder case — V8's JIT runs
+`Array.filter`/`sort` on native objects in microseconds — so the honest result
+is split (10K objects, release addon):
+
+| op | pure-JS | resident `Dataset` | winner |
+|----|---------|--------------------|--------|
+| filter int (`age >= 50`)        |  76 µs | 275 µs | **pure-JS 3.6×** |
+| sort float (`price` desc)       | 283 µs | 416 µs | **pure-JS 1.5×** |
+| **pipeline (filter+sort+page)** | 176 µs | **28 µs** | **resident 6.3×** |
+
+Single ops lose: the napi index return + the JS index→row map cost more than the
+tiny per-item saving. But the **one-call `page()` wins 6.3× even in JS** — it
+fuses filter→sort→slice into a single native columnar pass and returns only the
+20-row page, whereas pure-JS must materialize the full filtered array and sort
+all of it. So in JS, reach for `Dataset.page` (the fused pipeline), not the
+single-op helpers; behaviour parity + the cursor codec remain the cross-language
+anchors.
 
 ### Decision & status (Python package)
 
@@ -130,8 +160,9 @@ index.
 |------|-------------------|--------|
 | cursor codec | ✅ yes | integrated, both-path verified |
 | ranked `SearchEngine` | ✅ yes (gated) | integrated — non-fuzzy, unweighted, ≥1000 items; pure-Python fallback; native==pure verified |
+| resident `pypaginate.Dataset` (filter+sort+paginate) | ✅ yes (opt-in) | **new public API** — native one-call (columnar), pure-Python fallback, identical `OffsetPage` verified |
 | `MemorySearchBackend` (pipeline search) | ❌ no | pure-Python (native loses) |
-| filter, sort | ❌ no | pure-Python (marshalling-bound) |
+| one-shot filter, sort | ❌ no | pure-Python (marshalling-bound) |
 
 ### Caveat
 

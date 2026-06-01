@@ -17,7 +17,8 @@ use std::cmp::Ordering;
 use crate::value::Value;
 
 /// Numeric view of a value (bool as 0/1, decimal parsed), or `None`.
-fn as_number(v: &Value) -> Option<f64> {
+#[must_use]
+pub fn as_number(v: &Value) -> Option<f64> {
     match v {
         Value::Int(i) => Some(*i as f64),
         Value::Float(f) => Some(*f),
@@ -78,6 +79,9 @@ pub fn eq(a: &Value, b: &Value) -> bool {
         (Value::Date(x), Value::Date(y)) => x == y,
         (Value::Uuid(x), Value::Uuid(y)) => x == y,
         (Value::Bytes(x), Value::Bytes(y)) => x == y,
+        // Exact integer equality (matches `compare` and Python's arbitrary-
+        // precision `==`); the f64 fallback below collapses ints past 2^53.
+        (Value::Int(x), Value::Int(y)) => x == y,
         _ => match (as_number(a), as_number(b)) {
             (Some(x), Some(y)) => x == y,
             _ => false,
@@ -151,6 +155,15 @@ mod tests {
         // str("x") != datetime("x") — type matters.
         assert!(!eq(&Value::Str("x".into()), &Value::DateTime("x".into())));
         assert!(!eq(&Value::Int(1), &Value::Str("1".into())));
+    }
+
+    #[test]
+    fn large_integers_compare_exactly() {
+        // 2^53 and 2^53 + 1 are distinct integers that collapse to one f64.
+        let a = Value::Int(9_007_199_254_740_992);
+        let b = Value::Int(9_007_199_254_740_993);
+        assert!(!eq(&a, &b));
+        assert_eq!(compare(&a, &b), Some(Less));
     }
 
     #[test]

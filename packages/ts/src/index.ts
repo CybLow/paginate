@@ -124,6 +124,95 @@ export function searchIndices(
   );
 }
 
+// -- resident Dataset (marshal once, query many) ----------------------------
+
+/** One page of results: the host's own rows for the page, plus offset metadata. */
+export interface Page<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
+
+/**
+ * A resident dataset: marshal the rows into the Rust core ONCE, then run many
+ * `filter`/`sort`/`search`/`page` queries natively. The core returns indices and
+ * this wrapper maps them back to your own objects, so the host stays a thin
+ * adapter and a `page` request is a single FFI crossing.
+ *
+ * This is the only in-memory shape where crossing into Rust can pay off for JS:
+ * the one-shot `filterIndices`/`sortIndices`/`searchIndices` helpers re-marshal
+ * the whole array on every call and lose to V8 (see `BENCHMARKS.md`). Build the
+ * dataset once and query it many times.
+ */
+export class Dataset<T extends object> {
+  private readonly inner: core.Dataset;
+  private readonly rows: readonly T[];
+
+  constructor(rows: readonly T[]) {
+    this.rows = rows;
+    this.inner = new core.Dataset(rows as unknown[]);
+  }
+
+  /** Number of rows held. */
+  get size(): number {
+    return this.inner.size;
+  }
+
+  /** Rows matching the filter specs (pypaginate's exact semantics). */
+  filter(specs: readonly FilterSpec[]): T[] {
+    return this.select(this.inner.filter(specs as unknown[]));
+  }
+
+  /** Rows sorted by the specs (null-aware, stable). */
+  sort(specs: readonly SortSpec[]): T[] {
+    return this.select(this.inner.sort(specs as unknown[]));
+  }
+
+  /** Rows ranked by relevance of `query` over `fields`. */
+  search(query: string, fields: readonly string[], opts: SearchOptions = {}): T[] {
+    return this.select(
+      this.inner.search(
+        query,
+        fields as string[],
+        opts.mode,
+        undefined,
+        opts.threshold,
+        opts.minLength,
+        opts.maxResults,
+      ),
+    );
+  }
+
+  /** Filter + sort + offset-paginate in ONE native call. */
+  page(
+    page: number,
+    limit: number,
+    opts: { filters?: readonly FilterSpec[]; sorting?: readonly SortSpec[] } = {},
+  ): Page<T> {
+    const result = this.inner.page(
+      page,
+      limit,
+      opts.filters as unknown[] | undefined,
+      opts.sorting as unknown[] | undefined,
+    );
+    return {
+      items: this.select(result.indices),
+      total: Number(result.total),
+      page: Number(result.page),
+      pages: Number(result.pages),
+      hasNext: result.hasNext,
+      hasPrevious: result.hasPrevious,
+    };
+  }
+
+  private select(indices: number[]): T[] {
+    return indices.map((i) => this.rows[i] as T);
+  }
+}
+
 // -- example: the ORM -> DTO -> core pattern (ORM lives here, not in core) ----
 
 /** A Prisma-like model row — stands in for whatever ORM entity the app uses. */
