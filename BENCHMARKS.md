@@ -81,14 +81,21 @@ paid per query. The fix is **marshal once, query many**: `paginate_core.Dataset`
 holds the rows as `Value` in Rust, built once, then answers filter/sort/search
 queries natively (returning indices) with **no re-marshalling**.
 
-Once resident, Rust's compute advantage is real and large (10K rows, `age >= 50`):
+Once resident, Rust's compute advantage shows on **every** engine (10K rows,
+per-query steady state):
 
-| | per query | vs pure-Python |
-|---|-----------|----------------|
-| pure-Python `FilterEngine` | 1029 µs | — |
-| native `Dataset.filter` | **102 µs** | **10.1× faster** |
+| engine | pure-Python | native `Dataset` | speedup |
+|--------|-------------|------------------|---------|
+| filter (`age >= 500`)    | 1050 µs | **97 µs**  | **10.8×** |
+| search (`name` contains) | 1457 µs | **712 µs** | **2.0×** |
+| sort (`age` asc)         | 1426 µs | **972 µs** | **1.5×** |
 
-Amortizing the one-time ~6 ms build over N queries gives a clean crossover:
+Filter gains most (Python pays per-item interpreted predicate calls); sort gains
+least (CPython's `list.sort` is C-level timsort, so Rust's `Value` comparison is
+only modestly ahead). All three win.
+
+Amortizing the one-time ~6 ms build over N **filter** queries gives a clean
+crossover:
 
 | queries | native (build + N) | pure-Python | winner |
 |--------:|--------------------|-------------|--------|
