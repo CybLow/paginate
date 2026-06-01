@@ -110,7 +110,7 @@ def _deserialize_value(value: Any) -> Any:
 # byte-compatible Rust implementation; otherwise use the pure-Python codec
 # above. Same graceful-degradation pattern as msgspec / rapidfuzz / google-re2.
 try:
-    from paginate_core import (  # type: ignore[import-not-found]
+    from paginate_core import (
         decode_cursor as _native_decode,
         encode_cursor as _native_encode,
     )

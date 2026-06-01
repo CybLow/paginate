@@ -24,9 +24,7 @@ from pypaginate.text.normalize import normalize_text
 # paths where FFI marshalling dominates. Same graceful fallback as the cursor
 # codec / msgspec / rapidfuzz.
 try:
-    from paginate_core import (  # type: ignore[import-not-found]
-        search_indices as _native_search,
-    )
+    from paginate_core import search_indices as _native_search
 
     _HAS_NATIVE = True
 except ImportError:

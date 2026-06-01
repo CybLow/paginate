@@ -345,8 +345,6 @@ module = [
     "fastapi.*",
     "pydantic.*",
     "pyparsing.*",
-    "paginate_core",
-    "paginate_core.*",
     "pypaginate.core",
     "pypaginate.core.*",
     "pypaginate.query",

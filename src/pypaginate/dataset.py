@@ -29,7 +29,7 @@ from pypaginate.domain.specs import FilterSpec, SearchSpec, SortSpec
 
 
 try:
-    from paginate_core import Dataset as _NativeDataset  # type: ignore[import-not-found]
+    from paginate_core import Dataset as _NativeDataset
 
     _HAS_NATIVE = True
 except ImportError:
@@ -70,6 +70,10 @@ class Dataset(Generic[ItemT]):
 
     def __len__(self) -> int:
         return len(self._items)
+
+    def __repr__(self) -> str:
+        native = "native" if self._native is not None else "pure-python"
+        return f"Dataset({len(self._items)} items, {native})"
 
     def paginate(
         self,
