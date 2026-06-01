@@ -16,7 +16,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "tsc && node --test test/*.test.mjs"
   },
   "dependencies": {
     "paginate-core": "file:../../crates/node"
