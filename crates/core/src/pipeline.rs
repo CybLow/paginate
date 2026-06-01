@@ -7,11 +7,13 @@
 //! here instead, so the host stays a thin adapter. (Search is applied by the
 //! caller for now; a search stage can join this pass later.)
 
+use std::cmp::Ordering;
+
 use crate::columnar::Columns;
 use crate::error::Result;
-use crate::filter::{self, FilterInput};
+use crate::filter::{self, FilterInput, FilterLogic};
 use crate::pagination;
-use crate::sort::{self, SortSpec};
+use crate::sort::{self, SortDirection, SortSpec};
 use crate::value::Value;
 
 /// One page of results: indices into the original `items` (in final order) plus
@@ -81,18 +83,48 @@ fn filter_stage(
     filter::filter_indices(items, input)
 }
 
-/// A single flat comparison spec on a typed column, or `None` to fall back.
+/// Columnar fast path for a flat, all-`AND` filter where every spec is a typed
+/// single comparison: intersect the per-spec index sets (identical to the row
+/// engine's all-`AND` `Flat`). Any `OR`, nested group, empty list, or
+/// non-columnar spec returns `None` to fall back.
 fn columnar_filter(columns: Option<&Columns>, filter: &FilterInput) -> Option<Vec<usize>> {
+    let cols = columns?;
     let FilterInput::Flat(specs) = filter else {
         return None;
     };
-    let [spec] = specs.as_slice() else {
+    if specs.is_empty() || specs.iter().any(|s| s.logic != FilterLogic::And) {
         return None;
-    };
-    columns?.filter(&spec.field, spec.op, &spec.value)
+    }
+    let mut result: Option<Vec<usize>> = None;
+    for spec in specs {
+        let matched = cols.filter(&spec.field, spec.op, &spec.value)?;
+        result = Some(match result {
+            Some(acc) => intersect_sorted(&acc, &matched),
+            None => matched,
+        });
+    }
+    result
 }
 
-/// Sort the filtered indices: columnar fast path for a single key on a typed
+/// Intersection of two ascending index lists, preserving ascending order.
+fn intersect_sorted(a: &[usize], b: &[usize]) -> Vec<usize> {
+    let mut out = Vec::new();
+    let (mut i, mut j) = (0, 0);
+    while i < a.len() && j < b.len() {
+        match a[i].cmp(&b[j]) {
+            Ordering::Less => i += 1,
+            Ordering::Greater => j += 1,
+            Ordering::Equal => {
+                out.push(a[i]);
+                i += 1;
+                j += 1;
+            }
+        }
+    }
+    out
+}
+
+/// Sort the filtered indices: columnar fast path when every sort key is a typed
 /// column, else the row engine.
 fn sort_stage(
     items: &[Value],
@@ -103,12 +135,23 @@ fn sort_stage(
     if sort_specs.is_empty() {
         return Ok(indices);
     }
-    if let ([spec], Some(cols)) = (sort_specs, columns) {
-        if let Some(sorted) = cols.sort_subset(&indices, &spec.field, spec.direction) {
-            return Ok(sorted);
-        }
+    if let Some(sorted) = columnar_sort(columns, &indices, sort_specs) {
+        return Ok(sorted);
     }
     sort::sort_indices_of(items, indices, sort_specs)
+}
+
+/// Multi-key columnar sort when every key is a typed column, else `None`.
+fn columnar_sort(
+    columns: Option<&Columns>,
+    indices: &[usize],
+    sort_specs: &[SortSpec],
+) -> Option<Vec<usize>> {
+    let keys: Vec<(&str, SortDirection)> = sort_specs
+        .iter()
+        .map(|spec| (spec.field.as_str(), spec.direction))
+        .collect();
+    columns?.sort_subset(indices, &keys)
 }
 
 #[cfg(test)]
@@ -177,5 +220,30 @@ mod tests {
         let with_cols = offset_page(&items, Some(&cols), Some(&filter), &sorts, 1, 7).unwrap();
         let row = offset_page(&items, None, Some(&filter), &sorts, 1, 7).unwrap();
         assert_eq!(with_cols, row);
+    }
+
+    #[test]
+    fn columnar_multi_filter_and_matches_row() {
+        // Two flat AND specs, both int-columnar: n >= 10 AND n < 15.
+        let items: Vec<Value> = (0..30).map(item).collect();
+        let cols = crate::columnar::Columns::build(&items);
+        let filter = FilterInput::Flat(vec![
+            FilterSpec {
+                field: "n".into(),
+                op: FilterOp::Gte,
+                value: Value::Int(10),
+                logic: FilterLogic::And,
+            },
+            FilterSpec {
+                field: "n".into(),
+                op: FilterOp::Lt,
+                value: Value::Int(15),
+                logic: FilterLogic::And,
+            },
+        ]);
+        let with_cols = offset_page(&items, Some(&cols), Some(&filter), &[], 1, 100).unwrap();
+        let row = offset_page(&items, None, Some(&filter), &[], 1, 100).unwrap();
+        assert_eq!(with_cols, row);
+        assert_eq!(with_cols.total, 5); // n in {10, 11, 12, 13, 14}
     }
 }

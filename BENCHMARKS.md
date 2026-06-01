@@ -118,6 +118,7 @@ results identical to pure-Python:
 | filter float (`price > x`)  |  527 µs     | 36 µs           | **14.5×** |
 | filter str (`name == x`)    |  556 µs     | 20 µs           | **28×** |
 | sort int (single key)       | 1068 µs     | 115 µs          | **9.3×** |
+| sort int (2 keys)           | 2295 µs     | 297 µs          | **7.7×** |
 
 A column is built only when the field is that exact scalar in every row, so the
 typed scan (no map lookup, no `Value` dispatch) can't diverge from the row engine.
@@ -133,6 +134,12 @@ page) that one call is **35.7× faster** than the pure-Python pipeline (30 µs v
 1069 µs) — up from 4.7× before columnar — and is a single FFI crossing per
 request. This is the "powerful core, thin adapter" shape: the engine lives in
 Rust; the host only marshals the dataset once and selects by index.
+
+The columnar path also covers **multi-key sort** (all keys typed) and
+**multi-filter `AND`** (every flat spec a typed comparison, intersected) — a
+2-filter + 2-key-sort page on 10K rows is **23.7×** the pure-Python pipeline
+(83 µs vs 1963 µs). `OR`, nested groups, or any non-columnar spec fall back to
+the row engine, so results are always identical.
 
 ### The resident Dataset in JS, too
 

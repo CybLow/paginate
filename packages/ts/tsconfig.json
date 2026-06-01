@@ -9,6 +9,7 @@
     "rootDir": "src",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
+    "verbatimModuleSyntax": true,
     "skipLibCheck": true
   },
   "include": ["src"],

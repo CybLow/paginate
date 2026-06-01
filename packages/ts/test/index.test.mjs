@@ -51,10 +51,10 @@ test("Dataset: resident filter / sort / search map indices back to rows", () => 
   ];
   const ds = new p.Dataset(items);
   assert.equal(ds.size, 3);
-  assert.deepEqual(
-    ds.filter([{ field: "age", op: "gte", value: 18, logic: "and" }]),
-    [items[0], items[2]],
-  );
+  assert.deepEqual(ds.filter([{ field: "age", op: "gte", value: 18, logic: "and" }]), [
+    items[0],
+    items[2],
+  ]);
   assert.deepEqual(ds.sort([{ field: "age", direction: "desc" }]), [items[2], items[0], items[1]]);
   assert.deepEqual(ds.search("a", ["name"]), [items[0], items[2]]);
 });
