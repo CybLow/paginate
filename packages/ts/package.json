@@ -1,7 +1,7 @@
 {
   "name": "paginate",
   "version": "0.1.0",
-  "description": "Idiomatic TypeScript consumer of paginate-core: maps Prisma/Drizzle/TypeORM models to DTOs and runs them through the native engine. Scaffold.",
+  "description": "Idiomatic TypeScript consumer of paginate-core: maps ORM models (Prisma/Drizzle/TypeORM) to DTOs and runs them through the native engine.",
   "type": "module",
   "license": "MIT",
   "author": "pypaginate Contributors",
@@ -19,7 +19,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "paginate-core": "^0.1.0"
+    "paginate-core": "file:../../crates/node"
   },
   "devDependencies": {
     "typescript": "^5.5.0"
