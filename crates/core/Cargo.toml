@@ -1,0 +1,25 @@
+[package]
+name = "paginate-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Pure, language-agnostic pagination / filter / sort / search engine shared by pypaginate (Python) and the future JS/TS port."
+keywords = ["pagination", "filter", "sort", "search", "cursor"]
+categories = ["algorithms", "data-structures"]
+
+[lib]
+name = "paginate_core"
+# Default `rlib` crate type: links natively into the PyO3 binding crate and
+# compiles unchanged to wasm32 / napi for the JS/TS port. No binding deps here.
+
+[dependencies]
+base64 = { workspace = true }
+regex = { workspace = true }
+serde_json = { workspace = true }
+shlex = { workspace = true }
+unicode-normalization = { workspace = true }
+
+[dev-dependencies]
