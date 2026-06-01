@@ -111,6 +111,17 @@ data that lives in the host should stay in the host. A *columnar* `Dataset`
 (typed per-field arrays instead of `Value` maps) is the next lever for an even
 larger per-query win.
 
+### One call, the whole pipeline
+
+Better still, the core runs **filter → sort → paginate in a single call**
+(`Dataset.page`), returning the page's indices + offset metadata. The host
+passes specs once and maps the returned indices back to its own rows — no
+orchestration in the host language. On 10K rows (filter + 2-key sort + page),
+that one call is **4.7× faster** than the pure-Python pipeline and is a single
+FFI crossing per request. This is the "powerful core, thin adapter" shape: the
+engine lives in Rust; the host only marshals the dataset once and selects by
+index.
+
 ### Decision & status (Python package)
 
 | Path | Native in Python? | Status |

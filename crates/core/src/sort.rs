@@ -51,7 +51,20 @@ pub struct SortSpec {
 /// [`CoreError::Filter`] for a path segment starting with `_`, or
 /// [`CoreError::Sort`] when two field values are not order-comparable.
 pub fn sort_indices(items: &[Value], specs: &[SortSpec]) -> Result<Vec<usize>> {
-    let mut order: Vec<usize> = (0..items.len()).collect();
+    sort_indices_of(items, (0..items.len()).collect(), specs)
+}
+
+/// Sort an existing index list (a subset/permutation of `items`) by `specs`,
+/// preserving its relative order for equal keys (stable). The pipeline uses this
+/// to sort a *filtered* subset without disturbing the rest.
+///
+/// # Errors
+/// See [`sort_indices`].
+pub fn sort_indices_of(
+    items: &[Value],
+    mut order: Vec<usize>,
+    specs: &[SortSpec],
+) -> Result<Vec<usize>> {
     if specs.is_empty() {
         return Ok(order);
     }
