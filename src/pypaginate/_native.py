@@ -1,19 +1,19 @@
 """Bridge from domain specs to the bundled native ``_core`` engine.
 
-pypaginate runs all in-memory filtering and sorting through the Rust
-``pypaginate._core`` engine. This module is the single translation point:
+pypaginate runs all in-memory filtering, sorting, and ranked search through the
+Rust ``pypaginate._core`` engine. This module is the single translation point:
 
-* it converts the domain specs (``FilterSpec`` / ``FilterGroup`` / ``SortSpec``)
-  into the tuple wire-forms the engine accepts,
+* it converts the domain specs (``FilterSpec`` / ``FilterGroup`` / ``SortSpec`` /
+  ``SearchSpec``) into the wire-forms the engine accepts,
 * selects the original host items by the row indices the engine returns, and
 * normalizes the engine's boundary errors — a ``KeyError`` for a missing field,
   a ``ValueError`` for a bad operator or operand — into the domain exception
-  hierarchy, so callers always see ``FilterError`` / ``SortError`` regardless of
-  the engine underneath.
+  hierarchy, so callers always see ``FilterError`` / ``SortError`` / ``SearchError``
+  regardless of the engine underneath.
 
 The engine is mandatory (built into the wheel); there is no pure-Python
-fallback for filtering or sorting. Fuzzy/token-sort search remains pure-Python
-in :mod:`pypaginate.search` until the core reaches rapidfuzz parity.
+fallback. Filtering, sorting, and ranked search (including fuzzy/token-sort and
+per-field weights) all run natively.
 """
 
 from __future__ import annotations
@@ -21,20 +21,41 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
-from pypaginate._core import filter_group_indices, filter_indices, sort_indices
-from pypaginate.domain.enums import FilterLogic, NullsPosition, SortDirection
-from pypaginate.domain.exceptions import FilterError, SortError
+from pypaginate._core import (
+    filter_group_indices,
+    filter_indices,
+    search_indices,
+    sort_indices,
+)
+from pypaginate.domain.enums import (
+    FilterLogic,
+    FuzzyMode,
+    NullsPosition,
+    SearchFieldMode,
+    SortDirection,
+)
+from pypaginate.domain.exceptions import FilterError, SearchError, SortError
 from pypaginate.domain.specs import FilterGroup
 
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from pypaginate.domain.specs import FilterSpec, SortSpec
+    from pypaginate.domain.specs import FilterSpec, SearchSpec, SortSpec
 
 _LOGIC = {FilterLogic.AND: "and", FilterLogic.OR: "or"}
 _DIRECTION = {SortDirection.ASC: "asc", SortDirection.DESC: "desc"}
 _NULLS = {NullsPosition.FIRST: "first", NullsPosition.LAST: "last"}
+_SEARCH_MODE = {
+    SearchFieldMode.PREFIX: "prefix",
+    SearchFieldMode.CONTAINS: "contains",
+    SearchFieldMode.EXACT: "exact",
+}
+_FUZZY = {
+    FuzzyMode.EXACT: "exact",
+    FuzzyMode.FUZZY: "fuzzy",
+    FuzzyMode.TOKEN_SORT: "token_sort",
+}
 
 
 def and_filter_tuples(
@@ -77,10 +98,34 @@ def sort_by(items: Sequence[Any], sorting: Sequence[SortSpec]) -> list[Any]:
     return _take(rows, lambda: sort_indices(rows, specs), SortError)
 
 
+def search(items: Sequence[Any], spec: SearchSpec) -> list[Any]:
+    """Ranked search via the native engine.
+
+    Supports exact/prefix/contains matching, fuzzy / token-sort scoring, and
+    optional per-field weights; returns items in ranked (relevance) order.
+    """
+    rows = list(items)
+    return _take(
+        rows,
+        lambda: search_indices(
+            rows,
+            spec.query,
+            list(spec.fields),
+            mode=_SEARCH_MODE[spec.mode],
+            fuzzy=_FUZZY[spec.fuzzy],
+            threshold=spec.threshold,
+            min_length=spec.min_length,
+            max_results=spec.max_results,
+            weights=dict(spec.weights) if spec.weights else None,
+        ),
+        SearchError,
+    )
+
+
 def _take(
     rows: list[Any],
     indices: Callable[[], list[int]],
-    error: type[FilterError | SortError],
+    error: type[FilterError | SortError | SearchError],
 ) -> list[Any]:
     """Run a native index query, normalize errors, and select matched rows."""
     try:
@@ -101,6 +146,7 @@ __all__ = [
     "filter_and",
     "filter_group",
     "filter_logic",
+    "search",
     "sort_by",
     "sort_tuples",
 ]

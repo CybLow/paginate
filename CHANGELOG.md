@@ -8,12 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- **Native engine is now mandatory.** All in-memory filtering and sorting run
-  through the bundled Rust `pypaginate._core` extension (maturin, abi3,
-  CPython 3.11+), shared with the JS/TS port. The resident `pypaginate.Dataset`
-  is 6.5–27× faster than the former pure-Python path (release build). Installing
-  now uses a prebuilt wheel (or a Rust toolchain for source builds); PyPy is
-  unsupported.
+- **Native engine is now mandatory.** All in-memory filtering, sorting, and
+  ranked search (including fuzzy / token-sort) run through the bundled Rust
+  `pypaginate._core` extension (maturin, abi3, CPython 3.11+), shared with the
+  JS/TS port. The resident `pypaginate.Dataset` is 6.5–27× faster than the former
+  pure-Python path (release build). Installing now uses a prebuilt wheel (or a
+  Rust toolchain for source builds); PyPy is unsupported.
+- **Fuzzy / token-sort search now runs in the core** (rapidfuzz-based
+  `partial_ratio` / `token_sort_ratio` in Rust), replacing the pure-Python
+  search island — which also fixes the prior rapidfuzz-version-dependent score
+  flakiness. Boolean fields now take the columnar fast path (~8× on
+  bool-inclusive filters).
 
 ### Removed
 - **BREAKING:** the pure-Python filter/sort engine and its public API —
@@ -22,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   native core, and `FilterEngine()` no longer takes a `registry` argument.
   Custom Python-registered operators are no longer supported. Nested
   `And`/`Or`/`FilterGroup` filtering is unchanged (now evaluated natively).
+- The pure-Python search island (`search/parser.py`, `search/matching.py`) is
+  removed; ranked search delegates to the core. The `rapidfuzz` Python
+  dependency is gone (it now lives in the Rust wheel) — the
+  `pypaginate[search]` extra is a no-op kept for compatibility.
 
 ### Planned for v0.3.0
 - JSON Logic dict-to-FilterGroup parser for frontend integration

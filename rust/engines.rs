@@ -191,9 +191,10 @@ fn parse_fuzzy(fuzzy: &str) -> FuzzyMode {
     }
 }
 
-/// Rank item indices by relevance of `query` over `fields` (equal weights).
+/// Rank item indices by relevance of `query` over `fields`, with optional
+/// per-field `weights` (keyed by the original field names).
 #[pyfunction]
-#[pyo3(signature = (items, query, fields, mode="contains", fuzzy="exact", threshold=75, min_length=1, max_results=None))]
+#[pyo3(signature = (items, query, fields, mode="contains", fuzzy="exact", threshold=75, min_length=1, max_results=None, weights=None))]
 #[allow(clippy::too_many_arguments)]
 pub fn search_indices(
     items: &Bound<'_, PyList>,
@@ -204,6 +205,7 @@ pub fn search_indices(
     threshold: i64,
     min_length: usize,
     max_results: Option<usize>,
+    weights: Option<HashMap<String, f64>>,
 ) -> PyResult<Vec<usize>> {
     let plan: Vec<(String, Vec<String>)> = fields
         .iter()
@@ -215,10 +217,18 @@ pub fn search_indices(
             )
         })
         .collect();
+    // Re-key weights from the original field names to the synthetic `f{i}` keys.
+    let core_weights = weights.map(|by_name| {
+        fields
+            .iter()
+            .enumerate()
+            .filter_map(|(i, field)| by_name.get(field).map(|&w| (format!("f{i}"), w)))
+            .collect::<BTreeMap<String, f64>>()
+    });
     let spec = SearchSpec {
         query,
         fields: (0..fields.len()).map(|i| format!("f{i}")).collect(),
-        weights: None,
+        weights: core_weights,
         mode: parse_mode(mode),
         fuzzy: parse_fuzzy(fuzzy),
         threshold,

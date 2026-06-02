@@ -56,6 +56,7 @@ def search_indices(
     threshold: int = ...,
     min_length: int = ...,
     max_results: int | None = ...,
+    weights: dict[str, float] | None = ...,
 ) -> list[int]: ...
 def match_indices(
     items: Sequence[Any],

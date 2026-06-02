@@ -62,7 +62,8 @@ sqlalchemy = [
     "SQLAlchemy[asyncio]>=2.0.0",
 ]
 search = [
-    "rapidfuzz>=3.0.0",
+    # Ranked + fuzzy/token-sort search now runs in the native `_core` engine;
+    # no extra Python dependency is needed. Kept as a no-op for compatibility.
 ]
 fastapi = [
     "fastapi>=0.95.0",
