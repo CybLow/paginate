@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any
 from pypaginate._core import (
     filter_group_indices,
     filter_indices,
+    match_indices,
     search_indices,
     sort_indices,
 )
@@ -122,6 +123,22 @@ def search(items: Sequence[Any], spec: SearchSpec) -> list[Any]:
     )
 
 
+def match_filter(
+    items: Sequence[Any],
+    query: str,
+    fields: Sequence[str],
+    mode: SearchFieldMode,
+) -> list[Any]:
+    """Match-filter (exact/prefix/contains): keep items where any field matches
+    the whole query, in original order (the in-memory search-backend semantics)."""
+    rows = list(items)
+    return _take(
+        rows,
+        lambda: match_indices(rows, query, list(fields), mode=_SEARCH_MODE[mode]),
+        SearchError,
+    )
+
+
 def _take(
     rows: list[Any],
     indices: Callable[[], list[int]],
@@ -146,6 +163,7 @@ __all__ = [
     "filter_and",
     "filter_group",
     "filter_logic",
+    "match_filter",
     "search",
     "sort_by",
     "sort_tuples",
