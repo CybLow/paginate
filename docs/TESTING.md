@@ -46,7 +46,7 @@ tests/
 │   │   ├── test_engine_like.py    # LIKE/ILIKE integration with FilterEngine
 │   │   └── test_groups.py         # Nested filter groups (AND/OR composition)
 │   ├── sorting/                   # engine (native delegator)
-│   ├── search/                    # engine, parser, matching
+│   ├── search/                    # engine (native delegator)
 │   ├── text/                      # normalize (LRU cache, ASCII fast path)
 │   └── adapters/
 │       ├── memory/                # backend, filters, sorting, search
@@ -168,7 +168,7 @@ tests/unit/{module}/test_{source_file}.py
 
 # Example:
 src/pypaginate/filtering/engine.py  →  tests/unit/filtering/test_engine.py
-src/pypaginate/search/matching.py   →  tests/unit/search/test_matching.py
+src/pypaginate/search/engine.py     →  tests/unit/search/test_engine.py
 ```
 
 ### Test Structure (AAA Pattern)

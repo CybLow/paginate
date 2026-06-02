@@ -259,10 +259,10 @@ def normalize_text(value: str) -> str: ...
 
 ```python
 try:
-    from rapidfuzz import fuzz as _fuzz
-    _HAS_RAPIDFUZZ = True
+    import msgspec
+    _HAS_MSGSPEC = True
 except ImportError:  # pragma: no cover
-    _HAS_RAPIDFUZZ = False  # pragma: no cover
+    _HAS_MSGSPEC = False  # pragma: no cover
 ```
 
 ### String Methods Over Regex

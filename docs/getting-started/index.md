@@ -52,7 +52,7 @@ Filtering, sorting, and search examples
 | Feature | Installation | Provides |
 |---------|-------------|----------|
 | SQLAlchemy | `pypaginate[sqlalchemy]` | Database pagination + cursor/keyset |
-| Search | `pypaginate[search]` | Fuzzy text search (rapidfuzz) |
+| Search | `pypaginate[search]` | No-op compat alias (fuzzy search is native, no extra needed) |
 | FastAPI | `pypaginate[fastapi]` | FastAPI dependency injection |
 | Fast | `pypaginate[fast]` | msgspec-backed pages (near-zero overhead) |
 | All | `pypaginate[all]` | Everything above |

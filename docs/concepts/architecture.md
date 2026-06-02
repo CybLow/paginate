@@ -83,10 +83,8 @@ src/pypaginate/
 │   ├── engine.py            # FilterEngine — thin delegator to the native _core engine
 │   └── accessor.py          # compile_accessor — nested field path resolution
 │
-├── search/                  # In-memory search engine
-│   ├── engine.py            # SearchEngine — tokenize, match, score, rank
-│   ├── matching.py          # matches_field, fuzzy_score (rapidfuzz integration)
-│   └── parser.py            # TokenParser — query tokenization
+├── search/                  # In-memory search engine (native delegator)
+│   └── engine.py            # SearchEngine — thin delegator to the native _core engine
 │
 ├── sorting/                 # In-memory sort support
 │   └── engine.py            # SortEngine — multi-key stable sorting

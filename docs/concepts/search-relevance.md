@@ -1,8 +1,8 @@
 # Search & Relevance
 
 pypaginate provides a search engine that tokenizes queries, matches them against
-fields, scores results by relevance, and supports optional fuzzy matching via
-[rapidfuzz](https://github.com/maxbachmann/RapidFuzz).
+fields, scores results by relevance, and supports rapidfuzz-based fuzzy matching
+(reimplemented natively in the bundled engine, always available).
 
 ---
 
@@ -10,14 +10,14 @@ fields, scores results by relevance, and supports optional fuzzy matching via
 
 ```{mermaid}
 graph LR
-    Q["SearchSpec"] --> T["TokenParser.parse()"]
+    Q["SearchSpec"] --> T["Tokenize query"]
     T --> N["normalize_text()"]
     N --> M["Match & score per item"]
     M --> R["Sort by score (descending)"]
     R --> O["Ranked results"]
 ```
 
-1. **Parse** -- the `TokenParser` splits the query into tokens (handles quotes, whitespace).
+1. **Parse** -- the engine tokenizes the query into tokens (handles quotes, whitespace).
 2. **Normalize** -- each token and field value is Unicode-normalized (lowercased, accents removed).
 3. **Match** -- each item is scored across the specified fields.
 4. **Rank** -- items are sorted by score (highest first), then optionally truncated by `max_results`.
@@ -80,11 +80,12 @@ SearchSpec(
 | Mode | Algorithm | Use Case |
 |------|-----------|----------|
 | `EXACT` | No fuzzy -- exact/prefix/contains matching only | Fast, precise results |
-| `FUZZY` | `rapidfuzz.fuzz.partial_ratio` (substring matching) | Typo tolerance |
-| `TOKEN_SORT` | `rapidfuzz.fuzz.token_sort_ratio` (word-order agnostic) | "John Doe" matches "Doe John" |
+| `FUZZY` | `partial_ratio` (substring matching) | Typo tolerance |
+| `TOKEN_SORT` | `token_sort_ratio` (word-order agnostic) | "John Doe" matches "Doe John" |
 
-When rapidfuzz is not installed (`pypaginate[search]` not added), fuzzy modes fall
-back to simple substring matching.
+Both fuzzy modes are implemented natively in the bundled engine (a Rust
+reimplementation of rapidfuzz's `partial_ratio` / `token_sort_ratio`) and are always
+available -- no extra dependency to install.
 
 ---
 
@@ -98,7 +99,7 @@ scores 0.
 
 ### Fuzzy Scoring
 
-In fuzzy mode, `rapidfuzz.fuzz.partial_ratio` returns a score from 0-100 for each
+In fuzzy mode, `partial_ratio` returns a score from 0-100 for each
 (token, field_value) pair. Only scores at or above the `threshold` count as a match.
 A score below threshold is treated as 0 (no match).
 
@@ -233,7 +234,5 @@ The pipeline applies operations in order: **filter -> sort -> search -> paginate
 - Search fewer fields for faster results.
 - Use `EXACT` mode when fuzzy matching is not needed.
 - Set `max_results` to limit scoring work on large datasets.
-- Install `pypaginate[search]` for rapidfuzz -- without it, fuzzy modes fall back to
-  simple substring matching.
 - For SQL backends, ensure searched columns have appropriate indexes (GIN for
   PostgreSQL full-text, trigram for fuzzy).

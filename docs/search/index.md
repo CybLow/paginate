@@ -1,6 +1,6 @@
 # Search
 
-pypaginate provides declarative text search through `SearchSpec` with support for multi-field search, weighted fields, and fuzzy matching via rapidfuzz.
+pypaginate provides declarative text search through `SearchSpec` with support for multi-field search, weighted fields, and fuzzy matching (rapidfuzz-based, native).
 
 :::{tip} Quick Start
 ```python
@@ -15,7 +15,7 @@ spec = SearchSpec(query="alice", fields=("name", "email"))
 | Feature | Description |
 |---------|-------------|
 | [Text Search](text-search.md) | Contains, prefix, and exact modes across multiple fields |
-| [Fuzzy Matching](fuzzy.md) | Approximate matching with FuzzyMode and rapidfuzz |
+| [Fuzzy Matching](fuzzy.md) | Approximate matching with FuzzyMode (rapidfuzz-based, native) |
 
 ## Quick Example
 
@@ -86,8 +86,8 @@ Controls the fuzzy matching algorithm:
 from pypaginate import FuzzyMode
 
 FuzzyMode.EXACT       # no fuzzy matching, only exact token match (default)
-FuzzyMode.FUZZY       # partial_ratio via rapidfuzz (substring matching)
-FuzzyMode.TOKEN_SORT  # token_sort_ratio via rapidfuzz (word-order agnostic)
+FuzzyMode.FUZZY       # partial_ratio (rapidfuzz-based, substring matching)
+FuzzyMode.TOKEN_SORT  # token_sort_ratio (rapidfuzz-based, word-order agnostic)
 ```
 
 ## Backend Support
