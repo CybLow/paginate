@@ -16,7 +16,7 @@ use pyo3::types::{PyDict, PyList, PyTuple};
 
 use crate::conv::{core_err, py_to_value};
 use ::paginate_core as core;
-use core::filter::{FilterInput, FilterLogic, FilterOp, FilterSpec};
+use core::filter::{FilterGroup, FilterInput, FilterLogic, FilterNode, FilterOp, FilterSpec};
 use core::search::{FuzzyMode, SearchFieldMode, SearchSpec};
 use core::sort::{NullsPosition, SortDirection, SortSpec};
 use core::Value;
@@ -50,44 +50,87 @@ fn project_item(item: &Bound<'_, PyAny>, plan: &[(String, Vec<String>)]) -> PyRe
     Ok(Value::Map(map))
 }
 
-/// Parse `(field, op, value, logic)` tuples into core specs + a projection plan
-/// (each distinct field path mapped to a short synthetic key like `f0`).
+/// Intern a dotted field path to a short synthetic projection key (`f0`, `f1`,
+/// ...), recording the path in `plan` the first time it is seen.
+fn intern_field(
+    field: &str,
+    plan: &mut ProjectionPlan,
+    key_for: &mut HashMap<String, String>,
+) -> String {
+    key_for
+        .entry(field.to_owned())
+        .or_insert_with(|| {
+            let synthetic = format!("f{}", plan.len());
+            plan.push((synthetic.clone(), field.split('.').map(str::to_owned).collect()));
+            synthetic
+        })
+        .clone()
+}
+
+fn parse_logic(name: &str) -> FilterLogic {
+    if name == "or" {
+        FilterLogic::Or
+    } else {
+        FilterLogic::And
+    }
+}
+
+/// Parse one `(field, op, value, logic)` tuple into a core spec, interning its
+/// field path into `plan`.
+fn parse_leaf(
+    tuple: &Bound<'_, PyTuple>,
+    plan: &mut ProjectionPlan,
+    key_for: &mut HashMap<String, String>,
+) -> PyResult<FilterSpec> {
+    let field: String = tuple.get_item(0)?.extract()?;
+    let op_name: String = tuple.get_item(1)?.extract()?;
+    let value = py_to_value(&tuple.get_item(2)?)?;
+    let logic_name: String = tuple.get_item(3)?.extract()?;
+    let op = FilterOp::from_name(&op_name)
+        .ok_or_else(|| PyValueError::new_err(format!("unknown operator: {op_name}")))?;
+    Ok(FilterSpec {
+        field: intern_field(&field, plan, key_for),
+        op,
+        value,
+        logic: parse_logic(&logic_name),
+    })
+}
+
+/// Parse flat `(field, op, value, logic)` tuples into core specs + a projection
+/// plan (each distinct field path mapped to a short synthetic key like `f0`).
 fn parse_filter(specs: &Bound<'_, PyList>) -> PyResult<(Vec<FilterSpec>, ProjectionPlan)> {
     let mut plan: ProjectionPlan = Vec::new();
     let mut key_for: HashMap<String, String> = HashMap::new();
     let mut core_specs = Vec::new();
     for spec in specs.iter() {
         let tuple = spec.cast::<PyTuple>()?;
-        let field: String = tuple.get_item(0)?.extract()?;
-        let op_name: String = tuple.get_item(1)?.extract()?;
-        let value = py_to_value(&tuple.get_item(2)?)?;
-        let logic_name: String = tuple.get_item(3)?.extract()?;
-        let op = FilterOp::from_name(&op_name)
-            .ok_or_else(|| PyValueError::new_err(format!("unknown operator: {op_name}")))?;
-        let logic = if logic_name == "or" {
-            FilterLogic::Or
-        } else {
-            FilterLogic::And
-        };
-        let key = key_for
-            .entry(field.clone())
-            .or_insert_with(|| {
-                let synthetic = format!("f{}", plan.len());
-                plan.push((
-                    synthetic.clone(),
-                    field.split('.').map(str::to_owned).collect(),
-                ));
-                synthetic
-            })
-            .clone();
-        core_specs.push(FilterSpec {
-            field: key,
-            op,
-            value,
-            logic,
-        });
+        core_specs.push(parse_leaf(&tuple, &mut plan, &mut key_for)?);
     }
     Ok((core_specs, plan))
+}
+
+/// Parse a recursive filter node: a 4-tuple `(field, op, value, logic)` is a
+/// leaf spec; a 2-tuple `(logic, [node, ...])` is a nested AND/OR group.
+fn parse_node(
+    node: &Bound<'_, PyAny>,
+    plan: &mut ProjectionPlan,
+    key_for: &mut HashMap<String, String>,
+) -> PyResult<FilterNode> {
+    let tuple = node.cast::<PyTuple>()?;
+    match tuple.len() {
+        4 => Ok(FilterNode::Spec(parse_leaf(&tuple, plan, key_for)?)),
+        2 => {
+            let logic = parse_logic(&tuple.get_item(0)?.extract::<String>()?);
+            let mut conditions = Vec::new();
+            for child in tuple.get_item(1)?.try_iter()? {
+                conditions.push(parse_node(&child?, plan, key_for)?);
+            }
+            Ok(FilterNode::Group(FilterGroup { logic, conditions }))
+        }
+        other => Err(PyValueError::new_err(format!(
+            "filter node must be a 4-tuple (spec) or 2-tuple (group), got length {other}"
+        ))),
+    }
 }
 
 /// Return the indices of `items` matching the flat `(field, op, value, logic)`
@@ -103,6 +146,30 @@ pub fn filter_indices(
         values.push(project_item(&item, &plan)?);
     }
     let input = FilterInput::Flat(core_specs);
+    core::filter::filter_indices(&values, &input).map_err(|e| core_err(&e))
+}
+
+/// Return the indices of `items` matching a nested filter `group`.
+///
+/// `group` is the recursive tuple form: a leaf is `(field, op, value, logic)`
+/// and a group is `(logic, [node, ...])`. Mirrors the pure-Python
+/// `FilterEngine`, which `_core` could not express before (the flat
+/// [`filter_indices`] takes only a single AND/OR level).
+#[pyfunction]
+pub fn filter_group_indices(
+    items: &Bound<'_, PyList>,
+    group: &Bound<'_, PyAny>,
+) -> PyResult<Vec<usize>> {
+    let mut plan: ProjectionPlan = Vec::new();
+    let mut key_for: HashMap<String, String> = HashMap::new();
+    let input = match parse_node(group, &mut plan, &mut key_for)? {
+        FilterNode::Group(group) => FilterInput::Group(group),
+        FilterNode::Spec(spec) => FilterInput::Flat(vec![spec]),
+    };
+    let mut values = Vec::with_capacity(items.len());
+    for item in items.iter() {
+        values.push(project_item(&item, &plan)?);
+    }
     core::filter::filter_indices(&values, &input).map_err(|e| core_err(&e))
 }
 

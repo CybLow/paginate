@@ -93,6 +93,7 @@ fn _core(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(offset_meta, module)?)?;
     module.add_function(wrap_pyfunction!(clamp_page, module)?)?;
     module.add_function(wrap_pyfunction!(engines::filter_indices, module)?)?;
+    module.add_function(wrap_pyfunction!(engines::filter_group_indices, module)?)?;
     module.add_function(wrap_pyfunction!(engines::search_indices, module)?)?;
     module.add_function(wrap_pyfunction!(engines::sort_indices, module)?)?;
     module.add_function(wrap_pyfunction!(engines::match_indices, module)?)?;
