@@ -102,9 +102,8 @@ group = FilterGroup(
 ```python
 from pypaginate import And, Or, FilterSpec
 from pypaginate.filtering.engine import FilterEngine
-from pypaginate.filtering.registry import create_default_registry
 
-engine = FilterEngine(registry=create_default_registry())
+engine = FilterEngine()
 
 users = [
     {"name": "Alice", "role": "admin", "status": "active"},
@@ -133,9 +132,8 @@ Groups work with the `paginate()` function by applying group filters first, then
 ```python
 from pypaginate import And, Or, FilterSpec, OffsetParams, paginate
 from pypaginate.filtering.engine import FilterEngine
-from pypaginate.filtering.registry import create_default_registry
 
-engine = FilterEngine(registry=create_default_registry())
+engine = FilterEngine()
 
 # Apply nested group, then paginate
 group = And(

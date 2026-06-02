@@ -171,11 +171,14 @@ uv add pypaginate[sqlalchemy]   # Install with SQLAlchemy only
 
 ### Adding a New Filter Operator
 
-1. Add operator class in `src/pypaginate/filtering/operators.py`
-2. Register in `_BUILTINS` dict in `src/pypaginate/filtering/registry.py`
-3. Add SA mapping in `src/pypaginate/adapters/sqlalchemy/filters.py`
-4. Add literal value to `FilterOperator` type in `src/pypaginate/domain/specs.py`
-5. Add tests in `tests/unit/filtering/test_operators.py`
+In-memory operators live in the native `paginate-core` Rust engine, so a new
+operator spans both repos:
+
+1. Add the operator to the engine crate (`crates/core/src/filter/`) in the
+   `paginate-core` repo and rebuild (`maturin develop --release`)
+2. Add SA mapping in `src/pypaginate/adapters/sqlalchemy/filters.py`
+3. Add the literal value to the `FilterOperator` type in `src/pypaginate/domain/specs.py`
+4. Add tests in `tests/unit/filtering/`
 
 ### Adding a New Backend Adapter
 

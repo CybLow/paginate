@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Native engine is now mandatory.** All in-memory filtering and sorting run
+  through the bundled Rust `pypaginate._core` extension (maturin, abi3,
+  CPython 3.11+), shared with the JS/TS port. The resident `pypaginate.Dataset`
+  is 6.5–27× faster than the former pure-Python path (release build). Installing
+  now uses a prebuilt wheel (or a Rust toolchain for source builds); PyPy is
+  unsupported.
+
+### Removed
+- **BREAKING:** the pure-Python filter/sort engine and its public API —
+  `pypaginate.filtering.OperatorRegistry`, `create_default_registry`, and the
+  individual operator classes — are removed; the 20 operators now live in the
+  native core, and `FilterEngine()` no longer takes a `registry` argument.
+  Custom Python-registered operators are no longer supported. Nested
+  `And`/`Or`/`FilterGroup` filtering is unchanged (now evaluated natively).
+
 ### Planned for v0.3.0
 - JSON Logic dict-to-FilterGroup parser for frontend integration
 - Django `__` filter format parser

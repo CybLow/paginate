@@ -1,6 +1,6 @@
 # Operators Reference
 
-pypaginate ships 20 built-in filter operators. All are pre-registered in the default `OperatorRegistry`.
+pypaginate ships 20 built-in filter operators. All are provided by the native core engine.
 
 ```python
 from pypaginate import FilterSpec
@@ -229,36 +229,7 @@ Always returns `True` if the field can be accessed. Useful for checking that a f
 
 ## Custom Operators
 
-Implement the `Operator` protocol and register with `OperatorRegistry`:
-
-```python
-from pypaginate.filtering.operators import Operator
-from pypaginate.filtering.registry import OperatorRegistry, create_default_registry
-
-class CaseInsensitiveEq:
-    """Case-insensitive equality."""
-    __slots__ = ()
-
-    @staticmethod
-    def evaluate(field_value: object, spec_value: object) -> bool:
-        return str(field_value).lower() == str(spec_value).lower()
-
-# Add to the default registry
-registry = create_default_registry()
-registry.register("ieq", CaseInsensitiveEq())
-
-# Use it
-from pypaginate.filtering.engine import FilterEngine
-from pypaginate import FilterSpec
-
-engine = FilterEngine(registry=registry)
-engine.apply(items, [FilterSpec(field="name", operator="ieq", value="alice")])
-```
-
-The `Operator` protocol requires a single static method:
-
-```python
-class Operator(Protocol):
-    @staticmethod
-    def evaluate(field_value: object, spec_value: object) -> bool: ...
-```
+These 20 operators are implemented in the bundled native core engine and are not
+Python-registrable: `FilterEngine()` takes no arguments and there is no public
+operator registry. For logic not covered by a built-in operator, filter at the
+application layer, or open an issue to request adding the operator to the core.

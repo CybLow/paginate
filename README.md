@@ -181,9 +181,9 @@ Use `FilterSpec` to define filter conditions:
 
 ```python
 from pypaginate import FilterSpec
-from pypaginate.filtering import FilterEngine, create_default_registry
+from pypaginate.filtering import FilterEngine
 
-engine = FilterEngine(create_default_registry())
+engine = FilterEngine()
 
 users = [
     {"name": "Alice", "age": 30, "status": "active"},

@@ -130,7 +130,7 @@ def test_filter(self, filter_engine: FilterEngine) -> None: ...
 
 # BAD -- duplicated setup
 def test_filter(self) -> None:
-    engine = FilterEngine(create_default_registry())
+    engine = FilterEngine()
 ```
 
 ### Parametrize for Coverage
