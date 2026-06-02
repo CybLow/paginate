@@ -246,4 +246,51 @@ mod tests {
         assert_eq!(with_cols, row);
         assert_eq!(with_cols.total, 5); // n in {10, 11, 12, 13, 14}
     }
+
+    #[test]
+    fn columnar_bool_filter_matches_row() {
+        // A bool field qualifies as a typed column; `active == true` must take
+        // the columnar path and equal the row engine exactly.
+        let items: Vec<Value> = (0..30)
+            .map(|n| {
+                let mut map = BTreeMap::new();
+                map.insert("n".to_owned(), Value::Int(n));
+                map.insert("active".to_owned(), Value::Bool(n % 2 == 0));
+                Value::Map(map)
+            })
+            .collect();
+        let cols = crate::columnar::Columns::build(&items);
+        let filter = FilterInput::Flat(vec![FilterSpec {
+            field: "active".into(),
+            op: FilterOp::Eq,
+            value: Value::Bool(true),
+            logic: FilterLogic::And,
+        }]);
+        let with_cols = offset_page(&items, Some(&cols), Some(&filter), &[], 1, 100).unwrap();
+        let row = offset_page(&items, None, Some(&filter), &[], 1, 100).unwrap();
+        assert_eq!(with_cols, row);
+        assert_eq!(with_cols.total, 15); // even n in 0..30
+    }
+
+    #[test]
+    fn columnar_bool_sort_matches_row() {
+        // A bool sort key (false < true) must match the row engine.
+        let items: Vec<Value> = (0..10)
+            .map(|n| {
+                let mut map = BTreeMap::new();
+                map.insert("n".to_owned(), Value::Int(n));
+                map.insert("active".to_owned(), Value::Bool(n % 3 == 0));
+                Value::Map(map)
+            })
+            .collect();
+        let cols = crate::columnar::Columns::build(&items);
+        let sorts = [SortSpec {
+            field: "active".into(),
+            direction: SortDirection::Desc,
+            nulls: NullsPosition::Last,
+        }];
+        let with_cols = offset_page(&items, Some(&cols), None, &sorts, 1, 100).unwrap();
+        let row = offset_page(&items, None, None, &sorts, 1, 100).unwrap();
+        assert_eq!(with_cols, row);
+    }
 }
