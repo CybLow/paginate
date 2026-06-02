@@ -1,7 +1,7 @@
 # Makefile for pypaginate
 # Uses UV for dependency management and tooling
 
-.PHONY: help sync sync-all lock upgrade test test-cov test-quick test-unit test-integration lint lint-fix format format-check typecheck qa qas clean build publish-test publish docs docs-serve docs-clean pre-commit-install pre-commit
+.PHONY: help sync sync-all lock upgrade test test-cov test-quick test-unit test-integration build-release build-debug test-release bench-release lint lint-fix format format-check typecheck qa qas clean build publish-test publish docs docs-serve docs-clean pre-commit-install pre-commit
 
 # Default target
 .DEFAULT_GOAL := help
@@ -81,6 +81,25 @@ test-unit:  ## Run only unit tests
 
 test-integration:  ## Run only integration tests
 	uv run pytest -m integration
+
+# =============================================================================
+# NATIVE EXTENSION (Rust _core via maturin)
+# =============================================================================
+# pypaginate._core is a Rust extension. A debug build (plain `maturin develop`)
+# is ~10x slower at runtime, so ALWAYS use release for perf/benchmark work and
+# any speed-sensitive run. CI already builds release wheels; this is local-dev.
+
+build-release:  ## Build native _core (release; ~10x faster — use for perf/benchmarks)
+	uv run maturin develop --release
+
+build-debug:  ## Build native _core (debug; fast compile, slow runtime)
+	uv run maturin develop
+
+test-release: build-release  ## Release-build the native ext, then run the full suite
+	uv run pytest
+
+bench-release: build-release  ## Release-build the native ext, then run perf benchmarks
+	uv run pytest tests/perf --run-benchmark
 
 # =============================================================================
 # BUILD & PUBLISH
