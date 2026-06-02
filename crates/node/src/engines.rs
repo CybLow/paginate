@@ -27,30 +27,50 @@ fn required_str(obj: &Map<String, Json>, key: &str) -> Result<String> {
         .ok_or_else(|| Error::new(Status::InvalidArg, format!("spec.{key} must be a string")))
 }
 
+/// Parse one `{field, op, value, logic?}` object into a core filter spec.
+fn parse_one_spec(obj: &Map<String, Json>) -> Result<core::filter::FilterSpec> {
+    let op_name = required_str(obj, "op")?;
+    let op = core::filter::FilterOp::from_name(&op_name)
+        .ok_or_else(|| Error::new(Status::InvalidArg, format!("unknown operator: {op_name}")))?;
+    let logic = match obj.get("logic").and_then(Json::as_str) {
+        Some("or") => core::filter::FilterLogic::Or,
+        _ => core::filter::FilterLogic::And,
+    };
+    Ok(core::filter::FilterSpec {
+        field: required_str(obj, "field")?,
+        op,
+        value: obj.get("value").map_or(core::Value::Null, json_to_value),
+        logic,
+    })
+}
+
 /// Parse `[{field, op, value, logic?}]` into core filter specs.
 pub(crate) fn parse_filter_specs(specs: &Json) -> Result<Vec<core::filter::FilterSpec>> {
     let array = specs
         .as_array()
         .ok_or_else(|| Error::new(Status::InvalidArg, "specs must be an array"))?;
-    let mut out = Vec::with_capacity(array.len());
-    for spec in array {
-        let obj = spec_object(spec)?;
-        let op_name = required_str(obj, "op")?;
-        let op = core::filter::FilterOp::from_name(&op_name).ok_or_else(|| {
-            Error::new(Status::InvalidArg, format!("unknown operator: {op_name}"))
-        })?;
-        let logic = match obj.get("logic").and_then(Json::as_str) {
-            Some("or") => core::filter::FilterLogic::Or,
-            _ => core::filter::FilterLogic::And,
-        };
-        out.push(core::filter::FilterSpec {
-            field: required_str(obj, "field")?,
-            op,
-            value: obj.get("value").map_or(core::Value::Null, json_to_value),
-            logic,
-        });
-    }
-    Ok(out)
+    array.iter().map(|spec| parse_one_spec(spec_object(spec)?)).collect()
+}
+
+/// Parse a nested filter node: a leaf `{field, op, value, logic?}` or a group
+/// `{logic, conditions: [node, ...]}` (an object with a `conditions` array).
+fn parse_filter_node(node: &Json) -> Result<core::filter::FilterNode> {
+    let obj = spec_object(node)?;
+    let Some(conditions) = obj.get("conditions") else {
+        return Ok(core::filter::FilterNode::Spec(parse_one_spec(obj)?));
+    };
+    let array = conditions
+        .as_array()
+        .ok_or_else(|| Error::new(Status::InvalidArg, "group.conditions must be an array"))?;
+    let logic = match obj.get("logic").and_then(Json::as_str) {
+        Some("or") => core::filter::FilterLogic::Or,
+        _ => core::filter::FilterLogic::And,
+    };
+    let conditions = array.iter().map(parse_filter_node).collect::<Result<Vec<_>>>()?;
+    Ok(core::filter::FilterNode::Group(core::filter::FilterGroup {
+        logic,
+        conditions,
+    }))
 }
 
 /// Parse `[{field, direction?, nulls?}]` into core sort specs.
@@ -115,6 +135,21 @@ pub fn filter_indices(items: Json, specs: Json) -> Result<Vec<u32>> {
     let values = json_array_to_values(&items)?;
     let core_specs = parse_filter_specs(&specs)?;
     core::filter::filter_indices(&values, &core::filter::FilterInput::Flat(core_specs))
+        .map(to_u32)
+        .map_err(|e| core_err(&e))
+}
+
+/// Indices of items matching a nested filter `group`. A leaf is
+/// `{field, op, value, logic?}`; a group is `{logic, conditions: [node, ...]}`.
+/// Mirrors the PyO3 `filter_group_indices` so JS/TS gets nested And/Or filters.
+#[napi]
+pub fn filter_group_indices(items: Json, group: Json) -> Result<Vec<u32>> {
+    let values = json_array_to_values(&items)?;
+    let input = match parse_filter_node(&group)? {
+        core::filter::FilterNode::Group(group) => core::filter::FilterInput::Group(group),
+        core::filter::FilterNode::Spec(spec) => core::filter::FilterInput::Flat(vec![spec]),
+    };
+    core::filter::filter_indices(&values, &input)
         .map(to_u32)
         .map_err(|e| core_err(&e))
 }

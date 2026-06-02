@@ -43,6 +43,31 @@ test("filter / sort / search semantics (behaviour parity)", () => {
   assert.deepEqual(p.searchIndices(items, "a", ["name"]), [0, 2]);
 });
 
+test("filterGroupIndices: nested And/Or groups", () => {
+  const items = [
+    { id: 1, name: "Alice", age: 30 },
+    { id: 2, name: "Bob", age: 17 },
+    { id: 3, name: "Cara", age: 45 },
+  ];
+  // (name == "Alice" OR name == "Cara") AND age >= 18  ->  Alice, Cara
+  const group = {
+    logic: "and",
+    conditions: [
+      {
+        logic: "or",
+        conditions: [
+          { field: "name", op: "eq", value: "Alice" },
+          { field: "name", op: "eq", value: "Cara" },
+        ],
+      },
+      { field: "age", op: "gte", value: 18 },
+    ],
+  };
+  assert.deepEqual(p.filterGroupIndices(items, group), [0, 2]);
+  // a bare leaf collapses to a single-spec filter
+  assert.deepEqual(p.filterGroupIndices(items, { field: "age", op: "lt", value: 18 }), [1]);
+});
+
 test("Dataset: resident filter / sort / search map indices back to rows", () => {
   const items = [
     { id: 1, name: "Alice", age: 30 },

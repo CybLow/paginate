@@ -99,6 +99,12 @@ export interface FilterSpec {
   logic?: "and" | "or";
 }
 
+/** A nested boolean group: each condition is a `FilterSpec` or `FilterGroup`. */
+export interface FilterGroup {
+  logic: "and" | "or";
+  conditions: ReadonlyArray<FilterSpec | FilterGroup>;
+}
+
 export interface SortSpec {
   field: string;
   direction?: "asc" | "desc";
@@ -115,6 +121,11 @@ export interface SearchOptions {
 /** Indices of `items` matching `specs` — pypaginate's exact filter semantics. */
 export function filterIndices(items: readonly object[], specs: readonly FilterSpec[]): number[] {
   return core.filterIndices(items as unknown[], specs as unknown[]);
+}
+
+/** Indices of `items` matching a nested `And`/`Or` `FilterGroup`. */
+export function filterGroupIndices(items: readonly object[], group: FilterGroup): number[] {
+  return core.filterGroupIndices(items as unknown[], group as unknown);
 }
 
 /** Index permutation sorting `items` by `specs` (null-aware, stable). */
