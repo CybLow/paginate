@@ -29,7 +29,7 @@ from pypaginate.domain.specs import FilterSpec, SearchSpec, SortSpec
 
 
 try:
-    from paginate_core import Dataset as _NativeDataset
+    from pypaginate._core import Dataset as _NativeDataset
 
     _HAS_NATIVE = True
 except ImportError:

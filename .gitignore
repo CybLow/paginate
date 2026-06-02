@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+
+# Rust / maturin native build
+/target/
+Cargo.lock
 .Python
 build/
 develop-eggs/

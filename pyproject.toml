@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling>=1.28.0"]
-build-backend = "hatchling.build"
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
 
 # ==========================
 # PROJECT METADATA (PEP 621)
@@ -231,22 +231,15 @@ default-groups = ["dev"]  # docs group requires Python 3.12+, mcp is optional (h
 cache-keys = [{ file = "pyproject.toml" }, { file = "uv.lock" }]
 
 # ==========================
-# HATCH BUILD CONFIGURATION
+# MATURIN BUILD CONFIGURATION
 # ==========================
-[tool.hatch.build.targets.wheel]
-packages = ["src/pypaginate"]
-
-[tool.hatch.build.targets.sdist]
-include = [
-    "/src",
-    "/tests",
-    "/docs",
-    "/examples",
-    "README.md",
-    "LICENSE",
-    "CHANGELOG.md",
-    "py.typed",
-]
+# pypaginate is a mixed Python/Rust package: the Python lives at src/pypaginate/
+# and the Rust binding crate (Cargo.toml at repo root, rust/lib.rs) compiles to
+# the bundled extension module `pypaginate._core`.
+[tool.maturin]
+python-source = "src"
+module-name = "pypaginate._core"
+features = ["pyo3/extension-module"]
 
 # ==========================
 # RUFF CONFIGURATION

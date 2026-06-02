@@ -1,0 +1,28 @@
+[package]
+name = "pypaginate"
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.74"
+publish = false
+
+[lib]
+name = "_core"
+path = "rust/lib.rs"
+# cdylib: the Python extension module, bundled into the wheel as
+# `pypaginate._core` (see [tool.maturin] in pyproject.toml).
+crate-type = ["cdylib"]
+
+[dependencies]
+# The shared, language-agnostic engine. LOCAL-PROVING path dep; before any
+# commit/CI this must become a git dep pinned to a paginate-core tag, e.g.
+#   paginate-core = { git = "https://github.com/CybLow/paginate-core", tag = "vX" }
+paginate-core = { path = "/Users/sku/PycharmProjects/paginate-core/crates/core" }
+# abi3-py311: one wheel for CPython 3.11+ (forward-compatible to 3.14).
+pyo3 = { version = "0.28", features = ["extension-module", "abi3-py311"] }
+
+# Release profile tuned for an embedded native extension.
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true
