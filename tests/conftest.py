@@ -138,7 +138,7 @@ def sort_engine() -> SortEngine:
 
 @pytest.fixture()
 def search_engine() -> SearchEngine:
-    """SearchEngine with default TokenParser."""
+    """Native-backed SearchEngine (delegates ranking to _core)."""
     return SearchEngine()
 
 
