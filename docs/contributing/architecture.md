@@ -54,17 +54,12 @@ src/pypaginate/
 │   ├── pipeline.py      # SyncPipeline, AsyncPipeline (filter+sort+search+paginate)
 │   └── cursor.py        # AsyncCursorPaginator (keyset)
 │
-├── filtering/           # In-memory filter engine + operators
+├── filtering/           # In-memory filter engine (native delegator)
 │   ├── accessor.py      # compile_accessor() -- field path resolution
-│   ├── engine.py        # FilterEngine (compiled predicates)
-│   ├── operators.py     # Eq, Gt, Like, Regex, Between, etc.
-│   ├── registry.py      # OperatorRegistry + create_default_registry()
-│   ├── like.py          # LIKE pattern classification
-│   └── regex.py         # Optional google-re2 wrapper
+│   └── engine.py        # FilterEngine -- thin delegator to the native _core engine
 │
 ├── sorting/             # In-memory sort engine
-│   ├── engine.py        # SortEngine (stable multi-key)
-│   └── keys.py          # build_sort_key() with null handling
+│   └── engine.py        # SortEngine (stable multi-key)
 │
 ├── search/              # In-memory search engine
 │   ├── engine.py        # SearchEngine (token-based relevance)

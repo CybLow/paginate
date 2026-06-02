@@ -42,11 +42,10 @@ tests/
 │   ├── domain/                    # params, pages, specs, enums, exceptions, protocols
 │   │   └── test_fast_pages.py     # FastOffsetPage/FastCursorPage (msgspec)
 │   ├── engine/                    # paginator, cursor, pipeline, dispatch
-│   ├── filtering/                 # operators, engine, registry, accessor
-│   │   ├── test_like.py           # LIKE pattern classification + string methods
+│   ├── filtering/                 # engine (native delegator), accessor
 │   │   ├── test_engine_like.py    # LIKE/ILIKE integration with FilterEngine
 │   │   └── test_groups.py         # Nested filter groups (AND/OR composition)
-│   ├── sorting/                   # engine, keys
+│   ├── sorting/                   # engine (native delegator)
 │   ├── search/                    # engine, parser, matching
 │   ├── text/                      # normalize (LRU cache, ASCII fast path)
 │   └── adapters/
@@ -197,7 +196,7 @@ Shared fixtures are in `conftest.py` files at each level:
 # tests/conftest.py — available everywhere
 @pytest.fixture()
 def filter_engine() -> FilterEngine:
-    return FilterEngine(create_default_registry())
+    return FilterEngine()
 
 @pytest.fixture()
 def sample_users() -> list[dict[str, object]]:

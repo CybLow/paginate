@@ -79,13 +79,9 @@ src/pypaginate/
 │   ├── cursor.py            # AsyncCursorPaginator
 │   └── pipeline.py          # SyncPipeline, AsyncPipeline (filter→sort→search→paginate)
 │
-├── filtering/               # In-memory filter engine
-│   ├── engine.py            # FilterEngine — compiles specs to predicates
-│   ├── operators.py         # 20 operator classes (Eq, Gt, Contains, Regex, ...)
-│   ├── registry.py          # OperatorRegistry — name→operator mapping
-│   ├── accessor.py          # compile_accessor — nested field path resolution
-│   ├── like.py              # LIKE pattern matching (classify, glob conversion)
-│   └── regex.py             # Regex compilation with google-re2 fallback
+├── filtering/               # In-memory filter engine (native delegator)
+│   ├── engine.py            # FilterEngine — thin delegator to the native _core engine
+│   └── accessor.py          # compile_accessor — nested field path resolution
 │
 ├── search/                  # In-memory search engine
 │   ├── engine.py            # SearchEngine — tokenize, match, score, rank
@@ -93,8 +89,7 @@ src/pypaginate/
 │   └── parser.py            # TokenParser — query tokenization
 │
 ├── sorting/                 # In-memory sort support
-│   ├── engine.py            # SortEngine — multi-key stable sorting
-│   └── keys.py              # Sort key helpers
+│   └── engine.py            # SortEngine — multi-key stable sorting
 │
 ├── text/                    # Text processing utilities
 │   └── normalize.py         # Unicode normalization, accent removal
@@ -282,7 +277,7 @@ All exceptions carry structured `details` dicts for programmatic handling.
 | **Ports & Adapters** | `domain/protocols.py` + `adapters/` | Backend-agnostic orchestration |
 | **Strategy** | `PaginationBackend`, `FilterBackend`, `SortBackend`, `SearchBackend` | Swap backends without changing engine code |
 | **Facade** | `paginate()` function | Single entry point hiding detection + dispatch |
-| **Registry** | `OperatorRegistry` | Extensible operator lookup by name |
+| **Native core** | `_core` engine | The 20 filter operators are implemented in the bundled native engine |
 | **Compile-once** | `FilterEngine`, `SearchEngine` | Compile specs to closures once, evaluate N times |
 | **Type inference** | `paginate()` overloads | Input type determines output type (Elysia-style) |
 

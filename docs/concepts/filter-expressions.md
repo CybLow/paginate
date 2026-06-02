@@ -138,9 +138,8 @@ graph LR
 
 ```python
 from pypaginate.filtering.engine import FilterEngine
-from pypaginate.filtering.registry import create_default_registry
 
-engine = FilterEngine(create_default_registry())
+engine = FilterEngine()
 filtered = engine.apply(items, [
     FilterSpec(field="age", operator="gte", value=18),
     FilterSpec(field="status", value="active"),
@@ -206,27 +205,13 @@ resolves the value from any object (dict or object with attributes).
 
 ---
 
-## Operator Registry
+## Operators
 
-The `OperatorRegistry` maps operator names to operator classes. The default registry
-includes all 20 operators. You can create custom registries:
-
-```python
-from pypaginate.filtering.registry import OperatorRegistry
-from pypaginate.filtering.operators import Eq
-
-registry = OperatorRegistry()
-registry.register("eq", Eq)
-# Add custom operators the same way
-```
-
-Each operator implements the `Operator` protocol:
-
-```python
-class Operator(Protocol):
-    @staticmethod
-    def evaluate(field_value: object, spec_value: object) -> bool: ...
-```
+All 20 operators are implemented in the bundled native `_core` engine. They are
+not Python-registrable: there is no public operator registry, and `FilterEngine()`
+takes no constructor arguments. To filter with logic not covered by a built-in
+operator, filter at the application layer, or open an issue to add the operator
+to the core.
 
 ---
 

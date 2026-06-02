@@ -85,9 +85,8 @@ FilterSpec(field="tags", operator="not_empty")
 ```python
 from pypaginate import FilterSpec
 from pypaginate.filtering.engine import FilterEngine
-from pypaginate.filtering.registry import create_default_registry
 
-engine = FilterEngine(registry=create_default_registry())
+engine = FilterEngine()
 
 users = [
     {"name": "Alice", "age": 30, "status": "active"},
@@ -189,26 +188,10 @@ Pass filters to `SyncPipeline.execute()` or `AsyncPipeline.execute()` alongside 
 
 ## Custom Operators
 
-Register custom operators via the `OperatorRegistry`:
-
-```python
-from pypaginate.filtering.registry import OperatorRegistry, create_default_registry
-
-class DivisibleBy:
-    __slots__ = ()
-
-    @staticmethod
-    def evaluate(field_value: object, spec_value: object) -> bool:
-        return int(field_value) % int(spec_value) == 0  # type: ignore[arg-type]
-
-registry = create_default_registry()
-registry.register("divisible_by", DivisibleBy())
-
-# Use with FilterEngine
-from pypaginate.filtering.engine import FilterEngine
-
-engine = FilterEngine(registry=registry)
-```
+The 20 operators are provided by the bundled native core engine and are not
+Python-registrable -- `FilterEngine()` takes no arguments and there is no public
+operator registry. For logic not covered by a built-in operator, filter at the
+application layer, or open an issue to request adding the operator to the core.
 
 ## Error Handling
 

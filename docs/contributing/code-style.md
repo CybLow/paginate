@@ -161,10 +161,10 @@ def process(data):
 |---|---|---|
 | `get_*` | Value or raises | `get_user(id)` |
 | `find_*` | Value or None | `find_user_by_email(email)` |
-| `create_*` | New object | `create_default_registry()` |
+| `create_*` | New object | `create_order(items)` |
 | `compile_*` | Reusable callable | `compile_accessor("user.name")` |
 | `apply_*` | Transformed input | `apply_filters(query, specs)` |
-| `build_*` | Constructed object | `build_sort_key(field, dir, nulls)` |
+| `build_*` | Constructed object | `build_query(spec)` |
 | `is_*` / `has_*` | bool | `is_active()`, `has_items()` |
 
 ---
