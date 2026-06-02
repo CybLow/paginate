@@ -104,7 +104,7 @@ fn parse_filter(specs: &Bound<'_, PyList>) -> PyResult<(Vec<FilterSpec>, Project
     let mut core_specs = Vec::new();
     for spec in specs.iter() {
         let tuple = spec.cast::<PyTuple>()?;
-        core_specs.push(parse_leaf(&tuple, &mut plan, &mut key_for)?);
+        core_specs.push(parse_leaf(tuple, &mut plan, &mut key_for)?);
     }
     Ok((core_specs, plan))
 }
@@ -118,7 +118,7 @@ fn parse_node(
 ) -> PyResult<FilterNode> {
     let tuple = node.cast::<PyTuple>()?;
     match tuple.len() {
-        4 => Ok(FilterNode::Spec(parse_leaf(&tuple, plan, key_for)?)),
+        4 => Ok(FilterNode::Spec(parse_leaf(tuple, plan, key_for)?)),
         2 => {
             let logic = parse_logic(&tuple.get_item(0)?.extract::<String>()?);
             let mut conditions = Vec::new();
