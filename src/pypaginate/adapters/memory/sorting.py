@@ -1,26 +1,25 @@
-"""In-memory sort backend with partition-sort strategy.
+"""In-memory sort backend.
 
-Implements SortBackend protocol for Python sequences.
-Partitions nulls from non-nulls, sorts non-nulls with a plain
-key (no tuple wrapping), then concatenates for null placement.
+Implements the ``SortBackend`` protocol for Python sequences by delegating to
+the native ``pypaginate._core`` engine, which applies the ordered sort specs
+(direction + null placement per key) and returns a row permutation.
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pypaginate.domain.enums import NullsPosition, SortDirection
-from pypaginate.filtering.accessor import compile_accessor
+from pypaginate import _native
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Sequence
 
     from pypaginate.domain.specs import SortSpec
 
 
 class MemorySortBackend:
-    """Sort backend for in-memory sequences."""
+    """Sort backend for in-memory sequences (native ``_core``)."""
 
     __slots__ = ()
 
@@ -33,52 +32,15 @@ class MemorySortBackend:
 
         Args:
             query: A Python sequence of items.
-            sorting: Sort specifications (applied in order).
+            sorting: Sort specifications (applied in priority order).
 
         Returns:
             New sorted list of items.
         """
-        items = list(query)  # type: ignore[call-overload]
-        for spec in reversed(sorting):
-            items = _sort_by_spec(items, spec)
-        return items
-
-
-def _sort_by_spec(items: list[object], spec: SortSpec) -> list[object]:
-    """Sort items using partition-sort for null handling."""
-    accessor = compile_accessor(spec.field)
-    reverse = spec.direction is SortDirection.DESC
-    nulls, non_nulls = _partition_nulls(items, accessor)
-
-    non_nulls.sort(key=lambda item: accessor(item), reverse=reverse)  # type: ignore[arg-type,return-value]
-
-    return _join_partitions(nulls, non_nulls, spec.nulls)
-
-
-def _partition_nulls(
-    items: list[object],
-    accessor: Callable[[object], object],
-) -> tuple[list[object], list[object]]:
-    """Split items into null-valued and non-null-valued lists."""
-    nulls: list[object] = []
-    non_nulls: list[object] = []
-    for item in items:
-        if accessor(item) is None:
-            nulls.append(item)
-        else:
-            non_nulls.append(item)
-    return nulls, non_nulls
-
-
-def _join_partitions(
-    nulls: list[object],
-    non_nulls: list[object],
-    null_pos: NullsPosition,
-) -> list[object]:
-    """Concatenate partitions respecting null placement."""
-    if null_pos is NullsPosition.FIRST:
-        return nulls + non_nulls
-    return non_nulls + nulls
+        items: Sequence[object] = query  # type: ignore[assignment]
+        if not sorting:
+            return list(items)
+        return _native.sort_by(items, sorting)
 
 
 __all__ = ["MemorySortBackend"]

@@ -5,7 +5,6 @@ from __future__ import annotations
 from pypaginate import FilterSpec, OffsetParams
 from pypaginate.domain.specs import And, Or
 from pypaginate.filtering.engine import FilterEngine
-from pypaginate.filtering.registry import create_default_registry
 from tests.fixtures.backends import SEED_DATA, setup_memory
 from tests.fixtures.helpers import run
 
@@ -13,7 +12,7 @@ from tests.fixtures.helpers import run
 async def test_and_group_narrows_results() -> None:
     """And() group returns only items matching all conditions."""
     await setup_memory()
-    engine = FilterEngine(create_default_registry())
+    engine = FilterEngine()
     group = And(
         FilterSpec(field="name", operator="contains", value="a"),
         FilterSpec(field="name", operator="contains", value="e"),
@@ -28,7 +27,7 @@ async def test_and_group_narrows_results() -> None:
 
 async def test_or_group_widens_results() -> None:
     """Or() group returns items matching any condition."""
-    engine = FilterEngine(create_default_registry())
+    engine = FilterEngine()
     group = Or(
         FilterSpec(field="name", operator="eq", value="Alice"),
         FilterSpec(field="name", operator="eq", value="Bob"),
@@ -42,7 +41,7 @@ async def test_or_group_widens_results() -> None:
 
 async def test_nested_and_or_groups() -> None:
     """Nested And(Or(...), spec) combines logic correctly."""
-    engine = FilterEngine(create_default_registry())
+    engine = FilterEngine()
     group = And(
         Or(
             FilterSpec(field="name", operator="eq", value="Alice"),
@@ -80,7 +79,7 @@ async def test_and_group_through_pipeline() -> None:
 
 async def test_or_group_no_match_returns_empty() -> None:
     """Or() group with no matching conditions returns empty."""
-    engine = FilterEngine(create_default_registry())
+    engine = FilterEngine()
     group = Or(
         FilterSpec(field="name", operator="eq", value="NoOne"),
         FilterSpec(field="name", operator="eq", value="Nobody"),
@@ -93,7 +92,7 @@ async def test_or_group_no_match_returns_empty() -> None:
 
 async def test_deeply_nested_groups() -> None:
     """Multiple nesting levels resolve correctly."""
-    engine = FilterEngine(create_default_registry())
+    engine = FilterEngine()
     group = And(
         Or(
             And(
