@@ -18,6 +18,9 @@
 //!   never fast-pathed (it would error/short-circuit in the row engine).
 //! * **Str** — byte order (== Unicode code-point order for UTF-8, which is what
 //!   `coerce::compare` uses) and exact equality.
+//! * **Bool** — `false < true` (matches `coerce::compare`'s explicit
+//!   `(Bool, Bool)` arm) and equality (bool `==` equals `coerce::eq`'s 0/1
+//!   fold); only a `Bool` needle qualifies, so `active == 1` still falls back.
 //!
 //! Anything else — an unknown field, a string/regex operator, a value whose
 //! coercion can't be proven equal — returns `None`, and the caller falls back to
@@ -36,6 +39,7 @@ enum Column {
     Int(Vec<i64>),
     Float(Vec<f64>),
     Str(Vec<String>),
+    Bool(Vec<bool>),
 }
 
 /// Dense typed columns keyed by field name (only fully-typed, NaN-free fields).
@@ -72,6 +76,7 @@ impl Columns {
             Column::Int(col) => filter_int(col, op, value),
             Column::Float(col) => filter_float(col, op, value),
             Column::Str(col) => filter_str(col, op, value),
+            Column::Bool(col) => filter_bool(col, op, value),
         }
     }
 
@@ -118,6 +123,7 @@ fn sort_one(order: &mut [usize], column: &Column, desc: bool) {
             oriented(col[a].partial_cmp(&col[b]).unwrap_or(Ordering::Equal), desc)
         }),
         Column::Str(col) => order.sort_by(|&a, &b| oriented(col[a].cmp(&col[b]), desc)),
+        Column::Bool(col) => order.sort_by(|&a, &b| oriented(col[a].cmp(&col[b]), desc)),
     }
 }
 
@@ -135,6 +141,7 @@ fn build_column(items: &[Value], field: &str, seed: &Value) -> Option<Column> {
         Value::Int(_) => build_int(items, field),
         Value::Float(f) if !f.is_nan() => build_float(items, field),
         Value::Str(_) => build_str(items, field),
+        Value::Bool(_) => build_bool(items, field),
         _ => None,
     }
 }
@@ -181,6 +188,17 @@ fn build_str(items: &[Value], field: &str) -> Option<Column> {
     Some(Column::Str(col))
 }
 
+fn build_bool(items: &[Value], field: &str) -> Option<Column> {
+    let mut col = Vec::with_capacity(items.len());
+    for item in items {
+        match field_value(item, field)? {
+            Value::Bool(b) => col.push(*b),
+            _ => return None, // non-bool / missing -> disqualify
+        }
+    }
+    Some(Column::Bool(col))
+}
+
 fn collect(len: usize, keep: impl Fn(usize) -> bool) -> Vec<usize> {
     (0..len).filter(|&i| keep(i)).collect()
 }
@@ -210,6 +228,16 @@ fn filter_str(col: &[String], op: FilterOp, value: &Value) -> Option<Vec<usize>>
     Some(collect(col.len(), |i| {
         keep(col[i].as_str(), needle.as_str())
     }))
+}
+
+fn filter_bool(col: &[bool], op: FilterOp, value: &Value) -> Option<Vec<usize>> {
+    let &Value::Bool(needle) = value else {
+        return None; // non-bool needle (e.g. active == 1) -> row engine via as_number
+    };
+    // bool == bool matches coerce::eq (both fold to 0/1) and false < true matches
+    // coerce::compare's explicit (Bool, Bool) arm, so all six ops stay row-exact.
+    let keep: fn(&bool, &bool) -> bool = comparison(op)?;
+    Some(collect(col.len(), |i| keep(&col[i], &needle)))
 }
 
 /// The six order/equality operators as a comparison function, or `None` for any
