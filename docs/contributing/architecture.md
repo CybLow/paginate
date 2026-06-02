@@ -61,10 +61,8 @@ src/pypaginate/
 ├── sorting/             # In-memory sort engine
 │   └── engine.py        # SortEngine (stable multi-key)
 │
-├── search/              # In-memory search engine
-│   ├── engine.py        # SearchEngine (token-based relevance)
-│   ├── matching.py      # matches_field(), fuzzy_score()
-│   └── parser.py        # TokenParser (shlex-based)
+├── search/              # In-memory search engine (native delegator)
+│   └── engine.py        # SearchEngine -- thin delegator to the native _core engine
 │
 ├── text/                # Text utilities
 │   └── normalize.py     # normalize_text() -- LRU cached + ASCII fast path
@@ -162,13 +160,13 @@ Optional dependencies follow the try/except import pattern:
 
 ```python
 try:
-    from rapidfuzz import fuzz as _fuzz
-    _HAS_RAPIDFUZZ = True
+    import msgspec
+    _HAS_MSGSPEC = True
 except ImportError:
-    _HAS_RAPIDFUZZ = False
+    _HAS_MSGSPEC = False
 ```
 
-Used for: `rapidfuzz` (search), `msgspec` (page construction), `google-re2` (regex safety).
+Used for: `msgspec` (page construction), `google-re2` (regex safety).
 
 ---
 

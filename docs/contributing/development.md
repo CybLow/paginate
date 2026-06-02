@@ -32,8 +32,8 @@ uv sync --all-extras --dev
 
 This installs:
 
-- **Core:** pydantic
-- **Optional extras:** sqlalchemy, rapidfuzz, fastapi, msgspec, google-re2
+- **Core:** pydantic (fuzzy search is built into the native engine -- no extra needed)
+- **Optional extras:** sqlalchemy, fastapi, msgspec, google-re2
 - **Dev tools:** pytest, mypy, ruff, hypothesis, pytest-benchmark
 - **Docs:** sphinx, myst-parser
 
@@ -128,7 +128,7 @@ uv run pytest tests/perf/test_comparison.py --benchmark-enable --benchmark-only 
 | Extra | Packages | Purpose |
 |---|---|---|
 | `pypaginate[sqlalchemy]` | SQLAlchemy | ORM pagination |
-| `pypaginate[search]` | rapidfuzz | Fast fuzzy string matching |
+| `pypaginate[search]` | (none) | No-op compat alias -- fuzzy search is native |
 | `pypaginate[fastapi]` | FastAPI | Dependency injection helpers |
 | `pypaginate[fast]` | msgspec | Near-zero page construction |
 | `pypaginate[security]` | google-re2 | ReDoS-safe regex filtering |

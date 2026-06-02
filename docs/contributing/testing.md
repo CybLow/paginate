@@ -61,7 +61,7 @@ Each source file maps to a test file:
 
 ```
 src/pypaginate/filtering/engine.py  -->  tests/unit/filtering/test_engine.py
-src/pypaginate/search/matching.py   -->  tests/unit/search/test_matching.py
+src/pypaginate/search/engine.py     -->  tests/unit/search/test_engine.py
 src/pypaginate/domain/pages.py      -->  tests/unit/domain/test_pages.py
 ```
 

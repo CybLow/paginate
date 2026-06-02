@@ -114,10 +114,8 @@ src/pypaginate/
 ├── sorting/                 # Sort adapter (delegates to _core)
 │   └── engine.py            # SortEngine — multi-key sort via _core
 │
-├── search/                  # Search engine (pure-Python fuzzy island, core #10)
-│   ├── engine.py            # SearchEngine (token-based relevance scoring)
-│   ├── matching.py          # matches_field(), fuzzy_score() (pre-normalized)
-│   └── parser.py            # TokenParser (shlex-based)
+├── search/                  # Search adapter (delegates to _core)
+│   └── engine.py            # SearchEngine — exact/fuzzy/token-sort ranking via _core
 │
 ├── text/                    # Text utilities
 │   └── normalize.py         # normalize_text() with LRU cache + ASCII fast path
@@ -213,7 +211,7 @@ Performance-critical optional dependencies:
 | Extra | Package | Purpose |
 |---|---|---|
 | `pypaginate[fast]` | `msgspec>=0.18.0` | Near-zero page construction via msgspec.Struct |
-| `pypaginate[search]` | `rapidfuzz>=3.0.0` | Fast fuzzy string matching |
+| `pypaginate[search]` | _(none)_ | No-op for back-compat — fuzzy search is now native |
 | `pypaginate[security]` | `google-re2>=1.0` | ReDoS-safe regex filtering |
 
 ---
@@ -227,14 +225,17 @@ encoding, filtering, sorting and exact/ranked search behave *identically*
 across Python, Node and the browser, from a single implementation.
 
 `_core` is the **single in-memory engine**: all filtering (flat specs *and*
-nested `And`/`Or`/`FilterGroup` trees), all sorting, the cursor codec, and
-exact/ranked search run through it. The adapters — `FilterEngine`,
-`MemoryFilterBackend`, `SortEngine`, `MemorySortBackend` — are thin: they
-translate domain specs to the engine's tuple form, call it, and select rows by
-the returned indices (all via `_native.py`, which also normalizes the engine's
-`KeyError`/`ValueError` into `FilterError`/`SortError`). The **only** execution
-still in pure-Python is fuzzy / token-sort search, pending rapidfuzz parity in
-the core (task #10).
+nested `And`/`Or`/`FilterGroup` trees), all sorting, the cursor codec, text
+normalization, and **all search** — exact/prefix/contains *and* fuzzy /
+token-sort ranking (rapidfuzz-based, in Rust) — run through it. The adapters —
+`FilterEngine`, `MemoryFilterBackend`, `SortEngine`, `MemorySortBackend`,
+`SearchEngine`, `MemorySearchBackend` — are thin: they translate domain specs to
+the engine's form, call it, and select rows by the returned indices (via
+`_native.py`, which also normalizes the engine's `KeyError`/`ValueError` into
+`FilterError`/`SortError`/`SearchError`). pypaginate contains **no in-memory
+engine algorithm in Python** — only adapters, the host-side field-path resolver
+(`filtering/accessor.py`), and a small adapter-level fuzzy match heuristic in
+`MemorySearchBackend` (deliberately distinct from the rapidfuzz ranked engine).
 
 ### Build for speed (release, not debug)
 

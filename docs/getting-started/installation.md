@@ -55,7 +55,11 @@ Includes:
 
 ### Search Features
 
-For fuzzy text search with rapidfuzz:
+Fuzzy text search is **built into the native engine** -- it always works with the base
+install, no extra dependency required.
+
+The `pypaginate[search]` extra is a no-op kept only for backward compatibility (it no
+longer installs anything):
 
 ::::{tab-set}
 
@@ -72,10 +76,6 @@ pip install pypaginate[search]
 :::
 
 ::::
-
-Includes:
-
-- `rapidfuzz>=3.0.0` -- Fast fuzzy string matching
 
 ### FastAPI Integration
 

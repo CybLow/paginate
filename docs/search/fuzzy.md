@@ -2,15 +2,9 @@
 
 Fuzzy matching finds approximate string matches, handling typos, misspellings, and word-order variations.
 
-## Requirements
-
-Install the search extra for rapidfuzz support:
-
-```bash
-uv add pypaginate[search]
-```
-
-This includes [rapidfuzz](https://github.com/rapidfuzz/RapidFuzz), a fast fuzzy string matching library. Without rapidfuzz, fuzzy matching falls back to simple substring checks.
+Fuzzy matching is built into the native engine and always available -- no extra dependency
+to install. The algorithms are a Rust reimplementation of rapidfuzz's `partial_ratio` and
+`token_sort_ratio`.
 
 ## FuzzyMode
 
@@ -28,7 +22,7 @@ FuzzyMode.TOKEN_SORT  # token_sort_ratio -- word-order agnostic
 
 ### FuzzyMode.FUZZY
 
-Uses rapidfuzz's `partial_ratio` for substring-aware fuzzy matching:
+Uses `partial_ratio` for substring-aware fuzzy matching:
 
 ```python
 from pypaginate import SearchSpec, FuzzyMode
@@ -54,7 +48,7 @@ results = engine.apply(users, spec)
 
 ### FuzzyMode.TOKEN_SORT
 
-Uses rapidfuzz's `token_sort_ratio` for word-order-agnostic matching:
+Uses `token_sort_ratio` for word-order-agnostic matching:
 
 ```python
 spec = SearchSpec(
@@ -156,16 +150,6 @@ Sorts the tokens alphabetically before comparing, making word order irrelevant:
 ```
 "smith alice"  vs "Alice Smith"  -> high score (same words)
 "alice s"      vs "Alice Smith"  -> moderate score (partial)
-```
-
-### Fallback (no rapidfuzz)
-
-Without rapidfuzz installed, both modes fall back to simple substring containment:
-
-```python
-# Without rapidfuzz:
-# FuzzyMode.FUZZY -> returns 100 if query is a substring, else 0
-# FuzzyMode.TOKEN_SORT -> same fallback
 ```
 
 ## Multi-Field Fuzzy Search

@@ -59,7 +59,7 @@ adapter selects from the originals by index.
 ## Integration (graceful, opt-in)
 
 pypaginate auto-detects the native extension and falls back to pure Python — the
-**same pattern** as `msgspec` / `rapidfuzz` / `google-re2`. No public API
+**same pattern** as `msgspec` / `google-re2`. No public API
 change, no new required dependency. First integrated module: the cursor codec
 ([`engine/cursor_codec.py`](../src/pypaginate/engine/cursor_codec.py)):
 
@@ -128,10 +128,12 @@ surface as a typed hierarchy — `PaginateError` (a `ValueError`) with
 
 Done: pure core (65 cargo tests + 8 property), `abi3` wheel with PEP 561 stubs,
 PyO3 + napi-rs bindings (typed exceptions), cursor codec + ranked search
-integrated with fallback, and the **resident `Dataset`** — filter/sort/paginate
-in one call with a columnar fast path (int/float/str, multi-key sort,
-multi-filter `AND`) — exposed as the public `pypaginate.Dataset` (native +
-pure-Python fallback, identical `OffsetPage`) and as a Node/TS `Dataset`.
+integrated with fallback, `rapidfuzz` crate parity for fuzzy/token-sort search
+(now the only implementation — the pure-Python search island was removed), and
+the **resident `Dataset`** — filter/sort/paginate in one call with a columnar
+fast path (int/float/str, multi-key sort, multi-filter `AND`) — exposed as the
+public `pypaginate.Dataset` (native + pure-Python fallback, identical
+`OffsetPage`) and as a Node/TS `Dataset`.
 
-Next: `rapidfuzz` crate parity for fuzzy/token-sort search → publish the wheel +
-npm addon → optional grouped-filter / multi-key columnar in the one-call path.
+Next: publish the wheel + npm addon → optional grouped-filter / multi-key
+columnar in the one-call path.
