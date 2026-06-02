@@ -1,30 +1,28 @@
-"""In-memory sort engine applying SortSpec sequences.
+"""Sort engine applying SortSpec sequences to in-memory sequences.
 
-Applies multiple sort specifications in priority order using
-Python's stable sort guarantee. Each spec controls direction
-and null placement independently.
+Delegates to the native ``pypaginate._core`` engine, which applies the ordered
+sort specs (each controlling direction and null placement) and returns a row
+permutation.
 """
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
 
-from pypaginate.domain.enums import SortDirection
-from pypaginate.domain.exceptions import SortError
-from pypaginate.domain.specs import SortSpec
-from pypaginate.sorting.keys import build_sort_key
+from pypaginate import _native
+
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from pypaginate.domain.specs import SortSpec
 
 
 T = TypeVar("T")
 
 
 class SortEngine:
-    """Stateless engine that sorts sequences by SortSpec rules.
-
-    Uses Python's stable sort: applies specs in reverse order
-    so the first spec has highest priority.
-    """
+    """Stateless engine that sorts sequences by SortSpec rules (native)."""
 
     __slots__ = ()
 
@@ -43,36 +41,7 @@ class SortEngine:
         """
         if not sorting:
             return list(items)
-        return self._apply_specs(list(items), sorting)
-
-    def _apply_specs(self, result: list[T], sorting: Sequence[SortSpec]) -> list[T]:
-        """Apply each spec in reverse for stable multi-key sorting.
-
-        Args:
-            result: Mutable list to sort in place.
-            sorting: Sort specs to apply.
-
-        Returns:
-            The sorted list.
-        """
-        for spec in reversed(sorting):
-            self._apply_single(result, spec)
-        return result
-
-    @staticmethod
-    def _apply_single(result: list[T], spec: SortSpec) -> None:
-        """Apply a single sort specification.
-
-        Args:
-            result: List to sort in place.
-            spec: Sort spec defining field, direction, nulls.
-        """
-        try:
-            key = build_sort_key(spec.field, spec.direction, spec.nulls)
-            reverse = spec.direction is SortDirection.DESC
-            result.sort(key=key, reverse=reverse)
-        except (TypeError, AttributeError) as exc:
-            raise SortError(str(exc), details={"field": spec.field}) from exc
+        return _native.sort_by(items, sorting)
 
 
 __all__ = ["SortEngine"]

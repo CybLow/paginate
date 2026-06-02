@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from pypaginate.filtering.engine import FilterEngine
-from pypaginate.filtering.registry import OperatorRegistry, create_default_registry
 from pypaginate.search.engine import SearchEngine
 from pypaginate.sorting.engine import SortEngine
 from tests.factories.data import make_users
@@ -126,15 +125,9 @@ async def backend_env(
 
 
 @pytest.fixture()
-def filter_registry() -> OperatorRegistry:
-    """Default operator registry with all built-in operators."""
-    return create_default_registry()
-
-
-@pytest.fixture()
-def filter_engine(filter_registry: OperatorRegistry) -> FilterEngine:
-    """FilterEngine backed by the default registry."""
-    return FilterEngine(filter_registry)
+def filter_engine() -> FilterEngine:
+    """FilterEngine (native ``_core`` backed)."""
+    return FilterEngine()
 
 
 @pytest.fixture()

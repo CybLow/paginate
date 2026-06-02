@@ -1,0 +1,87 @@
+"""Bridge from domain specs to the bundled native ``_core`` engine.
+
+pypaginate runs all in-memory filtering and sorting through the Rust
+``pypaginate._core`` engine. This module is the single translation point:
+
+* it converts the domain specs (``FilterSpec`` / ``FilterGroup`` / ``SortSpec``)
+  into the tuple wire-forms the engine accepts,
+* selects the original host items by the row indices the engine returns, and
+* normalizes the engine's boundary errors — a ``KeyError`` for a missing field,
+  a ``ValueError`` for a bad operator or operand — into the domain exception
+  hierarchy, so callers always see ``FilterError`` / ``SortError`` regardless of
+  the engine underneath.
+
+The engine is mandatory (built into the wheel); there is no pure-Python
+fallback for filtering or sorting. Fuzzy/token-sort search remains pure-Python
+in :mod:`pypaginate.search` until the core reaches rapidfuzz parity.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
+
+from pypaginate._core import filter_group_indices, filter_indices, sort_indices
+from pypaginate.domain.enums import FilterLogic, NullsPosition, SortDirection
+from pypaginate.domain.exceptions import FilterError, SortError
+from pypaginate.domain.specs import FilterGroup
+
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from pypaginate.domain.specs import FilterSpec, SortSpec
+
+_LOGIC = {FilterLogic.AND: "and", FilterLogic.OR: "or"}
+_DIRECTION = {SortDirection.ASC: "asc", SortDirection.DESC: "desc"}
+_NULLS = {NullsPosition.FIRST: "first", NullsPosition.LAST: "last"}
+
+
+def filter_and(items: Sequence[Any], filters: Sequence[FilterSpec]) -> list[Any]:
+    """Filter flat specs combined with AND (in-memory backend semantics)."""
+    rows = list(items)
+    specs = [(f.field, f.operator, f.value, "and") for f in filters]
+    return _take(rows, lambda: filter_indices(rows, specs), FilterError)
+
+
+def filter_logic(items: Sequence[Any], filters: Sequence[FilterSpec]) -> list[Any]:
+    """Filter flat specs, honoring each spec's own AND/OR ``logic``."""
+    rows = list(items)
+    specs = [(f.field, f.operator, f.value, _LOGIC[f.logic]) for f in filters]
+    return _take(rows, lambda: filter_indices(rows, specs), FilterError)
+
+
+def filter_group(items: Sequence[Any], group: FilterGroup) -> list[Any]:
+    """Filter by a nested ``FilterGroup`` (And/Or tree)."""
+    rows = list(items)
+    node = _to_node(group)
+    return _take(rows, lambda: filter_group_indices(rows, node), FilterError)
+
+
+def sort_by(items: Sequence[Any], sorting: Sequence[SortSpec]) -> list[Any]:
+    """Sort by ordered sort specs (direction + null placement per key)."""
+    rows = list(items)
+    specs = [(s.field, _DIRECTION[s.direction], _NULLS[s.nulls]) for s in sorting]
+    return _take(rows, lambda: sort_indices(rows, specs), SortError)
+
+
+def _take(
+    rows: list[Any],
+    indices: Callable[[], list[int]],
+    error: type[FilterError | SortError],
+) -> list[Any]:
+    """Run a native index query, normalize errors, and select matched rows."""
+    try:
+        return [rows[i] for i in indices()]
+    except (KeyError, ValueError) as exc:
+        raise error(str(exc)) from exc
+
+
+def _to_node(node: FilterSpec | FilterGroup) -> Any:
+    """Convert a FilterSpec/FilterGroup tree to the recursive ``_core`` form."""
+    if isinstance(node, FilterGroup):
+        return (_LOGIC[node.logic], [_to_node(c) for c in node.conditions])
+    return (node.field, node.operator, node.value, _LOGIC[node.logic])
+
+
+__all__ = ["filter_and", "filter_group", "filter_logic", "sort_by"]

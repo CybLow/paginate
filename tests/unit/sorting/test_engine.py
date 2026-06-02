@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
-
 import pytest
 
 from pypaginate.domain.enums import NullsPosition, SortDirection
@@ -168,18 +166,12 @@ class TestSortEdgeCases:
 
 
 class TestSortError:
-    def test_type_error_during_sort_raises_sort_error(
+    def test_incomparable_values_raise_sort_error(
         self,
         sort_engine: SortEngine,
     ) -> None:
-        items = [{"name": "Alice"}]
-        specs = [SortSpec(field="name")]
+        items = [{"v": 1}, {"v": "x"}]
+        specs = [SortSpec(field="v")]
 
-        with (
-            patch(
-                "pypaginate.sorting.engine.build_sort_key",
-                side_effect=TypeError("bad"),
-            ),
-            pytest.raises(SortError, match="bad"),
-        ):
+        with pytest.raises(SortError, match="comparable"):
             sort_engine.apply(items, specs)
