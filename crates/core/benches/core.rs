@@ -91,8 +91,12 @@ fn bench_filter(c: &mut Criterion) {
                 FilterNode::Spec(leaf("active", "eq", Value::Bool(true), FilterLogic::And)),
             ],
         });
-        let contains =
-            FilterInput::Flat(vec![leaf("name", "contains", Value::Str("3".to_owned()), FilterLogic::And)]);
+        let contains = FilterInput::Flat(vec![leaf(
+            "name",
+            "contains",
+            Value::Str("3".to_owned()),
+            FilterLogic::And,
+        )]);
 
         group.bench_with_input(BenchmarkId::new("flat_single", n), &n, |b, _| {
             b.iter(|| filter_indices(black_box(&items), black_box(&single)).unwrap());
@@ -115,7 +119,10 @@ fn bench_sort(c: &mut Criterion) {
     for &n in &SIZES {
         let items = make_users(n);
         let single = vec![key("age", SortDirection::Desc)];
-        let multi = vec![key("age", SortDirection::Asc), key("id", SortDirection::Desc)];
+        let multi = vec![
+            key("age", SortDirection::Asc),
+            key("id", SortDirection::Desc),
+        ];
         let by_str = vec![key("name", SortDirection::Asc)];
 
         group.bench_with_input(BenchmarkId::new("single_int", n), &n, |b, _| {
@@ -135,8 +142,18 @@ fn bench_search(c: &mut Criterion) {
     let mut group = c.benchmark_group("search");
     for &n in &SIZES {
         let items = make_users(n);
-        let contains = search("user_42", &["name"], SearchFieldMode::Contains, FuzzyMode::Exact);
-        let fuzzy = search("user_42", &["name", "email"], SearchFieldMode::Contains, FuzzyMode::Fuzzy);
+        let contains = search(
+            "user_42",
+            &["name"],
+            SearchFieldMode::Contains,
+            FuzzyMode::Exact,
+        );
+        let fuzzy = search(
+            "user_42",
+            &["name", "email"],
+            SearchFieldMode::Contains,
+            FuzzyMode::Fuzzy,
+        );
 
         group.bench_with_input(BenchmarkId::new("contains", n), &n, |b, _| {
             b.iter(|| search_indices(black_box(&items), black_box(&contains)).unwrap());
@@ -162,7 +179,15 @@ fn bench_pipeline(c: &mut Criterion) {
         });
         group.bench_with_input(BenchmarkId::new("columnar", n), &n, |b, _| {
             b.iter(|| {
-                offset_page(black_box(&items), Some(&columns), Some(&filter), &sorts, 1, 20).unwrap()
+                offset_page(
+                    black_box(&items),
+                    Some(&columns),
+                    Some(&filter),
+                    &sorts,
+                    1,
+                    20,
+                )
+                .unwrap()
             });
         });
 
@@ -177,12 +202,26 @@ fn bench_pipeline(c: &mut Criterion) {
         });
         group.bench_with_input(BenchmarkId::new("and_bool_columnar", n), &n, |b, _| {
             b.iter(|| {
-                offset_page(black_box(&items), Some(&columns), Some(&and_bool), &[], 1, 20).unwrap()
+                offset_page(
+                    black_box(&items),
+                    Some(&columns),
+                    Some(&and_bool),
+                    &[],
+                    1,
+                    20,
+                )
+                .unwrap()
             });
         });
     }
     group.finish();
 }
 
-criterion_group!(benches, bench_filter, bench_sort, bench_search, bench_pipeline);
+criterion_group!(
+    benches,
+    bench_filter,
+    bench_sort,
+    bench_search,
+    bench_pipeline
+);
 criterion_main!(benches);

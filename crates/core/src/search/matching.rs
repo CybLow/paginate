@@ -95,7 +95,11 @@ mod tests {
     #[test]
     fn modes() {
         assert!(matches_field("hello", "hello", SearchFieldMode::Exact));
-        assert!(!matches_field("hello world", "hello", SearchFieldMode::Exact));
+        assert!(!matches_field(
+            "hello world",
+            "hello",
+            SearchFieldMode::Exact
+        ));
         assert!(matches_field("hello", "hel", SearchFieldMode::Prefix));
         assert!(matches_field("hello", "ell", SearchFieldMode::Contains));
         assert!(!matches_field("hello", "xyz", SearchFieldMode::Contains));
@@ -117,7 +121,10 @@ mod tests {
     #[test]
     fn token_sort_is_word_order_agnostic() {
         assert_eq!(token_sort_ratio("johnson alice", "alice johnson"), 100);
-        assert_eq!(fuzzy_score("johnson alice", "alice johnson", 90, FuzzyMode::TokenSort), 100);
+        assert_eq!(
+            fuzzy_score("johnson alice", "alice johnson", 90, FuzzyMode::TokenSort),
+            100
+        );
     }
 
     #[test]
