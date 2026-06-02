@@ -1,7 +1,7 @@
 """Unit-specific fixtures.
 
-Engine fixtures (filter_engine, sort_engine, search_engine, filter_registry)
-are inherited from root ``tests/conftest.py`` — do NOT redefine them here.
+Engine fixtures (filter_engine, sort_engine, search_engine) are inherited
+from root ``tests/conftest.py`` — do NOT redefine them here.
 
 This module provides:
 - ``sample_users``: 4 named users (Alice, Bob, Charlie, Diana)
