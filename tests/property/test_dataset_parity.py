@@ -1,15 +1,16 @@
-"""Property-based parity: native Dataset pipeline == pure-Python fallback.
+"""Property-based parity: resident Dataset pipeline == per-stage native path.
 
 The resident :class:`pypaginate.Dataset` answers a query two ways — the native
-one-call ``_core`` pipeline and the pure-Python backends — and the library
+one-call ``_core`` pipeline (``_core.Dataset.page``) and the per-stage path that
+runs the ``_core`` filter and sort one stage at a time — and the library
 guarantees they return an **identical** page. The example-based proof lives in
 ``tests/unit/test_dataset.py``; this widens it to randomized flat queries
 (filter + sort + offset-paginate) over generated datasets, so the two paths
 cannot silently drift.
 
-Scope: numeric fields and the operators ``_core`` and the pure path both
-implement byte-identically, so ordering and tie-breaks match exactly. String
-collation and ``Decimal`` are pinned by the example tests, not fuzzed here.
+Scope: numeric fields and operators that order byte-identically, so ordering
+and tie-breaks match exactly. String collation and ``Decimal`` are pinned by the
+example tests, not fuzzed here.
 """
 
 from __future__ import annotations

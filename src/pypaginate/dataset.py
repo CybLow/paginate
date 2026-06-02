@@ -19,10 +19,10 @@ from collections.abc import Sequence
 from typing import Any, Generic, TypeVar
 
 from pypaginate._dispatch import paginate
+from pypaginate._native import and_filter_tuples, sort_tuples
 from pypaginate.adapters.memory.filters import MemoryFilterBackend
 from pypaginate.adapters.memory.search import MemorySearchBackend
 from pypaginate.adapters.memory.sorting import MemorySortBackend
-from pypaginate.domain.enums import NullsPosition, SortDirection
 from pypaginate.domain.pages import OffsetPage
 from pypaginate.domain.params import OffsetParams
 from pypaginate.domain.specs import FilterSpec, SearchSpec, SortSpec
@@ -38,15 +38,12 @@ except ImportError:
 
 ItemT = TypeVar("ItemT")
 
-# Stateless in-memory backends shared by the pure-Python fallback path.
+# Stateless in-memory backends for the per-stage path (filter/sort delegate to
+# _core; search stays pure-Python). Used when the resident Dataset is bypassed
+# or a search is requested (which the resident one-call page() doesn't cover).
 _FILTER = MemoryFilterBackend()
 _SORT = MemorySortBackend()
 _SEARCH = MemorySearchBackend()
-
-# Enum -> native string maps. The enums use auto() (int values), so the native
-# adapter keys on these names — mirroring search/engine.py's _NATIVE_MODES.
-_DIRECTION = {SortDirection.ASC: "asc", SortDirection.DESC: "desc"}
-_NULLS = {NullsPosition.FIRST: "first", NullsPosition.LAST: "last"}
 
 
 class Dataset(Generic[ItemT]):
@@ -112,8 +109,8 @@ class Dataset(Generic[ItemT]):
             result = self._native.page(
                 params.page,
                 params.limit,
-                _to_native_filters(filters),
-                _to_native_sorts(sorting),
+                and_filter_tuples(filters or []),
+                sort_tuples(sorting or []),
             )
         except Exception:
             return None
@@ -137,29 +134,6 @@ class Dataset(Generic[ItemT]):
         if search is not None:
             data = _SEARCH.apply_search(data, search)
         return paginate(data, params)
-
-
-def _to_native_filters(
-    filters: Sequence[FilterSpec] | None,
-) -> list[tuple[str, str, Any, str]]:
-    """Convert flat filter specs to the native tuple form.
-
-    Every spec is joined with AND (``"and"``) to mirror the pure-Python
-    ``MemoryFilterBackend``, which ANDs all flat specs regardless of their
-    ``logic`` field — keeping the native and fallback paths identical.
-    """
-    if not filters:
-        return []
-    return [(f.field, f.operator, f.value, "and") for f in filters]
-
-
-def _to_native_sorts(
-    sorting: Sequence[SortSpec] | None,
-) -> list[tuple[str, str, str]]:
-    """Convert sort specs to the native tuple form."""
-    if not sorting:
-        return []
-    return [(s.field, _DIRECTION[s.direction], _NULLS[s.nulls]) for s in sorting]
 
 
 __all__ = ["Dataset"]
