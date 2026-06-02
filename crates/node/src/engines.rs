@@ -49,7 +49,10 @@ pub(crate) fn parse_filter_specs(specs: &Json) -> Result<Vec<core::filter::Filte
     let array = specs
         .as_array()
         .ok_or_else(|| Error::new(Status::InvalidArg, "specs must be an array"))?;
-    array.iter().map(|spec| parse_one_spec(spec_object(spec)?)).collect()
+    array
+        .iter()
+        .map(|spec| parse_one_spec(spec_object(spec)?))
+        .collect()
 }
 
 /// Parse a nested filter node: a leaf `{field, op, value, logic?}` or a group
@@ -66,7 +69,10 @@ fn parse_filter_node(node: &Json) -> Result<core::filter::FilterNode> {
         Some("or") => core::filter::FilterLogic::Or,
         _ => core::filter::FilterLogic::And,
     };
-    let conditions = array.iter().map(parse_filter_node).collect::<Result<Vec<_>>>()?;
+    let conditions = array
+        .iter()
+        .map(parse_filter_node)
+        .collect::<Result<Vec<_>>>()?;
     Ok(core::filter::FilterNode::Group(core::filter::FilterGroup {
         logic,
         conditions,
