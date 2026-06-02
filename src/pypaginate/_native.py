@@ -37,10 +37,22 @@ _DIRECTION = {SortDirection.ASC: "asc", SortDirection.DESC: "desc"}
 _NULLS = {NullsPosition.FIRST: "first", NullsPosition.LAST: "last"}
 
 
+def and_filter_tuples(
+    filters: Sequence[FilterSpec],
+) -> list[tuple[str, str, Any, str]]:
+    """Flat spec tuples combined with AND (resident Dataset + memory backend)."""
+    return [(f.field, f.operator, f.value, "and") for f in filters]
+
+
+def sort_tuples(sorting: Sequence[SortSpec]) -> list[tuple[str, str, str]]:
+    """Sort spec tuples ``(field, direction, null placement)`` for the engine."""
+    return [(s.field, _DIRECTION[s.direction], _NULLS[s.nulls]) for s in sorting]
+
+
 def filter_and(items: Sequence[Any], filters: Sequence[FilterSpec]) -> list[Any]:
     """Filter flat specs combined with AND (in-memory backend semantics)."""
     rows = list(items)
-    specs = [(f.field, f.operator, f.value, "and") for f in filters]
+    specs = and_filter_tuples(filters)
     return _take(rows, lambda: filter_indices(rows, specs), FilterError)
 
 
@@ -61,7 +73,7 @@ def filter_group(items: Sequence[Any], group: FilterGroup) -> list[Any]:
 def sort_by(items: Sequence[Any], sorting: Sequence[SortSpec]) -> list[Any]:
     """Sort by ordered sort specs (direction + null placement per key)."""
     rows = list(items)
-    specs = [(s.field, _DIRECTION[s.direction], _NULLS[s.nulls]) for s in sorting]
+    specs = sort_tuples(sorting)
     return _take(rows, lambda: sort_indices(rows, specs), SortError)
 
 
@@ -84,4 +96,11 @@ def _to_node(node: FilterSpec | FilterGroup) -> Any:
     return (node.field, node.operator, node.value, _LOGIC[node.logic])
 
 
-__all__ = ["filter_and", "filter_group", "filter_logic", "sort_by"]
+__all__ = [
+    "and_filter_tuples",
+    "filter_and",
+    "filter_group",
+    "filter_logic",
+    "sort_by",
+    "sort_tuples",
+]
