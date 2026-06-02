@@ -105,12 +105,12 @@ def _deserialize_value(value: Any) -> Any:
         raise ValidationError("Invalid cursor") from exc
 
 
-# -- Optional native acceleration (pypaginate-core, Rust) --------------------
-# When the compiled ``pypaginate_core`` extension is installed, delegate to its
+# -- Optional native acceleration (paginate-core, Rust) ----------------------
+# When the compiled ``paginate_core`` extension is installed, delegate to its
 # byte-compatible Rust implementation; otherwise use the pure-Python codec
 # above. Same graceful-degradation pattern as msgspec / rapidfuzz / google-re2.
 try:
-    from paginate_core import (
+    from pypaginate._core import (
         decode_cursor as _native_decode,
         encode_cursor as _native_encode,
     )
@@ -123,7 +123,7 @@ except ImportError:
 def encode_cursor(values: tuple[Any, ...]) -> str:
     """Encode cursor values to a URL-safe string.
 
-    Uses the native ``pypaginate-core`` extension when available, falling back
+    Uses the native ``paginate-core`` extension when available, falling back
     to the pure-Python codec. The wire format is identical either way.
     """
     if _HAS_NATIVE:

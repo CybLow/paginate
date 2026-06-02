@@ -1,0 +1,212 @@
+//! A Rust-resident dataset: marshal host rows into `Value` **once**, then run
+//! many filter/sort/search queries natively without re-crossing the FFI per
+//! query.
+//!
+//! This is the architecture where Rust's compute advantage actually shows. The
+//! one-shot bindings in `engines.rs` re-marshal every item on every call — which
+//! the benchmark showed loses to JIT'd hosts, because marshalling dominates the
+//! tiny per-item work. Here the marshalling is paid once and amortized across
+//! queries, so for a stable in-memory dataset served by many paginated /
+//! filtered requests, native wins — and wins more with every query.
+//!
+//! Methods return **indices** into the original list, so the caller selects its
+//! own host objects and they never round-trip back through Rust.
+
+use pyo3::exceptions::PyValueError;
+use pyo3::prelude::*;
+use pyo3::types::{PyDict, PyList, PyTuple};
+
+use crate::conv::{core_err, py_to_value};
+use ::paginate_core as core;
+
+/// An in-memory dataset held in Rust as `Value` rows, queried by index.
+#[pyclass(frozen, module = "paginate_core")]
+pub struct Dataset {
+    rows: Vec<core::Value>,
+    columns: core::columnar::Columns,
+}
+
+#[pymethods]
+impl Dataset {
+    /// Marshal a list of items (dicts/objects) into the resident dataset once.
+    #[new]
+    fn new(items: &Bound<'_, PyList>) -> PyResult<Self> {
+        let mut rows = Vec::with_capacity(items.len());
+        for item in items.iter() {
+            rows.push(py_to_value(&item)?);
+        }
+        let columns = core::columnar::Columns::build(&rows);
+        Ok(Self { rows, columns })
+    }
+
+    /// Number of rows.
+    fn __len__(&self) -> usize {
+        self.rows.len()
+    }
+
+    /// `Dataset(rows=N)`.
+    fn __repr__(&self) -> String {
+        format!("Dataset(rows={})", self.rows.len())
+    }
+
+    /// Indices matching flat filter specs `[(field, op, value, logic)]`.
+    fn filter(&self, specs: &Bound<'_, PyList>) -> PyResult<Vec<usize>> {
+        let core_specs = parse_filters(specs)?;
+        // Columnar fast path: a single comparison on a typed (int/float/str)
+        // column; falls back to the row engine for anything else.
+        if let [spec] = core_specs.as_slice() {
+            if let Some(indices) = self.columns.filter(&spec.field, spec.op, &spec.value) {
+                return Ok(indices);
+            }
+        }
+        core::filter::filter_indices(&self.rows, &core::filter::FilterInput::Flat(core_specs))
+            .map_err(|e| core_err(&e))
+    }
+
+    /// Index permutation for sort specs `[(field, direction, nulls)]`.
+    fn sort(&self, specs: &Bound<'_, PyList>) -> PyResult<Vec<usize>> {
+        let core_specs = parse_sorts(specs)?;
+        // Columnar fast path: every sort key on a typed column.
+        if !core_specs.is_empty() {
+            let order: Vec<usize> = (0..self.rows.len()).collect();
+            let keys: Vec<(&str, core::sort::SortDirection)> = core_specs
+                .iter()
+                .map(|spec| (spec.field.as_str(), spec.direction))
+                .collect();
+            if let Some(sorted) = self.columns.sort_subset(&order, &keys) {
+                return Ok(sorted);
+            }
+        }
+        core::sort::sort_indices(&self.rows, &core_specs).map_err(|e| core_err(&e))
+    }
+
+    /// Ranked-search indices over `fields`.
+    #[pyo3(signature = (query, fields, mode="contains", fuzzy="exact", threshold=75, min_length=1, max_results=None))]
+    #[allow(clippy::too_many_arguments)]
+    fn search(
+        &self,
+        query: String,
+        fields: Vec<String>,
+        mode: &str,
+        fuzzy: &str,
+        threshold: i64,
+        min_length: usize,
+        max_results: Option<usize>,
+    ) -> PyResult<Vec<usize>> {
+        let spec = core::search::SearchSpec {
+            query,
+            fields,
+            weights: None,
+            mode: parse_mode(mode),
+            fuzzy: parse_fuzzy(fuzzy),
+            threshold,
+            min_length,
+            max_results,
+        };
+        core::search::search_indices(&self.rows, &spec).map_err(|e| core_err(&e))
+    }
+
+    /// Filter + sort + offset-paginate in ONE native call. Returns a dict
+    /// `{indices, total, page, pages, has_next, has_previous}`; the caller
+    /// selects its rows by the returned indices — so the host stays a thin
+    /// adapter and a page request is a single FFI crossing.
+    #[pyo3(signature = (page, limit, filters=None, sorts=None))]
+    fn page<'py>(
+        &self,
+        py: Python<'py>,
+        page: u64,
+        limit: u64,
+        filters: Option<&Bound<'py, PyList>>,
+        sorts: Option<&Bound<'py, PyList>>,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        let filter_input = match filters {
+            Some(specs) if !specs.is_empty() => {
+                Some(core::filter::FilterInput::Flat(parse_filters(specs)?))
+            }
+            _ => None,
+        };
+        let sort_specs = match sorts {
+            Some(specs) => parse_sorts(specs)?,
+            None => Vec::new(),
+        };
+        let result = core::pipeline::offset_page(
+            &self.rows,
+            Some(&self.columns),
+            filter_input.as_ref(),
+            &sort_specs,
+            page,
+            limit,
+        )
+        .map_err(|e| core_err(&e))?;
+
+        let dict = PyDict::new(py);
+        dict.set_item("indices", result.indices)?;
+        dict.set_item("total", result.total)?;
+        dict.set_item("page", result.page)?;
+        dict.set_item("pages", result.pages)?;
+        dict.set_item("has_next", result.has_next)?;
+        dict.set_item("has_previous", result.has_previous)?;
+        Ok(dict)
+    }
+}
+
+fn parse_filters(specs: &Bound<'_, PyList>) -> PyResult<Vec<core::filter::FilterSpec>> {
+    let mut out = Vec::with_capacity(specs.len());
+    for spec in specs.iter() {
+        let tuple = spec.cast::<PyTuple>()?;
+        let op_name: String = tuple.get_item(1)?.extract()?;
+        let op = core::filter::FilterOp::from_name(&op_name)
+            .ok_or_else(|| PyValueError::new_err(format!("unknown operator: {op_name}")))?;
+        let logic = if tuple.get_item(3)?.extract::<String>()? == "or" {
+            core::filter::FilterLogic::Or
+        } else {
+            core::filter::FilterLogic::And
+        };
+        out.push(core::filter::FilterSpec {
+            field: tuple.get_item(0)?.extract()?,
+            op,
+            value: py_to_value(&tuple.get_item(2)?)?,
+            logic,
+        });
+    }
+    Ok(out)
+}
+
+fn parse_sorts(specs: &Bound<'_, PyList>) -> PyResult<Vec<core::sort::SortSpec>> {
+    let mut out = Vec::with_capacity(specs.len());
+    for spec in specs.iter() {
+        let tuple = spec.cast::<PyTuple>()?;
+        let direction = if tuple.get_item(1)?.extract::<String>()? == "desc" {
+            core::sort::SortDirection::Desc
+        } else {
+            core::sort::SortDirection::Asc
+        };
+        let nulls = if tuple.get_item(2)?.extract::<String>()? == "first" {
+            core::sort::NullsPosition::First
+        } else {
+            core::sort::NullsPosition::Last
+        };
+        out.push(core::sort::SortSpec {
+            field: tuple.get_item(0)?.extract()?,
+            direction,
+            nulls,
+        });
+    }
+    Ok(out)
+}
+
+fn parse_mode(mode: &str) -> core::search::SearchFieldMode {
+    match mode {
+        "prefix" => core::search::SearchFieldMode::Prefix,
+        "exact" => core::search::SearchFieldMode::Exact,
+        _ => core::search::SearchFieldMode::Contains,
+    }
+}
+
+fn parse_fuzzy(fuzzy: &str) -> core::search::FuzzyMode {
+    match fuzzy {
+        "fuzzy" => core::search::FuzzyMode::Fuzzy,
+        "token_sort" => core::search::FuzzyMode::TokenSort,
+        _ => core::search::FuzzyMode::Exact,
+    }
+}
