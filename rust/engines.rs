@@ -61,7 +61,10 @@ fn intern_field(
         .entry(field.to_owned())
         .or_insert_with(|| {
             let synthetic = format!("f{}", plan.len());
-            plan.push((synthetic.clone(), field.split('.').map(str::to_owned).collect()));
+            plan.push((
+                synthetic.clone(),
+                field.split('.').map(str::to_owned).collect(),
+            ));
             synthetic
         })
         .clone()
