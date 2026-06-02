@@ -88,6 +88,8 @@ pypaginate uses a **layered architecture** inspired by Domain-Driven Design and 
 src/pypaginate/
 ├── __init__.py              # Public API (23 exports)
 ├── _dispatch.py             # Universal paginate() with type overloads
+├── _core.pyi                # Type stubs for the bundled Rust extension
+├── _core*.so                # Compiled Rust engine (maturin builds it from ../../rust/)
 │
 ├── domain/                  # Pure domain — no external deps except Pydantic
 │   ├── enums.py             # SortDirection, FilterLogic, FuzzyMode, etc.
@@ -217,6 +219,65 @@ Performance-critical optional dependencies:
 | `pypaginate[fast]` | `msgspec>=0.18.0` | Near-zero page construction via msgspec.Struct |
 | `pypaginate[search]` | `rapidfuzz>=3.0.0` | Fast fuzzy string matching |
 | `pypaginate[security]` | `google-re2>=1.0` | ReDoS-safe regex filtering |
+
+---
+
+## Native Rust Core (`_core`)
+
+pypaginate bundles a compiled Rust extension, **`pypaginate._core`** (PyO3,
+`abi3-py311`, built with maturin), that shares its engine crate
+(`paginate-core`) with the JS/TS port. One engine, three languages — so cursor
+encoding, filtering, sorting and search behave **identically** across Python,
+Node and the browser. It is built into the wheel; a pure-Python fallback keeps
+the library working if the extension is ever unavailable.
+
+The core powers exactly the paths where native code earns its keep:
+
+- **Cursor codec** (`encode_cursor`/`decode_cursor`) — a byte-compatible wire
+  format shared with the JS/TS port.
+- **Resident `pypaginate.Dataset`** — marshals a sequence into Rust **once**,
+  then answers repeated `filter → sort → paginate` queries by index.
+- **Ranked search ≥ 1000 items** — compute-heavy enough to beat pure-Python
+  even after marshalling (`search/engine.py` gates on size).
+
+### Why keep the pure-Python engine? (measured, not assumed)
+
+The obvious question is "if there's a Rust engine, why not route *everything*
+through it and delete the Python?" Because we measured it, and one-shot native
+calls **lose** — re-marshalling the whole sequence on every call dwarfs the
+work. Filter-then-sort, median over 200 runs (Apple Silicon, CPython 3.11):
+
+| N | pure per-stage | native one-shot | resident `Dataset.page` |
+|---:|---:|---:|---:|
+| 100 | **14 µs** | 88 µs (6× slower) | 8 µs (1.8× faster) |
+| 1,000 | **136 µs** | 1,624 µs (12× slower) | 209 µs (slower) |
+| 10,000 | **1.5 ms** | 13.8 ms (9× slower) | 1.5 ms (≈ tie) |
+| 100,000 | **14.8 ms** | 163 ms (11× slower) | 14.4 ms (≈ tie) |
+
+So the **per-stage `SyncPipeline` backends stay pure-Python** — they are the
+fastest option at every size *and* fully general (arbitrary Python objects,
+exact `Decimal`, custom comparables). The resident `Dataset` wins only by
+amortizing marshalling across *many* queries on the *same* data; for a single
+filter+sort it merely ties. Native acceleration is applied **only** where the
+benchmark shows a win.
+
+### What the core deliberately does *not* do
+
+Two capabilities live in pure-Python because `_core` has no equivalent (yet):
+
+- **Nested filter groups** — `And` / `Or` / `FilterGroup`, e.g.
+  `(A OR B) AND C`, via the standalone `FilterEngine`. The native binding takes
+  only a flat spec list, so groups would be silently lost if it were mandatory.
+- **Fuzzy / token-sort search** — rapidfuzz-backed scoring; the Rust port is a
+  placeholder pending fuzzy parity.
+
+### Design rule
+
+> The Rust core is the **shared cross-language semantics layer** plus targeted
+> acceleration (cursor codec, resident `Dataset`, large-N ranked search). The
+> pure-Python engine is the **general, small-N-fast reference path** and the
+> home of features the core can't yet express. Equivalence on the flat path is
+> property-tested in `tests/property/test_dataset_parity.py`.
 
 ---
 
