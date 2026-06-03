@@ -18,7 +18,9 @@ crate-type = ["cdylib"]
 # resolve on CI or any other machine.
 paginate-core = { path = "../core" }
 # abi3-py311: one wheel for CPython 3.11+ (forward-compatible to 3.14).
-pyo3 = { version = "0.28", features = ["extension-module", "abi3-py311"] }
+# generate-import-lib lets maturin cross-compile Windows wheels (incl. ARM64)
+# without a matching-arch Python interpreter on the runner.
+pyo3 = { version = "0.28", features = ["extension-module", "abi3-py311", "generate-import-lib"] }
 
 # crates/pyo3 is EXCLUDED from the root workspace (built only by maturin), so it
 # is its own build root and carries the release profile for the wheel here.
