@@ -1,28 +1,41 @@
-[package]
-name = "pypaginate"
-version = "0.2.0"
+[workspace]
+resolver = "2"
+members = ["crates/core", "crates/node"]
+# crates/pyo3 (the PyO3 extension → pypaginate._core) is built ONLY by maturin,
+# never as a workspace member. Excluding it keeps `cargo test --workspace` from
+# linking libpython on a Python-less runner; its `{ path = "../core" }` dep
+# still resolves (path deps do not require workspace membership).
+exclude = ["crates/pyo3"]
+
+[workspace.package]
+version = "0.1.0"
 edition = "2021"
+license = "MIT"
+authors = ["pypaginate Contributors"]
+repository = "https://github.com/CybLow/paginate-core"
 rust-version = "1.74"
-publish = false
 
-[lib]
-name = "_core"
-path = "rust/lib.rs"
-# cdylib: the Python extension module, bundled into the wheel as
-# `pypaginate._core` (see [tool.maturin] in pyproject.toml).
-crate-type = ["cdylib"]
+[workspace.dependencies]
+base64 = "0.22"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+shlex = "1"
+unicode-normalization = "0.1"
 
-[dependencies]
-# The shared, language-agnostic engine. LOCAL-PROVING path dep; before any
-# commit/CI this must become a git dep pinned to a paginate-core tag, e.g.
-#   paginate-core = { git = "https://github.com/CybLow/paginate-core", tag = "vX" }
-paginate-core = { path = "/Users/sku/PycharmProjects/paginate-core/crates/core" }
-# abi3-py311: one wheel for CPython 3.11+ (forward-compatible to 3.14).
-pyo3 = { version = "0.28", features = ["extension-module", "abi3-py311"] }
+[workspace.lints.clippy]
+# Mirror CI's `-D warnings` in local builds, plus a few high-value pedantic lints.
+all = { level = "deny", priority = -1 }
+uninlined_format_args = "warn"
+semicolon_if_nothing_returned = "warn"
+explicit_iter_loop = "warn"
+manual_let_else = "warn"
 
-# Release profile tuned for an embedded native extension.
+# Release profile for the workspace crates (engine rlib + napi addon).
+# NOTE: panic = "unwind" (the default) is kept deliberately so PyO3 can catch
+# Rust panics at the FFI boundary and turn them into Python exceptions instead
+# of aborting the host interpreter. (crates/pyo3 carries its own profile.)
 [profile.release]
 lto = true
 codegen-units = 1
 opt-level = 3
-strip = true

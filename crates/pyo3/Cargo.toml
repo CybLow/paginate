@@ -1,0 +1,31 @@
+[package]
+name = "pypaginate"
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.74"
+publish = false
+
+[lib]
+name = "_core"
+path = "src/lib.rs"
+# cdylib: the Python extension module, bundled into the wheel as
+# `pypaginate._core` (see [tool.maturin] in py/pyproject.toml).
+crate-type = ["cdylib"]
+
+[dependencies]
+# The shared, language-agnostic engine — consumed via an in-repo workspace path
+# dep. This permanently replaces the old absolute-path coupling that could not
+# resolve on CI or any other machine.
+paginate-core = { path = "../core" }
+# abi3-py311: one wheel for CPython 3.11+ (forward-compatible to 3.14).
+pyo3 = { version = "0.28", features = ["extension-module", "abi3-py311"] }
+
+# crates/pyo3 is EXCLUDED from the root workspace (built only by maturin), so it
+# is its own build root and carries the release profile for the wheel here.
+# panic stays the default "unwind" so PyO3 converts Rust panics into Python
+# exceptions instead of aborting the interpreter.
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true
