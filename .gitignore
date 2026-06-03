@@ -4,9 +4,10 @@ __pycache__/
 *$py.class
 *.so
 
-# Rust / maturin native build
-/target/
-Cargo.lock
+# Rust / maturin native build (target/ un-anchored: also crates/*/target/)
+target/
+# Cargo.lock IS tracked: the repo ships a Python wheel (crates/pyo3) and a napi
+# addon (crates/node), so a locked dependency graph is part of reproducible builds.
 .Python
 build/
 develop-eggs/
@@ -80,8 +81,14 @@ Thumbs.db
 .env.local
 *.local
 
-# Node.js (MCP servers)
+# Node.js
 node_modules/
+
+# napi-rs generated bindings (produced by `napi build`; never committed)
+*.node
+crates/node/index.js
+crates/node/index.d.ts
+crates/node/npm/
 
 # Build artifacts
 *.manifest
@@ -99,4 +106,4 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # AutoAPI generated RST (regenerated on every build)
-docs/api/pypaginate/
+py/docs/api/pypaginate/
