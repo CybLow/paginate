@@ -2370,7 +2370,6 @@ dependencies = [
 all = [
     { name = "fastapi" },
     { name = "msgspec" },
-    { name = "rapidfuzz" },
     { name = "sqlalchemy", extra = ["asyncio"] },
 ]
 fast = [
@@ -2378,9 +2377,6 @@ fast = [
 ]
 fastapi = [
     { name = "fastapi" },
-]
-search = [
-    { name = "rapidfuzz" },
 ]
 security = [
     { name = "google-re2" },
@@ -2495,7 +2491,6 @@ requires-dist = [
     { name = "msgspec", marker = "extra == 'fast'", specifier = ">=0.18.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pypaginate", extras = ["sqlalchemy", "search", "fastapi", "fast"], marker = "extra == 'all'" },
-    { name = "rapidfuzz", marker = "extra == 'search'", specifier = ">=3.0.0" },
     { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'sqlalchemy'", specifier = ">=2.0.0" },
 ]
 provides-extras = ["sqlalchemy", "search", "fastapi", "fast", "security", "all"]

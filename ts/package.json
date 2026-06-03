@@ -32,14 +32,14 @@
   ],
   "scripts": {
     "build": "tsc",
-    "pretest": "npm --prefix ../../crates/node run build",
+    "pretest": "npm --prefix ../crates/node run build",
     "test": "tsc && node --test test/*.test.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "paginate-core": "file:../../crates/node"
+    "paginate-core": "^0.1.0"
   },
   "devDependencies": {
     "eslint": "^9",
