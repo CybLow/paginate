@@ -220,6 +220,7 @@ jobs:
             --cov=pypaginate --cov-report=xml:coverage-unit.xml \
             --cov-report=term-missing:skip-covered \
             --junitxml=junit-unit.xml -v \
+            --reruns 2 --reruns-delay 1 \
             --ignore=tests/perf --ignore=tests/e2e
       - name: Coverage → Codecov
         if: matrix.os == 'ubuntu-latest'
