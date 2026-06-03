@@ -466,9 +466,12 @@ jobs:
           enable-cache: true
           cache-dependency-glob: py/uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
-      - name: Build wheel + sdist
+      - name: Build wheel (maturin, in-place)
+        # uv build uses build isolation (copies only py/), so it can't see the
+        # sibling ../crates. maturin builds in-place and reads manifest-path, like
+        # release-python.yml. (sdist packaging is exercised by release-python.yml.)
         working-directory: py
-        run: uv build
+        run: uvx maturin build --out dist
       - name: twine check
         run: uvx twine check py/dist/*
       - uses: actions/upload-artifact@v7
@@ -544,7 +547,7 @@ jobs:
       - name: Build ext (release) + install
         run: |
           uv sync --frozen --all-extras --group test
-          uv run maturin develop --release
+          uv run --with maturin maturin develop --release
       - name: Run benchmarks
         run: |
           uv run pytest tests/perf \
