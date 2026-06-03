@@ -77,16 +77,18 @@ jobs:
           path: crates/node/artifacts
           pattern: addon-*
       - run: npm ci || npm install
-      - name: 📦 Stage platform artifacts
-        run: npx napi artifacts -d artifacts
+      - name: 📦 Create npm dirs + stage artifacts
+        run: |
+          npx napi create-npm-dir -t .
+          npx napi artifacts -d artifacts
       - name: 🚀 Publish paginate-core (+ platform sub-packages)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
-            npx napi prepublish -t npm --dry-run
+            npx napi prepublish -t npm --dry-run --skip-gh-release
           else
-            npx napi prepublish -t npm
+            npx napi prepublish -t npm --skip-gh-release
           fi
       - name: 🚀 Publish @cyblow/paginate
         working-directory: ts

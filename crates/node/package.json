@@ -10,7 +10,15 @@
   "main": "index.js",
   "types": "index.d.ts",
   "napi": {
-    "binaryName": "paginate-core"
+    "name": "paginate-core",
+    "triples": {
+      "defaults": true,
+      "additional": [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-unknown-linux-musl"
+      ]
+    }
   },
   "engines": {
     "node": ">=12.22.0"
