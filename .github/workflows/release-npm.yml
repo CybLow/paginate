@@ -57,7 +57,10 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: addon-${{ matrix.target }}
-          path: crates/node/*.node
+          path: |
+            crates/node/*.node
+            crates/node/index.js
+            crates/node/index.d.ts
 
   publish:
     name: 🚀 npm ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '(dry-run)' || '' }}
@@ -91,14 +94,19 @@ jobs:
             npx napi prepublish -t npm --skip-gh-release
           fi
       - name: 🚀 Publish @cyblow/paginate
-        working-directory: ts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          # Resolve paginate-core from the local workspace, not the registry: in a
+          # dry-run it isn't published yet, and even on a real release the registry
+          # copy can lag. Place the napi-generated JS bindings into crates/node so
+          # tsc can find the types, then install + build via the root workspace.
+          cp artifacts/*/index.js artifacts/*/index.d.ts . 2>/dev/null || true
+          cd "$GITHUB_WORKSPACE"
           npm install
-          npm run build
+          npm --prefix ts run build
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
-            npm publish --access public --dry-run
+            npm --prefix ts publish --access public --dry-run
           else
-            npm publish --access public
+            npm --prefix ts publish --access public
           fi
