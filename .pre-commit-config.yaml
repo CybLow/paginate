@@ -1,8 +1,9 @@
-# Pre-commit configuration
+# Pre-commit configuration (monorepo: Python in py/, Rust in crates/, TS in ts/)
 # https://pre-commit.com/
 #
-# Install hooks: uv run pre-commit install
-# Run all hooks: uv run pre-commit run --all-files
+# Install:      uv run --directory py pre-commit install \
+#                 --hook-type pre-commit --hook-type commit-msg --hook-type pre-push
+# Run all:      uv run --directory py pre-commit run --all-files
 
 default_language_version:
   python: python3.11
@@ -18,47 +19,76 @@ repos:
       - id: check-yaml
         args: [--unsafe]
       - id: check-toml
+      - id: check-json
       - id: check-added-large-files
         args: ['--maxkb=1000']
       - id: check-merge-conflict
       - id: debug-statements
 
-  # Ruff - Fast linter and formatter
+  # Ruff — Python linter + formatter (config in py/pyproject.toml, auto-discovered)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.4
     hooks:
-      # Run linter with auto-fix
       - id: ruff
         args: [--fix, --unsafe-fixes, --exit-non-zero-on-fix]
         types_or: [python, pyi]
-      # Run formatter
+        files: ^py/
       - id: ruff-format
         types_or: [python, pyi]
+        files: ^py/
 
-  # Type checking with mypy (using local installation)
+  # Local toolchain hooks (Python mypy, Rust fmt/clippy, TS lint/format)
   - repo: local
     hooks:
       - id: mypy
-        name: mypy
-        entry: uv run mypy
+        name: mypy (py)
+        entry: uv run --directory py mypy
         language: system
         types: [python]
-        files: ^src/
+        files: ^py/src/
         pass_filenames: false
         args: [src]
-        # Skip in CI - run as separate job for better caching
         stages: [pre-commit]
 
-  # Check for security issues
+      - id: cargo-fmt
+        name: cargo fmt (workspace + pyo3)
+        entry: bash -c 'cargo fmt --all --check && cargo fmt --manifest-path crates/pyo3/Cargo.toml --check'
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      - id: cargo-clippy
+        name: cargo clippy (-D warnings)
+        entry: bash -c 'cargo clippy --workspace --all-targets -- -D warnings'
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      - id: ts-format-check
+        name: prettier --check (ts)
+        entry: bash -c 'npm --prefix ts run format:check'
+        language: system
+        files: ^ts/.*\.(ts|mjs|json)$
+        pass_filenames: false
+
+      - id: ts-lint
+        name: eslint (ts)
+        entry: bash -c 'npm --prefix ts run lint'
+        language: system
+        files: ^ts/.*\.ts$
+        pass_filenames: false
+
+  # Security scanning (bandit, Python)
   - repo: https://github.com/PyCQA/bandit
     rev: 1.8.2
     hooks:
       - id: bandit
-        args: [-c, pyproject.toml]
+        args: [-c, py/pyproject.toml]
         additional_dependencies: ["bandit[toml]"]
-        exclude: ^(tests/|\.opencode/scripts/)
+        files: ^py/src/
+        exclude: ^(py/tests/|\.opencode/scripts/)
 
 ci:
   autofix_commit_msg: "style: auto-fix by pre-commit hooks"
   autoupdate_commit_msg: "chore: update pre-commit hooks"
-  skip: [mypy]  # Skip mypy in pre-commit.ci (too slow)
+  skip: [mypy, cargo-fmt, cargo-clippy, ts-format-check, ts-lint]  # run as CI jobs instead

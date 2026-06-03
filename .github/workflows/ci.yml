@@ -1,455 +1,328 @@
 # =============================================================================
-# CI/CD Pipeline - pypaginate
+# CI — paginate monorepo (Rust engine + Python & Node/TS adapters)
 # =============================================================================
-# Tiered test infrastructure based on branch type:
-#
-# Branch Naming Convention:
-#   - main              : Production-ready code, triggers release
-#   - develop           : Integration branch for features
-#   - release/v*        : Release candidates (e.g., release/v1.2.0)
-#   - feature/*         : New features (e.g., feature/add-keyset-pagination)
-#   - fix/*             : Bug fixes (e.g., fix/memory-leak-in-paginator)
-#   - hotfix/*          : Urgent production fixes (e.g., hotfix/critical-bug)
-#   - refactor/*        : Code improvements (e.g., refactor/simplify-engine)
-#   - docs/*            : Documentation only (e.g., docs/update-readme)
-#   - test/*            : Test improvements (e.g., test/add-edge-cases)
-#   - chore/*           : Maintenance tasks (e.g., chore/update-deps)
-#
-# Pipeline Tiers:
-#   Tier 1 (Fast)     : quality + architecture + unit tests         → feature/*, fix/*, etc.
-#   Tier 2 (Standard) : + integration + e2e + postgresql + property → develop, PRs
-#   Tier 3 (Full)     : + benchmarks + build                       → release/*, main
+# Trunk-based: runs on PRs to `main` and pushes to `main`. A path-filter
+# (`changes`) gates each language lane. Because crates/core is the SHARED engine,
+# any change under it fans out to the Python matrix, the TS suite, AND the
+# cross-language parity job.
 # =============================================================================
 
 name: CI
 
 on:
   push:
-    branches:
-      - main
-      - develop
-      - 'release/v*'
-      - 'feature/*'
-      - 'fix/*'
-      - 'hotfix/*'
-      - 'refactor/*'
-      - 'docs/*'
-      - 'test/*'
-      - 'chore/*'
+    branches: [main]
     paths-ignore:
       - '**.md'
-      - 'docs/**'
       - '.github/ISSUE_TEMPLATE/**'
-      - '.github/*.md'
       - 'LICENSE'
-
   pull_request:
-    branches:
-      - main
-      - develop
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - ready_for_review
-
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
     inputs:
-      debug:
-        description: 'Enable debug mode'
-        required: false
-        default: false
-        type: boolean
       run_all_tests:
-        description: 'Run full test suite (all tiers)'
-        required: false
-        default: false
+        description: 'Force all lanes regardless of changed paths'
         type: boolean
+        default: false
       run_benchmarks:
         description: 'Run benchmark tests'
-        required: false
-        default: false
         type: boolean
+        default: false
 
-# Cancel in-progress runs for the same ref
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   PYTHON_VERSION: '3.11'
-  UV_SYSTEM_PYTHON: 1
   PYTEST_ADDOPTS: '--color=yes'
   HYPOTHESIS_PROFILE: 'ci'
 
-# =============================================================================
-# JOBS
-# =============================================================================
 jobs:
-
   # ---------------------------------------------------------------------------
-  # Determine Pipeline Tier
+  # Path filter — which lanes run. crates/core fans out to py + node + parity.
   # ---------------------------------------------------------------------------
-  setup:
-    name: Setup
+  changes:
+    name: Changes
     runs-on: ubuntu-latest
     outputs:
-      tier: ${{ steps.tier.outputs.tier }}
-      run_integration: ${{ steps.tier.outputs.run_integration }}
-      run_property: ${{ steps.tier.outputs.run_property }}
-      run_benchmarks: ${{ steps.tier.outputs.run_benchmarks }}
-      run_build: ${{ steps.tier.outputs.run_build }}
+      py: ${{ steps.f.outputs.py == 'true' || steps.force.outputs.all == 'true' }}
+      rust: ${{ steps.f.outputs.rust == 'true' || steps.force.outputs.all == 'true' }}
+      core: ${{ steps.f.outputs.core == 'true' || steps.force.outputs.all == 'true' }}
+      node: ${{ steps.f.outputs.node == 'true' || steps.force.outputs.all == 'true' }}
+      bench: ${{ steps.f.outputs.bench == 'true' || steps.force.outputs.all == 'true' || (github.event_name == 'workflow_dispatch' && inputs.run_benchmarks) }}
     steps:
-      - name: Determine pipeline tier
-        id: tier
+      - uses: actions/checkout@v6
+      - id: force
         run: |
-          REF="${{ github.ref }}"
-          EVENT="${{ github.event_name }}"
-          RUN_ALL="${{ github.event.inputs.run_all_tests }}"
-          RUN_BENCH="${{ github.event.inputs.run_benchmarks }}"
-
-          # Default: Tier 1 (fast feedback)
-          TIER=1
-          RUN_INTEGRATION=false
-          RUN_PROPERTY=false
-          RUN_BENCHMARKS=false
-          RUN_BUILD=false
-
-          # Manual override: run all tests
-          if [[ "$RUN_ALL" == "true" ]]; then
-            TIER=3
-            RUN_INTEGRATION=true
-            RUN_PROPERTY=true
-            RUN_BENCHMARKS=true
-            RUN_BUILD=true
-          # Pull requests: Tier 2 (standard validation + benchmarks for PR diff)
-          elif [[ "$EVENT" == "pull_request" ]]; then
-            TIER=2
-            RUN_INTEGRATION=true
-            RUN_PROPERTY=true
-            RUN_BENCHMARKS=true
-            RUN_BUILD=true
-          # Main branch: Tier 3 (full pipeline)
-          elif [[ "$REF" == "refs/heads/main" ]]; then
-            TIER=3
-            RUN_INTEGRATION=true
-            RUN_PROPERTY=true
-            RUN_BENCHMARKS=true
-            RUN_BUILD=true
-          # Release branches: Tier 3 (full pipeline)
-          elif [[ "$REF" == refs/heads/release/* ]]; then
-            TIER=3
-            RUN_INTEGRATION=true
-            RUN_PROPERTY=true
-            RUN_BENCHMARKS=true
-            RUN_BUILD=true
-          # Develop branch: Tier 2 (standard)
-          elif [[ "$REF" == "refs/heads/develop" ]]; then
-            TIER=2
-            RUN_INTEGRATION=true
-            RUN_PROPERTY=true
-            RUN_BUILD=true
-          # Feature/fix/other branches: Tier 1 (fast)
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.run_all_tests }}" == "true" ]] \
+             || [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "all=true" >> "$GITHUB_OUTPUT"
           else
-            TIER=1
+            echo "all=false" >> "$GITHUB_OUTPUT"
           fi
-
-          # Manual benchmark override
-          if [[ "$RUN_BENCH" == "true" ]]; then
-            RUN_BENCHMARKS=true
-          fi
-
-          echo "tier=$TIER" >> $GITHUB_OUTPUT
-          echo "run_integration=$RUN_INTEGRATION" >> $GITHUB_OUTPUT
-          echo "run_property=$RUN_PROPERTY" >> $GITHUB_OUTPUT
-          echo "run_benchmarks=$RUN_BENCHMARKS" >> $GITHUB_OUTPUT
-          echo "run_build=$RUN_BUILD" >> $GITHUB_OUTPUT
-
-          echo "📊 Pipeline Configuration:"
-          echo "   Tier: $TIER"
-          echo "   Branch: $REF"
-          echo "   Event: $EVENT"
-          echo "   Integration: $RUN_INTEGRATION"
-          echo "   Property: $RUN_PROPERTY"
-          echo "   Benchmarks: $RUN_BENCHMARKS"
-          echo "   Build: $RUN_BUILD"
+      - uses: dorny/paths-filter@v3
+        id: f
+        with:
+          filters: |
+            py:
+              - 'py/**'
+              - 'crates/pyo3/**'
+              - 'crates/core/**'
+            rust:
+              - 'crates/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain.toml'
+            core:
+              - 'crates/core/**'
+            node:
+              - 'crates/node/**'
+              - 'ts/**'
+              - 'crates/core/**'
+              - 'package.json'
+            bench:
+              - 'py/**'
+              - 'crates/core/**'
 
   # ---------------------------------------------------------------------------
-  # Quality Checks (Lint + Format + Type Check) - ALL TIERS
+  # Rust — fmt + clippy + test (workspace + the excluded pyo3 crate), debug+release
+  # ---------------------------------------------------------------------------
+  rust:
+    name: Rust
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: changes
+    if: needs.changes.outputs.rust == 'true' && github.event.pull_request.draft != true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+            crates/pyo3 -> target
+      - name: Format
+        run: |
+          cargo fmt --all --check
+          cargo fmt --manifest-path crates/pyo3/Cargo.toml --check
+      - name: Clippy
+        run: |
+          cargo clippy --workspace --all-targets -- -D warnings
+          cargo clippy --manifest-path crates/pyo3/Cargo.toml --all-targets -- -D warnings
+      - name: Test (debug)
+        run: cargo test --workspace
+      - name: Test (release)
+        run: cargo test --workspace --release
+
+  # ---------------------------------------------------------------------------
+  # Python — quality (ruff + mypy); no project build needed (analyzes source)
   # ---------------------------------------------------------------------------
   quality:
     name: Quality
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: setup
-    if: github.event.pull_request.draft != true
-
+    needs: changes
+    if: needs.changes.outputs.py == 'true' && github.event.pull_request.draft != true
+    defaults:
+      run:
+        working-directory: py
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Setup UV + Python
-        uses: astral-sh/setup-uv@v7
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          cache-dependency-glob: py/uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --frozen --all-extras --group lint --group type
-
-      - name: Check formatting
+      - name: Install (deps only)
+        run: uv sync --frozen --all-extras --group lint --group type --no-install-project
+      - name: Format check
         run: uv run ruff format --check --diff src tests
-
       - name: Lint
         run: uv run ruff check --output-format=github src tests
-
       - name: Type check
         run: uv run mypy src
 
   # ---------------------------------------------------------------------------
-  # Architecture Tests (Code Quality Gates) - ALL TIERS
+  # Python — architecture gates
   # ---------------------------------------------------------------------------
   test-architecture:
     name: Architecture
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [setup, quality]
-
+    timeout-minutes: 8
+    needs: [changes, quality]
+    if: needs.changes.outputs.py == 'true'
+    defaults:
+      run:
+        working-directory: py
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup UV + Python
-        uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates/pyo3 -> target
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          cache-dependency-glob: py/uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
+      - name: Build ext + install
         run: uv sync --frozen --all-extras --group test
-
-      - name: Run architecture tests
-        run: |
-          uv run pytest tests/architecture \
-            -p no:benchmark \
-            --junitxml=junit-architecture.xml \
-            -v
-
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload test results
-        if: always()
+      - name: Architecture tests
+        run: uv run pytest tests/architecture -p no:benchmark --junitxml=junit-architecture.xml -v
+      - if: always()
         uses: actions/upload-artifact@v7
         with:
           name: architecture-results
-          path: junit-architecture.xml
+          path: py/junit-architecture.xml
           retention-days: 7
 
   # ---------------------------------------------------------------------------
-  # Unit Tests (Fast, Parallel) - ALL TIERS
+  # Python — unit tests (abi3 ext built per matrix cell)
   # ---------------------------------------------------------------------------
   test-unit:
     name: Unit / Py${{ matrix.python }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
-    needs: [setup, quality]
+    timeout-minutes: 20
+    needs: [changes, quality]
+    if: needs.changes.outputs.py == 'true'
     defaults:
       run:
         shell: bash
-
+        working-directory: py
     strategy:
       fail-fast: false
       matrix:
         python: ['3.11', '3.12', '3.13', '3.14']
         os: [ubuntu-latest, windows-latest, macos-latest]
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup UV + Python ${{ matrix.python }}
-        uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates/pyo3 -> target
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          cache-dependency-glob: py/uv.lock
           python-version: ${{ matrix.python }}
-
-      - name: Install dependencies
+      - name: Build ext + install
         run: uv sync --frozen --all-extras --group test
-
-      - name: Run unit tests (parallel)
+      - name: Unit tests (parallel)
         run: |
           uv run pytest tests/ \
-            -n auto \
-            --dist loadgroup \
-            -p no:benchmark \
-            --cov=pypaginate \
-            --cov-report=xml:coverage-unit.xml \
+            -n auto --dist loadgroup -p no:benchmark \
+            --cov=pypaginate --cov-report=xml:coverage-unit.xml \
             --cov-report=term-missing:skip-covered \
-            --junitxml=junit-unit.xml \
-            -v \
-            --ignore=tests/perf \
-            --ignore=tests/e2e
-
-      - name: Upload coverage to Codecov
+            --junitxml=junit-unit.xml -v \
+            --ignore=tests/perf --ignore=tests/e2e
+      - name: Coverage → Codecov
         if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage-unit.xml
+          files: py/coverage-unit.xml
           flags: unit,python-${{ matrix.python }}
           fail_ci_if_error: false
-
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload test results
-        if: always()
+      - if: always()
         uses: actions/upload-artifact@v7
         with:
           name: unit-results-py${{ matrix.python }}-${{ matrix.os }}
           path: |
-            junit-unit.xml
-            coverage-unit.xml
+            py/junit-unit.xml
+            py/coverage-unit.xml
           retention-days: 7
 
   # ---------------------------------------------------------------------------
-  # Integration Tests (Cross-platform) - TIER 2+
+  # Python — integration (cross-platform)
   # ---------------------------------------------------------------------------
   test-integration:
     name: Integration / Py${{ matrix.python }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-    needs: [setup, test-unit]
-    if: needs.setup.outputs.run_integration == 'true'
+    timeout-minutes: 20
+    needs: [changes, test-unit]
+    if: needs.changes.outputs.py == 'true'
     defaults:
       run:
         shell: bash
-
+        working-directory: py
     strategy:
       fail-fast: false
       matrix:
         python: ['3.11', '3.12', '3.13', '3.14']
         os: [ubuntu-latest, windows-latest, macos-latest]
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup UV + Python ${{ matrix.python }}
-        uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates/pyo3 -> target
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          cache-dependency-glob: py/uv.lock
           python-version: ${{ matrix.python }}
-
-      - name: Install dependencies
+      - name: Build ext + install
         run: uv sync --frozen --all-extras --group test
-
-      - name: Run integration tests
+      - name: Integration tests
         run: |
           uv run pytest tests/ \
             --benchmark-disable \
-            --cov=pypaginate \
-            --cov-report=xml:coverage-integration.xml \
-            --cov-report=term-missing:skip-covered \
-            --junitxml=junit-integration.xml \
-            -v \
-            --ignore=tests/perf \
-            --ignore=tests/e2e \
+            --cov=pypaginate --cov-report=xml:coverage-integration.xml \
+            --junitxml=junit-integration.xml -v \
+            --ignore=tests/perf --ignore=tests/e2e \
             --reruns 2 --reruns-delay 1
-
-      - name: Upload coverage
+      - name: Coverage → Codecov
         if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage-integration.xml
+          files: py/coverage-integration.xml
           flags: integration,python-${{ matrix.python }}
           fail_ci_if_error: false
 
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: integration-results-py${{ matrix.python }}-${{ matrix.os }}
-          path: |
-            junit-integration.xml
-            coverage-integration.xml
-          retention-days: 7
-
   # ---------------------------------------------------------------------------
-  # E2E Tests (Full User Journeys) - TIER 2+
+  # Python — E2E (FastAPI journeys)
   # ---------------------------------------------------------------------------
   test-e2e:
-    name: E2E Tests
+    name: E2E
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [setup, test-unit]
-    if: needs.setup.outputs.run_integration == 'true'
-
+    timeout-minutes: 12
+    needs: [changes, test-unit]
+    if: needs.changes.outputs.py == 'true'
+    defaults:
+      run:
+        working-directory: py
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup UV + Python
-        uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates/pyo3 -> target
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          cache-dependency-glob: py/uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
+      - name: Build ext + install
         run: uv sync --frozen --all-extras --group test
-
-      - name: Run E2E tests
-        run: |
-          uv run pytest tests/e2e \
-            -p no:benchmark \
-            --junitxml=junit-e2e.xml \
-            -v
-
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: e2e-results
-          path: junit-e2e.xml
-          retention-days: 7
+      - name: E2E tests
+        run: uv run pytest tests/e2e -p no:benchmark --junitxml=junit-e2e.xml -v
 
   # ---------------------------------------------------------------------------
-  # PostgreSQL Integration Tests - TIER 2+
+  # Python — PostgreSQL integration
   # ---------------------------------------------------------------------------
   test-postgresql:
     name: PostgreSQL
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [setup, test-unit]
-    if: needs.setup.outputs.run_integration == 'true'
-
+    timeout-minutes: 12
+    needs: [changes, test-unit]
+    if: needs.changes.outputs.py == 'true'
     services:
       postgres:
         image: postgres:16
@@ -461,146 +334,226 @@ jobs:
           - 5433:5432
         options: >-
           --health-cmd "pg_isready -U pypaginate"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
+          --health-interval 10s --health-timeout 5s --health-retries 5
     env:
       PYPAGINATE_PG_URL: postgresql+asyncpg://pypaginate:pypaginate@localhost:5433/pypaginate_test
-
+    defaults:
+      run:
+        working-directory: py
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup UV + Python
-        uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates/pyo3 -> target
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          cache-dependency-glob: py/uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
+      - name: Build ext + install
         run: uv sync --frozen --all-extras --group test
-
-      - name: Run PostgreSQL tests
-        run: |
-          uv run pytest tests/integration/test_postgresql.py \
-            --benchmark-disable \
-            --junitxml=junit-postgresql.xml \
-            -v
-
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: postgresql-results
-          path: junit-postgresql.xml
-          retention-days: 7
+      - name: PostgreSQL tests
+        run: uv run pytest tests/integration/test_postgresql.py --benchmark-disable --junitxml=junit-postgresql.xml -v
 
   # ---------------------------------------------------------------------------
-  # Property-Based Tests (Hypothesis) - TIER 2+
+  # Python — property tests (Hypothesis)
   # ---------------------------------------------------------------------------
   test-property:
-    name: Property Tests
+    name: Property
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: [setup, test-unit]
-    if: needs.setup.outputs.run_property == 'true'
-
+    needs: [changes, test-unit]
+    if: needs.changes.outputs.py == 'true'
+    defaults:
+      run:
+        working-directory: py
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup UV + Python
-        uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates/pyo3 -> target
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          cache-dependency-glob: py/uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
+      - name: Build ext + install
         run: uv sync --frozen --all-extras --group test
-
-      - name: Run property tests
-        run: |
-          uv run pytest tests/property \
-            -m property \
-            --benchmark-disable \
-            --hypothesis-seed=random \
-            --junitxml=junit-property.xml \
-            -v
-
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: property-results
-          path: junit-property.xml
-          retention-days: 7
+      - name: Property tests
+        run: uv run pytest tests/property -m property --benchmark-disable --hypothesis-seed=random --junitxml=junit-property.xml -v
 
   # ---------------------------------------------------------------------------
-  # Benchmark Tests (Performance Tracking) - TIER 3 or manual
+  # Node/TS — napi addon build + TS suite (parity-aware)
   # ---------------------------------------------------------------------------
-  test-benchmarks:
-    name: Benchmarks
+  node-ts:
+    name: Node / TS
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [setup, test-unit]
-    if: needs.setup.outputs.run_benchmarks == 'true'
+    needs: changes
+    if: needs.changes.outputs.node == 'true' && github.event.pull_request.draft != true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates/node -> target
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install workspaces
+        run: npm ci || npm install
+      - name: Test (pretest builds the napi addon)
+        run: npm --prefix ts test
+
+  # ---------------------------------------------------------------------------
+  # Parity — cross-language byte-identical behaviour (runs when the engine changes)
+  # ---------------------------------------------------------------------------
+  parity:
+    name: Parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: changes
+    if: needs.changes.outputs.core == 'true' && github.event.pull_request.draft != true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+            crates/pyo3 -> target
+            crates/node -> target
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: py/uv.lock
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Rust engine invariants
+        run: cargo test -p paginate-core
+      - name: Python ↔ engine parity
+        working-directory: py
+        run: |
+          uv sync --frozen --all-extras --group test
+          uv run pytest tests/property/test_dataset_parity.py -v
+      - name: TS ↔ Python codec parity (byte-identical cursors)
+        run: |
+          npm ci || npm install
+          npm --prefix ts test
+
+  # ---------------------------------------------------------------------------
+  # Build — Python wheel + sdist smoke (maturin via uv build)
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    needs: [changes, test-unit]
+    if: needs.changes.outputs.py == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates/pyo3 -> target
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: py/uv.lock
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Build wheel + sdist
+        working-directory: py
+        run: uv build
+      - name: twine check
+        run: uvx twine check py/dist/*
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: py/dist/
+          retention-days: 30
+
+  # ---------------------------------------------------------------------------
+  # Security — bandit (Python source)
+  # ---------------------------------------------------------------------------
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: changes
+    if: needs.changes.outputs.py == 'true'
+    permissions:
+      security-events: write
+      contents: read
+    defaults:
+      run:
+        working-directory: py
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: py/uv.lock
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install (deps only)
+        run: uv sync --frozen --group security --no-install-project
+      - name: Bandit
+        run: |
+          uv run bandit -r src -f sarif -o bandit-results.sarif || true
+          uv run bandit -r src -f json -o bandit-report.json || true
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        if: always() && hashFiles('py/bandit-results.sarif') != ''
+        with:
+          sarif_file: py/bandit-results.sarif
+          category: bandit
+      - name: pip-audit
+        run: uv run pip-audit --format=json --output=pip-audit-report.json || true
+        continue-on-error: true
+
+  # ---------------------------------------------------------------------------
+  # Benchmarks — pytest-benchmark + gh-pages dashboard (engine/py changes)
+  # ---------------------------------------------------------------------------
+  benchmarks:
+    name: Benchmarks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [changes, test-unit]
+    if: needs.changes.outputs.bench == 'true' && github.event.pull_request.draft != true
     permissions:
       contents: write
       pull-requests: write
-
+    defaults:
+      run:
+        working-directory: py
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup UV + Python
-        uses: astral-sh/setup-uv@v7
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates/pyo3 -> target
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          cache-dependency-glob: py/uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --frozen --all-extras --group test
-
+      - name: Build ext (release) + install
+        run: |
+          uv sync --frozen --all-extras --group test
+          uv run maturin develop --release
       - name: Run benchmarks
         run: |
           uv run pytest tests/perf \
-            --run-benchmark \
-            --run-slow \
-            --benchmark-enable \
-            --benchmark-json=benchmark-results.json \
-            --benchmark-autosave \
-            -v
-
-      - name: Upload benchmark results
-        uses: actions/upload-artifact@v7
-        with:
-          name: benchmark-results
-          path: |
-            benchmark-results.json
-            .benchmarks/
-          retention-days: 90
-
+            --run-benchmark --run-slow --benchmark-enable \
+            --benchmark-json=benchmark-results.json --benchmark-autosave -v
       - name: Continuous benchmark
         uses: benchmark-action/github-action-benchmark@v1
         with:
           tool: 'pytest'
-          output-file-path: benchmark-results.json
+          output-file-path: py/benchmark-results.json
           gh-pages-branch: gh-pages
           benchmark-data-dir-path: dev/bench
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -608,187 +561,44 @@ jobs:
           comment-always: ${{ github.event_name == 'pull_request' }}
           alert-threshold: '120%'
           fail-on-alert: false
-
-      - name: Deploy custom benchmark dashboard
+      - name: Deploy benchmark dashboard
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: .
         run: |
           SHA=$(gh api /repos/{owner}/{repo}/contents/dev/bench/index.html?ref=gh-pages --jq '.sha' 2>/dev/null || echo "")
           CONTENT=$(base64 -w0 .github/pages/bench/index.html)
           if [ -n "$SHA" ]; then
-            gh api /repos/{owner}/{repo}/contents/dev/bench/index.html \
-              --method PUT \
-              -f message="chore: update benchmark dashboard" \
-              -f content="$CONTENT" -f sha="$SHA" -f branch=gh-pages
+            gh api /repos/{owner}/{repo}/contents/dev/bench/index.html --method PUT \
+              -f message="chore: update benchmark dashboard" -f content="$CONTENT" -f sha="$SHA" -f branch=gh-pages
           else
-            gh api /repos/{owner}/{repo}/contents/dev/bench/index.html \
-              --method PUT \
-              -f message="chore: add benchmark dashboard" \
-              -f content="$CONTENT" -f branch=gh-pages
+            gh api /repos/{owner}/{repo}/contents/dev/bench/index.html --method PUT \
+              -f message="chore: add benchmark dashboard" -f content="$CONTENT" -f branch=gh-pages
           fi
 
   # ---------------------------------------------------------------------------
-  # Build Package - TIER 2+
-  # ---------------------------------------------------------------------------
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [setup, test-unit]
-    if: needs.setup.outputs.run_build == 'true'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup UV + Python
-        uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-          cache-dependency-glob: uv.lock
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install build tools
-        run: uv sync --frozen --group build
-
-      - name: Build package
-        run: uv build
-
-      - name: Verify with twine
-        run: uv run twine check dist/*
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: dist
-          path: dist/
-          retention-days: 30
-
-  # ---------------------------------------------------------------------------
-  # Security Scan - ALL TIERS
-  # ---------------------------------------------------------------------------
-  security:
-    name: Security
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: setup
-    permissions:
-      security-events: write
-      contents: read
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup UV + Python
-        uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-          cache-dependency-glob: uv.lock
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: uv sync --frozen --group security
-
-      - name: Run Bandit security scan
-        run: |
-          uv run bandit -r src -f sarif -o bandit-results.sarif || true
-          uv run bandit -r src -f json -o bandit-report.json || true
-
-      - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@v4
-        if: always() && hashFiles('bandit-results.sarif') != ''
-        with:
-          sarif_file: bandit-results.sarif
-          category: bandit
-
-      - name: Run pip-audit
-        run: |
-          uv run pip-audit --format=json --output=pip-audit-report.json || true
-        continue-on-error: true
-
-      - name: Upload security reports
-        uses: actions/upload-artifact@v7
-        with:
-          name: security-reports
-          path: |
-            bandit-report.json
-            bandit-results.sarif
-            pip-audit-report.json
-          retention-days: 30
-
-  # ---------------------------------------------------------------------------
-  # Test Results Summary - PRs only
-  # ---------------------------------------------------------------------------
-  test-summary:
-    name: Test Summary
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [setup, test-unit, test-architecture, test-integration, test-e2e, test-postgresql, test-property]
-    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    permissions:
-      checks: write
-      pull-requests: write
-
-    steps:
-      - name: Download all test results
-        uses: actions/download-artifact@v8
-        with:
-          pattern: '*-results*'
-          merge-multiple: true
-
-      - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        with:
-          files: |
-            junit-*.xml
-          check_name: Test Results
-          comment_mode: always
-          compare_to_earlier_commit: false
-
-  # ---------------------------------------------------------------------------
-  # CI Status Gate
+  # CI Status Gate — the single required check. Skipped lanes count as pass.
   # ---------------------------------------------------------------------------
   ci-status:
     name: CI ✓
     runs-on: ubuntu-latest
-    needs: [setup, quality, test-unit, test-architecture, test-integration, test-e2e, test-postgresql, test-property, build, security]
+    needs: [changes, rust, quality, test-architecture, test-unit, test-integration, test-e2e, test-postgresql, test-property, node-ts, parity, build, security]
     if: always()
-
     steps:
       - name: Check results
         run: |
-          echo "📋 Job Results:"
-          echo "   Setup: ${{ needs.setup.result }}"
-          echo "   Quality: ${{ needs.quality.result }}"
-          echo "   Architecture: ${{ needs.test-architecture.result }}"
-          echo "   Unit Tests: ${{ needs.test-unit.result }}"
-          echo "   Integration: ${{ needs.test-integration.result }}"
-          echo "   E2E: ${{ needs.test-e2e.result }}"
-          echo "   PostgreSQL: ${{ needs.test-postgresql.result }}"
-          echo "   Property: ${{ needs.test-property.result }}"
-          echo "   Build: ${{ needs.build.result }}"
-          echo "   Security: ${{ needs.security.result }}"
-
-          # Required jobs (ALL tiers)
-          REQUIRED=("${{ needs.quality.result }}" "${{ needs.test-unit.result }}" "${{ needs.test-architecture.result }}")
-
-          # Optional jobs (may be skipped based on tier)
-          OPTIONAL=("${{ needs.test-integration.result }}" "${{ needs.test-e2e.result }}" "${{ needs.test-postgresql.result }}" "${{ needs.test-property.result }}" "${{ needs.build.result }}" "${{ needs.security.result }}")
-
-          for result in "${REQUIRED[@]}"; do
-            if [[ "$result" != "success" ]]; then
-              echo "❌ Required job failed: $result"
-              exit 1
+          echo "Results: rust=${{ needs.rust.result }} quality=${{ needs.quality.result }} arch=${{ needs.test-architecture.result }} unit=${{ needs.test-unit.result }} integration=${{ needs.test-integration.result }} e2e=${{ needs.test-e2e.result }} pg=${{ needs.test-postgresql.result }} property=${{ needs.test-property.result }} node-ts=${{ needs.node-ts.result }} parity=${{ needs.parity.result }} build=${{ needs.build.result }} security=${{ needs.security.result }}"
+          # Every lane is path-gated, so "skipped" is an allowed (passing) state.
+          # Only an explicit failure/cancellation fails the gate.
+          ALL=(\
+            "${{ needs.rust.result }}" "${{ needs.quality.result }}" "${{ needs.test-architecture.result }}" \
+            "${{ needs.test-unit.result }}" "${{ needs.test-integration.result }}" "${{ needs.test-e2e.result }}" \
+            "${{ needs.test-postgresql.result }}" "${{ needs.test-property.result }}" "${{ needs.node-ts.result }}" \
+            "${{ needs.parity.result }}" "${{ needs.build.result }}" "${{ needs.security.result }}")
+          for r in "${ALL[@]}"; do
+            if [[ "$r" != "success" && "$r" != "skipped" ]]; then
+              echo "❌ lane failed: $r"; exit 1
             fi
           done
-
-          for result in "${OPTIONAL[@]}"; do
-            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
-              echo "❌ Optional job failed: $result"
-              exit 1
-            fi
-          done
-
-          echo "✅ All checks passed!"
+          echo "✅ all required lanes passed (or were correctly skipped)"

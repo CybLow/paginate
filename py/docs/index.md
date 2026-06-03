@@ -13,7 +13,7 @@
     <a href="https://pypi.org/project/pypaginate/"><img src="https://img.shields.io/pypi/v/pypaginate.svg" alt="PyPI version"></a>
     <a href="https://pypi.org/project/pypaginate/"><img src="https://img.shields.io/pypi/pyversions/pypaginate.svg" alt="Python Versions"></a>
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-    <a href="https://github.com/CybLow/pypaginate/actions/workflows/ci.yml"><img src="https://github.com/CybLow/pypaginate/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+    <a href="https://github.com/CybLow/paginate/actions/workflows/ci.yml"><img src="https://github.com/CybLow/paginate/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 </p>
 ```
 

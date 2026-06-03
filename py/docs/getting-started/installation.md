@@ -150,7 +150,7 @@ pip install pypaginate[all]
 For contributing to pypaginate:
 
 ```bash
-git clone https://github.com/CybLow/pypaginate.git
+git clone https://github.com/CybLow/paginate.git
 cd pypaginate
 uv sync
 ```

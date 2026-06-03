@@ -2,11 +2,11 @@
 
 **Universal pagination toolkit for Python -- one function, any backend, auto-detects sync/async.**
 
-[![CI](https://github.com/CybLow/pypaginate/actions/workflows/ci.yml/badge.svg)](https://github.com/CybLow/pypaginate/actions/workflows/ci.yml)
+[![CI](https://github.com/CybLow/paginate/actions/workflows/ci.yml/badge.svg)](https://github.com/CybLow/paginate/actions/workflows/ci.yml)
 [![PyPI version](https://img.shields.io/pypi/v/pypaginate)](https://pypi.org/project/pypaginate/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/pypaginate)](https://pypi.org/project/pypaginate/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![codecov](https://codecov.io/gh/CybLow/pypaginate/branch/main/graph/badge.svg)](https://codecov.io/gh/CybLow/pypaginate)
+[![codecov](https://codecov.io/gh/CybLow/paginate/branch/main/graph/badge.svg)](https://codecov.io/gh/CybLow/paginate)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 
@@ -375,12 +375,12 @@ Tiered pipeline with **40+ concurrent jobs** across 4 Python versions and 3 oper
 | Benchmarks | 1 | 293 perf benchmarks, PR regression alerts |
 | **Total** | **29+** | **872+ tests, 85% coverage gate** |
 
-**[Live Benchmark Dashboard](https://cyblow.github.io/pypaginate/dev/bench/)** -- performance tracked on every commit.
+**[Live Benchmark Dashboard](https://cyblow.github.io/paginate/dev/bench/)** -- performance tracked on every commit.
 
 ## Development
 
 ```bash
-git clone https://github.com/CybLow/pypaginate.git
+git clone https://github.com/CybLow/paginate.git
 cd pypaginate
 uv sync
 

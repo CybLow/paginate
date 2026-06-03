@@ -16,7 +16,7 @@ to get started -- from setting up your environment to submitting a pull request.
 
 ### Report Bugs
 
-[Open an issue](https://github.com/CybLow/pypaginate/issues) with:
+[Open an issue](https://github.com/CybLow/paginate/issues) with:
 
 - A clear description of the problem
 - Steps to reproduce
@@ -55,7 +55,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ```bash
 git clone https://github.com/YOUR_USERNAME/pypaginate.git
 cd pypaginate
-git remote add upstream https://github.com/CybLow/pypaginate.git
+git remote add upstream https://github.com/CybLow/paginate.git
 uv sync --all-extras --dev
 uv run pytest tests/ --ignore=tests/perf -q
 ```

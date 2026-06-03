@@ -21,7 +21,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ```bash
 git clone https://github.com/YOUR_USERNAME/pypaginate.git
 cd pypaginate
-git remote add upstream https://github.com/CybLow/pypaginate.git
+git remote add upstream https://github.com/CybLow/paginate.git
 ```
 
 ### 2. Install Dependencies

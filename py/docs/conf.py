@@ -286,7 +286,7 @@ mermaid.initialize({
 # =============================================================================
 
 # Base URL for canonical links (GitHub Pages)
-html_baseurl = "https://cyblow.github.io/pypaginate/"
+html_baseurl = "https://cyblow.github.io/paginate/"
 
 # Context for "Edit on GitHub" links
 html_context = {
@@ -302,7 +302,7 @@ html_context = {
 # =============================================================================
 
 # Using GitHub Pages URL (will change to RTD when public)
-ogp_site_url = "https://cyblow.github.io/pypaginate/"
+ogp_site_url = "https://cyblow.github.io/paginate/"
 ogp_site_name = "pypaginate Documentation"
 ogp_image = "_static/logo.svg"
 ogp_description_length = 200

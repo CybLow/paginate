@@ -37,31 +37,47 @@ powershell -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
 
 ```bash
 # Fork the repository on GitHub, then:
-git clone https://github.com/YOUR_USERNAME/pypaginate.git
-cd pypaginate
+git clone https://github.com/YOUR_USERNAME/paginate.git
+cd paginate
 ```
 
-### 2. Install Dependencies
+This is a **monorepo** with three layers:
+
+| Path | What | Toolchain |
+|------|------|-----------|
+| `crates/core` | shared Rust engine (`paginate-core`) | cargo |
+| `crates/pyo3` + `py/` | Python binding + `pypaginate` package | maturin + uv |
+| `crates/node` + `ts/` | napi binding + `@cyblow/paginate` package | napi + npm |
+
+### 2. Install Dependencies & Build
 
 ```bash
-# Install all development dependencies
-uv sync --frozen --all-extras --group dev
+# Python — builds the native extension pypaginate._core:
+cd py && uv sync --frozen --all-extras --group dev && uv run maturin develop && cd ..
+
+# Rust engine + bindings:
+cargo build --workspace
+
+# Node/TS — the npm workspace links the locally-built napi addon:
+npm install
 ```
 
 ### 3. Install Pre-commit Hooks
 
 ```bash
-uv run pre-commit install
+uv run --directory py pre-commit install \
+  --hook-type pre-commit --hook-type commit-msg --hook-type pre-push
 ```
 
 ### 4. Verify Setup
 
 ```bash
-# Run all quality checks
-uv run ruff format --check .
-uv run ruff check .
-uv run mypy src/
-uv run pytest
+# Python
+cd py && uv run ruff format --check . && uv run ruff check . && uv run mypy src && uv run pytest --ignore=tests/perf && cd ..
+# Rust
+cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace
+# Node/TS
+npm --prefix ts test
 ```
 
 ## Code Quality Standards
@@ -71,19 +87,23 @@ All contributions must pass the following quality gates:
 ### Quick Quality Check
 
 ```bash
-# Run all checks at once
-uv run ruff format . && uv run ruff check . && uv run mypy src/ && uv run pytest
+# Python (from py/)
+cd py && uv run ruff format . && uv run ruff check . && uv run mypy src && uv run pytest --ignore=tests/perf && cd ..
+# Rust + Node/TS
+cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace && npm --prefix ts test
 ```
 
 ### Individual Checks
 
-| Check | Command |
-|-------|---------|
-| Format | `uv run ruff format .` |
-| Lint | `uv run ruff check .` |
-| Type Check | `uv run mypy src/` |
-| Tests | `uv run pytest` |
-| Tests + Coverage | `uv run pytest --cov=pypaginate` |
+| Layer | Check | Command |
+|-------|-------|---------|
+| Python | Format | `uv run --directory py ruff format .` |
+| Python | Lint | `uv run --directory py ruff check .` |
+| Python | Type Check | `uv run --directory py mypy src` |
+| Python | Tests + Coverage | `uv run --directory py pytest --cov=pypaginate --ignore=tests/perf` |
+| Rust | Format + Lint | `cargo fmt --all --check && cargo clippy --workspace -- -D warnings` |
+| Rust | Tests | `cargo test --workspace` |
+| Node/TS | Tests | `npm --prefix ts test` |
 
 ### Requirements
 
@@ -108,29 +128,26 @@ Please follow these limits (see [CLAUDE.md](CLAUDE.md) for complete guidelines):
 
 ### Branch Naming Convention
 
-Create branches from `main` using this pattern:
+We use **trunk-based development**: `main` is the only long-lived branch. Create
+short-lived topic branches off `main` and squash-merge them via PR:
 
-| Branch Pattern | Purpose | Example |
-|----------------|---------|---------|
-| `main` | Production-ready code | - |
-| `release/v*` | Release candidates | `release/v1.2.0` |
-| `feature/*` | New features | `feature/add-keyset-pagination` |
-| `fix/*` | Bug fixes | `fix/memory-leak-in-paginator` |
-| `hotfix/*` | Urgent production fixes | `hotfix/critical-security-issue` |
-| `refactor/*` | Code improvements | `refactor/simplify-engine` |
-| `docs/*` | Documentation only | `docs/update-api-reference` |
-| `test/*` | Test improvements | `test/add-edge-cases` |
-| `chore/*` | Maintenance tasks | `chore/update-dependencies` |
+`<type>/<short-kebab-desc>` where `type` ∈ `feat|fix|perf|refactor|docs|test|chore|build|ci|hotfix`
+(e.g. `feat/add-keyset-pagination`, `fix/123-cursor-overflow`).
 
-### CI Pipeline Tiers
+Releases are automated by **release-please** — there are no `release/*` branches.
+See [RELEASING.md](RELEASING.md); the full workflow playbook (including how to
+reproduce the old git-flow, if ever needed) lives in `git-strategy.md`.
 
-The CI pipeline runs different test suites based on branch type:
+### CI lanes (path-filtered)
 
-| Tier | Branches | Tests Run |
-|------|----------|-----------|
-| **Tier 1** (Fast) | `feature/*`, `fix/*`, `refactor/*`, etc. | Quality + Unit Tests |
-| **Tier 2** (Standard) | Pull Requests | + Integration + Property Tests + Build |
-| **Tier 3** (Full) | `main`, `release/*` | + Benchmarks |
+CI runs only the lanes your change touches:
+
+| Changed paths | Lanes |
+|---------------|-------|
+| `py/**`, `crates/pyo3/**` | Python quality + matrix tests + build |
+| `crates/node/**`, `ts/**` | napi build + TS suite |
+| `crates/**` (Rust) | fmt + clippy + `cargo test` (debug & release) |
+| `crates/core/**` (engine) | **all of the above + the cross-language parity job** |
 
 ### Workflow Steps
 
@@ -269,7 +286,10 @@ def test_paginate_returns_correct_page() -> None:
 
 ### Running Specific Tests
 
+Python tests live in `py/tests` — run them from `py/` (or with `uv run --directory py`):
+
 ```bash
+cd py
 # Unit tests only
 uv run pytest tests/unit
 
@@ -331,9 +351,9 @@ def paginate(items: list[T], params: OffsetParams) -> OffsetPage[T]:
 
 ## Getting Help
 
-- **Questions**: Open a [GitHub Discussion](https://github.com/CybLow/pypaginate/discussions)
-- **Bugs**: Open a [GitHub Issue](https://github.com/CybLow/pypaginate/issues) with reproduction steps
-- **Features**: Open a [GitHub Issue](https://github.com/CybLow/pypaginate/issues) with use case description
+- **Questions**: Open a [GitHub Discussion](https://github.com/CybLow/paginate/discussions)
+- **Bugs**: Open a [GitHub Issue](https://github.com/CybLow/paginate/issues) with reproduction steps
+- **Features**: Open a [GitHub Issue](https://github.com/CybLow/paginate/issues) with use case description
 - **Security**: See [SECURITY.md](SECURITY.md) for reporting vulnerabilities
 
 ---

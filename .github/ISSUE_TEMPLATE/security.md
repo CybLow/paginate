@@ -7,7 +7,7 @@ assignees: 'CybLow'
 ---
 
 > ⚠️ **IMPORTANT**: For critical security vulnerabilities, please **DO NOT** open a public issue.
-> Instead, report privately via [GitHub Security Advisories](https://github.com/CybLow/pypaginate/security/advisories/new)
+> Instead, report privately via [GitHub Security Advisories](https://github.com/CybLow/paginate/security/advisories/new)
 > or email security concerns to the maintainer directly.
 
 ## Vulnerability Summary

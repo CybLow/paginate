@@ -19,7 +19,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 Instead, please report privately using one of these methods:
 
 1. **GitHub Security Advisories** (Preferred):
-   - Go to [Security Advisories](https://github.com/CybLow/pypaginate/security/advisories/new)
+   - Go to [Security Advisories](https://github.com/CybLow/paginate/security/advisories/new)
    - Click "Report a vulnerability"
    - Fill out the form with details
 
@@ -31,7 +31,7 @@ Instead, please report privately using one of these methods:
 
 For less severe security issues (e.g., minor information disclosure, low-impact vulnerabilities), you may:
 
-1. Open a [Security Issue](https://github.com/CybLow/pypaginate/issues/new?template=security.md) using our template
+1. Open a [Security Issue](https://github.com/CybLow/paginate/issues/new?template=security.md) using our template
 2. Use the private reporting methods above if you prefer
 
 ### What to Include
@@ -128,15 +128,15 @@ We follow responsible disclosure practices:
 
 Security updates are announced through:
 
-- [GitHub Security Advisories](https://github.com/CybLow/pypaginate/security/advisories)
-- [GitHub Releases](https://github.com/CybLow/pypaginate/releases)
+- [GitHub Security Advisories](https://github.com/CybLow/paginate/security/advisories)
+- [GitHub Releases](https://github.com/CybLow/paginate/releases)
 - [PyPI Release Notes](https://pypi.org/project/pypaginate/#history)
 
 ## Contact
 
 For security-related inquiries:
 
-- **GitHub Security Advisories**: https://github.com/CybLow/pypaginate/security/advisories/new
+- **GitHub Security Advisories**: https://github.com/CybLow/paginate/security/advisories/new
 - **Maintainer**: [@CybLow](https://github.com/CybLow)
 
 ---

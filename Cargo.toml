@@ -12,7 +12,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 authors = ["pypaginate Contributors"]
-repository = "https://github.com/CybLow/paginate-core"
+repository = "https://github.com/CybLow/paginate"
 rust-version = "1.74"
 
 [workspace.dependencies]

@@ -1,4 +1,4 @@
-# Codecov configuration for pypaginate
+# Codecov configuration for the paginate monorepo
 # https://docs.codecov.io/docs/codecov-yaml
 
 codecov:
@@ -17,15 +17,29 @@ coverage:
         target: 80%
         threshold: 5%
 
+# pytest runs with working-directory: py, so coverage reports paths as
+# `src/pypaginate/...`; map them back to the repo-root location.
+fixes:
+  - "src/::py/src/"
+
 flags:
   unit:
     paths:
-      - src/pypaginate/
+      - py/src/pypaginate/
     carryforward: true
   integration:
     paths:
-      - src/pypaginate/
+      - py/src/pypaginate/
     carryforward: true
+
+component_management:
+  individual_components:
+    - component_id: python
+      paths: [py/src/pypaginate/**, crates/pyo3/**]
+    - component_id: engine
+      paths: [crates/core/**]
+    - component_id: node
+      paths: [crates/node/**, ts/src/**]
 
 comment:
   layout: "reach,diff,flags,components"

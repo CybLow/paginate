@@ -1,5 +1,8 @@
 # Read the Docs configuration file
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+#
+# Monorepo: the Python package + Sphinx site live under py/. The docs import the
+# compiled pypaginate._core extension, so we install Rust and build it via uv.
 
 version: 2
 
@@ -7,15 +10,16 @@ build:
   os: ubuntu-24.04
   tools:
     python: "3.13"
+    rust: "latest"
   commands:
     # Install UV
     - curl -LsSf https://astral.sh/uv/install.sh | sh
     - export PATH="$HOME/.local/bin:$PATH"
-    # Generate lock file if missing and sync dependencies
-    - $HOME/.local/bin/uv sync --frozen --group docs --all-extras
-    # Build Sphinx documentation
-    - $HOME/.local/bin/uv run sphinx-build -b html docs $READTHEDOCS_OUTPUT/html
+    # Sync deps + build the native extension (pyproject lives in py/)
+    - $HOME/.local/bin/uv sync --frozen --group docs --all-extras --directory py
+    # Build the Sphinx site from py/docs
+    - $HOME/.local/bin/uv run --directory py sphinx-build -b html docs $READTHEDOCS_OUTPUT/html
 
 sphinx:
-  configuration: docs/conf.py
+  configuration: py/docs/conf.py
   fail_on_warning: false

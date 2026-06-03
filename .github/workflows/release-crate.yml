@@ -1,0 +1,42 @@
+# =============================================================================
+# Release: Rust engine (paginate-core) → crates.io
+# =============================================================================
+# Trigger: tag `core-v*` (cut by release-please). Dry-run via workflow_dispatch.
+# Publishes only crates/core; crates/node (publish = false) ships via npm, and
+# crates/pyo3 ships inside the wheel.
+# =============================================================================
+
+name: Release crate
+
+on:
+  push:
+    tags: ['core-v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'cargo publish --dry-run only'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: 🦀 cargo publish paginate-core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: 🦀 Rust toolchain
+        run: rustup toolchain install stable --profile minimal
+      - name: ✅ Package check
+        run: cargo package -p paginate-core
+      - name: 🚀 Publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+            cargo publish -p paginate-core --dry-run
+          else
+            cargo publish -p paginate-core
+          fi

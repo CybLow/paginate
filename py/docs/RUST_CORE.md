@@ -21,7 +21,7 @@ reusable.
 
 ## Decision
 
-A separate, polyglot repository — [`paginate-core`](https://github.com/CybLow/paginate-core)
+A separate, polyglot repository — [`paginate-core`](https://github.com/CybLow/paginate)
 (renamed from `pypaginate-core`; it is not Python-only). Canonical layout:
 
 ```
@@ -103,7 +103,7 @@ pure-Python pipeline (a single int filter ~28×, single-key sort ~9×) — all
 **verified identical** to pure-Python (a column is built only when it can't
 diverge from the row engine). The same `Dataset` exists for Node/TS; there V8
 wins the single ops but the fused `page()` still wins ~6×. See
-[BENCHMARKS.md](https://github.com/CybLow/paginate-core/blob/main/BENCHMARKS.md).
+[BENCHMARKS.md](https://github.com/CybLow/paginate/blob/main/BENCHMARKS.md).
 The columnar path also covers multi-key sort and multi-filter `AND`.
 
 ## Typed stubs & exceptions
