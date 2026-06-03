@@ -37,7 +37,7 @@ jobs:
           - { runner: ubuntu-latest,  target: aarch64, manylinux: auto }
           - { runner: ubuntu-latest,  target: x86_64,  manylinux: musllinux_1_2 }
           - { runner: ubuntu-latest,  target: aarch64, manylinux: musllinux_1_2 }
-          - { runner: macos-13,       target: x86_64,  manylinux: '' }
+          - { runner: macos-latest,   target: x86_64,  manylinux: '' }  # cross-compiled on arm64 (no scarce macos-13 Intel runner)
           - { runner: macos-latest,   target: aarch64, manylinux: '' }
           - { runner: windows-latest, target: x64,     manylinux: '' }
     steps:
