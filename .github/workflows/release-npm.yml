@@ -33,7 +33,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { host: macos-13,       target: x86_64-apple-darwin }
+          - { host: macos-latest,   target: x86_64-apple-darwin }   # cross-compiled on arm64 (no scarce macos-13 Intel runner)
           - { host: macos-latest,   target: aarch64-apple-darwin }
           - { host: ubuntu-latest,  target: x86_64-unknown-linux-gnu }
           - { host: ubuntu-latest,  target: aarch64-unknown-linux-gnu }
