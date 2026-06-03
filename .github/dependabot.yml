@@ -1,5 +1,5 @@
-# Dependabot configuration
-# Auto-updates Python dependencies and GitHub Actions
+# Dependabot — keeps Python, Rust, Node, and GitHub Actions deps current.
+# Monorepo: Python lives in /py, the cargo workspace at /, npm workspaces at /.
 
 version: 2
 
@@ -11,10 +11,10 @@ registries:
 
 updates:
   # ==========================================================================
-  # PYTHON DEPENDENCIES (uv/pip ecosystem)
+  # PYTHON (pyproject + uv.lock under /py)
   # ==========================================================================
   - package-ecosystem: "pip"
-    directory: "/"
+    directory: "/py"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -31,7 +31,6 @@ updates:
     reviewers:
       - "CybLow"
     groups:
-      # Group all development dependencies
       dev-dependencies:
         patterns:
           - "pytest*"
@@ -45,19 +44,79 @@ updates:
         update-types:
           - "minor"
           - "patch"
-      # Runtime dependencies separately
       runtime:
         patterns:
           - "SQLAlchemy"
           - "fastapi"
-          - "rapidfuzz"
           - "pydantic"
           - "msgspec"
     open-pull-requests-limit: 10
     ignore:
-      # Skip major versions that might break API
       - dependency-name: "SQLAlchemy"
         update-types: ["version-update:semver-major"]
+
+  # ==========================================================================
+  # RUST — cargo workspace (crates/core, crates/node)
+  # ==========================================================================
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "rust"
+    reviewers:
+      - "CybLow"
+    open-pull-requests-limit: 10
+    groups:
+      cargo:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # crates/pyo3 is excluded from the workspace, so it needs its own entry
+  # (keeps pyo3 itself current for security fixes).
+  - package-ecosystem: "cargo"
+    directory: "/crates/pyo3"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "rust"
+    open-pull-requests-limit: 5
+
+  # ==========================================================================
+  # NODE / NPM — workspaces (ts, crates/node)
+  # ==========================================================================
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Paris"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "node"
+    reviewers:
+      - "CybLow"
+    open-pull-requests-limit: 10
+    groups:
+      npm:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # ==========================================================================
   # GITHUB ACTIONS

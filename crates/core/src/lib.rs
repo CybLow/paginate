@@ -18,7 +18,7 @@
 //!   counterpart (e.g. the cursor wire format is byte-identical, so cursors
 //!   minted by either implementation decode in the other).
 //!
-//! [`pypaginate`]: https://github.com/CybLow/pypaginate
+//! [`pypaginate`]: https://github.com/CybLow/paginate
 
 #![forbid(unsafe_code)]
 

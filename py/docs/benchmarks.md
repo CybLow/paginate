@@ -6,7 +6,7 @@ pypaginate tracks performance automatically on every commit and pull request.
 
 View the interactive benchmark charts:
 
-**[Benchmark Dashboard](https://cyblow.github.io/pypaginate/dev/bench/)**
+**[Benchmark Dashboard](https://cyblow.github.io/paginate/dev/bench/)**
 
 The dashboard shows historical performance trends across all benchmark categories,
 updated automatically when changes merge to `main`.

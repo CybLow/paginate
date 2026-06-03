@@ -1,31 +1,29 @@
 # =============================================================================
-# Documentation Deployment - pypaginate
+# Documentation Deployment — paginate monorepo
 # =============================================================================
-# Builds and deploys Sphinx documentation to GitHub Pages (gh-pages branch).
-# Uses keep_files to preserve /dev/bench/ benchmark charts pushed by CI.
+# Builds the Sphinx site from py/docs and deploys to GitHub Pages (gh-pages),
+# preserving /dev/bench/ (benchmark charts) and /status/ pushed by CI.
+# The build needs the Rust toolchain because autodoc imports the compiled
+# pypaginate._core extension.
 # =============================================================================
 
 name: Documentation
 
 on:
   push:
-    branches:
-      - main
-    tags:
-      - 'v*.*.*'  # Trigger on version tags
+    branches: [main]
+    tags: ['py-v*']
     paths:
-      - 'docs/**'
-      - 'src/pypaginate/**'
+      - 'py/docs/**'
+      - 'py/src/pypaginate/**'
+      - 'crates/**'
       - '.github/workflows/docs.yml'
-      - 'pyproject.toml'
-
+      - 'py/pyproject.toml'
   pull_request:
-    branches:
-      - main
+    branches: [main]
     paths:
-      - 'docs/**'
-      - 'src/pypaginate/**'
-
+      - 'py/docs/**'
+      - 'py/src/pypaginate/**'
   workflow_dispatch:
 
 permissions:
@@ -42,7 +40,7 @@ jobs:
   build:
     name: Build Documentation
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -50,29 +48,38 @@ jobs:
         with:
           fetch-depth: 0  # Full history for sphinx-polyversion
 
+      - name: Rust toolchain (for the native extension)
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates/pyo3 -> target
+
       - name: Setup UV + Python
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          cache-dependency-glob: py/uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install dependencies
+      - name: Install dependencies (builds pypaginate._core)
+        working-directory: py
         run: uv sync --frozen --group docs --all-extras
 
       - name: Build documentation
+        working-directory: py
         run: |
-          # Try multi-version build first
           if uv run sphinx-polyversion docs/poly.py 2>/dev/null; then
             echo "Multi-version build successful"
+            # polyversion writes under py/site; hoist to the workspace root
+            [ -d site ] && cp -r site "$GITHUB_WORKSPACE/site"
           else
-            echo "No matching refs found or polyversion failed, building single version..."
-            uv run sphinx-build -b html docs site
+            echo "Single-version build..."
+            uv run sphinx-build -b html docs "$GITHUB_WORKSPACE/site"
           fi
 
       - name: Create root index.html redirect
         run: |
-          # Create redirect from root to main (or latest tag)
           if [ -d "site/main" ]; then
             cat > site/index.html << 'EOF'
           <!DOCTYPE html>
@@ -81,7 +88,7 @@ jobs:
             <meta charset="utf-8">
             <title>Redirecting to pypaginate documentation</title>
             <meta http-equiv="refresh" content="0; url=./main/">
-            <link rel="canonical" href="https://cyblow.github.io/pypaginate/main/">
+            <link rel="canonical" href="https://cyblow.github.io/paginate/main/">
           </head>
           <body>
             <p>Redirecting to <a href="./main/">pypaginate documentation</a>...</p>

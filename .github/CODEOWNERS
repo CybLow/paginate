@@ -1,0 +1,19 @@
+# Code owners — GitHub auto-requests review from the owner of each changed area.
+# Solo maintainer today (@CybLow owns everything); the per-area lines document
+# ownership boundaries for when the team grows. Last matching pattern wins.
+
+*                   @CybLow
+
+# Shared Rust engine — the highest-blast-radius area (drives all bindings).
+/crates/core/       @CybLow
+
+# Python: binding + adapter package.
+/crates/pyo3/       @CybLow
+/py/                @CybLow
+
+# Node/TS: binding + adapter package.
+/crates/node/       @CybLow
+/ts/                @CybLow
+
+# CI/CD, governance, release machinery.
+/.github/           @CybLow

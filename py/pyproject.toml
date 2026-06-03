@@ -91,11 +91,11 @@ pypaginate = "pypaginate._cli:main"
 # PROJECT URLS
 # ==========================
 [project.urls]
-Homepage = "https://github.com/CybLow/pypaginate"
+Homepage = "https://github.com/CybLow/paginate"
 Documentation = "https://pypaginate.readthedocs.io"
-Repository = "https://github.com/CybLow/pypaginate"
-Issues = "https://github.com/CybLow/pypaginate/issues"
-Changelog = "https://github.com/CybLow/pypaginate/blob/main/CHANGELOG.md"
+Repository = "https://github.com/CybLow/paginate"
+Issues = "https://github.com/CybLow/paginate/issues"
+Changelog = "https://github.com/CybLow/paginate/blob/main/CHANGELOG.md"
 
 # ==========================
 # DEPENDENCY GROUPS (PEP 735 - dev only)
@@ -235,7 +235,7 @@ cache-keys = [{ file = "pyproject.toml" }, { file = "uv.lock" }]
 # MATURIN BUILD CONFIGURATION
 # ==========================
 # pypaginate is a mixed Python/Rust package: the Python lives at src/pypaginate/
-# and the Rust binding crate (Cargo.toml at repo root, rust/lib.rs) compiles to
+# and the Rust binding crate (crates/pyo3, see manifest-path below) compiles to
 # the bundled extension module `pypaginate._core`.
 [tool.maturin]
 python-source = "src"

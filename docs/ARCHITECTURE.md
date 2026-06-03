@@ -1,7 +1,7 @@
 # paginate-core — Architecture
 
 This repository is the **language-agnostic engine** behind
-[pypaginate](https://github.com/CybLow/pypaginate). It exists so the
+[pypaginate](https://github.com/CybLow/paginate). It exists so the
 computational heart of the library lives once, in Rust, and is shared by every
 host language through a thin **native adapter** — Python today, Node/TS next.
 

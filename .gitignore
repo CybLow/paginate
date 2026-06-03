@@ -94,6 +94,9 @@ crates/node/npm/
 *.manifest
 *.spec
 
+# Git workflow playbook (uncommitted working reference; see §1 of the file)
+git-strategy.md
+
 # Session artifacts (AI-generated planning docs)
 REFACTORING_PLAN.md
 REFACTORING_ROADMAP.md

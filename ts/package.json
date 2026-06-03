@@ -15,8 +15,8 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/CybLow/paginate-core.git",
-    "directory": "packages/ts"
+    "url": "https://github.com/CybLow/paginate.git",
+    "directory": "ts"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

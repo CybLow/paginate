@@ -1,54 +1,73 @@
-# PR Labeler — auto-labels PRs based on changed files
-# Matches v0.2 module structure
+# PR Labeler — auto-labels PRs based on changed files (monorepo layout).
 
-# -- Source code --
-source:
+# -- Language areas --
+python:
   - changed-files:
       - any-glob-to-any-file:
-          - 'src/**/*.py'
+          - 'py/**'
+          - 'crates/pyo3/**'
 
+node:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'ts/**'
+          - 'crates/node/**'
+
+rust:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'crates/**'
+
+core:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'crates/core/**'
+
+# -- Python module areas --
 api:
   - changed-files:
       - any-glob-to-any-file:
-          - 'src/pypaginate/__init__.py'
-          - 'src/pypaginate/_dispatch.py'
-          - 'src/pypaginate/domain/**'
+          - 'py/src/pypaginate/__init__.py'
+          - 'py/src/pypaginate/_dispatch.py'
+          - 'py/src/pypaginate/domain/**'
 
 filtering:
   - changed-files:
       - any-glob-to-any-file:
-          - 'src/pypaginate/filtering/**'
+          - 'py/src/pypaginate/filtering/**'
+          - 'crates/core/src/filter/**'
 
 sorting:
   - changed-files:
       - any-glob-to-any-file:
-          - 'src/pypaginate/sorting/**'
+          - 'py/src/pypaginate/sorting/**'
+          - 'crates/core/src/sort*'
 
 search:
   - changed-files:
       - any-glob-to-any-file:
-          - 'src/pypaginate/search/**'
-
-engine:
-  - changed-files:
-      - any-glob-to-any-file:
-          - 'src/pypaginate/engine/**'
+          - 'py/src/pypaginate/search/**'
+          - 'crates/core/src/search/**'
 
 adapters:
   - changed-files:
       - any-glob-to-any-file:
-          - 'src/pypaginate/adapters/**'
+          - 'py/src/pypaginate/adapters/**'
+          - 'ts/src/adapters/**'
 
 # -- Tests --
 tests:
   - changed-files:
       - any-glob-to-any-file:
-          - 'tests/**'
+          - 'py/tests/**'
+          - 'ts/test/**'
+          - 'crates/**/tests/**'
 
 benchmarks:
   - changed-files:
       - any-glob-to-any-file:
-          - 'tests/perf/**'
+          - 'py/tests/perf/**'
+          - 'crates/core/benches/**'
 
 # -- Documentation --
 documentation:
@@ -56,6 +75,7 @@ documentation:
       - any-glob-to-any-file:
           - '**/*.md'
           - 'docs/**'
+          - 'py/docs/**'
 
 # -- Infrastructure --
 ci:
@@ -66,13 +86,21 @@ ci:
 dependencies:
   - changed-files:
       - any-glob-to-any-file:
-          - 'pyproject.toml'
-          - 'uv.lock'
+          - 'py/pyproject.toml'
+          - 'py/uv.lock'
+          - 'Cargo.toml'
+          - 'Cargo.lock'
+          - '**/Cargo.toml'
+          - 'package.json'
+          - 'package-lock.json'
+          - '**/package.json'
 
 config:
   - changed-files:
       - any-glob-to-any-file:
-          - 'pyproject.toml'
+          - 'py/pyproject.toml'
           - '.gitignore'
           - '.pre-commit-config.yaml'
+          - 'release-please-config.json'
+          - 'commitlint.config.js'
           - 'CLAUDE.md'
