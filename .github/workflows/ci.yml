@@ -62,7 +62,7 @@ jobs:
           else
             echo "all=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: f
         with:
           filters: |
@@ -224,7 +224,7 @@ jobs:
             --ignore=tests/perf --ignore=tests/e2e
       - name: Coverage → Codecov
         if: matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: py/coverage-unit.xml
@@ -280,7 +280,7 @@ jobs:
             --reruns 2 --reruns-delay 1
       - name: Coverage → Codecov
         if: matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: py/coverage-integration.xml
@@ -400,7 +400,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: crates/node -> target
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
       - name: Install workspaces
@@ -431,7 +431,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: py/uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
       - name: Rust engine invariants
