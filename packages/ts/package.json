@@ -1,0 +1,53 @@
+{
+  "name": "@cyblow/paginate",
+  "version": "0.1.0",
+  "description": "Idiomatic TypeScript consumer of paginate-core: maps ORM models (Prisma/Drizzle/TypeORM) to DTOs and runs them through the native engine.",
+  "type": "module",
+  "license": "MIT",
+  "author": "pypaginate Contributors",
+  "keywords": [
+    "pagination",
+    "cursor",
+    "offset",
+    "filter",
+    "sort",
+    "search"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CybLow/paginate-core.git",
+    "directory": "packages/ts"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "pretest": "npm --prefix ../../crates/node run build",
+    "test": "tsc && node --test test/*.test.mjs",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "paginate-core": "file:../../crates/node"
+  },
+  "devDependencies": {
+    "eslint": "^9",
+    "prettier": "^3",
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

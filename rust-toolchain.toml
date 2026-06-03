@@ -1,0 +1,10 @@
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy"]
+# wasm32 is OPTIONAL. The native-first adapters (PyO3 for Python, napi-rs for
+# Node/TS) do NOT need it. It is preinstalled only so the zero-dependency core
+# can target browser/edge via wasm-bindgen later — a future option, not a build
+# requirement. Drop this line and the core, PyO3, and napi-rs builds are
+# unaffected; only the optional `cargo build --target wasm32-unknown-unknown`
+# portability check needs it.
+targets = ["wasm32-unknown-unknown"]

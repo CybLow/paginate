@@ -1,0 +1,28 @@
+{
+  "name": "paginate-core",
+  "version": "0.1.0",
+  "description": "Node/TypeScript native bindings for paginate-core (cursor codec, text normalization, pagination math, filtering, sorting, search).",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CybLow/paginate-core"
+  },
+  "main": "index.js",
+  "types": "index.d.ts",
+  "napi": {
+    "binaryName": "paginate-core"
+  },
+  "engines": {
+    "node": ">=12.22.0"
+  },
+  "scripts": {
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform",
+    "artifacts": "napi artifacts",
+    "prepublishOnly": "napi prepublish -t npm"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^2.18.0"
+  },
+  "_note": "Scaffold. Generated bindings (index.js/index.d.ts/*.node) are produced by `@napi-rs/cli` (`npm run build`) and are not checked in. Consumed by packages/ts."
+}

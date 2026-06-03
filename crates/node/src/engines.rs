@@ -1,0 +1,199 @@
+//! One-shot in-memory engine bindings (filter / sort / search) and the JSON
+//! spec parsers they share with [`crate::dataset::Dataset`].
+//!
+//! Items arrive as a JS array of objects; we map them to core `Value`s and the
+//! engines return **indices** the JS caller selects from its original array.
+//! PERF: for raw in-memory speed a JS caller should use native `Array` methods
+//! — benchmarks show V8 beats this by 40–230× because marshalling 10K objects
+//! across napi dwarfs the tiny per-item work. These exist for *behaviour parity*
+//! with pypaginate's exact semantics; for speed use the resident `Dataset`.
+
+use napi::bindgen_prelude::{Error, Result, Status};
+use napi_derive::napi;
+use serde_json::{Map, Value as Json};
+
+use crate::conv::{core_err, json_array_to_values, json_to_value, to_u32};
+use ::paginate_core as core;
+
+fn spec_object(spec: &Json) -> Result<&Map<String, Json>> {
+    spec.as_object()
+        .ok_or_else(|| Error::new(Status::InvalidArg, "each spec must be an object"))
+}
+
+fn required_str(obj: &Map<String, Json>, key: &str) -> Result<String> {
+    obj.get(key)
+        .and_then(Json::as_str)
+        .map(str::to_owned)
+        .ok_or_else(|| Error::new(Status::InvalidArg, format!("spec.{key} must be a string")))
+}
+
+/// Parse one `{field, op, value, logic?}` object into a core filter spec.
+fn parse_one_spec(obj: &Map<String, Json>) -> Result<core::filter::FilterSpec> {
+    let op_name = required_str(obj, "op")?;
+    let op = core::filter::FilterOp::from_name(&op_name)
+        .ok_or_else(|| Error::new(Status::InvalidArg, format!("unknown operator: {op_name}")))?;
+    let logic = match obj.get("logic").and_then(Json::as_str) {
+        Some("or") => core::filter::FilterLogic::Or,
+        _ => core::filter::FilterLogic::And,
+    };
+    Ok(core::filter::FilterSpec {
+        field: required_str(obj, "field")?,
+        op,
+        value: obj.get("value").map_or(core::Value::Null, json_to_value),
+        logic,
+    })
+}
+
+/// Parse `[{field, op, value, logic?}]` into core filter specs.
+pub(crate) fn parse_filter_specs(specs: &Json) -> Result<Vec<core::filter::FilterSpec>> {
+    let array = specs
+        .as_array()
+        .ok_or_else(|| Error::new(Status::InvalidArg, "specs must be an array"))?;
+    array
+        .iter()
+        .map(|spec| parse_one_spec(spec_object(spec)?))
+        .collect()
+}
+
+/// Parse a nested filter node: a leaf `{field, op, value, logic?}` or a group
+/// `{logic, conditions: [node, ...]}` (an object with a `conditions` array).
+fn parse_filter_node(node: &Json) -> Result<core::filter::FilterNode> {
+    let obj = spec_object(node)?;
+    let Some(conditions) = obj.get("conditions") else {
+        return Ok(core::filter::FilterNode::Spec(parse_one_spec(obj)?));
+    };
+    let array = conditions
+        .as_array()
+        .ok_or_else(|| Error::new(Status::InvalidArg, "group.conditions must be an array"))?;
+    let logic = match obj.get("logic").and_then(Json::as_str) {
+        Some("or") => core::filter::FilterLogic::Or,
+        _ => core::filter::FilterLogic::And,
+    };
+    let conditions = array
+        .iter()
+        .map(parse_filter_node)
+        .collect::<Result<Vec<_>>>()?;
+    Ok(core::filter::FilterNode::Group(core::filter::FilterGroup {
+        logic,
+        conditions,
+    }))
+}
+
+/// Parse `[{field, direction?, nulls?}]` into core sort specs.
+pub(crate) fn parse_sort_specs(specs: &Json) -> Result<Vec<core::sort::SortSpec>> {
+    let array = specs
+        .as_array()
+        .ok_or_else(|| Error::new(Status::InvalidArg, "specs must be an array"))?;
+    let mut out = Vec::with_capacity(array.len());
+    for spec in array {
+        let obj = spec_object(spec)?;
+        let direction = match obj.get("direction").and_then(Json::as_str) {
+            Some("desc") => core::sort::SortDirection::Desc,
+            _ => core::sort::SortDirection::Asc,
+        };
+        let nulls = match obj.get("nulls").and_then(Json::as_str) {
+            Some("first") => core::sort::NullsPosition::First,
+            _ => core::sort::NullsPosition::Last,
+        };
+        out.push(core::sort::SortSpec {
+            field: required_str(obj, "field")?,
+            direction,
+            nulls,
+        });
+    }
+    Ok(out)
+}
+
+/// Build a [`core::search::SearchSpec`] from the optional JS arguments (shared
+/// by `search_indices` and `Dataset::search`).
+pub(crate) fn build_search_spec(
+    query: String,
+    fields: Vec<String>,
+    mode: Option<String>,
+    fuzzy: Option<String>,
+    threshold: Option<i64>,
+    min_length: Option<u32>,
+    max_results: Option<u32>,
+) -> core::search::SearchSpec {
+    core::search::SearchSpec {
+        query,
+        fields,
+        weights: None,
+        mode: match mode.as_deref() {
+            Some("prefix") => core::search::SearchFieldMode::Prefix,
+            Some("exact") => core::search::SearchFieldMode::Exact,
+            _ => core::search::SearchFieldMode::Contains,
+        },
+        fuzzy: match fuzzy.as_deref() {
+            Some("fuzzy") => core::search::FuzzyMode::Fuzzy,
+            Some("token_sort") => core::search::FuzzyMode::TokenSort,
+            _ => core::search::FuzzyMode::Exact,
+        },
+        threshold: threshold.unwrap_or(75),
+        min_length: min_length.unwrap_or(1) as usize,
+        max_results: max_results.map(|m| m as usize),
+    }
+}
+
+/// Indices of items matching flat filter specs `[{field, op, value, logic?}]`.
+#[napi]
+pub fn filter_indices(items: Json, specs: Json) -> Result<Vec<u32>> {
+    let values = json_array_to_values(&items)?;
+    let core_specs = parse_filter_specs(&specs)?;
+    core::filter::filter_indices(&values, &core::filter::FilterInput::Flat(core_specs))
+        .map(to_u32)
+        .map_err(|e| core_err(&e))
+}
+
+/// Indices of items matching a nested filter `group`. A leaf is
+/// `{field, op, value, logic?}`; a group is `{logic, conditions: [node, ...]}`.
+/// Mirrors the PyO3 `filter_group_indices` so JS/TS gets nested And/Or filters.
+#[napi]
+pub fn filter_group_indices(items: Json, group: Json) -> Result<Vec<u32>> {
+    let values = json_array_to_values(&items)?;
+    let input = match parse_filter_node(&group)? {
+        core::filter::FilterNode::Group(group) => core::filter::FilterInput::Group(group),
+        core::filter::FilterNode::Spec(spec) => core::filter::FilterInput::Flat(vec![spec]),
+    };
+    core::filter::filter_indices(&values, &input)
+        .map(to_u32)
+        .map_err(|e| core_err(&e))
+}
+
+/// A permutation of item indices for sort specs `[{field, direction?, nulls?}]`.
+#[napi]
+pub fn sort_indices(items: Json, specs: Json) -> Result<Vec<u32>> {
+    let values = json_array_to_values(&items)?;
+    let core_specs = parse_sort_specs(&specs)?;
+    core::sort::sort_indices(&values, &core_specs)
+        .map(to_u32)
+        .map_err(|e| core_err(&e))
+}
+
+/// Ranked search: indices of items by relevance of `query` over `fields`.
+#[napi]
+#[allow(clippy::too_many_arguments)]
+pub fn search_indices(
+    items: Json,
+    query: String,
+    fields: Vec<String>,
+    mode: Option<String>,
+    fuzzy: Option<String>,
+    threshold: Option<i64>,
+    min_length: Option<u32>,
+    max_results: Option<u32>,
+) -> Result<Vec<u32>> {
+    let values = json_array_to_values(&items)?;
+    let spec = build_search_spec(
+        query,
+        fields,
+        mode,
+        fuzzy,
+        threshold,
+        min_length,
+        max_results,
+    );
+    core::search::search_indices(&values, &spec)
+        .map(to_u32)
+        .map_err(|e| core_err(&e))
+}
