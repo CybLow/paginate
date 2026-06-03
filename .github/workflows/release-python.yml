@@ -40,6 +40,7 @@ jobs:
           - { runner: macos-latest,   target: x86_64,  manylinux: '' }  # cross-compiled on arm64 (no scarce macos-13 Intel runner)
           - { runner: macos-latest,   target: aarch64, manylinux: '' }
           - { runner: windows-latest, target: x64,     manylinux: '' }
+          - { runner: windows-latest, target: aarch64, manylinux: '' }  # Windows on ARM64
     steps:
       - uses: actions/checkout@v6
       - name: 🛠 Build wheel (maturin)
