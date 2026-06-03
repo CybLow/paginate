@@ -71,11 +71,10 @@ group = And(
     ),
 )
 
-# In-memory filtering
+# In-memory filtering (operators are built into the native engine; no registry)
 from pypaginate.filtering.engine import FilterEngine
-from pypaginate.filtering.registry import create_default_registry
 
-engine = FilterEngine(create_default_registry())
+engine = FilterEngine()
 filtered = engine.apply(items, [FilterSpec(field="age", operator="gte", value=18)])
 
 # SQLAlchemy filtering
