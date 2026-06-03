@@ -239,6 +239,9 @@ cache-keys = [{ file = "pyproject.toml" }, { file = "uv.lock" }]
 # the bundled extension module `pypaginate._core`.
 [tool.maturin]
 python-source = "src"
+# The PyO3 binding crate lives at crates/pyo3 (sibling of py/), so point maturin
+# at it explicitly. It is excluded from the cargo workspace and built standalone.
+manifest-path = "../crates/pyo3/Cargo.toml"
 module-name = "pypaginate._core"
 features = ["pyo3/extension-module"]
 
