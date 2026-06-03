@@ -1,25 +1,16 @@
 # =============================================================================
-# CodeQL Security Analysis - pypaginate
-# =============================================================================
-# Runs GitHub's CodeQL security scanner to identify vulnerabilities
-# in Python code.
+# CodeQL Security Analysis — Python (monorepo: package lives in py/)
 # =============================================================================
 
 name: CodeQL
 
 on:
   push:
-    branches:
-      - main
-      - develop
+    branches: [main]
   pull_request:
-    branches:
-      - main
-      - develop
+    branches: [main]
   schedule:
-    # Run every Monday at 9:00 AM UTC
-    - cron: '0 9 * * 1'
-
+    - cron: '0 9 * * 1'  # Mondays 09:00 UTC
   workflow_dispatch:
 
 concurrency:
@@ -54,11 +45,11 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          cache-dependency-glob: py/uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: 📦 Install dependencies
-        run: uv sync --frozen --all-extras
+      - name: 📦 Install dependencies (deps only; CodeQL scans source)
+        run: uv sync --frozen --all-extras --no-install-project --directory py
 
       - name: 🔍 Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
