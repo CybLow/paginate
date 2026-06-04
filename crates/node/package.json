@@ -1,6 +1,6 @@
 {
   "name": "paginate-core",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Node/TypeScript native bindings for paginate-core (cursor codec, text normalization, pagination math, filtering, sorting, search).",
   "license": "MIT",
   "repository": {
@@ -9,6 +9,7 @@
   },
   "main": "index.js",
   "types": "index.d.ts",
+  "files": ["index.js", "index.d.ts"],
   "napi": {
     "name": "paginate-core",
     "triples": {
