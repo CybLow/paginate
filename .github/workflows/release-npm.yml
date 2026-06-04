@@ -112,8 +112,10 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           npm install
           npm --prefix ts run build
+          # Publish from inside ts/ (NOT `npm --prefix ts` from the workspace root,
+          # which reads the root's "private": true and fails with EPRIVATE).
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
-            npm --prefix ts publish --access public --dry-run
+            ( cd ts && npm publish --access public --dry-run )
           else
-            npm --prefix ts publish --access public
+            ( cd ts && npm publish --access public )
           fi
