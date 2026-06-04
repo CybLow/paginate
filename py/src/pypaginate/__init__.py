@@ -40,7 +40,7 @@ from pypaginate.domain.params import CursorParams, OffsetParams
 from pypaginate.domain.specs import And, FilterGroup, FilterSpec, Or, SearchSpec, SortSpec
 
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 __all__ = [
     "And",
