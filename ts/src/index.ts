@@ -21,7 +21,7 @@
  * when you need the precise behaviour, not as a speed-up.
  */
 
-import * as core from "paginate-core";
+import * as core from "@cyblow/paginate-core";
 
 // -- value model ------------------------------------------------------------
 
