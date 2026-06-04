@@ -89,16 +89,24 @@ jobs:
       - run: npm ci || npm install
       - name: 📦 Create npm dirs + stage artifacts
         run: |
+          # Place the napi-generated JS bindings so the MAIN paginate-core package
+          # (published below) ships its loader (index.js/index.d.ts).
+          cp artifacts/*/index.js artifacts/*/index.d.ts . 2>/dev/null || true
           npx napi create-npm-dir -t .
           npx napi artifacts -d artifacts
       - name: 🚀 Publish paginate-core (+ platform sub-packages)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          # napi prepublish ships the platform sub-packages and adds their
+          # optionalDependencies to package.json; then publish the MAIN wrapper
+          # package itself (--ignore-scripts so prepublishOnly doesn't re-run).
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
             npx napi prepublish -t npm --dry-run --skip-gh-release
+            npm publish --access public --dry-run --ignore-scripts
           else
             npx napi prepublish -t npm --skip-gh-release
+            npm publish --access public --ignore-scripts
           fi
       - name: 🚀 Publish @cyblow/paginate
         env:
