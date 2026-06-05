@@ -400,13 +400,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: crates/node -> target
-      - uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: 20
+          bun-version: latest
       - name: Install workspaces
-        run: npm ci || npm install
-      - name: Test (pretest builds the napi addon)
-        run: npm --prefix ts test
+        run: bun install
+      - name: Test (builds the napi addon, then bun test)
+        run: cd ts && bun run test
 
   # ---------------------------------------------------------------------------
   # Parity — cross-language byte-identical behaviour (runs when the engine changes)
@@ -431,9 +431,9 @@ jobs:
           enable-cache: true
           cache-dependency-glob: py/uv.lock
           python-version: ${{ env.PYTHON_VERSION }}
-      - uses: actions/setup-node@v4
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version: 20
+          bun-version: latest
       - name: Rust engine invariants + shared-fixture parity
         run: cargo test -p paginate-core
       - name: Python ↔ engine parity (+ shared cross-language fixture)
@@ -445,8 +445,8 @@ jobs:
             tests/property/test_cross_language_parity.py -v
       - name: TS ↔ Python codec parity (byte-identical cursors + shared fixture)
         run: |
-          npm ci || npm install
-          npm --prefix ts test
+          bun install
+          cd ts && bun run test
 
   # ---------------------------------------------------------------------------
   # Build — Python wheel + sdist smoke (maturin via uv build)
