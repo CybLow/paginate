@@ -13,6 +13,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.sql.elements import UnaryExpression
 from sqlalchemy.sql.operators import desc_op
 
+from pypaginate._core import keyset_terms
 from pypaginate.domain.exceptions import ConfigurationError
 
 
@@ -94,10 +95,32 @@ def build_keyset_condition(
         ConfigurationError: If columns/values count mismatch.
     """
     _validate_inputs(columns, cursor_values)
-    return _build_recursive(columns, cursor_values, index=0)
+    # The core owns the lexicographic *structure* (OR-of-AND terms); this adapter
+    # only renders each `column OP value` and combines with SQLAlchemy and_/or_.
+    ascending = [col.is_ascending for col in columns]
+    terms = keyset_terms(ascending)
+    return or_(*(_render_term(columns, cursor_values, term) for term in terms))
 
 
 # -- Private helpers ---------------------------------------------------------
+
+
+def _render_term(
+    columns: list[OrderColumn],
+    values: tuple[Any, ...],
+    term: list[tuple[int, str]],
+) -> Any:
+    """AND the comparisons of one keyset term into a SQLAlchemy expression."""
+    return and_(*(_render_compare(columns[i].element, op, values[i]) for i, op in term))
+
+
+def _render_compare(col: ColumnElement[Any], op: str, value: Any) -> Any:
+    """Render a single `column OP value` comparison (`gt` / `lt` / `eq`)."""
+    if op == "gt":
+        return col > value
+    if op == "lt":
+        return col < value
+    return col == value
 
 
 def _parse_clause(clause: Any) -> OrderColumn:
@@ -137,47 +160,6 @@ def _validate_inputs(
             f"cursor value count ({len(cursor_values)})"
         )
         raise ConfigurationError(msg)
-
-
-def _build_recursive(
-    columns: list[OrderColumn],
-    values: tuple[Any, ...],
-    *,
-    index: int,
-) -> Any:
-    """Recursively build the lexicographic WHERE condition.
-
-    Args:
-        columns: All ORDER BY columns.
-        values: All cursor values.
-        index: Current recursion depth.
-
-    Returns:
-        A SQLAlchemy boolean expression for the current level.
-    """
-    col = columns[index]
-    val = values[index]
-    comparison = _strict_comparison(col, val)
-    if index == len(columns) - 1:
-        return comparison
-    equality = col.element == val
-    deeper = _build_recursive(columns, values, index=index + 1)
-    return or_(comparison, and_(equality, deeper))
-
-
-def _strict_comparison(col: OrderColumn, value: Any) -> Any:
-    """Return ``col > value`` (ASC) or ``col < value`` (DESC).
-
-    Args:
-        col: The order column with direction metadata.
-        value: The cursor value to compare against.
-
-    Returns:
-        A SQLAlchemy comparison expression.
-    """
-    if col.is_ascending:
-        return col.element > value
-    return col.element < value
 
 
 __all__ = [
