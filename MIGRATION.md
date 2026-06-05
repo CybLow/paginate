@@ -21,16 +21,36 @@ What changed under the hood (only relevant if you imported internals):
 - **The native `_core` extension is mandatory** — there is no pure-Python
   fallback for the cursor codec, offset math, or fuzzy search. Install a wheel
   (or build from source with a Rust toolchain); PyPy is unsupported.
-- **Fuzzy / token-sort search is now correct and consistent.** The in-memory
-  `MemorySearchBackend` previously scored `FuzzyMode.FUZZY` with a hand-rolled
-  character-overlap heuristic that diverged from the rapidfuzz scoring used
-  everywhere else, and silently treated `FuzzyMode.TOKEN_SORT` as an exact
-  match. Both now run through the core's rapidfuzz `partial_ratio` /
-  `token_sort_ratio`. If you relied on the old approximate scores, results may
-  shift slightly (they are now correct).
+- **Fuzzy / token-sort search now uses trigram similarity (pg_trgm model), not
+  rapidfuzz.** `FuzzyMode.FUZZY` scores trigram *containment* (the query's
+  trigrams found in the field) and `FuzzyMode.TOKEN_SORT` scores trigram
+  *Jaccard* (word-order agnostic). This is O(len) set-overlap (no edit-distance
+  DP), much faster, length-normalized, and transposition-tolerant — and it lets a
+  resident `Dataset` prefilter candidates with an exact inverted index. **Scores
+  and ranking differ from the old rapidfuzz output**, and the default
+  `SearchSpec.threshold` drops from **75 → 30** (trigram similarity, like
+  pg_trgm's 0.3). Trigram is strong on names/titles/multi-word text but weaker on
+  very short single-word typos; raise/lower `threshold` for your data. The
+  `rapidfuzz` dependency is removed.
 - Page metadata and `OffsetParams.clamp` are derived from `_core`
   (`offset_meta` / `clamp_page`) instead of recomputed in Python — no behavior
   change, one source of truth.
+
+Removed (breaking, but **dev/internal only** — no public API affected):
+
+- **The `pypaginate` console-script CLI is gone.** It was a dev wrapper around
+  `ruff` / `mypy` / `pytest` / `uv`; use the repository's `just` (or `make`)
+  recipes instead (`just py-lint`, `just py-type`, `just py-test`, …).
+- **The internal in-memory "engine" import paths were removed:**
+  `pypaginate.filtering` / `pypaginate.sorting` / `pypaginate.search` (the
+  `FilterEngine` / `SortEngine` / `SearchEngine` classes), `pypaginate.filtering.accessor`,
+  and `pypaginate.text.normalize`. These were thin facades over the native
+  `_core` engine. In-memory filtering, sorting, and ranked search are available
+  through the public `Dataset`, the `pypaginate.adapters.memory.*` backends, or
+  the internal `pypaginate._native` functions; `normalize_text` is now
+  `pypaginate._native.normalize_text` (field-path resolution lives in the core).
+- `pypaginate.__version__` is now read from the installed package metadata
+  instead of a hard-coded literal, so it always matches the released version.
 
 New: **`pypaginate.adapters.django`** — `DjangoBackend`,
 `DjangoFilterBackend`, `DjangoSortBackend`, `DjangoSearchBackend`, and
@@ -61,5 +81,8 @@ New surface:
 
 ### Rust core (`paginate-core`)
 
-Additive only. New public API: `keyset::keyset_terms` (portable lexicographic
-keyset predicate) and a `fuzzy`-aware `search::match_indices`.
+New public API: `keyset::keyset_terms` (portable lexicographic keyset predicate),
+`search::{trigram, TrigramIndex, search_with_index, match_indices_with_index}`
+for trigram-similarity fuzzy search with an exact inverted-index prefilter, and a
+`fuzzy`-aware `search::match_indices`. The `rapidfuzz` dependency was dropped (the
+fuzzy/token-sort scorers are now trigram-based, see the Python section above).

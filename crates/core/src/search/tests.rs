@@ -111,17 +111,55 @@ fn match_indices_contains_filters_in_original_order() {
 fn match_indices_fuzzy_tolerates_typos() {
     let items = vec![item(&[("name", "Alice")]), item(&[("name", "Bob")])];
     let fields = ["name".to_owned()];
-    // "alise" ~ "alice" (one substitution -> 80) clears the 75 gate; "bob" fails.
+    // Trigram containment of "alise" in "alice" is 50 (3 of 6 query trigrams),
+    // clearing the default threshold of 30; "bob" shares none -> filtered out.
     let idx = match_indices(
         &items,
         "alise",
         &fields,
         SearchFieldMode::Contains,
         FuzzyMode::Fuzzy,
-        75,
+        30,
     )
     .unwrap();
     assert_eq!(idx, vec![0]);
+}
+
+#[test]
+fn index_matches_full_scan_for_fuzzy() {
+    let items = vec![
+        item(&[("title", "The Rust Programming Language")]),
+        item(&[("title", "Cooking with Cast Iron")]),
+        item(&[("title", "Rust in Action")]),
+        item(&[("title", "Programming Pearls")]),
+    ];
+    let index = TrigramIndex::build(&items);
+    for mode in [FuzzyMode::Fuzzy, FuzzyMode::TokenSort] {
+        for query in ["rust programing", "cast iron", "pearls", "zzz nomatch"] {
+            let mut s = spec(query, &["title"]);
+            s.fuzzy = mode;
+            s.threshold = 30;
+            let full = search_indices(&items, &s).unwrap();
+            let indexed = search_with_index(&items, &s, &index).unwrap();
+            assert_eq!(full, indexed, "mode={mode:?} query={query}");
+        }
+    }
+}
+
+#[test]
+fn trigram_fuzzy_ranks_by_containment() {
+    // The typo'd title still ranks its target first (more shared trigrams).
+    let items = vec![
+        item(&[("title", "The Rust Programming Language")]),
+        item(&[("title", "Cooking with Cast Iron")]),
+        item(&[("title", "Rust in Action")]),
+    ];
+    let mut s = spec("rust programing", &["title"]);
+    s.fuzzy = FuzzyMode::Fuzzy;
+    s.threshold = 30;
+    let idx = search_indices(&items, &s).unwrap();
+    assert_eq!(idx.first(), Some(&0)); // the Rust programming title wins
+    assert!(!idx.contains(&1)); // the unrelated cooking title is excluded
 }
 
 #[test]

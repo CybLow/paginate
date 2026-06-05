@@ -94,7 +94,8 @@ class SearchSpec(BaseModel):
     weights: dict[str, float] | None = None
     mode: SearchFieldMode = SearchFieldMode.CONTAINS
     fuzzy: FuzzyMode = FuzzyMode.EXACT
-    threshold: int = 75
+    # Minimum trigram similarity (0-100) for FUZZY/TOKEN_SORT — pg_trgm's 0.3.
+    threshold: int = 30
     min_length: int = 1
     max_results: int | None = None
 

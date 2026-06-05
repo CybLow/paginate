@@ -12,8 +12,10 @@ Rust ``pypaginate._core`` engine. This module is the single translation point:
   regardless of the engine underneath.
 
 The engine is mandatory (built into the wheel); there is no pure-Python
-fallback. Filtering, sorting, and ranked search (including fuzzy/token-sort and
-per-field weights) all run natively.
+fallback. Filtering, sorting, ranked search (including fuzzy/token-sort and
+per-field weights), and text normalization all run natively. ``normalize_text``
+adds a bounded process-local cache over the native call (repeated field values
+are common across rows), and is the single Python entry point for normalization.
 """
 
 from __future__ import annotations
@@ -25,6 +27,7 @@ from pypaginate._core import (
     filter_group_indices,
     filter_indices,
     match_indices,
+    normalize_text as _core_normalize,
     search_indices,
     sort_indices,
 )
@@ -57,6 +60,30 @@ _FUZZY = {
     FuzzyMode.FUZZY: "fuzzy",
     FuzzyMode.TOKEN_SORT: "token_sort",
 }
+
+_NORM_CACHE: dict[str, str] = {}
+_NORM_CACHE_MAX = 8192
+
+
+def normalize_text(value: str) -> str:
+    """Normalize text for search and filtering (native), with a bounded cache.
+
+    Delegates the actual NFKD accent-strip + case-fold + whitespace collapse to
+    the native ``_core`` engine, so Python and Rust agree byte-for-byte; a
+    bounded dict cache avoids the FFI hop for repeated field values.
+    """
+    result = _NORM_CACHE.get(value)
+    if result is not None:
+        return result
+    result = _core_normalize(value)
+    if len(_NORM_CACHE) < _NORM_CACHE_MAX:
+        _NORM_CACHE[value] = result
+    return result
+
+
+def clear_normalize_cache() -> None:
+    """Clear the ``normalize_text`` cache (free memory in long-lived processes)."""
+    _NORM_CACHE.clear()
 
 
 def and_filter_tuples(
@@ -145,6 +172,23 @@ def match_filter(items: Sequence[Any], spec: SearchSpec) -> list[Any]:
     )
 
 
+def dataset_match_filter(native: Any, spec: SearchSpec) -> list[int]:
+    """Index-backed match-filter on a resident native ``Dataset``.
+
+    Returns the row indices of items matching the whole query (original order),
+    using the dataset's trigram index for the fuzzy / token-sort modes.
+    """
+    return list(
+        native.match_filter(
+            spec.query,
+            list(spec.fields),
+            mode=_SEARCH_MODE[spec.mode],
+            fuzzy=_FUZZY[spec.fuzzy],
+            threshold=spec.threshold,
+        )
+    )
+
+
 def _take(
     rows: list[Any],
     indices: Callable[[], list[int]],
@@ -166,10 +210,13 @@ def _to_node(node: FilterSpec | FilterGroup) -> Any:
 
 __all__ = [
     "and_filter_tuples",
+    "clear_normalize_cache",
+    "dataset_match_filter",
     "filter_and",
     "filter_group",
     "filter_logic",
     "match_filter",
+    "normalize_text",
     "search",
     "sort_by",
     "sort_tuples",

@@ -25,11 +25,13 @@ use ::paginate_core as core;
 pub struct Dataset {
     rows: Vec<core::Value>,
     columns: core::columnar::Columns,
+    trigram: core::search::TrigramIndex,
 }
 
 #[pymethods]
 impl Dataset {
-    /// Marshal a list of items (dicts/objects) into the resident dataset once.
+    /// Marshal a list of items (dicts/objects) into the resident dataset once,
+    /// building the columnar fast-path data and the trigram search index.
     #[new]
     fn new(items: &Bound<'_, PyList>) -> PyResult<Self> {
         let mut rows = Vec::with_capacity(items.len());
@@ -37,7 +39,12 @@ impl Dataset {
             rows.push(py_to_value(&item)?);
         }
         let columns = core::columnar::Columns::build(&rows);
-        Ok(Self { rows, columns })
+        let trigram = core::search::TrigramIndex::build(&rows);
+        Ok(Self {
+            rows,
+            columns,
+            trigram,
+        })
     }
 
     /// Number of rows.
@@ -81,8 +88,9 @@ impl Dataset {
         core::sort::sort_indices(&self.rows, &core_specs).map_err(|e| core_err(&e))
     }
 
-    /// Ranked-search indices over `fields`.
-    #[pyo3(signature = (query, fields, mode="contains", fuzzy="exact", threshold=75, min_length=1, max_results=None))]
+    /// Ranked-search indices over `fields`. Fuzzy/token-sort use the resident
+    /// trigram index to score only candidate rows (exact result, far less work).
+    #[pyo3(signature = (query, fields, mode="contains", fuzzy="exact", threshold=30, min_length=1, max_results=None))]
     #[allow(clippy::too_many_arguments)]
     fn search(
         &self,
@@ -104,7 +112,30 @@ impl Dataset {
             min_length,
             max_results,
         };
-        core::search::search_indices(&self.rows, &spec).map_err(|e| core_err(&e))
+        core::search::search_with_index(&self.rows, &spec, &self.trigram).map_err(|e| core_err(&e))
+    }
+
+    /// Match-filter indices (any field matches the whole query), original order,
+    /// using the resident trigram index for the fuzzy/token-sort modes.
+    #[pyo3(signature = (query, fields, mode="contains", fuzzy="exact", threshold=30))]
+    fn match_filter(
+        &self,
+        query: String,
+        fields: Vec<String>,
+        mode: &str,
+        fuzzy: &str,
+        threshold: i64,
+    ) -> PyResult<Vec<usize>> {
+        core::search::match_indices_with_index(
+            &self.rows,
+            &query,
+            &fields,
+            wire::mode(mode),
+            wire::fuzzy(fuzzy),
+            threshold,
+            &self.trigram,
+        )
+        .map_err(|e| core_err(&e))
     }
 
     /// Filter + sort + offset-paginate in ONE native call. Returns a dict

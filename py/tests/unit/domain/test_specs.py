@@ -106,10 +106,11 @@ class TestSearchSpec:
 
         assert spec.fuzzy is FuzzyMode.EXACT
 
-    def test_default_threshold_is_75(self) -> None:
+    def test_default_threshold_is_trigram_default(self) -> None:
+        # Trigram similarity default (pg_trgm's 0.3), not the old rapidfuzz 75.
         spec = SearchSpec(query="hi", fields=("name",))
 
-        assert spec.threshold == 75
+        assert spec.threshold == 30
 
     def test_custom_threshold(self) -> None:
         spec = SearchSpec(query="hi", fields=("name",), threshold=90)

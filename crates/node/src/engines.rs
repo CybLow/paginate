@@ -139,7 +139,7 @@ pub(crate) fn build_search_spec(
             Some("token_sort") => core::search::FuzzyMode::TokenSort,
             _ => core::search::FuzzyMode::Exact,
         },
-        threshold: threshold.unwrap_or(75),
+        threshold: threshold.unwrap_or(30),
         min_length: min_length.unwrap_or(1) as usize,
         max_results: max_results.map(|m| m as usize),
     }

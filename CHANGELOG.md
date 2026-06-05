@@ -11,13 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Row-engine sort is ~3× faster** via decorate-sort-undecorate — each item's
   sort key is resolved once instead of on every comparison (100k rows, release:
   `single_int` 25.4→7.7 ms, `multi_int` 28.7→9.7 ms, the row pipeline 21.3→9.0 ms).
-- **Ranked search ~40% faster** — three compounding wins: `normalize_text`
-  folds its ASCII fast path into one allocation (`search/contains` 5.6→3.6 ms,
-  −36%); the rapidfuzz scoring runs on `char` slices with the query token's
-  chars hoisted out of the per-item loop; and the partial-ratio edit-distance
-  DP now early-exits via a `score_cutoff` so the non-matching bulk of a dataset
-  is abandoned cheaply. `search/fuzzy_multi` 117.9→~69 ms at 100k (−41%).
-  Output is byte-identical (guarded by the parity suites).
+- **Exact (contains/prefix) search ~36% faster** — `normalize_text` folds its
+  ASCII fast path into a single allocation (`search/contains` 5.6→3.6 ms at 100k).
+- **Fuzzy search rebuilt on trigram similarity** (see Changed): replacing the
+  rapidfuzz edit-distance DP with O(len) trigram set-overlap drops one-shot
+  `search/fuzzy_multi` from the original 117.9 ms to ~53 ms at 100k, and a
+  resident `Dataset`'s exact inverted-index prefilter cuts a selective fuzzy
+  query a further ~3× (`fuzzy_indexed` 48.7→16.4 ms at 100k), with more pruning
+  the rarer the query.
 
 ### Added
 - **Cross-language parity harness.** A frozen golden (`tests/fixtures/parity.json`)
@@ -53,11 +54,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   JS/TS port. The resident `pypaginate.Dataset` is 6.5–27× faster than the former
   pure-Python path (release build). Installing now uses a prebuilt wheel (or a
   Rust toolchain for source builds); PyPy is unsupported.
-- **Fuzzy / token-sort search now runs in the core** (rapidfuzz-based
-  `partial_ratio` / `token_sort_ratio` in Rust), replacing the pure-Python
-  search island — which also fixes the prior rapidfuzz-version-dependent score
-  flakiness. Boolean fields now take the columnar fast path (~8× on
-  bool-inclusive filters).
+- **BREAKING: fuzzy / token-sort search now uses trigram similarity, not
+  rapidfuzz.** `FuzzyMode.FUZZY` scores trigram containment, `FuzzyMode.TOKEN_SORT`
+  scores trigram Jaccard (pg_trgm model). Scores and ranking differ from the old
+  edit-distance output, the default `SearchSpec.threshold` is now **30** (was 75),
+  and the `rapidfuzz` dependency is dropped. Trigram is strong on
+  names/titles/multi-word text, weaker on very short single-word typos. A resident
+  `Dataset` builds a trigram inverted index once and prefilters candidates for
+  fuzzy queries (exact — no match dropped). Boolean fields now take the columnar
+  fast path (~8× on bool-inclusive filters).
 
 ### Removed
 - **BREAKING:** the pure-Python filter/sort engine and its public API —
