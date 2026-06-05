@@ -58,6 +58,15 @@ wheels = [
 ]
 
 [[package]]
+name = "asgiref"
+version = "3.11.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/63/40/f03da1264ae8f7cfdbf9146542e5e7e8100a4c66ab48e791df9a03d3f6c0/asgiref-3.11.1.tar.gz", hash = "sha256:5f184dc43b7e763efe848065441eac62229c9f7b0475f41f80e207a114eda4ce", size = 38550, upload-time = "2026-02-03T13:30:14.33Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5c/0a/a72d10ed65068e115044937873362e6e32fab1b7dce0046aeb224682c989/asgiref-3.11.1-py3-none-any.whl", hash = "sha256:e8667a091e69529631969fd45dc268fa79b99c92c5fcdda727757e52146ec133", size = 24345, upload-time = "2026-02-03T13:30:13.039Z" },
+]
+
+[[package]]
 name = "astroid"
 version = "3.3.11"
 source = { registry = "https://pypi.org/simple" }
@@ -629,6 +638,42 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/96/8e/709914eb2b5749865801041647dc7f4e6d00b549cfe88b65ca192995f07c/distlib-0.4.0.tar.gz", hash = "sha256:feec40075be03a04501a973d81f633735b4b69f98b05450592310c0f401a4e0d", size = 614605, upload-time = "2025-07-17T16:52:00.465Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/33/6b/e0547afaf41bf2c42e52430072fa5658766e3d65bd4b03a563d1b6336f57/distlib-0.4.0-py2.py3-none-any.whl", hash = "sha256:9659f7d87e46584a30b5780e43ac7a2143098441670ff0a49d5f9034c54a6c16", size = 469047, upload-time = "2025-07-17T16:51:58.613Z" },
+]
+
+[[package]]
+name = "django"
+version = "5.2.15"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version < '3.12'",
+]
+dependencies = [
+    { name = "asgiref", marker = "python_full_version < '3.12'" },
+    { name = "sqlparse", marker = "python_full_version < '3.12'" },
+    { name = "tzdata", marker = "python_full_version < '3.12' and sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2b/e3/31722f7284c9f43333daff9aee9184678e4487adcb5506af0db8cea09ce1/django-5.2.15.tar.gz", hash = "sha256:5154a9bf84ac01dde011e367f355c07dbb329532e06810dcf3ef2af269e236e7", size = 10873669, upload-time = "2026-06-03T13:03:35.892Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/92/b5/38140b1643c00d5c46ce69c78e6980fd285aee223100319631bedee4f5e7/django-5.2.15-py3-none-any.whl", hash = "sha256:0eb4a9bb1853a35b0286dbc6d916bd352c8c2687195a7f2d6f80cefd840e4970", size = 8311957, upload-time = "2026-06-03T13:03:31.329Z" },
+]
+
+[[package]]
+name = "django"
+version = "6.0.6"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14'",
+    "python_full_version == '3.13.*'",
+    "python_full_version == '3.12.*'",
+]
+dependencies = [
+    { name = "asgiref", marker = "python_full_version >= '3.12'" },
+    { name = "sqlparse", marker = "python_full_version >= '3.12'" },
+    { name = "tzdata", marker = "python_full_version >= '3.12' and sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/78/29/ac41e16097af67066d97a7d5775c5d8e7efc5d0284f6b0a159e07b9adb92/django-6.0.6.tar.gz", hash = "sha256:ad03916ba59523d781ae5c3f631960c23d69a9d9c43cecda52fc23b47e953713", size = 10905525, upload-time = "2026-06-03T13:02:46.503Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/eb/50/23f9dc45483419a3cc2085b498b25adfbf10642b2941c73e6d2dfaffc9ab/django-6.0.6-py3-none-any.whl", hash = "sha256:25148b1194c47c2e685e5f5e9c5d59c78b075dfd282cb9618861ba6c1708f4d2", size = 8373354, upload-time = "2026-06-03T13:02:41.72Z" },
 ]
 
 [[package]]
@@ -2368,9 +2413,15 @@ dependencies = [
 
 [package.optional-dependencies]
 all = [
+    { name = "django", version = "5.2.15", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.0.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "fastapi" },
     { name = "msgspec" },
     { name = "sqlalchemy", extra = ["asyncio"] },
+]
+django = [
+    { name = "django", version = "5.2.15", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.0.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
 fast = [
     { name = "msgspec" },
@@ -2397,6 +2448,8 @@ dev = [
     { name = "bandit" },
     { name = "build" },
     { name = "coverage", extra = ["toml"] },
+    { name = "django", version = "5.2.15", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.0.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "factory-boy" },
     { name = "faker" },
     { name = "fastapi-filter" },
@@ -2464,6 +2517,8 @@ test = [
     { name = "anyio" },
     { name = "asyncpg" },
     { name = "coverage", extra = ["toml"] },
+    { name = "django", version = "5.2.15", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "django", version = "6.0.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "factory-boy" },
     { name = "faker" },
     { name = "greenlet" },
@@ -2486,14 +2541,15 @@ type = [
 
 [package.metadata]
 requires-dist = [
+    { name = "django", marker = "extra == 'django'", specifier = ">=4.2" },
     { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.95.0" },
     { name = "google-re2", marker = "extra == 'security'", specifier = ">=1.0" },
     { name = "msgspec", marker = "extra == 'fast'", specifier = ">=0.18.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
-    { name = "pypaginate", extras = ["sqlalchemy", "search", "fastapi", "fast"], marker = "extra == 'all'" },
+    { name = "pypaginate", extras = ["sqlalchemy", "search", "fastapi", "django", "fast"], marker = "extra == 'all'" },
     { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'sqlalchemy'", specifier = ">=2.0.0" },
 ]
-provides-extras = ["sqlalchemy", "search", "fastapi", "fast", "security", "all"]
+provides-extras = ["sqlalchemy", "search", "fastapi", "django", "fast", "security", "all"]
 
 [package.metadata.requires-dev]
 build = [
@@ -2507,6 +2563,7 @@ dev = [
     { name = "bandit", extras = ["toml"], specifier = ">=1.8.0" },
     { name = "build", specifier = ">=1.2.2" },
     { name = "coverage", extras = ["toml"], specifier = ">=7.6.0" },
+    { name = "django", specifier = ">=4.2" },
     { name = "factory-boy", specifier = ">=3.3.0" },
     { name = "faker", specifier = ">=28.0.0" },
     { name = "fastapi-filter", specifier = ">=2.0.1" },
@@ -2571,6 +2628,7 @@ test = [
     { name = "anyio", specifier = ">=4.0.0" },
     { name = "asyncpg", specifier = ">=0.30.0" },
     { name = "coverage", extras = ["toml"], specifier = ">=7.6.0" },
+    { name = "django", specifier = ">=4.2" },
     { name = "factory-boy", specifier = ">=3.3.0" },
     { name = "faker", specifier = ">=28.0.0" },
     { name = "greenlet", specifier = ">=3.0.0" },
@@ -3880,6 +3938,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/35/bf/d33f1f15c7057e3e03bca26755e50b70eadc5be45babe6952c8c6a952335/sqlalchemy-pagination-0.0.2.tar.gz", hash = "sha256:b199942239ac25aee7bb77fa5f1dd7a8cf3558a1d26e174cdd9463cfda45feec", size = 3015, upload-time = "2018-04-17T17:02:14.804Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/54/ac/3f301fe941e4616cf58c1cb8ce09564d63aced5608835639603e5840d9b7/sqlalchemy_pagination-0.0.2-py2.py3-none-any.whl", hash = "sha256:89141cf3ea132c2713be882e22e42b3224570c8a5a62c0d76ef34647073f9655", size = 2194, upload-time = "2018-04-17T19:53:11.581Z" },
+]
+
+[[package]]
+name = "sqlparse"
+version = "0.5.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/90/76/437d71068094df0726366574cf3432a4ed754217b436eb7429415cf2d480/sqlparse-0.5.5.tar.gz", hash = "sha256:e20d4a9b0b8585fdf63b10d30066c7c94c5d7a7ec47c889a2d83a3caa93ff28e", size = 120815, upload-time = "2025-12-19T07:17:45.073Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/49/4b/359f28a903c13438ef59ebeee215fb25da53066db67b305c125f1c6d2a25/sqlparse-0.5.5-py3-none-any.whl", hash = "sha256:12a08b3bf3eec877c519589833aed092e2444e68240a3577e8e26148acc7b1ba", size = 46138, upload-time = "2025-12-19T07:17:46.573Z" },
 ]
 
 [[package]]
