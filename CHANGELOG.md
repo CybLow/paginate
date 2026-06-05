@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Cross-language parity harness.** A frozen golden (`tests/fixtures/parity.json`)
+  asserts the Rust core, the Python binding, and the Node/TS binding produce
+  byte-identical cursors and identical filter/sort/search indices — wired into
+  the CI `parity` job so the wire format and engine semantics cannot drift.
+- **Portable keyset predicate in the core** (`core::keyset::keyset_terms`,
+  exposed as `_core.keyset_terms` / `keysetTerms`): the lexicographic
+  cursor comparison is built once in Rust and rendered by each adapter, so
+  SQLAlchemy, Django, Drizzle, and Prisma share one keyset implementation.
+- **Django adapter** (`pypaginate.adapters.django`, extra `[django]`):
+  offset + keyset pagination and filter/sort/search backends for QuerySets.
+- **Completed `@cyblow/paginate` (JS/TS) to parity:** `OffsetParams` /
+  `CursorParams` (validated), `OffsetPage<T>` / `CursorPage<T>`, `And()` /
+  `Or()` builders, a top-level `paginate()`, and `express` / `prisma` /
+  `drizzle` adapters that render the core keyset predicate.
+
+### Fixed
+- **In-memory fuzzy search divergence.** `MemorySearchBackend`'s
+  `FuzzyMode.FUZZY` path used a character-overlap heuristic that disagreed with
+  the core's rapidfuzz scoring, and `FuzzyMode.TOKEN_SORT` was silently treated
+  as an exact match. Both now run through the core's fuzzy-aware match-filter.
+
 ### Changed
 - **Native engine is now mandatory.** All in-memory filtering, sorting, and
   ranked search (including fuzzy / token-sort) run through the bundled Rust
