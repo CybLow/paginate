@@ -17,6 +17,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyTuple};
 
 use crate::conv::{core_err, py_to_value};
+use crate::specs as wire;
 use ::paginate_core as core;
 
 /// An in-memory dataset held in Rust as `Value` rows, queried by index.
@@ -97,8 +98,8 @@ impl Dataset {
             query,
             fields,
             weights: None,
-            mode: parse_mode(mode),
-            fuzzy: parse_fuzzy(fuzzy),
+            mode: wire::mode(mode),
+            fuzzy: wire::fuzzy(fuzzy),
             threshold,
             min_length,
             max_results,
@@ -157,16 +158,11 @@ fn parse_filters(specs: &Bound<'_, PyList>) -> PyResult<Vec<core::filter::Filter
         let op_name: String = tuple.get_item(1)?.extract()?;
         let op = core::filter::FilterOp::from_name(&op_name)
             .ok_or_else(|| PyValueError::new_err(format!("unknown operator: {op_name}")))?;
-        let logic = if tuple.get_item(3)?.extract::<String>()? == "or" {
-            core::filter::FilterLogic::Or
-        } else {
-            core::filter::FilterLogic::And
-        };
         out.push(core::filter::FilterSpec {
             field: tuple.get_item(0)?.extract()?,
             op,
             value: py_to_value(&tuple.get_item(2)?)?,
-            logic,
+            logic: wire::logic(&tuple.get_item(3)?.extract::<String>()?),
         });
     }
     Ok(out)
@@ -176,37 +172,11 @@ fn parse_sorts(specs: &Bound<'_, PyList>) -> PyResult<Vec<core::sort::SortSpec>>
     let mut out = Vec::with_capacity(specs.len());
     for spec in specs.iter() {
         let tuple = spec.cast::<PyTuple>()?;
-        let direction = if tuple.get_item(1)?.extract::<String>()? == "desc" {
-            core::sort::SortDirection::Desc
-        } else {
-            core::sort::SortDirection::Asc
-        };
-        let nulls = if tuple.get_item(2)?.extract::<String>()? == "first" {
-            core::sort::NullsPosition::First
-        } else {
-            core::sort::NullsPosition::Last
-        };
         out.push(core::sort::SortSpec {
             field: tuple.get_item(0)?.extract()?,
-            direction,
-            nulls,
+            direction: wire::direction(&tuple.get_item(1)?.extract::<String>()?),
+            nulls: wire::nulls(&tuple.get_item(2)?.extract::<String>()?),
         });
     }
     Ok(out)
-}
-
-fn parse_mode(mode: &str) -> core::search::SearchFieldMode {
-    match mode {
-        "prefix" => core::search::SearchFieldMode::Prefix,
-        "exact" => core::search::SearchFieldMode::Exact,
-        _ => core::search::SearchFieldMode::Contains,
-    }
-}
-
-fn parse_fuzzy(fuzzy: &str) -> core::search::FuzzyMode {
-    match fuzzy {
-        "fuzzy" => core::search::FuzzyMode::Fuzzy,
-        "token_sort" => core::search::FuzzyMode::TokenSort,
-        _ => core::search::FuzzyMode::Exact,
-    }
 }

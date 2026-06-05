@@ -14,6 +14,7 @@ use ::paginate_core as core;
 mod conv;
 mod dataset;
 mod engines;
+mod specs;
 
 // -- cursor codec ------------------------------------------------------------
 
