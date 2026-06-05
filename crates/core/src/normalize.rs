@@ -23,16 +23,50 @@ use unicode_normalization::UnicodeNormalization;
 #[must_use]
 pub fn normalize_text(value: &str) -> String {
     if value.is_ascii() {
-        return collapse_whitespace(&value.to_ascii_lowercase());
+        return normalize_ascii(value);
     }
     let stripped: String = value.nfkd().filter(|c| !is_combining_mark(*c)).collect();
     collapse_whitespace(&stripped.to_lowercase())
 }
 
+/// ASCII whitespace per `char::is_whitespace` (so `split_whitespace` parity is
+/// preserved): note `\x0b` (VT) and `\x0c` (FF), which `is_ascii_whitespace`
+/// omits, count here.
+fn is_ascii_ws(b: u8) -> bool {
+    matches!(b, b' ' | b'\t' | b'\n' | 0x0b | 0x0c | b'\r')
+}
+
+/// Single-pass ASCII normalize — lowercase + collapse whitespace runs to single
+/// spaces + trim ends, in ONE allocation. Byte-identical to
+/// `" ".join(value.lower().split())` on ASCII (the common case).
+fn normalize_ascii(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    let mut pending_space = false;
+    for &b in value.as_bytes() {
+        if is_ascii_ws(b) {
+            pending_space = !out.is_empty();
+            continue;
+        }
+        if pending_space {
+            out.push(' ');
+            pending_space = false;
+        }
+        out.push(b.to_ascii_lowercase() as char);
+    }
+    out
+}
+
 /// Collapse whitespace runs to single spaces and trim the ends —
-/// equivalent to Python's `" ".join(s.split())`.
+/// equivalent to Python's `" ".join(s.split())` — without the intermediate Vec.
 fn collapse_whitespace(s: &str) -> String {
-    s.split_whitespace().collect::<Vec<_>>().join(" ")
+    let mut out = String::with_capacity(s.len());
+    for word in s.split_whitespace() {
+        if !out.is_empty() {
+            out.push(' ');
+        }
+        out.push_str(word);
+    }
+    out
 }
 
 #[cfg(test)]
@@ -60,5 +94,14 @@ mod tests {
     fn idempotent() {
         let once = normalize_text("Héllo   WÖRLD");
         assert_eq!(normalize_text(&once), once);
+    }
+
+    #[test]
+    fn ascii_single_pass_matches_python_split_semantics() {
+        // VT (\x0b) and FF (\x0c) count as whitespace (char::is_whitespace),
+        // matching Python's str.split(); leading/trailing/runs collapse.
+        assert_eq!(normalize_text("a\u{0b}b\u{0c}c"), "a b c");
+        assert_eq!(normalize_text("\tTAB\tand  spaces\n"), "tab and spaces");
+        assert_eq!(normalize_text("Multi   Word  Test"), "multi word test");
     }
 }
