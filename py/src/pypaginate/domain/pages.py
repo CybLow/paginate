@@ -10,12 +10,12 @@ duck-types as a Pydantic model with ``.model_dump()`` support.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Iterator
 from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict
 
+from pypaginate._core import offset_meta as _offset_meta
 from pypaginate.domain.params import CursorParams, OffsetParams
 
 
@@ -79,25 +79,27 @@ class OffsetPage(BasePage[ItemT]):
         Returns:
             OffsetPage or FastOffsetPage (if msgspec installed).
         """
-        max_pages = math.ceil(total / params.limit)
+        # Page metadata comes from the native engine (single source of truth):
+        # (page, pages, has_next, has_previous) — no Python recompute.
+        page, pages, has_next, has_previous = _offset_meta(params.page, params.limit, total)
         if _HAS_MSGSPEC:
             return FastOffsetPage(
                 items=items,
                 limit=params.limit,
-                has_next=params.page < max_pages,
-                has_previous=params.page > 1,
+                has_next=has_next,
+                has_previous=has_previous,
                 total=total,
-                page=params.page,
-                pages=max_pages,
+                page=page,
+                pages=pages,
             )
         return cls(
             items=items,
             limit=params.limit,
-            has_next=params.page < max_pages,
-            has_previous=params.page > 1,
+            has_next=has_next,
+            has_previous=has_previous,
             total=total,
-            page=params.page,
-            pages=max_pages,
+            page=page,
+            pages=pages,
         )
 
 

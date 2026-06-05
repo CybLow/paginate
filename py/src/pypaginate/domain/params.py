@@ -6,11 +6,11 @@ Illegal states are unrepresentable.
 
 from __future__ import annotations
 
-import math
 from typing import Self
 
 from pydantic import BaseModel, ConfigDict, computed_field, model_validator
 
+from pypaginate._core import clamp_page as _clamp_page
 from pypaginate.domain.exceptions import ValidationError
 
 
@@ -81,10 +81,9 @@ class OffsetParams(BaseParams):
         Returns:
             New params clamped to valid range, or self if valid.
         """
-        if total <= 0:
-            return self.model_copy(update={"page": 1})
-        max_page = max(1, math.ceil(total / self.limit))
-        safe_page = min(self.page, max_page)
+        # Clamp math lives in the native engine (single source of truth). Guard
+        # negative totals at 0 so the u64 boundary never rejects them.
+        safe_page = _clamp_page(self.page, self.limit, max(total, 0))
         if safe_page == self.page:
             return self
         return self.model_copy(update={"page": safe_page})
