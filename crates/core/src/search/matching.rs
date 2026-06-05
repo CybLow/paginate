@@ -51,36 +51,48 @@ fn ratio(a: &str, b: &str) -> i64 {
     (fuzz::ratio(a.chars(), b.chars()) * 100.0) as i64
 }
 
-/// Like [`ratio`] but over pre-collected `char` slices — avoids the per-window
-/// `String` allocation in [`partial_ratio`]'s hot loop.
-fn ratio_chars(a: &[char], b: &[char]) -> i64 {
-    if a.is_empty() && b.is_empty() {
-        return 100;
-    }
-    (fuzz::ratio(a.iter().copied(), b.iter().copied()) * 100.0) as i64
-}
-
-/// Best `ratio` of the shorter string aligned within the longer — a substring
-/// window of the shorter's length — matching `fuzz.partial_ratio`'s intent.
-fn partial_ratio(a: &str, b: &str) -> i64 {
-    let a_chars: Vec<char> = a.chars().collect();
-    let b_chars: Vec<char> = b.chars().collect();
-    let (short, long) = if a_chars.len() <= b_chars.len() {
-        (a_chars.as_slice(), b_chars.as_slice())
+/// Partial-ratio over pre-collected `char` slices with an early-exit cutoff.
+///
+/// `cutoff` (0.0..=1.0) lets rapidfuzz abandon a window's edit-distance DP as
+/// soon as it cannot reach the score — the common case for the non-matching
+/// bulk of a dataset. Below-cutoff windows contribute nothing, so the result is
+/// the best **at-or-above-cutoff** windowed ratio (truncated 0-100), else 0.
+/// Callers gate by the same threshold, so this is identical to taking the max
+/// over all windows and gating afterwards — just far less work.
+pub(crate) fn partial_ratio_chars(value: &[char], token: &[char], cutoff: f64) -> i64 {
+    let (short, long) = if value.len() <= token.len() {
+        (value, token)
     } else {
-        (b_chars.as_slice(), a_chars.as_slice())
+        (token, value)
     };
     if short.is_empty() {
         return i64::from(long.is_empty()) * 100;
     }
+    let args = fuzz::Args::default().score_cutoff(cutoff);
     let mut best = 0;
     for window in long.windows(short.len()) {
-        best = best.max(ratio_chars(short, window));
-        if best == 100 {
-            break;
+        let scored = fuzz::ratio_with_args(short.iter().copied(), window.iter().copied(), &args);
+        if let Some(s) = scored {
+            let scaled = (s * 100.0) as i64;
+            if scaled > best {
+                best = scaled;
+                if best == 100 {
+                    break;
+                }
+            }
         }
     }
     best
+}
+
+/// Best `ratio` of the shorter string aligned within the longer — a substring
+/// window of the shorter's length — matching `fuzz.partial_ratio`'s intent.
+/// String form for the match-filter path; `cutoff = 0.0` computes every window
+/// (the true max), so it is the single source for [`partial_ratio_chars`].
+fn partial_ratio(a: &str, b: &str) -> i64 {
+    let a_chars: Vec<char> = a.chars().collect();
+    let b_chars: Vec<char> = b.chars().collect();
+    partial_ratio_chars(&a_chars, &b_chars, 0.0)
 }
 
 /// `ratio` after whitespace-splitting, sorting, and rejoining tokens on both

@@ -20,7 +20,7 @@ use crate::coerce;
 use crate::error::Result;
 use crate::normalize::normalize_text;
 use crate::value::Value;
-use matching::{fuzzy_score, matches_field};
+use matching::{fuzzy_score, matches_field, partial_ratio_chars};
 
 /// How a token matches a field value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -81,14 +81,25 @@ pub fn search_indices(items: &[Value], spec: &SearchSpec) -> Result<Vec<usize>> 
         .iter()
         .map(|f| compile_path(f))
         .collect::<Result<_>>()?;
-    let is_fuzzy = spec.fuzzy != FuzzyMode::Exact;
+    // Partial-fuzzy scores on char slices; hoist each token's chars out of the
+    // per-item loop (they were re-collected for every item before).
+    let token_chars: Vec<Vec<char>> = if spec.fuzzy == FuzzyMode::Fuzzy {
+        norm_tokens.iter().map(|t| t.chars().collect()).collect()
+    } else {
+        Vec::new()
+    };
+    let prep = Prepared {
+        tokens: &norm_tokens,
+        token_chars: &token_chars,
+        cutoff: spec.threshold as f64 / 100.0,
+    };
 
     let mut scored: Vec<(i64, usize)> = Vec::new();
     for (index, item) in items.iter().enumerate() {
         let score = if paths.len() == 1 {
-            score_single(item, &norm_tokens, &paths[0], is_fuzzy, spec)
+            score_single(item, &prep, &paths[0], spec)
         } else {
-            score_multi(item, &norm_tokens, &paths, spec, is_fuzzy)
+            score_multi(item, &prep, &paths, spec)
         };
         if score > 0 {
             scored.push((score, index));
@@ -112,19 +123,49 @@ pub fn apply(items: &[Value], spec: &SearchSpec) -> Result<Vec<Value>> {
     Ok(ranked.into_iter().map(|i| items[i].clone()).collect())
 }
 
-fn score_single(
-    item: &Value,
-    norm_tokens: &[String],
-    path: &[String],
-    is_fuzzy: bool,
-    spec: &SearchSpec,
-) -> i64 {
+/// Per-query precomputation reused across every item.
+struct Prepared<'a> {
+    /// Normalized query tokens in string form (Exact / TokenSort paths).
+    tokens: &'a [String],
+    /// Token char slices for the partial-fuzzy fast path (empty otherwise).
+    token_chars: &'a [Vec<char>],
+    /// Fuzzy score cutoff (`threshold / 100`) for the early-exit DP.
+    cutoff: f64,
+}
+
+/// Gate a raw fuzzy score by the threshold (mirrors `matching::fuzzy_score`).
+fn gate(score: i64, threshold: i64) -> i64 {
+    if score >= threshold {
+        score
+    } else {
+        0
+    }
+}
+
+fn score_single(item: &Value, prep: &Prepared, path: &[String], spec: &SearchSpec) -> i64 {
     let Some(Value::Str(raw)) = resolve_opt(item, path) else {
         return 0;
     };
     let value = normalize_text(raw);
+    if spec.fuzzy == FuzzyMode::Fuzzy {
+        let value_chars: Vec<char> = value.chars().collect();
+        let mut total = 0;
+        for tc in prep.token_chars {
+            let score = gate(
+                partial_ratio_chars(&value_chars, tc, prep.cutoff),
+                spec.threshold,
+            );
+            if score == 0 {
+                return 0;
+            }
+            total += score;
+        }
+        return total;
+    }
+    // TokenSort / Exact: string path (all tokens must match).
+    let is_fuzzy = spec.fuzzy != FuzzyMode::Exact;
     let mut total = 0;
-    for token in norm_tokens {
+    for token in prep.tokens {
         if is_fuzzy {
             let score = fuzzy_score(&value, token, spec.threshold, spec.fuzzy);
             if score == 0 {
@@ -140,20 +181,41 @@ fn score_single(
     total
 }
 
-fn score_multi(
-    item: &Value,
-    norm_tokens: &[String],
-    paths: &[Vec<String>],
-    spec: &SearchSpec,
-    is_fuzzy: bool,
-) -> i64 {
+fn score_multi(item: &Value, prep: &Prepared, paths: &[Vec<String>], spec: &SearchSpec) -> i64 {
     let pairs = extract(item, paths);
     if pairs.is_empty() {
         return 0;
     }
+    if spec.fuzzy == FuzzyMode::Fuzzy {
+        return score_multi_fuzzy(&pairs, prep, spec);
+    }
+    let is_fuzzy = spec.fuzzy != FuzzyMode::Exact;
     let mut total = 0;
-    for token in norm_tokens {
+    for token in prep.tokens {
         let best = best_weighted(&pairs, token, spec, is_fuzzy);
+        if best == 0 {
+            return 0;
+        }
+        total += best;
+    }
+    total
+}
+
+/// Partial-fuzzy multi-field scoring: collect each field's chars ONCE (reused
+/// across tokens) and score on slices with the early-exit cutoff.
+fn score_multi_fuzzy(pairs: &[(usize, String)], prep: &Prepared, spec: &SearchSpec) -> i64 {
+    let field_chars: Vec<(usize, Vec<char>)> = pairs
+        .iter()
+        .map(|(i, v)| (*i, v.chars().collect()))
+        .collect();
+    let mut total = 0;
+    for tc in prep.token_chars {
+        let mut best = 0;
+        for (field_index, vc) in &field_chars {
+            let weight = weight_for(spec, *field_index);
+            let score = gate(partial_ratio_chars(vc, tc, prep.cutoff), spec.threshold);
+            best = best.max((score as f64 * weight) as i64);
+        }
         if best == 0 {
             return 0;
         }
