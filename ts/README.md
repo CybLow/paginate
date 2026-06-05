@@ -26,18 +26,58 @@ ORM model ─▶ plain DTO ─▶ native core call ─▶ result ─▶ apply to
 ## Usage
 
 ```ts
-import { Dataset, encodeCursor, decodeCursor } from "@cyblow/paginate";
+import { paginate, OffsetParams, And, Or, encodeCursor } from "@cyblow/paginate";
 
-const ds = new Dataset(rows); // marshalled into the core once
-const page = ds.page(1, 20, {
-  filters: [{ field: "age", op: "gte", value: 18 }],
+// In-memory offset pagination: filter + sort + page in one native call.
+const page = paginate(rows, new OffsetParams({ page: 1, limit: 20 }), {
+  filters: [{ field: "age", operator: "gte", value: 18 }],
   sorting: [{ field: "createdAt", direction: "desc" }],
 });
 page.items; // your own row objects for this page
+page.total; // total matched (number)
 
-const cursor = encodeCursor([lastRow.createdAt.toISOString(), lastRow.id]);
-const values = decodeCursor(cursor);
+// Nested boolean groups:
+import { filterGroupIndices } from "@cyblow/paginate";
+const group = And(
+  Or(
+    { field: "country", operator: "eq", value: "FR" },
+    { field: "country", operator: "eq", value: "BE" },
+  ),
+  { field: "age", operator: "gte", value: 18 },
+);
+filterGroupIndices(rows, group);
 ```
+
+### ORM cursor (keyset) adapters
+
+Cursor pagination is a database concern. The `prisma` and `drizzle` adapters
+render the core's portable keyset predicate, so a cursor minted here is
+byte-compatible with the Python / SQLAlchemy / Django side.
+
+```ts
+import { prisma, encodeCursor, decodeCursor } from "@cyblow/paginate";
+
+// where-fragment for the page AFTER `lastRow`, ORDER BY (createdAt asc, id asc):
+const where = prisma.keysetWhere(
+  [{ field: "createdAt" }, { field: "id" }],
+  decodeCursor(req.query.after),
+);
+const rows = await db.post.findMany({
+  where,
+  orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+  take: 20,
+});
+const next = encodeCursor([rows.at(-1).createdAt.toISOString(), rows.at(-1).id]);
+```
+
+Drizzle is identical but takes its operators injected
+(`drizzle.keysetCondition(keys, values, { and, or, gt, lt, eq })`), and
+`express.offsetParamsFromQuery(req.query)` / `cursorParamsFromQuery(req.query)`
+parse + validate request params.
+
+For a stable in-memory array, build a resident `Dataset` once and call
+`filter` / `sort` / `search` / `page` many times — that fused path is the one
+shape where crossing into Rust pays off for JS.
 
 ## Development & publishing
 
