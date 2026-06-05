@@ -131,7 +131,7 @@ def _fast_memory_offset(
     source: Sequence[Any],
     params: OffsetParams,
     overflow: OverflowStrategy,
-) -> Any:
+) -> OffsetPage[Any]:
     """Fast path for in-memory offset pagination (no backend alloc)."""
     total = len(source)
     effective = params.clamp(total) if overflow is OverflowStrategy.CLAMP else params
@@ -146,7 +146,7 @@ def _sync_offset(
     source: object,
     params: OffsetParams,
     overflow: OverflowStrategy,
-) -> Any:
+) -> OffsetPage[Any]:
     """Execute sync offset pagination."""
     paginator: Paginator[Any] = Paginator(backend, overflow=overflow)
     return paginator.paginate(source, params)
@@ -156,7 +156,7 @@ async def _cursor_paginate(
     backend: Any,
     source: object,
     params: CursorParams,
-) -> Any:
+) -> CursorPage[Any]:
     """Execute async cursor pagination."""
     from pypaginate.engine.cursor import AsyncCursorPaginator
 

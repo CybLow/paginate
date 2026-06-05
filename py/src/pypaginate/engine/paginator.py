@@ -5,7 +5,7 @@ Each paginator owns the pipeline: count -> clamp -> fetch -> OffsetPage.
 
 from __future__ import annotations
 
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from pypaginate.domain.enums import OverflowStrategy
 from pypaginate.domain.pages import OffsetPage
@@ -34,7 +34,7 @@ class Paginator(Generic[ItemT]):
         self,
         query: object,
         params: OffsetParams,
-    ) -> Any:
+    ) -> OffsetPage[ItemT]:
         """Execute the sync pagination pipeline.
 
         Args:
@@ -79,7 +79,7 @@ class AsyncPaginator(Generic[ItemT]):
         self,
         query: object,
         params: OffsetParams,
-    ) -> Any:
+    ) -> OffsetPage[ItemT]:
         """Execute the async pagination pipeline.
 
         Args:

@@ -6,7 +6,7 @@ Each applies optional specs before delegating to its paginator.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 from pypaginate.domain.params import OffsetParams
 from pypaginate.engine.paginator import AsyncPaginator, Paginator
@@ -15,6 +15,7 @@ from pypaginate.engine.paginator import AsyncPaginator, Paginator
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from pypaginate.domain.pages import OffsetPage
     from pypaginate.domain.protocols import FilterBackend, SearchBackend, SortBackend
     from pypaginate.domain.specs import FilterSpec, SearchSpec, SortSpec
 
@@ -88,7 +89,7 @@ class SyncPipeline(Generic[ItemT]):
         filters: Sequence[FilterSpec] = (),
         sorting: Sequence[SortSpec] = (),
         search: SearchSpec | None = None,
-    ) -> Any:
+    ) -> OffsetPage[ItemT]:
         """Apply specs then paginate synchronously.
 
         Args:
@@ -139,7 +140,7 @@ class AsyncPipeline(Generic[ItemT]):
         filters: Sequence[FilterSpec] = (),
         sorting: Sequence[SortSpec] = (),
         search: SearchSpec | None = None,
-    ) -> Any:
+    ) -> OffsetPage[ItemT]:
         """Apply specs then paginate asynchronously.
 
         Args:
