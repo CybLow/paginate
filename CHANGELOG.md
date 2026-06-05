@@ -11,11 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Row-engine sort is ~3× faster** via decorate-sort-undecorate — each item's
   sort key is resolved once instead of on every comparison (100k rows, release:
   `single_int` 25.4→7.7 ms, `multi_int` 28.7→9.7 ms, the row pipeline 21.3→9.0 ms).
-- **Text-heavy search faster** — `normalize_text` (run per item per field in
-  every search / contains-filter) folds the ASCII fast path into a single
-  allocation. `search/contains` 5.6→3.6 ms (−36%); combined with the
-  alloc-free rapidfuzz `partial_ratio` (now scoring on char slices, no
-  per-window `String`), `search/fuzzy_multi` drops 117.9→76.6 ms (−35%) at 100k.
+- **Ranked search ~40% faster** — three compounding wins: `normalize_text`
+  folds its ASCII fast path into one allocation (`search/contains` 5.6→3.6 ms,
+  −36%); the rapidfuzz scoring runs on `char` slices with the query token's
+  chars hoisted out of the per-item loop; and the partial-ratio edit-distance
+  DP now early-exits via a `score_cutoff` so the non-matching bulk of a dataset
+  is abandoned cheaply. `search/fuzzy_multi` 117.9→~69 ms at 100k (−41%).
   Output is byte-identical (guarded by the parity suites).
 
 ### Added
