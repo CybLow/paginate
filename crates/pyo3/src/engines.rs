@@ -15,10 +15,11 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyTuple};
 
 use crate::conv::{core_err, py_to_value};
+use crate::specs as wire;
 use ::paginate_core as core;
-use core::filter::{FilterGroup, FilterInput, FilterLogic, FilterNode, FilterOp, FilterSpec};
-use core::search::{FuzzyMode, SearchFieldMode, SearchSpec};
-use core::sort::{NullsPosition, SortDirection, SortSpec};
+use core::filter::{FilterGroup, FilterInput, FilterNode, FilterOp, FilterSpec};
+use core::search::SearchSpec;
+use core::sort::SortSpec;
 use core::Value;
 
 /// (synthetic key, path segments) for each distinct referenced field.
@@ -70,14 +71,6 @@ fn intern_field(
         .clone()
 }
 
-fn parse_logic(name: &str) -> FilterLogic {
-    if name == "or" {
-        FilterLogic::Or
-    } else {
-        FilterLogic::And
-    }
-}
-
 /// Parse one `(field, op, value, logic)` tuple into a core spec, interning its
 /// field path into `plan`.
 fn parse_leaf(
@@ -95,7 +88,7 @@ fn parse_leaf(
         field: intern_field(&field, plan, key_for),
         op,
         value,
-        logic: parse_logic(&logic_name),
+        logic: wire::logic(&logic_name),
     })
 }
 
@@ -123,7 +116,7 @@ fn parse_node(
     match tuple.len() {
         4 => Ok(FilterNode::Spec(parse_leaf(tuple, plan, key_for)?)),
         2 => {
-            let logic = parse_logic(&tuple.get_item(0)?.extract::<String>()?);
+            let logic = wire::logic(&tuple.get_item(0)?.extract::<String>()?);
             let mut conditions = Vec::new();
             for child in tuple.get_item(1)?.try_iter()? {
                 conditions.push(parse_node(&child?, plan, key_for)?);
@@ -178,22 +171,6 @@ pub fn filter_group_indices(
 
 // -- search ------------------------------------------------------------------
 
-fn parse_mode(mode: &str) -> SearchFieldMode {
-    match mode {
-        "prefix" => SearchFieldMode::Prefix,
-        "exact" => SearchFieldMode::Exact,
-        _ => SearchFieldMode::Contains,
-    }
-}
-
-fn parse_fuzzy(fuzzy: &str) -> FuzzyMode {
-    match fuzzy {
-        "fuzzy" => FuzzyMode::Fuzzy,
-        "token_sort" => FuzzyMode::TokenSort,
-        _ => FuzzyMode::Exact,
-    }
-}
-
 /// Rank item indices by relevance of `query` over `fields`, with optional
 /// per-field `weights` (keyed by the original field names).
 #[pyfunction]
@@ -232,8 +209,8 @@ pub fn search_indices(
         query,
         fields: (0..fields.len()).map(|i| format!("f{i}")).collect(),
         weights: core_weights,
-        mode: parse_mode(mode),
-        fuzzy: parse_fuzzy(fuzzy),
+        mode: wire::mode(mode),
+        fuzzy: wire::fuzzy(fuzzy),
         threshold,
         min_length,
         max_results,
@@ -271,16 +248,8 @@ pub fn sort_indices(items: &Bound<'_, PyList>, specs: &Bound<'_, PyList>) -> PyR
             .clone();
         core_specs.push(SortSpec {
             field: key,
-            direction: if direction == "desc" {
-                SortDirection::Desc
-            } else {
-                SortDirection::Asc
-            },
-            nulls: if nulls == "first" {
-                NullsPosition::First
-            } else {
-                NullsPosition::Last
-            },
+            direction: wire::direction(&direction),
+            nulls: wire::nulls(&nulls),
         });
     }
     let mut values = Vec::with_capacity(items.len());
@@ -324,8 +293,8 @@ pub fn match_indices(
         &values,
         query,
         &synthetic,
-        parse_mode(mode),
-        parse_fuzzy(fuzzy),
+        wire::mode(mode),
+        wire::fuzzy(fuzzy),
         threshold,
     )
     .map_err(|e| core_err(&e))
