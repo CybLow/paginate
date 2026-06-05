@@ -30,6 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as an exact match. Both now run through the core's fuzzy-aware match-filter.
 
 ### Changed
+- **Tooling modernized.** The JS package now uses **Bun** (runtime, package
+  manager, and test runner — `bun.lock`, `bun test`); the Python type checker is
+  now Astral's **ty** (replacing mypy). Loose boundary narrowing was rewritten
+  from blanket `# type: ignore` to explicit `typing.cast(...)`, and the engine
+  orchestration returns precise page types instead of `Any`.
 - **Native engine is now mandatory.** All in-memory filtering, sorting, and
   ranked search (including fuzzy / token-sort) run through the bundled Rust
   `pypaginate._core` extension (maturin, abi3, CPython 3.11+), shared with the

@@ -16,7 +16,7 @@ host only selects rows by the returned indices.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar, cast
 
 from pypaginate._dispatch import paginate
 from pypaginate._native import and_filter_tuples, sort_tuples
@@ -133,7 +133,7 @@ class Dataset(Generic[ItemT]):
             data = _SORT.apply_sorting(data, list(sorting))
         if search is not None:
             data = _SEARCH.apply_search(data, search)
-        return paginate(data, params)
+        return paginate(cast("Sequence[ItemT]", data), params)
 
 
 __all__ = ["Dataset"]

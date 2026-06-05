@@ -10,7 +10,7 @@ callable that can be applied N times without per-item overhead.
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import NoReturn
+from typing import NoReturn, cast
 
 from pypaginate.domain.exceptions import FilterError
 
@@ -55,7 +55,7 @@ def _single_accessor(
     def _access(item: object) -> object:
         if isinstance(item, dict):
             if key in item:
-                return item[key]
+                return cast("dict[str, object]", item)[key]
         else:
             value = getattr(item, key, _SENTINEL)
             if value is not _SENTINEL:
@@ -88,7 +88,7 @@ def _resolve_segment(
     """Resolve a single path segment via dict or attribute access."""
     if isinstance(obj, dict):
         if segment in obj:
-            return obj[segment]
+            return cast("dict[str, object]", obj)[segment]
     else:
         value = getattr(obj, segment, _SENTINEL)
         if value is not _SENTINEL:
@@ -118,7 +118,7 @@ def compile_dict_accessor(field_path: str) -> Callable[[object], object]:
         key = segments[0]
 
         def _access(item: object) -> object:
-            v = item.get(key, _SENTINEL)  # type: ignore[attr-defined]
+            v = cast("dict[str, object]", item).get(key, _SENTINEL)
             if v is not _SENTINEL:
                 return v
             return _raise_not_found(key, field_path, item)

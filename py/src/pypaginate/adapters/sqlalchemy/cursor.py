@@ -85,10 +85,7 @@ def _extract_cursor_values(
     Returns:
         Tuple of values matching each ORDER BY column.
     """
-    return tuple(
-        getattr(row, col.element.key)  # type: ignore[arg-type]
-        for col in order_cols
-    )
+    return tuple(getattr(row, str(col.element.key)) for col in order_cols)
 
 
 def _compute_cursors(

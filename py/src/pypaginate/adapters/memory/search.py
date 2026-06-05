@@ -11,7 +11,7 @@ engine (the previous char-overlap score did, and silently mishandled
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from pypaginate import _native
 
@@ -38,7 +38,7 @@ class MemorySearchBackend:
         Returns:
             Matching items in original order.
         """
-        items: Sequence[object] = query  # type: ignore[assignment]
+        items = cast("Sequence[object]", query)
         return _native.match_filter(items, spec)
 
 

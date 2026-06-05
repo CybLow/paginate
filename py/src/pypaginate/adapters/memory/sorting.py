@@ -7,7 +7,7 @@ the native ``pypaginate._core`` engine, which applies the ordered sort specs
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from pypaginate import _native
 
@@ -37,7 +37,7 @@ class MemorySortBackend:
         Returns:
             New sorted list of items.
         """
-        items: Sequence[object] = query  # type: ignore[assignment]
+        items = cast("Sequence[object]", query)
         if not sorting:
             return list(items)
         return _native.sort_by(items, sorting)

@@ -5,7 +5,7 @@ Maps SortDirection and NullsPosition to SQLAlchemy column modifiers.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from pypaginate.adapters.sqlalchemy.columns import resolve_column
 from pypaginate.domain.enums import NullsPosition, SortDirection
@@ -39,7 +39,7 @@ class SQLAlchemySortBackend:
         Returns:
             Modified Select with ORDER BY clauses.
         """
-        stmt: Select[Any] = query  # type: ignore[assignment]
+        stmt = cast("Select[Any]", query)
         clauses = [_build_order_clause(stmt, spec) for spec in sorting]
         if not clauses:
             return stmt

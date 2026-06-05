@@ -42,8 +42,8 @@ format:  ## Format code with ruff
 format-check:  ## Check code formatting
 	uv run ruff format --check src tests
 
-typecheck:  ## Run type checking with mypy
-	uv run mypy src
+typecheck:  ## Run type checking with ty
+	uv run ty check src
 
 qa:  ## Run essential quality checks (format, lint, test)
 	@echo "Running format check..."
@@ -53,13 +53,13 @@ qa:  ## Run essential quality checks (format, lint, test)
 	@echo "Running tests..."
 	uv run pytest -q
 
-qas:  ## Run all quality checks including mypy
+qas:  ## Run all quality checks including ty
 	@echo "Running format check..."
 	uv run ruff format --check src tests
 	@echo "Running lint..."
 	uv run ruff check src tests
 	@echo "Running type check..."
-	uv run mypy src
+	uv run ty check src
 	@echo "Running tests..."
 	uv run pytest -q
 
