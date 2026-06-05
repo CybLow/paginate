@@ -96,3 +96,25 @@ pub fn offset_meta(page: u32, limit: u32, total: u32) -> OffsetMeta {
 pub fn clamp_page(page: u32, limit: u32, total: u32) -> i64 {
     core::pagination::clamp_page(page.into(), limit.into(), total.into()) as i64
 }
+
+// -- keyset (cursor) predicate ----------------------------------------------
+
+/// Lexicographic keyset predicate as OR-of-AND terms. `ascending[i]` is the
+/// effective direction of key `i`; each term is a list of `[key_index, op]`
+/// where `op` is `"gt"` / `"lt"` / `"eq"`. The adapter renders `key[i] OP
+/// value[i]`, ANDs each term, then ORs the terms. Returned as nested JSON
+/// arrays: `[[[0,"gt"]], [[0,"eq"],[1,"lt"]]]`.
+#[napi]
+pub fn keyset_terms(ascending: Vec<bool>) -> Json {
+    let terms = core::keyset::keyset_terms(&ascending)
+        .into_iter()
+        .map(|term| {
+            let pairs = term
+                .into_iter()
+                .map(|(i, op)| Json::Array(vec![Json::from(i as u64), Json::from(op.as_str())]))
+                .collect();
+            Json::Array(pairs)
+        })
+        .collect();
+    Json::Array(terms)
+}

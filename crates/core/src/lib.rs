@@ -29,6 +29,7 @@ pub mod columnar;
 pub mod cursor;
 pub mod error;
 pub mod filter;
+pub mod keyset;
 pub mod normalize;
 pub mod pagination;
 pub mod pipeline;

@@ -74,6 +74,20 @@ fn clamp_page(page: u64, limit: u64, total: u64) -> u64 {
     core::pagination::clamp_page(page, limit, total)
 }
 
+// -- keyset (cursor) predicate ----------------------------------------------
+
+/// Lexicographic keyset predicate as OR-of-AND terms. `ascending[i]` is the
+/// effective direction of key `i`; each term is a list of `(key_index, op)`
+/// where `op` is `"gt"` / `"lt"` / `"eq"`. The adapter renders `key[i] OP
+/// value[i]`, ANDs each term, then ORs the terms.
+#[pyfunction]
+fn keyset_terms(ascending: Vec<bool>) -> Vec<Vec<(usize, &'static str)>> {
+    core::keyset::keyset_terms(&ascending)
+        .into_iter()
+        .map(|term| term.into_iter().map(|(i, op)| (i, op.as_str())).collect())
+        .collect()
+}
+
 #[pymodule]
 fn _core(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("__version__", env!("CARGO_PKG_VERSION"))?;
@@ -93,6 +107,7 @@ fn _core(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(max_pages, module)?)?;
     module.add_function(wrap_pyfunction!(offset_meta, module)?)?;
     module.add_function(wrap_pyfunction!(clamp_page, module)?)?;
+    module.add_function(wrap_pyfunction!(keyset_terms, module)?)?;
     module.add_function(wrap_pyfunction!(engines::filter_indices, module)?)?;
     module.add_function(wrap_pyfunction!(engines::filter_group_indices, module)?)?;
     module.add_function(wrap_pyfunction!(engines::search_indices, module)?)?;

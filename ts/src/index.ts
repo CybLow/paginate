@@ -20,6 +20,10 @@ export { offset, maxPages, clampPage, offsetMeta } from "./pagination.js";
 export type { OffsetMeta } from "./pagination.js";
 export { normalize } from "./normalize.js";
 
+// -- keyset (cursor) predicate ----------------------------------------------
+export { keysetTerms } from "./keyset.js";
+export type { KeysetOp, KeysetTerm } from "./keyset.js";
+
 // -- specs (filter / sort / search) -----------------------------------------
 export { And, Or } from "./specs.js";
 export type {

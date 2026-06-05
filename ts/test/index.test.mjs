@@ -120,6 +120,17 @@ test("Dataset.page equals the one-shot filter+sort+slice path", () => {
   assert.deepEqual(page.items, expected);
 });
 
+test("keysetTerms: lexicographic OR-of-AND predicate structure", () => {
+  assert.deepEqual(p.keysetTerms([true]), [[[0, "gt"]]]);
+  assert.deepEqual(p.keysetTerms([true, false]), [
+    [[0, "gt"]],
+    [
+      [0, "eq"],
+      [1, "lt"],
+    ],
+  ]);
+});
+
 test("offsetPage / cursorPage builders", () => {
   const op = p.offsetPage([1, 2, 3], 100, new p.OffsetParams({ page: 1, limit: 20 }));
   assert.equal(op.total, 100);
