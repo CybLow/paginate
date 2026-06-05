@@ -123,18 +123,24 @@ def search(items: Sequence[Any], spec: SearchSpec) -> list[Any]:
     )
 
 
-def match_filter(
-    items: Sequence[Any],
-    query: str,
-    fields: Sequence[str],
-    mode: SearchFieldMode,
-) -> list[Any]:
-    """Match-filter (exact/prefix/contains): keep items where any field matches
-    the whole query, in original order (the in-memory search-backend semantics)."""
+def match_filter(items: Sequence[Any], spec: SearchSpec) -> list[Any]:
+    """Match-filter: keep items where any field matches the whole query, in
+    original order (the in-memory search-backend semantics).
+
+    ``EXACT`` fuzzy uses contains/prefix/exact per ``spec.mode``; fuzzy and
+    token-sort gate by ``spec.threshold`` (rapidfuzz scoring in the engine).
+    """
     rows = list(items)
     return _take(
         rows,
-        lambda: match_indices(rows, query, list(fields), mode=_SEARCH_MODE[mode]),
+        lambda: match_indices(
+            rows,
+            spec.query,
+            list(spec.fields),
+            mode=_SEARCH_MODE[spec.mode],
+            fuzzy=_FUZZY[spec.fuzzy],
+            threshold=spec.threshold,
+        ),
         SearchError,
     )
 

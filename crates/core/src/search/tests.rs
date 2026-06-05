@@ -86,3 +86,59 @@ fn exact_mode_requires_full_value() {
     let idx = search_indices(&items, &s).unwrap();
     assert_eq!(idx, vec![0]);
 }
+
+#[test]
+fn match_indices_contains_filters_in_original_order() {
+    let items = vec![
+        item(&[("name", "Alice")]),
+        item(&[("name", "Bob")]),
+        item(&[("name", "Alicia")]),
+    ];
+    let fields = ["name".to_owned()];
+    let idx = match_indices(
+        &items,
+        "ali",
+        &fields,
+        SearchFieldMode::Contains,
+        FuzzyMode::Exact,
+        75,
+    )
+    .unwrap();
+    assert_eq!(idx, vec![0, 2]);
+}
+
+#[test]
+fn match_indices_fuzzy_tolerates_typos() {
+    let items = vec![item(&[("name", "Alice")]), item(&[("name", "Bob")])];
+    let fields = ["name".to_owned()];
+    // "alise" ~ "alice" (one substitution -> 80) clears the 75 gate; "bob" fails.
+    let idx = match_indices(
+        &items,
+        "alise",
+        &fields,
+        SearchFieldMode::Contains,
+        FuzzyMode::Fuzzy,
+        75,
+    )
+    .unwrap();
+    assert_eq!(idx, vec![0]);
+}
+
+#[test]
+fn match_indices_token_sort_ignores_word_order() {
+    let items = vec![
+        item(&[("name", "alice johnson")]),
+        item(&[("name", "bob smith")]),
+    ];
+    let fields = ["name".to_owned()];
+    let idx = match_indices(
+        &items,
+        "johnson alice",
+        &fields,
+        SearchFieldMode::Contains,
+        FuzzyMode::TokenSort,
+        90,
+    )
+    .unwrap();
+    assert_eq!(idx, vec![0]);
+}
