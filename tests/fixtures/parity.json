@@ -1,0 +1,318 @@
+{
+  "_comment": "FROZEN golden \u2014 regenerate with tests/fixtures/generate_parity.py",
+  "cursors": [
+    {
+      "values": [
+        1,
+        "a"
+      ],
+      "encoded": "WzEsImEiXQ"
+    },
+    {
+      "values": [
+        true,
+        null,
+        3.5
+      ],
+      "encoded": "W3RydWUsbnVsbCwzLjVd"
+    },
+    {
+      "values": [
+        "caf\u00e9"
+      ],
+      "encoded": "WyJjYWZcdTAwZTkiXQ"
+    },
+    {
+      "values": [
+        "a\"b\\c\n"
+      ],
+      "encoded": "WyJhXCJiXFxjXG4iXQ"
+    },
+    {
+      "values": [],
+      "encoded": "W10"
+    },
+    {
+      "values": [
+        -42,
+        1000000
+      ],
+      "encoded": "Wy00MiwxMDAwMDAwXQ"
+    }
+  ],
+  "cursors_typed": [
+    {
+      "values": [
+        {
+          "__type__": "datetime",
+          "v": "2021-06-01T12:30:00"
+        },
+        42
+      ],
+      "encoded": "W3siX190eXBlX18iOiJkYXRldGltZSIsInYiOiIyMDIxLTA2LTAxVDEyOjMwOjAwIn0sNDJd"
+    },
+    {
+      "values": [
+        {
+          "__type__": "date",
+          "v": "2021-06-01"
+        }
+      ],
+      "encoded": "W3siX190eXBlX18iOiJkYXRlIiwidiI6IjIwMjEtMDYtMDEifV0"
+    },
+    {
+      "values": [
+        {
+          "__type__": "decimal",
+          "v": "3.14159"
+        }
+      ],
+      "encoded": "W3siX190eXBlX18iOiJkZWNpbWFsIiwidiI6IjMuMTQxNTkifV0"
+    },
+    {
+      "values": [
+        {
+          "__type__": "uuid",
+          "v": "12345678-1234-5678-1234-567812345678"
+        }
+      ],
+      "encoded": "W3siX190eXBlX18iOiJ1dWlkIiwidiI6IjEyMzQ1Njc4LTEyMzQtNTY3OC0xMjM0LTU2NzgxMjM0NTY3OCJ9XQ"
+    }
+  ],
+  "filter": [
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "age",
+          "gte",
+          18,
+          "and"
+        ]
+      ],
+      "expected": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "name",
+          "contains",
+          "ali",
+          "and"
+        ]
+      ],
+      "expected": [
+        0,
+        3
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "age",
+          "eq",
+          20,
+          "and"
+        ],
+        [
+          "name",
+          "starts_with",
+          "a",
+          "and"
+        ]
+      ],
+      "expected": [
+        3
+      ]
+    }
+  ],
+  "sort": [
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "age",
+          "desc",
+          "last"
+        ]
+      ],
+      "expected": [
+        2,
+        1,
+        3,
+        0
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "age",
+          "asc",
+          "last"
+        ],
+        [
+          "name",
+          "asc",
+          "last"
+        ]
+      ],
+      "expected": [
+        0,
+        3,
+        1,
+        2
+      ]
+    }
+  ],
+  "search": [
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "query": "ali",
+      "fields": [
+        "name"
+      ],
+      "mode": "contains",
+      "expected": [
+        0,
+        3
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "query": "bob",
+      "fields": [
+        "name"
+      ],
+      "mode": "exact",
+      "expected": [
+        1
+      ]
+    }
+  ]
+}
