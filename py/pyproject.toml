@@ -170,7 +170,7 @@ lint = [
 ]
 # Type Checking
 type = [
-    "mypy>=1.13.0",
+    "ty>=0.0.44",
 ]
 # Security Scanning
 security = [
@@ -319,51 +319,14 @@ line-ending = "auto"
 docstring-code-format = true
 
 # ==========================
-# MYPY CONFIGURATION
+# TYPE CHECKING (ty — Astral's checker; replaces mypy)
 # ==========================
-[tool.mypy]
-python_version = "3.11"
-strict = true
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_any_generics = true
-check_untyped_defs = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = false  # Too many false positives with SQLAlchemy
-warn_no_return = true
-show_error_codes = true
-show_column_numbers = true
-pretty = true
-exclude = ["build", "dist", ".venv"]
-
-[[tool.mypy.overrides]]
-module = [
-    "text_unidecode.*",
-    "rapidfuzz.*",
-    "sqlalchemy.*",
-    "fastapi.*",
-    "django.*",
-    "pydantic.*",
-    "pyparsing.*",
-    "pypaginate.core",
-    "pypaginate.core.*",
-    "pypaginate.query",
-    "pypaginate.query.*",
-]
-ignore_missing_imports = true
-
-# Relax strict checking for files with heavy SQLAlchemy/Pydantic usage
-[[tool.mypy.overrides]]
-module = [
-    "pypaginate.dependencies",
-    "pypaginate.integrations.fastapi",
-    "pypaginate.text.pipelines",
-    "pypaginate.filters.search.helpers",
-    "pypaginate",
-]
-disable_error_code = ["misc", "no-any-return", "import-untyped"]
+# ty resolves the project's installed dependencies and checks src/ strictly.
+# Untyped third-party packages (Django, etc.) are handled gracefully without
+# per-module ignore_missing_imports overrides. Boundary narrowing uses explicit
+# typing.cast(...) at the call site rather than blanket suppressions.
+[tool.ty.environment]
+python-version = "3.11"
 
 # ==========================
 # PYTEST CONFIGURATION

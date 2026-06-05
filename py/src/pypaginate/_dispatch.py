@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Awaitable, Sequence
-from typing import Any, TypeVar, overload
+from typing import Any, TypeVar, cast, overload
 
 from pypaginate.domain.enums import OverflowStrategy
 from pypaginate.domain.pages import CursorPage, OffsetPage
@@ -118,7 +118,8 @@ def paginate(
         return _cursor_paginate(resolved, source, params)
 
     if _has_async_methods(resolved):
-        paginator: AsyncPaginator[Any] = AsyncPaginator(resolved, overflow=overflow)  # type: ignore[arg-type]
+        backend = cast("PaginationBackend[Any]", resolved)
+        paginator: AsyncPaginator[Any] = AsyncPaginator(backend, overflow=overflow)
         return paginator.paginate(source, params)
 
     return _sync_offset(resolved, source, params, overflow)

@@ -17,12 +17,16 @@ Example::
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import BaseModel, ConfigDict
 from pydantic.fields import FieldInfo
 
 from pypaginate.domain.specs import FilterSpec
+
+
+if TYPE_CHECKING:
+    from pypaginate.domain.specs import FilterOperator
 
 
 def FilterField(  # noqa: N802
@@ -66,9 +70,9 @@ class FilterDep(BaseModel):
             meta = (
                 (info.json_schema_extra or {}) if isinstance(info.json_schema_extra, dict) else {}
             )
-            operator = str(meta.get("filter_operator", "eq"))
+            operator = cast("FilterOperator", str(meta.get("filter_operator", "eq")))
             target = str(meta.get("filter_field") or name)
-            specs.append(FilterSpec(field=target, operator=operator, value=value))  # type: ignore[arg-type]
+            specs.append(FilterSpec(field=target, operator=operator, value=value))
         return specs
 
 

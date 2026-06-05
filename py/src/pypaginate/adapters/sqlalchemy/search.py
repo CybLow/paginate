@@ -6,7 +6,7 @@ token conditions with AND (all tokens must match).
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from pypaginate.adapters.sqlalchemy.columns import resolve_column
 from pypaginate.domain.enums import SearchFieldMode
@@ -40,7 +40,7 @@ class SQLAlchemySearchBackend:
         Returns:
             Modified Select with WHERE clauses for search.
         """
-        stmt: Select[Any] = query  # type: ignore[assignment]
+        stmt = cast("Select[Any]", query)
         normalized = normalize_text(spec.query)
         if not normalized:
             return stmt

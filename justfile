@@ -43,7 +43,7 @@ py-lint:
 
 # Type-check.
 py-type:
-    cd py && uv run mypy src
+    cd py && uv run ty check src
 
 # All Python checks.
 py: py-lint py-type py-test

@@ -7,7 +7,7 @@ established in-memory semantics) and matched rows are selected by index.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from pypaginate import _native
 
@@ -37,7 +37,7 @@ class MemoryFilterBackend:
         Returns:
             Filtered list of items matching all specs.
         """
-        items: Sequence[object] = query  # type: ignore[assignment]
+        items = cast("Sequence[object]", query)
         if not filters:
             return list(items)
         return _native.filter_and(items, filters)

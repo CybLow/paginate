@@ -6,14 +6,14 @@ Each applies optional specs before delegating to its paginator.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, Generic, TypeVar, cast
 
 from pypaginate.domain.params import OffsetParams
 from pypaginate.engine.paginator import AsyncPaginator, Paginator
 
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
     from pypaginate.domain.pages import OffsetPage
     from pypaginate.domain.protocols import FilterBackend, SearchBackend, SortBackend
@@ -41,25 +41,26 @@ def _apply_specs(
     resolved_search = _resolve_search(search)
 
     if resolved_filters and filter_backend is not None:
-        query = filter_backend.apply_filters(query, resolved_filters)  # type: ignore[arg-type]
+        query = filter_backend.apply_filters(query, cast("Sequence[FilterSpec]", resolved_filters))
     if resolved_sorting and sort_backend is not None:
-        query = sort_backend.apply_sorting(query, resolved_sorting)  # type: ignore[arg-type]
+        query = sort_backend.apply_sorting(query, cast("Sequence[SortSpec]", resolved_sorting))
     if resolved_search is not None and search_backend is not None:
-        query = search_backend.apply_search(query, resolved_search)  # type: ignore[arg-type]
+        query = search_backend.apply_search(query, cast("SearchSpec", resolved_search))
     return query
 
 
 def _resolve_input(value: object, method: str) -> object:
     """Auto-convert objects with to_specs() to spec lists."""
     if hasattr(value, method):
-        return getattr(value, method)()  # type: ignore[no-any-return]
+        return cast("Callable[[], object]", getattr(value, method))()
     return value
 
 
 def _resolve_search(value: object | None) -> object | None:
     """Auto-convert SearchDep to SearchSpec via to_spec()."""
-    if value is not None and hasattr(value, "to_spec"):
-        return value.to_spec()  # type: ignore[union-attr,no-any-return]
+    to_spec = getattr(value, "to_spec", None)
+    if to_spec is not None:
+        return cast("Callable[[], object]", to_spec)()
     return value
 
 

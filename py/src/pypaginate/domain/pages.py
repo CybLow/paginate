@@ -39,7 +39,7 @@ class BasePage(BaseModel, Generic[ItemT]):
     has_next: bool
     has_previous: bool
 
-    def __iter__(self) -> Iterator[ItemT]:  # type: ignore[override]
+    def __iter__(self) -> Iterator[ItemT]:  # ty: ignore[invalid-method-override]
         """Iterate over items."""
         return iter(self.items)
 

@@ -119,7 +119,8 @@ jobs:
         run: cargo test --workspace --release
 
   # ---------------------------------------------------------------------------
-  # Python — quality (ruff + mypy); no project build needed (analyzes source)
+  # Python — quality (ruff + ty); no project build needed (analyzes source +
+  # the _core.pyi stub, so the native extension need not be built here)
   # ---------------------------------------------------------------------------
   quality:
     name: Quality
@@ -146,7 +147,7 @@ jobs:
       - name: Lint
         run: uv run ruff check --output-format=github src tests
       - name: Type check
-        run: uv run mypy src
+        run: uv run ty check src
 
   # ---------------------------------------------------------------------------
   # Python — architecture gates

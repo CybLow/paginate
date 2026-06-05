@@ -7,7 +7,7 @@ Validates input type at runtime for clear error messages.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, cast
 
 
 ItemT = TypeVar("ItemT")
@@ -35,7 +35,7 @@ class MemoryBackend(Generic[ItemT]):
             TypeError: If query is not a Sequence.
         """
         self._validate(query)
-        return len(query)  # type: ignore[arg-type]
+        return len(cast("Sequence[ItemT]", query))
 
     def fetch(
         self,
@@ -57,7 +57,7 @@ class MemoryBackend(Generic[ItemT]):
             TypeError: If query is not a Sequence.
         """
         self._validate(query)
-        return list(query[offset : offset + limit])  # type: ignore[index]
+        return list(cast("Sequence[ItemT]", query)[offset : offset + limit])
 
     @staticmethod
     def _validate(query: object) -> None:

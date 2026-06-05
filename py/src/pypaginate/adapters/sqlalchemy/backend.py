@@ -6,7 +6,7 @@ protocols using SELECT COUNT(*) for counting and OFFSET/LIMIT for fetching.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast
 
 
 ItemT = TypeVar("ItemT")
@@ -32,7 +32,7 @@ def _build_count_query(query: object) -> Any:
     """
     from sqlalchemy import func, select
 
-    stmt: Select[Any] = query  # type: ignore[assignment]
+    stmt = cast("Select[Any]", query)
     return select(func.count()).select_from(stmt.subquery())
 
 
@@ -47,7 +47,7 @@ def _build_fetch_query(query: object, offset: int, limit: int) -> Any:
     Returns:
         The query with offset and limit applied.
     """
-    stmt: Select[Any] = query  # type: ignore[assignment]
+    stmt = cast("Select[Any]", query)
     return stmt.offset(offset).limit(limit)
 
 
@@ -79,8 +79,8 @@ class SQLAlchemyBackend(Generic[ItemT]):
     async def count(self, query: object) -> int:
         """Count rows. Uses custom count query if provided."""
         stmt = self._count_query if self._count_query is not None else _build_count_query(query)
-        result = await self._session.execute(stmt)  # type: ignore[arg-type]
-        return result.scalar_one()  # type: ignore[no-any-return]
+        result = await self._session.execute(cast("Select[Any]", stmt))
+        return int(result.scalar_one())
 
     async def fetch(
         self,
@@ -124,8 +124,8 @@ class SyncSQLAlchemyBackend(Generic[ItemT]):
     def count(self, query: object) -> int:
         """Count rows. Uses custom count query if provided."""
         stmt = self._count_query if self._count_query is not None else _build_count_query(query)
-        result = self._session.execute(stmt)  # type: ignore[arg-type]
-        return result.scalar_one()  # type: ignore[no-any-return]
+        result = self._session.execute(cast("Select[Any]", stmt))
+        return int(result.scalar_one())
 
     def fetch(
         self,

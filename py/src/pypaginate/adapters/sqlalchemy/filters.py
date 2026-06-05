@@ -6,7 +6,7 @@ Supports AND/OR logic via ``FilterLogic``.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from pypaginate.adapters.sqlalchemy.columns import resolve_column
 from pypaginate.domain.enums import FilterLogic
@@ -97,7 +97,7 @@ class SQLAlchemyFilterBackend:
         Returns:
             Modified Select with WHERE clauses.
         """
-        stmt: Select[Any] = query  # type: ignore[assignment]
+        stmt = cast("Select[Any]", query)
         and_conditions, or_conditions = _partition_filters(
             stmt,
             filters,
