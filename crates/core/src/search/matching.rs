@@ -51,24 +51,31 @@ fn ratio(a: &str, b: &str) -> i64 {
     (fuzz::ratio(a.chars(), b.chars()) * 100.0) as i64
 }
 
+/// Like [`ratio`] but over pre-collected `char` slices — avoids the per-window
+/// `String` allocation in [`partial_ratio`]'s hot loop.
+fn ratio_chars(a: &[char], b: &[char]) -> i64 {
+    if a.is_empty() && b.is_empty() {
+        return 100;
+    }
+    (fuzz::ratio(a.iter().copied(), b.iter().copied()) * 100.0) as i64
+}
+
 /// Best `ratio` of the shorter string aligned within the longer — a substring
 /// window of the shorter's length — matching `fuzz.partial_ratio`'s intent.
 fn partial_ratio(a: &str, b: &str) -> i64 {
     let a_chars: Vec<char> = a.chars().collect();
     let b_chars: Vec<char> = b.chars().collect();
     let (short, long) = if a_chars.len() <= b_chars.len() {
-        (&a_chars, &b_chars)
+        (a_chars.as_slice(), b_chars.as_slice())
     } else {
-        (&b_chars, &a_chars)
+        (b_chars.as_slice(), a_chars.as_slice())
     };
     if short.is_empty() {
         return i64::from(long.is_empty()) * 100;
     }
-    let short_str: String = short.iter().collect();
     let mut best = 0;
     for window in long.windows(short.len()) {
-        let candidate: String = window.iter().collect();
-        best = best.max(ratio(&short_str, &candidate));
+        best = best.max(ratio_chars(short, window));
         if best == 100 {
             break;
         }
