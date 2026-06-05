@@ -27,9 +27,19 @@ fn required_str(obj: &Map<String, Json>, key: &str) -> Result<String> {
         .ok_or_else(|| Error::new(Status::InvalidArg, format!("spec.{key} must be a string")))
 }
 
-/// Parse one `{field, op, value, logic?}` object into a core filter spec.
+/// The operator name, accepting `operator` (canonical, matches the Python and
+/// Rust APIs) or the legacy `op` alias.
+fn operator_name(obj: &Map<String, Json>) -> Result<String> {
+    obj.get("operator")
+        .or_else(|| obj.get("op"))
+        .and_then(Json::as_str)
+        .map(str::to_owned)
+        .ok_or_else(|| Error::new(Status::InvalidArg, "spec.operator must be a string"))
+}
+
+/// Parse one `{field, operator, value, logic?}` object into a core filter spec.
 fn parse_one_spec(obj: &Map<String, Json>) -> Result<core::filter::FilterSpec> {
-    let op_name = required_str(obj, "op")?;
+    let op_name = operator_name(obj)?;
     let op = core::filter::FilterOp::from_name(&op_name)
         .ok_or_else(|| Error::new(Status::InvalidArg, format!("unknown operator: {op_name}")))?;
     let logic = match obj.get("logic").and_then(Json::as_str) {
