@@ -11,10 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Row-engine sort is ~3× faster** via decorate-sort-undecorate — each item's
   sort key is resolved once instead of on every comparison (100k rows, release:
   `single_int` 25.4→7.7 ms, `multi_int` 28.7→9.7 ms, the row pipeline 21.3→9.0 ms).
-- **Fuzzy search ~31% faster** — rapidfuzz `partial_ratio` now scores on
-  pre-collected char slices instead of allocating a `String` per alignment
-  window (`fuzzy_multi` 117.9→81.8 ms at 100k). Output is byte-identical
-  (guarded by the parity suites).
+- **Text-heavy search faster** — `normalize_text` (run per item per field in
+  every search / contains-filter) folds the ASCII fast path into a single
+  allocation. `search/contains` 5.6→3.6 ms (−36%); combined with the
+  alloc-free rapidfuzz `partial_ratio` (now scoring on char slices, no
+  per-window `String`), `search/fuzzy_multi` drops 117.9→76.6 ms (−35%) at 100k.
+  Output is byte-identical (guarded by the parity suites).
 
 ### Added
 - **Cross-language parity harness.** A frozen golden (`tests/fixtures/parity.json`)
