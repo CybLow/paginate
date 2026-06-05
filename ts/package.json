@@ -32,8 +32,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "pretest": "npm --prefix ../crates/node run build",
-    "test": "tsc && node --test test/*.test.mjs",
+    "build:native": "cd ../crates/node && bun run build",
+    "test": "bun run build:native && tsc && bun test test/",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

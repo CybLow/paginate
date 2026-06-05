@@ -13,7 +13,7 @@
     "crates/node"
   ],
   "scripts": {
-    "build:node": "npm --prefix crates/node run build",
-    "test:ts": "npm --prefix ts test"
+    "build:node": "cd crates/node && bun run build",
+    "test:ts": "cd ts && bun run test"
   }
 }

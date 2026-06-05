@@ -50,14 +50,14 @@ py: py-lint py-type py-test
 
 # -- Node / TypeScript (@cyblow/paginate) -----------------------------------
 
-# Build the napi addon + run the TS suite.
+# Build the napi addon + run the TS suite (Bun).
 ts-test:
-    npm --prefix ts test
+    cd ts && bun run test
 
 # Format + lint.
 ts-lint:
-    npm --prefix ts run format:check
-    npm --prefix ts run lint
+    cd ts && bun run format:check
+    cd ts && bun run lint
 
 # All TS checks.
 ts: ts-lint ts-test
