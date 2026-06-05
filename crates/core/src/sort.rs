@@ -74,12 +74,16 @@ pub fn sort_indices_of(
         let path = compile_path(&spec.field)?;
         let null_first = null_sorts_first(spec.direction, spec.nulls);
         let reverse = spec.direction == SortDirection::Desc;
+        // Decorate: resolve each item's sort key ONCE, not on every comparison
+        // (a comparison sort does O(n log n) compares — re-resolving the field
+        // each time dominated the cost). `keys[i]` borrows item `i`'s value.
+        let keys: Vec<Option<&Value>> = items.iter().map(|it| resolve_opt(it, &path)).collect();
         let mut failure: Option<CoreError> = None;
         order.sort_by(|&a, &b| {
             if failure.is_some() {
                 return Ordering::Equal;
             }
-            match compare_keys(&items[a], &items[b], &path, null_first) {
+            match compare_keys(keys[a], keys[b], null_first) {
                 Ok(ordering) if reverse => ordering.reverse(),
                 Ok(ordering) => ordering,
                 Err(err) => {
@@ -108,10 +112,8 @@ fn null_sorts_first(direction: SortDirection, nulls: NullsPosition) -> bool {
     (nulls == NullsPosition::First) != (direction == SortDirection::Desc)
 }
 
-/// Compare two items by one key as the tuple `(null_flag, value)`.
-fn compare_keys(a: &Value, b: &Value, path: &[String], null_first: bool) -> Result<Ordering> {
-    let av = resolve_opt(a, path);
-    let bv = resolve_opt(b, path);
+/// Compare two precomputed keys as the tuple `(null_flag, value)`.
+fn compare_keys(av: Option<&Value>, bv: Option<&Value>, null_first: bool) -> Result<Ordering> {
     let a_flag = null_first ^ av.is_none();
     let b_flag = null_first ^ bv.is_none();
     if a_flag != b_flag {
