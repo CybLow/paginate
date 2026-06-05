@@ -16,7 +16,9 @@ use paginate_core::filter::{
     filter_indices, FilterGroup, FilterInput, FilterLogic, FilterNode, FilterOp, FilterSpec,
 };
 use paginate_core::pipeline::offset_page;
-use paginate_core::search::{search_indices, FuzzyMode, SearchFieldMode, SearchSpec};
+use paginate_core::search::{
+    search_indices, search_with_index, FuzzyMode, SearchFieldMode, SearchSpec, TrigramIndex,
+};
 use paginate_core::sort::{sort_indices, NullsPosition, SortDirection, SortSpec};
 use paginate_core::value::Value;
 
@@ -217,11 +219,60 @@ fn bench_pipeline(c: &mut Criterion) {
     group.finish();
 }
 
+/// Varied titles so a query is *selective* (the trigram index can prune most
+/// rows) — unlike `make_users`, whose names all share the "user" trigrams.
+fn make_titles(n: usize) -> Vec<Value> {
+    const WORDS: [&str; 12] = [
+        "alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel", "india",
+        "juliet", "kilo", "lima",
+    ];
+    (0..n)
+        .map(|i| {
+            let mut row = BTreeMap::new();
+            let title = format!(
+                "{} {} number {i}",
+                WORDS[i % WORDS.len()],
+                WORDS[(i / WORDS.len()) % WORDS.len()]
+            );
+            row.insert("title".to_owned(), Value::Str(title));
+            Value::Map(row)
+        })
+        .collect()
+}
+
+/// Fuzzy ranked search: full scan (score every row) vs the resident trigram
+/// index (score only candidate rows) for a selective query.
+fn bench_indexed_search(c: &mut Criterion) {
+    let mut group = c.benchmark_group("fuzzy_indexed");
+    for &n in &SIZES {
+        let items = make_titles(n);
+        let index = TrigramIndex::build(&items);
+        let mut spec = search(
+            "alpha bravo",
+            &["title"],
+            SearchFieldMode::Contains,
+            FuzzyMode::Fuzzy,
+        );
+        spec.threshold = 30;
+
+        group.bench_with_input(BenchmarkId::new("full_scan", n), &n, |b, _| {
+            b.iter(|| search_indices(black_box(&items), black_box(&spec)).unwrap());
+        });
+        group.bench_with_input(BenchmarkId::new("indexed", n), &n, |b, _| {
+            b.iter(|| {
+                search_with_index(black_box(&items), black_box(&spec), black_box(&index)).unwrap()
+            });
+        });
+    }
+    group.finish();
+}
+
 criterion_group!(
     benches,
     bench_filter,
     bench_sort,
     bench_search,
-    bench_pipeline
+    bench_pipeline,
+    bench_indexed_search
 );
 criterion_main!(benches);

@@ -57,7 +57,8 @@ class TestSearchFuzzyFallback:
 
         assert result == []
 
-    def test_fuzzy_substring_scores_100(self, backend: MemorySearchBackend) -> None:
+    def test_fuzzy_word_contained_in_value_scores_100(self, backend: MemorySearchBackend) -> None:
+        # A query word fully present in the value shares all its trigrams.
         items = [{"name": "hello world"}]
         spec = SearchSpec(query="hello", fields=("name",), fuzzy=FuzzyMode.FUZZY, threshold=50)
 
@@ -65,10 +66,14 @@ class TestSearchFuzzyFallback:
 
         assert len(result) == 1
 
-    def test_fuzzy_value_shorter_in_query_scores_100(self, backend: MemorySearchBackend) -> None:
-        items = [{"name": "ab"}]
-        spec = SearchSpec(query="xabx", fields=("name",), fuzzy=FuzzyMode.FUZZY, threshold=50)
+    def test_fuzzy_typo_in_longer_word_still_matches(self, backend: MemorySearchBackend) -> None:
+        # The typo "programing" shares most trigrams with "programming" (the
+        # trigram metric shines on longer words; short single-char typos do not).
+        items = [{"name": "programming"}, {"name": "cooking"}]
+        spec = SearchSpec(query="programing", fields=("name",), fuzzy=FuzzyMode.FUZZY, threshold=50)
 
-        result: list[Any] = backend.apply_search(items, spec)  # type: ignore[assignment]
+        result: list[dict[str, Any]] = backend.apply_search(items, spec)  # type: ignore[assignment]
 
-        assert len(result) == 1
+        names = {item["name"] for item in result}
+        assert "programming" in names
+        assert "cooking" not in names

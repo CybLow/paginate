@@ -3,8 +3,11 @@
 Fuzzy matching finds approximate string matches, handling typos, misspellings, and word-order variations.
 
 Fuzzy matching is built into the native engine and always available -- no extra dependency
-to install. The algorithms are a Rust reimplementation of rapidfuzz's `partial_ratio` and
-`token_sort_ratio`.
+to install. It uses **trigram similarity** (the same model as PostgreSQL's `pg_trgm`): each
+string is split into overlapping 3-character chunks and similarity is the overlap of the two
+trigram sets. This is fast (no edit-distance scan), length-normalized, and
+transposition-tolerant -- and strongest on names, titles, and multi-word text (it is weaker
+on very short single-word typos than the old edit-distance scoring).
 
 ## FuzzyMode
 
@@ -14,8 +17,8 @@ to install. The algorithms are a Rust reimplementation of rapidfuzz's `partial_r
 from pypaginate import FuzzyMode
 
 FuzzyMode.EXACT       # no fuzzy matching (default)
-FuzzyMode.FUZZY       # partial_ratio -- good for substring typos
-FuzzyMode.TOKEN_SORT  # token_sort_ratio -- word-order agnostic
+FuzzyMode.FUZZY       # trigram containment -- query trigrams found in the field
+FuzzyMode.TOKEN_SORT  # trigram Jaccard -- word-order agnostic
 ```
 
 ## Basic Usage
@@ -65,27 +68,29 @@ results = engine.apply(users, spec)
 
 ## Threshold
 
-The `threshold` parameter (0-100) controls how strict fuzzy matching is:
+The `threshold` parameter (0-100) is the minimum **trigram similarity** to count as a match.
+Trigram scores run lower than the old edit-distance scores, so the default is **30** (matching
+pg_trgm's 0.3). Tune it to your data:
 
 ```python
 from pypaginate import SearchSpec, FuzzyMode
 
 # Strict: only very close matches
-SearchSpec(query="alice", fields=("name",), fuzzy=FuzzyMode.FUZZY, threshold=90)
+SearchSpec(query="alice", fields=("name",), fuzzy=FuzzyMode.FUZZY, threshold=60)
 
 # Moderate (default): catches common typos
-SearchSpec(query="alice", fields=("name",), fuzzy=FuzzyMode.FUZZY, threshold=75)
+SearchSpec(query="alice", fields=("name",), fuzzy=FuzzyMode.FUZZY, threshold=30)
 
 # Lenient: more false positives, fewer misses
-SearchSpec(query="alice", fields=("name",), fuzzy=FuzzyMode.FUZZY, threshold=60)
+SearchSpec(query="alice", fields=("name",), fuzzy=FuzzyMode.FUZZY, threshold=20)
 ```
 
 | Threshold | Behavior | Use Case |
 |-----------|----------|----------|
-| 90-100 | Very strict | Exact-ish matching |
-| 75-89 | Moderate | General search (recommended) |
-| 60-74 | Lenient | Autocomplete, "did you mean" |
-| < 60 | Very lenient | Broad discovery |
+| 60-100 | Very strict | Near-exact matching |
+| 30-59 | Moderate | General search (recommended) |
+| 20-29 | Lenient | Autocomplete, "did you mean" |
+| < 20 | Very lenient | Broad discovery |
 
 ## Scoring and Ranking
 
@@ -133,23 +138,29 @@ spec = SearchSpec(
 
 ## How the Algorithms Work
 
-### partial_ratio (FuzzyMode.FUZZY)
+Both modes work on **trigram sets**. A string is lowercased, split on non-alphanumeric
+boundaries, each word padded with two leading and one trailing space, then sliced into
+3-character chunks: `"cat"` -> `{"  c", " ca", "cat", "at "}`.
 
-Compares the shorter string as a sliding window against the longer string. Good for matching substrings with typos:
+### Containment (FuzzyMode.FUZZY)
 
-```
-"alice" vs "Alice Smith"  -> high score (substring match)
-"alce"  vs "Alice Smith"  -> moderate score (typo)
-"alice" vs "Bob"          -> low score (no similarity)
-```
-
-### token_sort_ratio (FuzzyMode.TOKEN_SORT)
-
-Sorts the tokens alphabetically before comparing, making word order irrelevant:
+`|query ∩ field| / |query|` -- the fraction of the query's trigrams present in the field. Not
+diluted by field length, so a short query still scores high inside a long title:
 
 ```
-"smith alice"  vs "Alice Smith"  -> high score (same words)
-"alice s"      vs "Alice Smith"  -> moderate score (partial)
+"alice" vs "Alice Smith"  -> high score (all query trigrams present)
+"alce"  vs "Alice Smith"  -> moderate score (typo drops a few trigrams)
+"alice" vs "Bob"          -> 0 (no shared trigrams)
+```
+
+### Jaccard (FuzzyMode.TOKEN_SORT)
+
+`|query ∩ field| / |query ∪ field|` -- a symmetric set overlap, so word order is irrelevant
+(the trigram set is the same either way):
+
+```
+"smith alice"  vs "Alice Smith"  -> high score (identical word set)
+"alice s"      vs "Alice Smith"  -> moderate score (partial overlap)
 ```
 
 ## Multi-Field Fuzzy Search

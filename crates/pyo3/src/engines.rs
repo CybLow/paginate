@@ -174,7 +174,7 @@ pub fn filter_group_indices(
 /// Rank item indices by relevance of `query` over `fields`, with optional
 /// per-field `weights` (keyed by the original field names).
 #[pyfunction]
-#[pyo3(signature = (items, query, fields, mode="contains", fuzzy="exact", threshold=75, min_length=1, max_results=None, weights=None))]
+#[pyo3(signature = (items, query, fields, mode="contains", fuzzy="exact", threshold=30, min_length=1, max_results=None, weights=None))]
 #[allow(clippy::too_many_arguments)]
 pub fn search_indices(
     items: &Bound<'_, PyList>,
@@ -265,7 +265,7 @@ pub fn sort_indices(items: &Bound<'_, PyList>, specs: &Bound<'_, PyList>) -> PyR
 /// (contains/prefix/exact) when `fuzzy="exact"`, else by rapidfuzz score >=
 /// `threshold` (`fuzzy="fuzzy"` / `"token_sort"`). Original order, unranked.
 #[pyfunction]
-#[pyo3(signature = (items, query, fields, mode="contains", fuzzy="exact", threshold=75))]
+#[pyo3(signature = (items, query, fields, mode="contains", fuzzy="exact", threshold=30))]
 pub fn match_indices(
     items: &Bound<'_, PyList>,
     query: &str,

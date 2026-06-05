@@ -40,16 +40,23 @@ pub struct DatasetPage {
 pub struct Dataset {
     rows: Vec<core::Value>,
     columns: core::columnar::Columns,
+    trigram: core::search::TrigramIndex,
 }
 
 #[napi]
 impl Dataset {
-    /// Marshal a JS array of objects into the resident dataset once.
+    /// Marshal a JS array of objects into the resident dataset once, building the
+    /// columnar fast-path data and the trigram search index.
     #[napi(constructor)]
     pub fn new(items: Json) -> Result<Self> {
         let rows = json_array_to_values(&items)?;
         let columns = core::columnar::Columns::build(&rows);
-        Ok(Self { rows, columns })
+        let trigram = core::search::TrigramIndex::build(&rows);
+        Ok(Self {
+            rows,
+            columns,
+            trigram,
+        })
     }
 
     /// Number of rows.
@@ -92,7 +99,8 @@ impl Dataset {
             .map_err(|e| core_err(&e))
     }
 
-    /// Ranked-search indices over `fields`.
+    /// Ranked-search indices over `fields`. Fuzzy/token-sort use the resident
+    /// trigram index to score only candidate rows (exact result, far less work).
     #[napi]
     #[allow(clippy::too_many_arguments)]
     pub fn search(
@@ -114,7 +122,7 @@ impl Dataset {
             min_length,
             max_results,
         );
-        core::search::search_indices(&self.rows, &spec)
+        core::search::search_with_index(&self.rows, &spec, &self.trigram)
             .map(to_u32)
             .map_err(|e| core_err(&e))
     }
