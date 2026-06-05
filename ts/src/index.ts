@@ -52,3 +52,8 @@ export { PaginateError, ValidationError } from "./errors.js";
 export { Dataset } from "./dataset.js";
 export { paginate } from "./paginate.js";
 export type { PaginateOptions } from "./paginate.js";
+
+// -- framework / ORM adapters (thin spec + predicate builders) ---------------
+export * as express from "./adapters/express.js";
+export * as prisma from "./adapters/prisma.js";
+export * as drizzle from "./adapters/drizzle.js";
