@@ -204,8 +204,10 @@ fn weight_for(spec: &SearchSpec, field_index: usize) -> f64 {
 }
 
 /// Match-filter search (pypaginate's `MemorySearchBackend` semantics): normalize
-/// the **whole** query, then keep items where **any** field contains / prefixes
-/// / equals it, in original order (unranked, non-fuzzy). An empty normalized
+/// the **whole** query, then keep items where **any** field matches it, in
+/// original order (unranked). With `fuzzy = Exact` a field matches per `mode`
+/// (contains / prefix / equals); otherwise it matches when the rapidfuzz score
+/// (`partial_ratio` / `token_sort_ratio`) meets `threshold`. An empty normalized
 /// query returns every item.
 ///
 /// # Errors
@@ -215,6 +217,8 @@ pub fn match_indices(
     query: &str,
     fields: &[String],
     mode: SearchFieldMode,
+    fuzzy: FuzzyMode,
+    threshold: i64,
 ) -> Result<Vec<usize>> {
     let normalized_query = normalize_text(query);
     if normalized_query.is_empty() {
@@ -226,16 +230,42 @@ pub fn match_indices(
         .collect::<Result<_>>()?;
     let mut matched = Vec::new();
     for (index, item) in items.iter().enumerate() {
-        for path in &paths {
-            if let Some(value) = resolve_opt(item, path) {
-                if matches_field(&normalize_value(value), &normalized_query, mode) {
-                    matched.push(index);
-                    break;
-                }
-            }
+        if item_matches(item, &paths, &normalized_query, mode, fuzzy, threshold) {
+            matched.push(index);
         }
     }
     Ok(matched)
+}
+
+/// True if **any** of `item`'s fields matches the normalized `query`.
+fn item_matches(
+    item: &Value,
+    paths: &[Vec<String>],
+    query: &str,
+    mode: SearchFieldMode,
+    fuzzy: FuzzyMode,
+    threshold: i64,
+) -> bool {
+    paths.iter().any(|path| {
+        resolve_opt(item, path).is_some_and(|value| {
+            field_matches(&normalize_value(value), query, mode, fuzzy, threshold)
+        })
+    })
+}
+
+/// One field's match test: mode-based for `Exact`, else fuzzy-score-gated.
+fn field_matches(
+    value: &str,
+    query: &str,
+    mode: SearchFieldMode,
+    fuzzy: FuzzyMode,
+    threshold: i64,
+) -> bool {
+    if fuzzy == FuzzyMode::Exact {
+        matches_field(value, query, mode)
+    } else {
+        fuzzy_score(value, query, threshold, fuzzy) > 0
+    }
 }
 
 /// Normalize a value's string form (mirrors `normalize_text(str(v))`).

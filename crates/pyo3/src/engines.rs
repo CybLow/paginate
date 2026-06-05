@@ -292,14 +292,18 @@ pub fn sort_indices(items: &Bound<'_, PyList>, specs: &Bound<'_, PyList>) -> PyR
 
 // -- match-filter search (MemorySearchBackend semantics) ---------------------
 
-/// Indices of items where any field contains/prefixes/equals the whole query.
+/// Indices of items where any field matches the whole query — by `mode`
+/// (contains/prefix/exact) when `fuzzy="exact"`, else by rapidfuzz score >=
+/// `threshold` (`fuzzy="fuzzy"` / `"token_sort"`). Original order, unranked.
 #[pyfunction]
-#[pyo3(signature = (items, query, fields, mode="contains"))]
+#[pyo3(signature = (items, query, fields, mode="contains", fuzzy="exact", threshold=75))]
 pub fn match_indices(
     items: &Bound<'_, PyList>,
     query: &str,
     fields: Vec<String>,
     mode: &str,
+    fuzzy: &str,
+    threshold: i64,
 ) -> PyResult<Vec<usize>> {
     let plan: ProjectionPlan = fields
         .iter()
@@ -316,6 +320,13 @@ pub fn match_indices(
     for item in items.iter() {
         values.push(project_item(&item, &plan)?);
     }
-    core::search::match_indices(&values, query, &synthetic, parse_mode(mode))
-        .map_err(|e| core_err(&e))
+    core::search::match_indices(
+        &values,
+        query,
+        &synthetic,
+        parse_mode(mode),
+        parse_fuzzy(fuzzy),
+        threshold,
+    )
+    .map_err(|e| core_err(&e))
 }

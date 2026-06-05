@@ -63,6 +63,8 @@ def match_indices(
     query: str,
     fields: Sequence[str],
     mode: str = ...,
+    fuzzy: str = ...,
+    threshold: int = ...,
 ) -> list[int]: ...
 
 # -- resident dataset --------------------------------------------------------
