@@ -32,7 +32,12 @@ test("plain cursor round-trips byte-identically", () => {
 
 test("filter indices match the golden", () => {
   for (const c of fixture.filter) {
-    const specs = c.specs.map(([field, op, value, logic]) => ({ field, op, value, logic }));
+    const specs = c.specs.map(([field, operator, value, logic]) => ({
+      field,
+      operator,
+      value,
+      logic,
+    }));
     assert.deepEqual(p.filterIndices(c.items, specs), c.expected, JSON.stringify(c.specs));
   }
 });
@@ -47,7 +52,7 @@ test("sort indices match the golden", () => {
 test("search indices match the golden", () => {
   for (const c of fixture.search) {
     assert.deepEqual(
-      p.searchIndices(c.items, c.query, c.fields, { mode: c.mode }),
+      p.searchIndices(c.items, { query: c.query, fields: c.fields, mode: c.mode }),
       c.expected,
       c.query,
     );
