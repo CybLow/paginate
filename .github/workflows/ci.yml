@@ -434,14 +434,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Rust engine invariants
+      - name: Rust engine invariants + shared-fixture parity
         run: cargo test -p paginate-core
-      - name: Python ↔ engine parity
+      - name: Python ↔ engine parity (+ shared cross-language fixture)
         working-directory: py
         run: |
           uv sync --frozen --all-extras --group test
-          uv run pytest tests/property/test_dataset_parity.py -v
-      - name: TS ↔ Python codec parity (byte-identical cursors)
+          uv run pytest \
+            tests/property/test_dataset_parity.py \
+            tests/property/test_cross_language_parity.py -v
+      - name: TS ↔ Python codec parity (byte-identical cursors + shared fixture)
         run: |
           npm ci || npm install
           npm --prefix ts test
