@@ -21,3 +21,14 @@ export type KeysetTerm = ReadonlyArray<readonly [number, KeysetOp]>;
 export function keysetTerms(ascending: readonly boolean[]): KeysetTerm[] {
   return core.keysetTerms(ascending as boolean[]) as KeysetTerm[];
 }
+
+/** A keyed sort direction (`undefined` defaults to ascending). */
+export type SortDir = "asc" | "desc" | undefined;
+
+/**
+ * Effective key directions for a keyset predicate: ascending unless `"desc"`,
+ * XOR-flipped when paginating `backwards` (a `before` cursor).
+ */
+export function effectiveAscending(directions: readonly SortDir[], backwards = false): boolean[] {
+  return directions.map((d) => (d !== "desc") !== backwards);
+}
