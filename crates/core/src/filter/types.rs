@@ -9,7 +9,9 @@ use crate::value::Value;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum FilterLogic {
+    /// All conditions must match.
     And,
+    /// Any condition may match.
     Or,
 }
 
@@ -34,25 +36,45 @@ impl FilterLogic {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum FilterOp {
+    /// Equal (`==`).
     Eq,
+    /// Not equal (`!=`).
     Ne,
+    /// Greater than (`>`).
     Gt,
+    /// Greater than or equal (`>=`).
     Gte,
+    /// Less than (`<`).
     Lt,
+    /// Less than or equal (`<=`).
     Lte,
+    /// Membership in a list.
     In,
+    /// Non-membership in a list.
     NotIn,
+    /// Substring containment.
     Contains,
+    /// String prefix.
     StartsWith,
+    /// String suffix.
     EndsWith,
+    /// SQL-style LIKE (case-sensitive).
     Like,
+    /// SQL-style LIKE (case-insensitive).
     ILike,
+    /// Inclusive range `[lo, hi]`.
     Between,
+    /// Value is null/absent.
     IsNull,
+    /// Value is present.
     IsNotNull,
+    /// Regular-expression match.
     Regex,
+    /// Empty string/collection.
     Empty,
+    /// Non-empty string/collection.
     NotEmpty,
+    /// Field/key exists.
     Exists,
 }
 

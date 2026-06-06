@@ -57,7 +57,7 @@ def extract_order_columns(query: Select[Any]) -> list[OrderColumn]:
     Raises:
         ConfigurationError: If the query has no ORDER BY clause.
     """
-    clauses = cast("Any", query)._order_by_clauses
+    clauses = query._order_by_clauses
     if not clauses:
         msg = "query has no ORDER BY clause for keyset pagination"
         raise ConfigurationError(msg)

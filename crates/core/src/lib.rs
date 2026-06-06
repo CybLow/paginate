@@ -21,6 +21,7 @@
 //! [`pypaginate`]: https://github.com/CybLow/paginate
 
 #![forbid(unsafe_code)]
+#![warn(missing_docs)]
 
 // Internal-only modules: shared helpers and the error type. `CoreError`/`Result`
 // reach the public API through the flat re-exports below, never `core::error::`.
