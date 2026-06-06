@@ -1,96 +1,49 @@
 # Documentation Workflow
 
-Build and serve documentation using Sphinx.
+The unified docs site lives in `website/` (Docusaurus). It covers all three packages
+(Rust core + Python + TypeScript) — guides, concepts, and a per-language API reference.
 
 ## Commands
 
 ```bash
-# Build HTML docs
-uv run sphinx-build -b html docs docs/_build/html
+cd website
 
-# Build with strict mode (warnings as errors)
-uv run sphinx-build -W -b html docs docs/_build/html
+# Generate the Python API reference (pydoc-markdown) — run once before dev
+bun run gen:python
 
-# Serve docs locally (with auto-rebuild)
-uv run sphinx-autobuild docs docs/_build/html
+# Dev server (hot reload; the TypeScript API reference regenerates via TypeDoc)
+bun start
 
-# Build multi-version docs
-uv run sphinx-polyversion docs/poly.py
+# Full production build (Python ref + TypeDoc + build) — what CI runs
+bun run build:full
 
-# Quick build (incremental, faster)
-uv run sphinx-build -b html docs docs/_build/html
-
-# Check for issues
-uv run sphinx-build -W -n -b html docs docs/_build/html
+# Serve the production build locally
+bun run serve
 ```
 
-## Project Structure
+## Structure
 
 ```
-docs/
-├── index.md              # Home page (MyST Markdown)
-├── conf.py               # Sphinx configuration
-├── poly.py               # Multi-version build config
-├── getting-started/      # Quick start guides
-├── concepts/             # Core concepts
-├── filtering/            # Filter documentation
-├── api/                  # API reference (autodoc)
-├── examples/             # Code examples
-├── _static/              # Static assets (CSS, images)
-└── _templates/           # Custom Jinja templates
+website/
+├── docusaurus.config.ts   # site config (nav, offline search, TypeDoc plugin)
+├── sidebars.ts            # one auto-generated sidebar from docs/
+├── pydoc-markdown.yml     # Python API reference config
+└── docs/
+    ├── intro.md           # Overview (home, slug: /)
+    ├── getting-started/   # install + quickstart (tutorial)
+    ├── pagination/ filtering/ sorting/ search/ integrations/   # guides (how-to)
+    ├── concepts/          # architecture, parity, cursor encoding (explanation)
+    ├── reference/         # API: TypeScript (TypeDoc) · Python (pydoc-markdown) · Rust (docs.rs)
+    └── migration.md
 ```
 
-## Writing Documentation
+The generated API references (`docs/reference/typescript/`, `docs/reference/python/`)
+are gitignored and rebuilt by `bun run build:full`.
 
-### Docstrings (Google Style)
+## Writing docs
 
-```python
-def paginate(items: list[T], page: int = 1) -> Page[T]:
-    """Paginate a list of items.
-
-    Args:
-        items: The items to paginate.
-        page: Page number (1-indexed). Defaults to 1.
-
-    Returns:
-        A Page containing the requested items.
-
-    Raises:
-        ValueError: If page is less than 1.
-
-    Example:
-        >>> page = paginate(users, page=2)
-        >>> print(page.items)
-    """
+- **Diátaxis**: keep each page one type — tutorial / how-to / reference / explanation.
+- Show working, copy-paste examples with **realistic data**; pair Python + TypeScript.
+- Use relative `.md` links; lead with the answer; short paragraphs; tables for params.
+- Deployed to GitHub Pages by `.github/workflows/docs.yml` on push to `main`.
 ```
-
-### Cross-references (MyST Markdown)
-
-```markdown
-See {py:class}`pypaginate.Paginator` for details.
-Check the {doc}`/api/index` reference.
-```
-
-### Admonitions
-
-```markdown
-:::{note}
-This is a note.
-:::
-
-:::{warning}
-This is a warning.
-:::
-
-:::{tip}
-This is a tip.
-:::
-```
-
-## Configuration
-
-Documentation configured in `docs/conf.py`:
-- Theme: Read the Docs (sphinx-rtd-theme)
-- Markdown: MyST Parser
-- API docs: sphinx-autodoc with typehints
-- Extensions: sphinx-design, sphinx-copybutton, mermaid
