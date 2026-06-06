@@ -1,0 +1,504 @@
+{
+  "$defs": {
+    "CursorPageMeta": {
+      "description": "Cursor page metadata (the page minus its items).",
+      "properties": {
+        "has_next": {
+          "description": "Whether a following page exists.",
+          "type": "boolean"
+        },
+        "has_previous": {
+          "description": "Whether a preceding page exists.",
+          "type": "boolean"
+        },
+        "limit": {
+          "description": "Page size.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "next_cursor": {
+          "description": "Cursor to fetch the next page (null if none).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "previous_cursor": {
+          "description": "Cursor to fetch the previous page (null if none).",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "limit",
+        "has_next",
+        "has_previous"
+      ],
+      "type": "object"
+    },
+    "CursorParams": {
+      "description": "Cursor pagination parameters.",
+      "properties": {
+        "after": {
+          "description": "Opaque cursor to page forward from.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "before": {
+          "description": "Opaque cursor to page backward from.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "limit": {
+          "description": "Page size.",
+          "format": "int64",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "limit"
+      ],
+      "type": "object"
+    },
+    "FilterGroup": {
+      "description": "A composite AND/OR group of conditions (recursively nestable).",
+      "properties": {
+        "conditions": {
+          "description": "Child conditions (specs or nested groups).",
+          "items": {
+            "$ref": "#/$defs/FilterNode"
+          },
+          "type": "array"
+        },
+        "logic": {
+          "$ref": "#/$defs/FilterLogic",
+          "description": "How the child conditions combine."
+        }
+      },
+      "required": [
+        "logic",
+        "conditions"
+      ],
+      "type": "object"
+    },
+    "FilterLogic": {
+      "description": "Logical combinator for filter conditions.",
+      "oneOf": [
+        {
+          "const": "and",
+          "description": "All conditions must match.",
+          "type": "string"
+        },
+        {
+          "const": "or",
+          "description": "Any condition may match.",
+          "type": "string"
+        }
+      ]
+    },
+    "FilterNode": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FilterSpec",
+          "description": "A leaf condition."
+        },
+        {
+          "$ref": "#/$defs/FilterGroup",
+          "description": "A nested group."
+        }
+      ],
+      "description": "A node in a nested filter tree: a leaf spec or a nested group."
+    },
+    "FilterOperator": {
+      "description": "One of the 20 supported filter operators (wire names).",
+      "oneOf": [
+        {
+          "const": "eq",
+          "description": "`==`",
+          "type": "string"
+        },
+        {
+          "const": "ne",
+          "description": "`!=`",
+          "type": "string"
+        },
+        {
+          "const": "gt",
+          "description": "`>`",
+          "type": "string"
+        },
+        {
+          "const": "gte",
+          "description": "`>=`",
+          "type": "string"
+        },
+        {
+          "const": "lt",
+          "description": "`<`",
+          "type": "string"
+        },
+        {
+          "const": "lte",
+          "description": "`<=`",
+          "type": "string"
+        },
+        {
+          "const": "in",
+          "description": "membership in a list",
+          "type": "string"
+        },
+        {
+          "const": "not_in",
+          "description": "non-membership in a list",
+          "type": "string"
+        },
+        {
+          "const": "contains",
+          "description": "substring containment",
+          "type": "string"
+        },
+        {
+          "const": "starts_with",
+          "description": "string prefix",
+          "type": "string"
+        },
+        {
+          "const": "ends_with",
+          "description": "string suffix",
+          "type": "string"
+        },
+        {
+          "const": "like",
+          "description": "SQL-style LIKE (case-sensitive)",
+          "type": "string"
+        },
+        {
+          "const": "ilike",
+          "description": "SQL-style LIKE (case-insensitive)",
+          "type": "string"
+        },
+        {
+          "const": "between",
+          "description": "inclusive range `[lo, hi]`",
+          "type": "string"
+        },
+        {
+          "const": "is_null",
+          "description": "value is null/absent",
+          "type": "string"
+        },
+        {
+          "const": "is_not_null",
+          "description": "value is present",
+          "type": "string"
+        },
+        {
+          "const": "regex",
+          "description": "regular-expression match",
+          "type": "string"
+        },
+        {
+          "const": "empty",
+          "description": "empty string/collection",
+          "type": "string"
+        },
+        {
+          "const": "not_empty",
+          "description": "non-empty string/collection",
+          "type": "string"
+        },
+        {
+          "const": "exists",
+          "description": "field/key exists",
+          "type": "string"
+        }
+      ]
+    },
+    "FilterSpec": {
+      "description": "A single filter condition.",
+      "properties": {
+        "field": {
+          "description": "Dotted field path (e.g. `user.age`).",
+          "type": "string"
+        },
+        "logic": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FilterLogic"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "AND/OR join in flat-list mode (default `and`)."
+        },
+        "operator": {
+          "$ref": "#/$defs/FilterOperator",
+          "description": "Operator to apply."
+        },
+        "value": {
+          "description": "Comparison value (meaning depends on the operator)."
+        }
+      },
+      "required": [
+        "field",
+        "operator",
+        "value"
+      ],
+      "type": "object"
+    },
+    "FuzzyMode": {
+      "description": "Fuzzy matching strategy.",
+      "oneOf": [
+        {
+          "const": "exact",
+          "description": "No fuzzing (mode-based matching only).",
+          "type": "string"
+        },
+        {
+          "const": "fuzzy",
+          "description": "Trigram similarity scoring.",
+          "type": "string"
+        },
+        {
+          "const": "token_sort",
+          "description": "Token-sorted trigram scoring (order-insensitive).",
+          "type": "string"
+        }
+      ]
+    },
+    "NullsPosition": {
+      "description": "Null placement relative to non-null values.",
+      "oneOf": [
+        {
+          "const": "first",
+          "description": "Nulls sort before non-nulls.",
+          "type": "string"
+        },
+        {
+          "const": "last",
+          "description": "Nulls sort after non-nulls.",
+          "type": "string"
+        }
+      ]
+    },
+    "OffsetPageMeta": {
+      "description": "Offset page metadata (the page minus its items).",
+      "properties": {
+        "has_next": {
+          "description": "Whether a following page exists.",
+          "type": "boolean"
+        },
+        "has_previous": {
+          "description": "Whether a preceding page exists.",
+          "type": "boolean"
+        },
+        "limit": {
+          "description": "Page size.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "page": {
+          "description": "The (possibly clamped) 1-based page number.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "pages": {
+          "description": "Total number of pages.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "total": {
+          "description": "Total matching rows across all pages.",
+          "format": "int64",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "total",
+        "page",
+        "pages",
+        "limit",
+        "has_next",
+        "has_previous"
+      ],
+      "type": "object"
+    },
+    "OffsetParams": {
+      "description": "Offset pagination parameters.",
+      "properties": {
+        "limit": {
+          "description": "Page size.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "page": {
+          "description": "1-based page number.",
+          "format": "int64",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "page",
+        "limit"
+      ],
+      "type": "object"
+    },
+    "SearchFieldMode": {
+      "description": "How a search token matches a field value.",
+      "oneOf": [
+        {
+          "const": "prefix",
+          "description": "Token is a prefix of the value.",
+          "type": "string"
+        },
+        {
+          "const": "contains",
+          "description": "Token appears anywhere in the value.",
+          "type": "string"
+        },
+        {
+          "const": "exact",
+          "description": "Token equals the value.",
+          "type": "string"
+        }
+      ]
+    },
+    "SearchSpec": {
+      "description": "A search specification.",
+      "properties": {
+        "fields": {
+          "description": "Fields to search (dotted paths).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "fuzzy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FuzzyMode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Fuzzy strategy (default `exact`)."
+        },
+        "max_results": {
+          "description": "Optional cap on the number of ranked results.",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "min_length": {
+          "description": "Minimum query length before searching kicks in (default 1).",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SearchFieldMode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Match mode (default `contains`)."
+        },
+        "query": {
+          "description": "Raw query string.",
+          "type": "string"
+        },
+        "threshold": {
+          "description": "Minimum trigram similarity, 0-100 (default 30).",
+          "format": "int64",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "weights": {
+          "additionalProperties": {
+            "format": "double",
+            "type": "number"
+          },
+          "description": "Optional per-field weights (default weight 1.0).",
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "query",
+        "fields"
+      ],
+      "type": "object"
+    },
+    "SortDirection": {
+      "description": "Sort direction.",
+      "oneOf": [
+        {
+          "const": "asc",
+          "description": "Ascending.",
+          "type": "string"
+        },
+        {
+          "const": "desc",
+          "description": "Descending.",
+          "type": "string"
+        }
+      ]
+    },
+    "SortSpec": {
+      "description": "A single sort key.",
+      "properties": {
+        "direction": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SortDirection"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Direction (default `asc`)."
+        },
+        "field": {
+          "description": "Dotted field path.",
+          "type": "string"
+        },
+        "nulls": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NullsPosition"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Null placement (default `last`)."
+        }
+      },
+      "required": [
+        "field"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "paginate"
+}
