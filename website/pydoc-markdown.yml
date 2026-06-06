@@ -1,0 +1,20 @@
+# Generates the Python API reference (docs/reference/python/) from the pypaginate
+# docstrings. docspec-python parses the source statically — no build/import needed.
+loaders:
+  - type: python
+    search_path: ["../py/src"]
+    packages: ["pypaginate"]
+processors:
+  - type: filter
+    # Document the public surface; hide the internal marshalling module. Keep
+    # _generated (the spec/param dataclass field definitions — core reference).
+    expression: "default() and '._native' not in name and not name.endswith('._native')"
+    do_not_filter_modules: false
+    skip_empty_modules: true
+  - type: smart
+  - type: crossref
+renderer:
+  type: docusaurus
+  docs_base_path: docs
+  relative_output_path: reference/python
+  sidebar_top_level_label: null
