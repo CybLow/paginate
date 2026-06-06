@@ -1,8 +1,7 @@
 """Architecture tests verifying layer boundaries.
 
-Ensures domain modules import nothing from engine, adapters,
-filtering, sorting, or search layers. Also checks that engine
-imports nothing from adapters.
+Ensures domain modules import nothing from the engine or adapters
+layers. Also checks that engine imports nothing from adapters.
 """
 
 from __future__ import annotations
@@ -16,7 +15,7 @@ import pytest
 
 SRC_ROOT = Path(__file__).resolve().parents[2] / "src" / "pypaginate"
 
-DOMAIN_FORBIDDEN = {"engine", "adapters", "filtering", "sorting", "search"}
+DOMAIN_FORBIDDEN = {"engine", "adapters"}
 ENGINE_FORBIDDEN = {"adapters"}
 
 
@@ -78,8 +77,7 @@ def test_no_circular_imports():
         "pypaginate.domain.specs",
         "pypaginate.domain.enums",
         "pypaginate.domain.protocols",
-        "pypaginate.filtering.engine",
-        "pypaginate.sorting.engine",
+        "pypaginate._native",
         "pypaginate.adapters.memory.backend",
     ]
     for mod in modules:

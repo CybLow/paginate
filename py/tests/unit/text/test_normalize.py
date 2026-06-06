@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from pypaginate.text.normalize import clear_normalize_cache, normalize_text
+from pypaginate._native import clear_normalize_cache, normalize_text
 
 
 @pytest.mark.parametrize(

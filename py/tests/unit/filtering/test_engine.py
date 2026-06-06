@@ -7,7 +7,7 @@ import pytest
 from pypaginate.domain.enums import FilterLogic
 from pypaginate.domain.exceptions import FilterError
 from pypaginate.domain.specs import FilterSpec
-from pypaginate.filtering.engine import FilterEngine
+from tests.support.engines import FilterEngine
 
 
 class TestFilterEngineSingle:

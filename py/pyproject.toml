@@ -85,12 +85,6 @@ all = [
 ]
 
 # ==========================
-# CONSOLE SCRIPTS (uv run <cmd>)
-# ==========================
-[project.scripts]
-pypaginate = "pypaginate._cli:main"
-
-# ==========================
 # PROJECT URLS
 # ==========================
 [project.urls]
@@ -303,7 +297,6 @@ ignore = [
 "**/__init__.py" = ["F401", "F403", "ARG001"]
 "tests/**/*.py" = ["S101", "ARG001", "PLR2004", "C901", "B017", "E402", "B008"]
 "examples/**/*.py" = ["S101", "T201"]
-"src/pypaginate/_cli.py" = ["T201", "S603", "S607"]
 
 [tool.ruff.lint.isort]
 force-single-line = false
@@ -415,7 +408,6 @@ omit = [
     "*/__pycache__/*",
     "*/tests/*",
     "*/migrations/*",
-    "*/_cli/*",
 ]
 
 [tool.coverage.paths]
@@ -465,4 +457,4 @@ dict_synonyms = ["Struct", "NamedTuple"]
 [tool.bandit]
 targets = ["src"]
 exclude_dirs = ["tests", "docs", "examples", ".opencode", ".claude"]
-skips = ["B101", "B404", "B603"]  # B101: assert, B404/B603: subprocess in _cli.py
+skips = ["B101"]  # B101: assert

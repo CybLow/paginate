@@ -3,7 +3,7 @@
 Implements the ``SearchBackend`` protocol for Python sequences. All matching —
 exact / prefix / contains and fuzzy / token-sort — runs in the native ``_core``
 engine via :func:`pypaginate._native.match_filter`, so the backend normalizes
-and scores identically to the ranked ``SearchEngine`` and the resident
+and scores identically to :func:`pypaginate._native.search` and the resident
 ``Dataset``. There is no Python-side similarity heuristic to drift from the
 engine (the previous char-overlap score did, and silently mishandled
 ``TOKEN_SORT``).

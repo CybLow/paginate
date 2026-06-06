@@ -7,7 +7,7 @@ import pytest
 from pypaginate.domain.enums import NullsPosition, SortDirection
 from pypaginate.domain.exceptions import SortError
 from pypaginate.domain.specs import SortSpec
-from pypaginate.sorting.engine import SortEngine
+from tests.support.engines import SortEngine
 
 
 class TestSortAsc:

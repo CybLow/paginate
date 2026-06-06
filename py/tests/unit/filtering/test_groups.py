@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pypaginate.domain.specs import And, FilterGroup, FilterSpec, Or
-from pypaginate.filtering.engine import FilterEngine
+from tests.support.engines import FilterEngine
 
 
 _ITEMS = [

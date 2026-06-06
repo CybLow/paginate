@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pypaginate import FilterSpec, OffsetParams
 from pypaginate.domain.specs import And, Or
-from pypaginate.filtering.engine import FilterEngine
 from tests.fixtures.backends import SEED_DATA, setup_memory
 from tests.fixtures.helpers import run
+from tests.support.engines import FilterEngine
 
 
 async def test_and_group_narrows_results() -> None:

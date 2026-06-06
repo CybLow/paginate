@@ -1,7 +1,7 @@
 """Architecture tests verifying CLAUDE.md file size constraints.
 
-Ensures no source file in src/pypaginate/ (excluding _cli/) exceeds
-the 250-line hard limit defined in the project standards.
+Ensures no source file in src/pypaginate/ exceeds the 250-line hard
+limit defined in the project standards.
 """
 
 from __future__ import annotations
@@ -16,13 +16,8 @@ MAX_LINES = 250
 
 
 def _source_files() -> list[Path]:
-    """Collect all .py files in src/pypaginate/ excluding _cli/."""
-    files = []
-    for path in sorted(SRC_ROOT.rglob("*.py")):
-        if "/_cli/" in str(path) or path.parent.name == "_cli":
-            continue
-        files.append(path)
-    return files
+    """Collect all .py files in src/pypaginate/."""
+    return sorted(SRC_ROOT.rglob("*.py"))
 
 
 def _count_lines(filepath: Path) -> int:

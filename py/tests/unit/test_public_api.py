@@ -12,6 +12,9 @@ class TestAllExports:
 
 
 class TestVersion:
-    def test_version_defined(self) -> None:
+    def test_version_matches_installed_metadata(self) -> None:
+        from importlib.metadata import version
+
         assert isinstance(pypaginate.__version__, str)
-        assert pypaginate.__version__ == "0.2.0"
+        assert pypaginate.__version__
+        assert pypaginate.__version__ == version("pypaginate")
