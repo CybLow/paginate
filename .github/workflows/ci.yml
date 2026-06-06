@@ -441,9 +441,7 @@ jobs:
         working-directory: py
         run: |
           uv sync --frozen --all-extras --group test
-          uv run pytest \
-            tests/property/test_dataset_parity.py \
-            tests/property/test_cross_language_parity.py -v
+          uv run pytest tests/parity -v
       - name: TS ↔ Python codec parity (byte-identical cursors + shared fixture)
         run: |
           bun install
