@@ -1,63 +1,39 @@
-"""Bridge from domain specs to the bundled native ``_core`` engine.
+"""Bridge from the package's specs to the bundled native ``_core`` engine.
 
-pypaginate runs all in-memory filtering, sorting, and ranked search through the
-Rust ``pypaginate._core`` engine. This module is the single translation point:
-
-* it converts the domain specs (``FilterSpec`` / ``FilterGroup`` / ``SortSpec`` /
-  ``SearchSpec``) into the wire-forms the engine accepts,
-* selects the original host items by the row indices the engine returns, and
-* normalizes the engine's boundary errors — a ``KeyError`` for a missing field,
-  a ``ValueError`` for a bad operator or operand — into the domain exception
-  hierarchy, so callers always see ``FilterError`` / ``SortError`` / ``SearchError``
-  regardless of the engine underneath.
-
-The engine is mandatory (built into the wheel); there is no pure-Python
-fallback. Filtering, sorting, ranked search (including fuzzy/token-sort and
-per-field weights), and text normalization all run natively. ``normalize_text``
-adds a bounded process-local cache over the native call (repeated field values
-are common across rows), and is the single Python entry point for normalization.
+Marshals the generated dataclass specs into the plain wire-forms ``_core``
+accepts, runs the pure engine, and lets callers select host rows by the returned
+indices. Engine-boundary errors (a bad operator/field) are normalized to the
+package's ``FilterError`` / ``SortError`` / ``SearchError``. Spec defaults are
+applied here because the generated shapes leave them ``Optional``.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from collections.abc import Callable, Sequence
+from typing import Any
 
-from pypaginate._core import (
-    filter_group_indices,
-    filter_indices,
-    match_indices,
-    normalize_text as _core_normalize,
-    search_indices,
-    sort_indices,
-)
-from pypaginate.domain.exceptions import FilterError, SearchError, SortError
-from pypaginate.domain.specs import FilterGroup
+from pypaginate import _core
+from pypaginate.errors import FilterError, SearchError, SortError
+from pypaginate.pages import OffsetPage
+from pypaginate.params import OffsetParams
+from pypaginate.specs import FilterGroup, FilterSpec, SearchSpec, SortSpec
 
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
-
-    from pypaginate.domain.specs import FilterSpec, SearchSpec, SortSpec
-
-# Each enum member's `.value` is its canonical wire token (see `domain/enums`),
-# so the bridge to the native engine is a plain `.value` — no mapping tables.
 
 _NORM_CACHE: dict[str, str] = {}
 _NORM_CACHE_MAX = 8192
 
+#: Wire-form tuples the engine accepts.
+FilterTuple = tuple[str, str, Any, str]
+SortTuple = tuple[str, str, str]
+SearchStage = tuple[str, list[str], str, str, int]
+
 
 def normalize_text(value: str) -> str:
-    """Normalize text for search and filtering (native), with a bounded cache.
-
-    Delegates the actual NFKD accent-strip + case-fold + whitespace collapse to
-    the native ``_core`` engine, so Python and Rust agree byte-for-byte; a
-    bounded dict cache avoids the FFI hop for repeated field values.
-    """
-    result = _NORM_CACHE.get(value)
-    if result is not None:
-        return result
-    result = _core_normalize(value)
+    """Normalize text via the native engine, with a bounded process cache."""
+    cached = _NORM_CACHE.get(value)
+    if cached is not None:
+        return cached
+    result = _core.normalize_text(value)
     if len(_NORM_CACHE) < _NORM_CACHE_MAX:
         _NORM_CACHE[value] = result
     return result
@@ -68,134 +44,97 @@ def clear_normalize_cache() -> None:
     _NORM_CACHE.clear()
 
 
-def and_filter_tuples(
-    filters: Sequence[FilterSpec],
-) -> list[tuple[str, str, Any, str]]:
-    """Flat spec tuples combined with AND (resident Dataset + memory backend)."""
-    return [(f.field, f.operator, f.value, "and") for f in filters]
+def _filter_tuple(spec: FilterSpec) -> FilterTuple:
+    return (spec.field, spec.operator, spec.value, spec.logic or "and")
 
 
-def sort_tuples(sorting: Sequence[SortSpec]) -> list[tuple[str, str, str]]:
-    """Sort spec tuples ``(field, direction, null placement)`` for the engine."""
-    return [(s.field, s.direction.value, s.nulls.value) for s in sorting]
+def _sort_tuple(spec: SortSpec) -> SortTuple:
+    return (spec.field, spec.direction or "asc", spec.nulls or "last")
 
 
-def filter_and(items: Sequence[Any], filters: Sequence[FilterSpec]) -> list[Any]:
-    """Filter flat specs combined with AND (in-memory backend semantics)."""
-    rows = list(items)
-    specs = and_filter_tuples(filters)
-    return _take(rows, lambda: filter_indices(rows, specs), FilterError)
+def filter_tuples(filters: Sequence[FilterSpec]) -> list[FilterTuple]:
+    """Flat filter wire-tuples (each spec keeps its own AND/OR ``logic``)."""
+    return [_filter_tuple(f) for f in filters]
 
 
-def filter_logic(items: Sequence[Any], filters: Sequence[FilterSpec]) -> list[Any]:
-    """Filter flat specs, honoring each spec's own AND/OR ``logic``."""
-    rows = list(items)
-    specs = [(f.field, f.operator, f.value, f.logic.value) for f in filters]
-    return _take(rows, lambda: filter_indices(rows, specs), FilterError)
+def sort_tuples(sorting: Sequence[SortSpec]) -> list[SortTuple]:
+    """Sort wire-tuples ``(field, direction, null placement)``."""
+    return [_sort_tuple(s) for s in sorting]
 
 
-def filter_group(items: Sequence[Any], group: FilterGroup) -> list[Any]:
-    """Filter by a nested ``FilterGroup`` (And/Or tree)."""
-    rows = list(items)
-    node = _to_node(group)
-    return _take(rows, lambda: filter_group_indices(rows, node), FilterError)
-
-
-def sort_by(items: Sequence[Any], sorting: Sequence[SortSpec]) -> list[Any]:
-    """Sort by ordered sort specs (direction + null placement per key)."""
-    rows = list(items)
-    specs = sort_tuples(sorting)
-    return _take(rows, lambda: sort_indices(rows, specs), SortError)
-
-
-def search(items: Sequence[Any], spec: SearchSpec) -> list[Any]:
-    """Ranked search via the native engine.
-
-    Supports exact/prefix/contains matching, fuzzy / token-sort scoring, and
-    optional per-field weights; returns items in ranked (relevance) order.
-    """
-    rows = list(items)
-    return _take(
-        rows,
-        lambda: search_indices(
-            rows,
-            spec.query,
-            list(spec.fields),
-            mode=spec.mode.value,
-            fuzzy=spec.fuzzy.value,
-            threshold=spec.threshold,
-            min_length=spec.min_length,
-            max_results=spec.max_results,
-            weights=dict(spec.weights) if spec.weights else None,
-        ),
-        SearchError,
-    )
-
-
-def match_filter(items: Sequence[Any], spec: SearchSpec) -> list[Any]:
-    """Match-filter: keep items where any field matches the whole query, in
-    original order (the in-memory search-backend semantics).
-
-    ``EXACT`` fuzzy uses contains/prefix/exact per ``spec.mode``; fuzzy and
-    token-sort gate by ``spec.threshold`` (rapidfuzz scoring in the engine).
-    """
-    rows = list(items)
-    return _take(
-        rows,
-        lambda: match_indices(
-            rows,
-            spec.query,
-            list(spec.fields),
-            mode=spec.mode.value,
-            fuzzy=spec.fuzzy.value,
-            threshold=spec.threshold,
-        ),
-        SearchError,
-    )
-
-
-def search_stage_tuple(spec: SearchSpec) -> tuple[str, list[str], str, str, int]:
-    """Search-stage tuple ``(query, fields, mode, fuzzy, threshold)`` for the
-    resident ``Dataset.page`` search arg — a match-filter applied in the native
-    filter -> search -> sort -> paginate pass (so explicit sorting still orders)."""
+def search_stage(spec: SearchSpec) -> SearchStage:
+    """Match-filter search-stage tuple for the resident ``Dataset.page`` pass."""
+    threshold = spec.threshold if spec.threshold is not None else 30
     return (
         spec.query,
         list(spec.fields),
-        spec.mode.value,
-        spec.fuzzy.value,
-        spec.threshold,
+        spec.mode or "contains",
+        spec.fuzzy or "exact",
+        threshold,
     )
 
 
-def _take(
-    rows: list[Any],
-    indices: Callable[[], list[int]],
-    error: type[FilterError | SortError | SearchError],
-) -> list[Any]:
-    """Run a native index query, normalize errors, and select matched rows."""
+def _to_node(node: FilterSpec | FilterGroup) -> Any:
+    """Convert a spec/group tree to the recursive tuple form ``_core`` expects."""
+    if isinstance(node, FilterGroup):
+        return (node.logic, [_to_node(c) for c in node.conditions])
+    return _filter_tuple(node)
+
+
+def _run(indices: Callable[[], list[int]], error: type[Exception]) -> list[int]:
+    """Run a native index query, normalizing engine errors to ``error``."""
     try:
-        return [rows[i] for i in indices()]
+        return indices()
     except (KeyError, ValueError) as exc:
         raise error(str(exc)) from exc
 
 
-def _to_node(node: FilterSpec | FilterGroup) -> Any:
-    """Convert a FilterSpec/FilterGroup tree to the recursive ``_core`` form."""
-    if isinstance(node, FilterGroup):
-        return (node.logic.value, [_to_node(c) for c in node.conditions])
-    return (node.field, node.operator, node.value, node.logic.value)
+def filter_indices(rows: Sequence[Any], filters: Sequence[FilterSpec]) -> list[int]:
+    """Indices of ``rows`` matching the flat ``filters``."""
+    specs = filter_tuples(filters)
+    return _run(lambda: _core.filter_indices(rows, specs), FilterError)
 
 
-__all__ = [
-    "and_filter_tuples",
-    "clear_normalize_cache",
-    "filter_and",
-    "filter_group",
-    "filter_logic",
-    "match_filter",
-    "normalize_text",
-    "search",
-    "search_stage_tuple",
-    "sort_by",
-    "sort_tuples",
-]
+def filter_group_indices(rows: Sequence[Any], group: FilterGroup) -> list[int]:
+    """Indices of ``rows`` matching a nested ``And`` / ``Or`` group."""
+    node = _to_node(group)
+    return _run(lambda: _core.filter_group_indices(rows, node), FilterError)
+
+
+def sort_indices(rows: Sequence[Any], sorting: Sequence[SortSpec]) -> list[int]:
+    """Index permutation sorting ``rows`` by ``sorting`` (stable, null-aware)."""
+    specs = sort_tuples(sorting)
+    return _run(lambda: _core.sort_indices(rows, specs), SortError)
+
+
+def _search_args(rows: Sequence[Any], spec: SearchSpec) -> tuple[Any, ...]:
+    return (
+        rows,
+        spec.query,
+        list(spec.fields),
+        spec.mode or "contains",
+        spec.fuzzy or "exact",
+        spec.threshold if spec.threshold is not None else 30,
+        spec.min_length if spec.min_length is not None else 1,
+        spec.max_results,
+        dict(spec.weights) if spec.weights else None,
+    )
+
+
+def search_indices(rows: Sequence[Any], spec: SearchSpec) -> list[int]:
+    """Ranked-search indices over ``spec.fields`` (relevance order)."""
+    return _run(lambda: _core.search_indices(*_search_args(rows, spec)), SearchError)
+
+
+def build_offset_page(items: list[Any], total: int, params: OffsetParams) -> OffsetPage[Any]:
+    """Build an :class:`OffsetPage` with core-derived metadata."""
+    page, pages, has_next, has_previous = _core.offset_meta(params.page, params.limit, total)
+    return OffsetPage(
+        items=items,
+        total=total,
+        page=page,
+        pages=pages,
+        limit=params.limit,
+        has_next=has_next,
+        has_previous=has_previous,
+    )

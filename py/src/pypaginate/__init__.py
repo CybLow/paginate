@@ -1,54 +1,56 @@
-"""pypaginate — Universal pagination toolkit for Python.
+"""pypaginate — fast, typed pagination over a Rust core.
 
-Input type determines output type (Elysia-style inference)::
+Filter, sort, search, and offset-paginate in-memory; DB pagination is provided by
+the optional adapters. The Rust core owns all computation *and* the type shapes
+(generated from its JSON Schema); this package is the thin, typed Python face,
+byte-for-byte compatible with the TS package (`@cyblow/paginate`).
 
     from pypaginate import paginate, OffsetParams
 
     page = paginate(users, OffsetParams(page=1, limit=20))
-    page.total  # int — auto-inferred as OffsetPage
-
-    from pypaginate import CursorParams
-
-    page = await paginate(query, CursorParams(after="abc"), backend=backend)
-    page.next_cursor  # str | None — auto-inferred as CursorPage
+    page.total  # int
 """
 
 from __future__ import annotations
 
-from importlib.metadata import PackageNotFoundError, version
-
-from pypaginate._dispatch import paginate
+from pypaginate import _core
 from pypaginate.dataset import Dataset
-from pypaginate.domain.enums import (
-    FilterLogic,
-    FuzzyMode,
-    NullsPosition,
-    OverflowStrategy,
-    SearchFieldMode,
-    SortDirection,
-)
-from pypaginate.domain.exceptions import (
+from pypaginate.errors import (
     ConfigurationError,
     FilterError,
     FilterValidationError,
+    PaginateError,
     PaginationError,
     SearchError,
     SearchQueryError,
     SortError,
     ValidationError,
 )
-from pypaginate.domain.pages import CursorPage, OffsetPage
-from pypaginate.domain.params import CursorParams, OffsetParams
-from pypaginate.domain.specs import And, FilterGroup, FilterSpec, Or, SearchSpec, SortSpec
-from pypaginate.query import filter, search, sort  # noqa: A004 — `filter` mirrors the TS API
+from pypaginate.pages import CursorPage, OffsetPage
+from pypaginate.paginate import paginate
+from pypaginate.params import MAX_LIMIT, CursorParams, OffsetParams
+from pypaginate.query import filter, search, sort  # noqa: A004 (public API name)
+from pypaginate.specs import (
+    And,
+    FilterGroup,
+    FilterNode,
+    FilterOperator,
+    FilterSpec,
+    FuzzyMode,
+    NullsPosition,
+    Or,
+    SearchFieldMode,
+    SearchSpec,
+    SortDirection,
+    SortSpec,
+    search_spec,
+)
 
 
-try:
-    __version__ = version("pypaginate")
-except PackageNotFoundError:  # pragma: no cover - source tree without dist metadata
-    __version__ = "0.0.0"
+__version__: str = _core.__version__
 
 __all__ = [
+    "MAX_LIMIT",
     "And",
     "ConfigurationError",
     "CursorPage",
@@ -56,7 +58,8 @@ __all__ = [
     "Dataset",
     "FilterError",
     "FilterGroup",
-    "FilterLogic",
+    "FilterNode",
+    "FilterOperator",
     "FilterSpec",
     "FilterValidationError",
     "FuzzyMode",
@@ -64,7 +67,7 @@ __all__ = [
     "OffsetPage",
     "OffsetParams",
     "Or",
-    "OverflowStrategy",
+    "PaginateError",
     "PaginationError",
     "SearchError",
     "SearchFieldMode",
@@ -78,5 +81,6 @@ __all__ = [
     "filter",
     "paginate",
     "search",
+    "search_spec",
     "sort",
 ]
