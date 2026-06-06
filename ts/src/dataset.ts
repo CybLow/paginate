@@ -50,16 +50,25 @@ export class Dataset<T extends object> {
     );
   }
 
-  /** Filter + sort + offset-paginate in ONE native call. */
+  /**
+   * Filter + search + sort + offset-paginate in ONE native call. `search` is a
+   * match-filter (keep rows matching the query); an explicit `sorting` still
+   * decides the order, and the resident trigram index prunes fuzzy candidates.
+   */
   page(
     params: OffsetParams,
-    opts: { filters?: readonly FilterSpec[]; sorting?: readonly SortSpec[] } = {},
+    opts: {
+      filters?: readonly FilterSpec[];
+      sorting?: readonly SortSpec[];
+      search?: SearchSpec;
+    } = {},
   ): OffsetPage<T> {
     const result = this.inner.page(
       params.page,
       params.limit,
       opts.filters as unknown[] | undefined,
       opts.sorting as unknown[] | undefined,
+      opts.search ? searchStageArg(opts.search) : undefined,
     );
     return {
       items: this.select(result.indices),
@@ -75,4 +84,16 @@ export class Dataset<T extends object> {
   private select(indices: number[]): T[] {
     return indices.map((i) => this.rows[i] as T);
   }
+}
+
+/** The `{ query, fields, mode, fuzzy, threshold }` object the core page search
+ * stage parses (a match-filter; `minLength` / `maxResults` do not apply). */
+function searchStageArg(spec: SearchSpec): Record<string, unknown> {
+  return {
+    query: spec.query,
+    fields: spec.fields,
+    mode: spec.mode,
+    fuzzy: spec.fuzzy,
+    threshold: spec.threshold,
+  };
 }

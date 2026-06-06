@@ -172,20 +172,16 @@ def match_filter(items: Sequence[Any], spec: SearchSpec) -> list[Any]:
     )
 
 
-def dataset_match_filter(native: Any, spec: SearchSpec) -> list[int]:
-    """Index-backed match-filter on a resident native ``Dataset``.
-
-    Returns the row indices of items matching the whole query (original order),
-    using the dataset's trigram index for the fuzzy / token-sort modes.
-    """
-    return list(
-        native.match_filter(
-            spec.query,
-            list(spec.fields),
-            mode=_SEARCH_MODE[spec.mode],
-            fuzzy=_FUZZY[spec.fuzzy],
-            threshold=spec.threshold,
-        )
+def search_stage_tuple(spec: SearchSpec) -> tuple[str, list[str], str, str, int]:
+    """Search-stage tuple ``(query, fields, mode, fuzzy, threshold)`` for the
+    resident ``Dataset.page`` search arg — a match-filter applied in the native
+    filter -> search -> sort -> paginate pass (so explicit sorting still orders)."""
+    return (
+        spec.query,
+        list(spec.fields),
+        _SEARCH_MODE[spec.mode],
+        _FUZZY[spec.fuzzy],
+        spec.threshold,
     )
 
 
@@ -211,13 +207,13 @@ def _to_node(node: FilterSpec | FilterGroup) -> Any:
 __all__ = [
     "and_filter_tuples",
     "clear_normalize_cache",
-    "dataset_match_filter",
     "filter_and",
     "filter_group",
     "filter_logic",
     "match_filter",
     "normalize_text",
     "search",
+    "search_stage_tuple",
     "sort_by",
     "sort_tuples",
 ]

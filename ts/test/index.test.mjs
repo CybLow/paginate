@@ -120,6 +120,26 @@ test("Dataset.page equals the one-shot filter+sort+slice path", () => {
   assert.deepEqual(page.items, expected);
 });
 
+test("Dataset.page applies search as a match-filter (explicit sorting wins)", () => {
+  const items = [
+    { id: 1, name: "Alice" },
+    { id: 2, name: "Bob" },
+    { id: 3, name: "Cara" },
+    { id: 4, name: "Dan" },
+  ];
+  const ds = new p.Dataset(items);
+  const page = ds.page(new p.OffsetParams({ page: 1, limit: 10 }), {
+    search: { query: "a", fields: ["name"], mode: "contains", fuzzy: "exact", threshold: 30 },
+    sorting: [{ field: "id", direction: "desc" }],
+  });
+  // contains "a": Alice, Cara, Dan (not Bob); sorted id desc -> Dan, Cara, Alice.
+  assert.deepEqual(
+    page.items.map((r) => r.name),
+    ["Dan", "Cara", "Alice"],
+  );
+  assert.equal(page.total, 3);
+});
+
 test("keysetTerms: lexicographic OR-of-AND predicate structure", () => {
   assert.deepEqual(p.keysetTerms([true]), [[[0, "gt"]]]);
   assert.deepEqual(p.keysetTerms([true, false]), [

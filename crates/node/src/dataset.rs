@@ -12,7 +12,7 @@ use napi_derive::napi;
 use serde_json::Value as Json;
 
 use crate::conv::{core_err, json_array_to_values, to_u32};
-use crate::engines::{build_search_spec, parse_filter_specs, parse_sort_specs};
+use crate::engines::{build_search_spec, parse_filter_specs, parse_search_stage, parse_sort_specs};
 use ::paginate_core as core;
 
 /// One page of results returned by [`Dataset::page`]. Numeric fields export as
@@ -136,6 +136,7 @@ impl Dataset {
         limit: u32,
         filters: Option<Json>,
         sorts: Option<Json>,
+        search: Option<Json>,
     ) -> Result<DatasetPage> {
         let filter_input = match &filters {
             Some(specs) => {
@@ -148,10 +149,28 @@ impl Dataset {
             Some(specs) => parse_sort_specs(specs)?,
             None => Vec::new(),
         };
-        let result = core::pipeline::offset_page(
+        // Owned search parts (the SearchStage borrows them across the call).
+        let search_parts = match &search {
+            Some(spec) => Some(parse_search_stage(spec)?),
+            None => None,
+        };
+        let stage = search_parts
+            .as_ref()
+            .map(
+                |(query, fields, mode, fuzzy, threshold)| core::pipeline::SearchStage {
+                    query,
+                    fields,
+                    mode: *mode,
+                    fuzzy: *fuzzy,
+                    threshold: *threshold,
+                    index: Some(&self.trigram),
+                },
+            );
+        let result = core::pipeline::offset_page_searched(
             &self.rows,
             Some(&self.columns),
             filter_input.as_ref(),
+            stage.as_ref(),
             &sort_specs,
             u64::from(page),
             u64::from(limit),

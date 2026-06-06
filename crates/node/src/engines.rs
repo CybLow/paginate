@@ -114,6 +114,24 @@ pub(crate) fn parse_sort_specs(specs: &Json) -> Result<Vec<core::sort::SortSpec>
     Ok(out)
 }
 
+/// Map a mode string to the core enum (default `Contains`).
+fn search_mode(mode: Option<&str>) -> core::search::SearchFieldMode {
+    match mode {
+        Some("prefix") => core::search::SearchFieldMode::Prefix,
+        Some("exact") => core::search::SearchFieldMode::Exact,
+        _ => core::search::SearchFieldMode::Contains,
+    }
+}
+
+/// Map a fuzzy string to the core enum (default `Exact`).
+fn search_fuzzy(fuzzy: Option<&str>) -> core::search::FuzzyMode {
+    match fuzzy {
+        Some("fuzzy") => core::search::FuzzyMode::Fuzzy,
+        Some("token_sort") => core::search::FuzzyMode::TokenSort,
+        _ => core::search::FuzzyMode::Exact,
+    }
+}
+
 /// Build a [`core::search::SearchSpec`] from the optional JS arguments (shared
 /// by `search_indices` and `Dataset::search`).
 pub(crate) fn build_search_spec(
@@ -129,20 +147,43 @@ pub(crate) fn build_search_spec(
         query,
         fields,
         weights: None,
-        mode: match mode.as_deref() {
-            Some("prefix") => core::search::SearchFieldMode::Prefix,
-            Some("exact") => core::search::SearchFieldMode::Exact,
-            _ => core::search::SearchFieldMode::Contains,
-        },
-        fuzzy: match fuzzy.as_deref() {
-            Some("fuzzy") => core::search::FuzzyMode::Fuzzy,
-            Some("token_sort") => core::search::FuzzyMode::TokenSort,
-            _ => core::search::FuzzyMode::Exact,
-        },
+        mode: search_mode(mode.as_deref()),
+        fuzzy: search_fuzzy(fuzzy.as_deref()),
         threshold: threshold.unwrap_or(30),
         min_length: min_length.unwrap_or(1) as usize,
         max_results: max_results.map(|m| m as usize),
     }
+}
+
+/// Owned parts of a search stage, parsed from a `{query, fields, mode?, fuzzy?,
+/// threshold?}` object (the resident `Dataset::page` search arg).
+pub(crate) type SearchStageParts = (
+    String,
+    Vec<String>,
+    core::search::SearchFieldMode,
+    core::search::FuzzyMode,
+    i64,
+);
+
+/// Parse a search-stage object into its owned parts.
+pub(crate) fn parse_search_stage(spec: &Json) -> Result<SearchStageParts> {
+    let obj = spec_object(spec)?;
+    let fields = obj
+        .get("fields")
+        .and_then(Json::as_array)
+        .map(|a| {
+            a.iter()
+                .filter_map(|v| v.as_str().map(str::to_owned))
+                .collect()
+        })
+        .unwrap_or_default();
+    Ok((
+        required_str(obj, "query")?,
+        fields,
+        search_mode(obj.get("mode").and_then(Json::as_str)),
+        search_fuzzy(obj.get("fuzzy").and_then(Json::as_str)),
+        obj.get("threshold").and_then(Json::as_i64).unwrap_or(30),
+    ))
 }
 
 /// Indices of items matching flat filter specs `[{field, op, value, logic?}]`.

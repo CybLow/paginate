@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   resident `Dataset`'s exact inverted-index prefilter cuts a selective fuzzy
   query a further ~3× (`fuzzy_indexed` 48.7→16.4 ms at 100k), with more pruning
   the rarer the query.
+- **Search folded into the resident pipeline.** `core::pipeline` now does
+  `filter → search → sort → paginate` in one pass (`offset_page_searched`), and
+  `Dataset.page` takes a `search` arg. A `Dataset.paginate(...)` combining search
+  with filters/sorting is now **one** FFI crossing instead of three per-stage
+  calls — search is a match-filter (explicit sorting still orders) using the
+  trigram index, so results are unchanged.
 
 ### Added
 - **Cross-language parity harness.** A frozen golden (`tests/fixtures/parity.json`)
