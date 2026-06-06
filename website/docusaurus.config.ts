@@ -49,6 +49,34 @@ const config: Config = {
     ],
   ],
 
+  // TypeScript API *reference*, generated from ts/src by TypeDoc — kept separate
+  // from the usage Guides so "how to use it" and "the API surface" don't blur.
+  plugins: [
+    [
+      'docusaurus-plugin-typedoc',
+      {
+        id: 'typescript-api',
+        entryPoints: ['../ts/src/index.ts'],
+        tsconfig: '../ts/tsconfig.json',
+        out: 'docs/reference/typescript',
+        readme: 'none',
+        skipErrorChecking: true,
+      },
+    ],
+  ],
+
+  // Offline full-text search (Docusaurus ships none) — no Algolia account needed.
+  themes: [
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        hashed: true,
+        indexBlog: false,
+        docsRouteBasePath: '/',
+      },
+    ],
+  ],
+
   themeConfig: {
     image: 'img/docusaurus-social-card.jpg',
     colorMode: {
