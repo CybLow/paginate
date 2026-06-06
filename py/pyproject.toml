@@ -86,7 +86,7 @@ all = [
 # ==========================
 [project.urls]
 Homepage = "https://github.com/CybLow/paginate"
-Documentation = "https://pypaginate.readthedocs.io"
+Documentation = "https://cyblow.github.io/paginate/"
 Repository = "https://github.com/CybLow/paginate"
 Issues = "https://github.com/CybLow/paginate/issues"
 Changelog = "https://github.com/CybLow/paginate/blob/main/CHANGELOG.md"
@@ -172,39 +172,6 @@ build = [
     "build>=1.2.2",
     "twine>=6.0.1",
 ]
-# Documentation (Sphinx + RTD theme)
-# Note: sphinx-autodoc-typehints>=3.6.2 requires Python 3.12+
-# Build docs with Python 3.12+ for best results
-docs = [
-    # Core Sphinx (latest version)
-    "sphinx>=9.0",
-    "sphinx-rtd-theme>=3.0",
-    
-    # Modern UX extensions
-    "sphinx-design>=0.6",              # Cards, grids, tabs, dropdowns
-    "sphinx-copybutton>=0.5",          # Copy button on code blocks
-    # Use version with deprecation fixes on Python 3.12+, older on 3.11
-    "sphinx-autodoc-typehints>=3.6.2; python_version >= '3.12'",
-    "sphinx-autodoc-typehints>=3.6.1,<3.6.2; python_version < '3.12'",
-    "sphinx-autoapi>=3.6.0",            # Auto-generate API docs from source
-    
-    # Markdown support
-    "myst-parser>=4.0",                # Full Markdown support
-    
-    # Diagrams & extras
-    "sphinxcontrib-mermaid>=0.9",      # Mermaid diagrams
-    "sphinxext-opengraph>=0.9",        # Social preview cards
-    "sphinx-notfound-page>=1.0",       # Custom 404 page
-    
-    # Versioning for releases (modern alternative to sphinx-multiversion)
-    "sphinx-polyversion>=2.0",         # Multi-version docs builder
-    "jinja2>=3.0",                     # Required for polyversion templates
-    
-    # All optional dependencies for complete autodoc
-    "SQLAlchemy>=2.0.45",
-    "rapidfuzz>=3.14.3",
-    "fastapi>=0.127.0",
-]
 # MCP server dependencies (for .opencode/scripts)
 mcp = [
     "mcp>=1.0.0",
@@ -221,7 +188,7 @@ mcp = [
 # ==========================
 [tool.uv]
 package = true
-default-groups = ["dev"]  # docs group requires Python 3.12+, mcp is optional (heavy ML deps)
+default-groups = ["dev"]  # mcp is optional (heavy ML deps)
 
 # Cache optimization
 cache-keys = [{ file = "pyproject.toml" }, { file = "uv.lock" }]

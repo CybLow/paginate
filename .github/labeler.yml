@@ -75,7 +75,7 @@ documentation:
       - any-glob-to-any-file:
           - '**/*.md'
           - 'docs/**'
-          - 'py/docs/**'
+          - 'website/**'
 
 # -- Infrastructure --
 ci:

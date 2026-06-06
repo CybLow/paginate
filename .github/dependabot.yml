@@ -40,7 +40,6 @@ updates:
           - "coverage*"
           - "twine"
           - "build"
-          - "sphinx*"
         update-types:
           - "minor"
           - "patch"

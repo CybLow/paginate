@@ -11,7 +11,7 @@ assignees: ''
 <!-- Which page or section has the issue? Provide URL if possible -->
 
 - **Page/Section**: 
-- **URL**: <!-- e.g., https://pypaginate.readthedocs.io/en/latest/... -->
+- **URL**: <!-- e.g., https://cyblow.github.io/paginate/... -->
 
 ## Issue Type
 
