@@ -1,0 +1,8 @@
+{
+  "label": "Search",
+  "position": 7,
+  "link": {
+    "type": "generated-index",
+    "description": "Ranked in-memory full-text search: token matching and trigram fuzzy scoring, identical across Python and TypeScript."
+  }
+}
