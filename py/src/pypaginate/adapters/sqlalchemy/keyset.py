@@ -8,7 +8,7 @@ query's ORDER BY columns. The core owns the *structure* of the predicate
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import and_, or_
 from sqlalchemy.sql.elements import UnaryExpression
