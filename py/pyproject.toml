@@ -48,10 +48,10 @@ classifiers = [
     "Environment :: Web Environment",
 ]
 
-# Core: only pydantic (models, validation, serialization)
-dependencies = [
-    "pydantic>=2.0.0",
-]
+# Core: zero runtime dependencies — the engine + the type shapes live in the
+# native `_core` extension (bundled in the wheel). Pydantic is only needed by the
+# [fastapi] extra; SQLAlchemy/Django adapters are Pydantic-free.
+dependencies = []
 
 # ==========================
 # OPTIONAL DEPENDENCIES (extras)
@@ -67,6 +67,7 @@ search = [
 ]
 fastapi = [
     "fastapi>=0.95.0",
+    "pydantic>=2.0.0",
 ]
 django = [
     "Django>=4.2",
