@@ -2239,15 +2239,13 @@ crypto = [
 name = "pypaginate"
 version = "0.2.1"
 source = { editable = "." }
-dependencies = [
-    { name = "pydantic" },
-]
 
 [package.optional-dependencies]
 all = [
     { name = "django", version = "5.2.15", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "django", version = "6.0.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "fastapi" },
+    { name = "pydantic" },
     { name = "sqlalchemy", extra = ["asyncio"] },
 ]
 django = [
@@ -2256,6 +2254,7 @@ django = [
 ]
 fastapi = [
     { name = "fastapi" },
+    { name = "pydantic" },
 ]
 security = [
     { name = "google-re2" },
@@ -2372,7 +2371,7 @@ requires-dist = [
     { name = "django", marker = "extra == 'django'", specifier = ">=4.2" },
     { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.95.0" },
     { name = "google-re2", marker = "extra == 'security'", specifier = ">=1.0" },
-    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "pydantic", marker = "extra == 'fastapi'", specifier = ">=2.0.0" },
     { name = "pypaginate", extras = ["sqlalchemy", "search", "fastapi", "django"], marker = "extra == 'all'" },
     { name = "sqlalchemy", extras = ["asyncio"], marker = "extra == 'sqlalchemy'", specifier = ">=2.0.0" },
 ]
