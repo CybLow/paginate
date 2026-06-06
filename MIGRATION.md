@@ -82,7 +82,10 @@ New surface:
 ### Rust core (`paginate-core`)
 
 New public API: `keyset::keyset_terms` (portable lexicographic keyset predicate),
-`search::{trigram, TrigramIndex, search_with_index, match_indices_with_index}`
-for trigram-similarity fuzzy search with an exact inverted-index prefilter, and a
-`fuzzy`-aware `search::match_indices`. The `rapidfuzz` dependency was dropped (the
-fuzzy/token-sort scorers are now trigram-based, see the Python section above).
+`search::{trigram, TrigramIndex, search_with_index, retain_matching}` for
+trigram-similarity fuzzy search with an exact inverted-index prefilter, and
+`pipeline::{offset_page_searched, SearchStage}` —
+which folds an optional search match-filter into the one-pass `filter → search →
+sort → paginate` (so `Dataset.page`/`paginate` does any combination in a single
+FFI call). The `rapidfuzz` dependency was dropped (the fuzzy/token-sort scorers
+are now trigram-based, see the Python section above).

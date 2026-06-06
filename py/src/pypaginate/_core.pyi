@@ -91,18 +91,11 @@ class Dataset:
         min_length: int = ...,
         max_results: int | None = ...,
     ) -> list[int]: ...
-    def match_filter(
-        self,
-        query: str,
-        fields: Sequence[str],
-        mode: str = ...,
-        fuzzy: str = ...,
-        threshold: int = ...,
-    ) -> list[int]: ...
     def page(
         self,
         page: int,
         limit: int,
         filters: Sequence[Any] | None = ...,
         sorts: Sequence[Any] | None = ...,
+        search: tuple[str, Sequence[str], str, str, int] | None = ...,
     ) -> dict[str, Any]: ...

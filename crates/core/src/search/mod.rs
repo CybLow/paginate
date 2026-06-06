@@ -18,7 +18,7 @@ mod matching;
 mod parser;
 mod trigram;
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::accessor::{compile_path, resolve_opt};
 use crate::coerce;
@@ -337,37 +337,44 @@ pub fn match_indices(
         .collect())
 }
 
-/// Like [`match_indices`], but for the fuzzy/token-sort modes it tests only the
-/// `index` candidates (exact — see [`TrigramIndex`]). Candidates come back in
-/// ascending order, so matched items stay in original order. Exact mode is a
-/// full scan (substring matching is not trigram-prunable).
+/// Match-filter an already-narrowed, ascending index subset (`candidates`, e.g.
+/// the pipeline's filter-stage output) to those matching the whole `query` —
+/// the search stage of [`crate::pipeline::offset_page_searched`]. Preserves the
+/// candidates' order. An empty normalized query keeps them all; for fuzzy modes
+/// a supplied `index` prunes the per-item predicate to trigram candidates.
 ///
 /// # Errors
 /// [`crate::CoreError::Filter`] if a field path segment starts with `_`.
-pub fn match_indices_with_index(
+#[allow(clippy::too_many_arguments)]
+pub fn retain_matching(
     items: &[Value],
+    candidates: &[usize],
     query: &str,
     fields: &[String],
     mode: SearchFieldMode,
     fuzzy: FuzzyMode,
     threshold: i64,
-    index: &TrigramIndex,
+    index: Option<&TrigramIndex>,
 ) -> Result<Vec<usize>> {
     let normalized = normalize_text(query);
     if normalized.is_empty() {
-        return Ok((0..items.len()).collect());
+        return Ok(candidates.to_vec());
     }
     let paths = compile_paths(fields)?;
     let mq = MatchQuery::new(&normalized, mode, fuzzy, threshold);
-    if fuzzy == FuzzyMode::Exact {
-        return Ok((0..items.len())
-            .filter(|&i| mq.hits(&items[i], &paths))
-            .collect());
+    if fuzzy != FuzzyMode::Exact {
+        if let Some(idx) = index {
+            let allowed: HashSet<u32> = idx.candidates(&mq.trigrams).into_iter().collect();
+            return Ok(candidates
+                .iter()
+                .copied()
+                .filter(|&i| allowed.contains(&(i as u32)) && mq.hits(&items[i], &paths))
+                .collect());
+        }
     }
-    Ok(index
-        .candidates(&mq.trigrams)
-        .into_iter()
-        .map(|c| c as usize)
+    Ok(candidates
+        .iter()
+        .copied()
         .filter(|&i| mq.hits(&items[i], &paths))
         .collect())
 }

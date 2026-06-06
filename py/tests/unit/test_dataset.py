@@ -1,9 +1,11 @@
 """Tests for the resident :class:`pypaginate.Dataset`.
 
-The central contract is that the native one-call pipeline and the pure-Python
-fallback produce an **identical** page. Each test runs the query both ways (the
-pure path is forced by clearing ``_native``) and asserts they match, plus checks
-concrete expected values so the two paths can't be wrong in the same way.
+The central contract is that the resident one-call pipeline and the per-stage
+native path produce an **identical** page. Each test runs the query both ways
+(the per-stage path is forced by clearing ``_native``) and asserts they match,
+plus checks concrete expected values so the two paths can't be wrong in the same
+way. Both paths run the native ``_core`` engine — there is no pure-Python
+execution; clearing ``_native`` only bypasses the one-shot resident dataset.
 """
 
 from __future__ import annotations
@@ -15,7 +17,7 @@ import pytest
 
 from pypaginate import Dataset, FilterSpec, OffsetParams, SearchSpec, SortSpec
 from pypaginate.dataset import _HAS_NATIVE
-from pypaginate.domain.enums import SortDirection
+from pypaginate.domain.enums import FuzzyMode, SortDirection
 
 
 PEOPLE = [
@@ -125,16 +127,46 @@ class TestNativePureParity:
         assert [i["name"] for i in native.items] == ["a", "b"]
 
 
-class TestSearchFallback:
+class TestSearchInPipeline:
     def test_search_then_paginate(self) -> None:
-        # Search has no native one-call path -> pure-Python; still returns a page.
-        page = Dataset(PEOPLE).paginate(
+        native, pure = _both(
+            PEOPLE,
             OffsetParams(page=1, limit=10),
             search=SearchSpec(query="a", fields=("name",)),
         )
+        assert _fields(native) == _fields(pure)
         # contains "a" (normalized): Alice, Cara, Dan — order preserved.
-        assert [p["name"] for p in page.items] == ["Alice", "Cara", "Dan"]
-        assert page.total == 3
+        assert [p["name"] for p in native.items] == ["Alice", "Cara", "Dan"]
+        assert native.total == 3
+
+    def test_filter_search_sort_combined(self) -> None:
+        # The one-call pipeline (filter -> search -> sort) must match the
+        # per-stage path (filter -> sort -> search): search is a match-filter and
+        # the explicit sort decides order, so the two orderings coincide.
+        native, pure = _both(
+            PEOPLE,
+            OffsetParams(page=1, limit=10),
+            filters=[FilterSpec(field="age", operator="gte", value=20)],
+            search=SearchSpec(query="a", fields=("name",)),
+            sorting=[SortSpec(field="age", direction=SortDirection.DESC)],
+        )
+        assert _fields(native) == _fields(pure)
+        # age>=20 AND name contains "a": Alice(30), Cara(45), Dan(30) [Bob, Eve out].
+        # sort age desc, stable -> Cara, Alice, Dan.
+        assert [p["name"] for p in native.items] == ["Cara", "Alice", "Dan"]
+        assert native.total == 3
+
+    def test_fuzzy_search_parity(self) -> None:
+        # The native path prunes fuzzy candidates with the trigram index; the pure
+        # path scans — results must be identical (the index is exact).
+        native, pure = _both(
+            PEOPLE,
+            OffsetParams(page=1, limit=10),
+            search=SearchSpec(
+                query="alce", fields=("name",), fuzzy=FuzzyMode.FUZZY, threshold=30
+            ),
+        )
+        assert _fields(native) == _fields(pure)
 
 
 class TestMatchesBackendPipeline:

@@ -115,34 +115,11 @@ impl Dataset {
         core::search::search_with_index(&self.rows, &spec, &self.trigram).map_err(|e| core_err(&e))
     }
 
-    /// Match-filter indices (any field matches the whole query), original order,
-    /// using the resident trigram index for the fuzzy/token-sort modes.
-    #[pyo3(signature = (query, fields, mode="contains", fuzzy="exact", threshold=30))]
-    fn match_filter(
-        &self,
-        query: String,
-        fields: Vec<String>,
-        mode: &str,
-        fuzzy: &str,
-        threshold: i64,
-    ) -> PyResult<Vec<usize>> {
-        core::search::match_indices_with_index(
-            &self.rows,
-            &query,
-            &fields,
-            wire::mode(mode),
-            wire::fuzzy(fuzzy),
-            threshold,
-            &self.trigram,
-        )
-        .map_err(|e| core_err(&e))
-    }
-
-    /// Filter + sort + offset-paginate in ONE native call. Returns a dict
+    /// Filter + search + sort + offset-paginate in ONE native call. Returns a dict
     /// `{indices, total, page, pages, has_next, has_previous}`; the caller
     /// selects its rows by the returned indices — so the host stays a thin
     /// adapter and a page request is a single FFI crossing.
-    #[pyo3(signature = (page, limit, filters=None, sorts=None))]
+    #[pyo3(signature = (page, limit, filters=None, sorts=None, search=None))]
     fn page<'py>(
         &self,
         py: Python<'py>,
@@ -150,6 +127,7 @@ impl Dataset {
         limit: u64,
         filters: Option<&Bound<'py, PyList>>,
         sorts: Option<&Bound<'py, PyList>>,
+        search: Option<&Bound<'py, PyTuple>>,
     ) -> PyResult<Bound<'py, PyDict>> {
         let filter_input = match filters {
             Some(specs) if !specs.is_empty() => {
@@ -161,10 +139,28 @@ impl Dataset {
             Some(specs) => parse_sorts(specs)?,
             None => Vec::new(),
         };
-        let result = core::pipeline::offset_page(
+        // Owned search parts (the SearchStage borrows them across the call).
+        let search_parts = match search {
+            Some(spec) => Some(parse_search_stage(spec)?),
+            None => None,
+        };
+        let stage = search_parts
+            .as_ref()
+            .map(
+                |(query, fields, mode, fuzzy, threshold)| core::pipeline::SearchStage {
+                    query,
+                    fields,
+                    mode: *mode,
+                    fuzzy: *fuzzy,
+                    threshold: *threshold,
+                    index: Some(&self.trigram),
+                },
+            );
+        let result = core::pipeline::offset_page_searched(
             &self.rows,
             Some(&self.columns),
             filter_input.as_ref(),
+            stage.as_ref(),
             &sort_specs,
             page,
             limit,
@@ -210,4 +206,24 @@ fn parse_sorts(specs: &Bound<'_, PyList>) -> PyResult<Vec<core::sort::SortSpec>>
         });
     }
     Ok(out)
+}
+
+/// Owned parts of a search stage tuple `(query, fields, mode, fuzzy, threshold)`.
+type SearchStageParts = (
+    String,
+    Vec<String>,
+    core::search::SearchFieldMode,
+    core::search::FuzzyMode,
+    i64,
+);
+
+/// Parse the `(query, fields, mode, fuzzy, threshold)` search tuple.
+fn parse_search_stage(spec: &Bound<'_, PyTuple>) -> PyResult<SearchStageParts> {
+    Ok((
+        spec.get_item(0)?.extract()?,
+        spec.get_item(1)?.extract()?,
+        wire::mode(&spec.get_item(2)?.extract::<String>()?),
+        wire::fuzzy(&spec.get_item(3)?.extract::<String>()?),
+        spec.get_item(4)?.extract()?,
+    ))
 }

@@ -1,11 +1,12 @@
-//! High-level pagination pipeline: filter → sort → offset-paginate in one pass,
-//! returning the page's item indices plus offset metadata.
+//! High-level pagination pipeline: filter → search → sort → offset-paginate in
+//! one pass, returning the page's item indices plus offset metadata.
 //!
 //! This is the "do it all in the core" entry point. A host adapter passes the
 //! specs once and gets the page's indices + metadata back in a single call — the
 //! orchestration that pypaginate's `engine/pipeline.py` does in Python lives
-//! here instead, so the host stays a thin adapter. (Search is applied by the
-//! caller for now; a search stage can join this pass later.)
+//! here instead, so the host stays a thin adapter. The optional [`SearchStage`]
+//! is a match-filter (explicit `sort_specs` still decide the order), so a search
+//! that combines with filters/sorting is one FFI crossing, not three.
 
 use std::cmp::Ordering;
 
@@ -13,6 +14,7 @@ use crate::columnar::Columns;
 use crate::error::Result;
 use crate::filter::{self, FilterInput, FilterLogic};
 use crate::pagination;
+use crate::search::{self, FuzzyMode, SearchFieldMode, TrigramIndex};
 use crate::sort::{self, SortDirection, SortSpec};
 use crate::value::Value;
 
@@ -34,6 +36,28 @@ pub struct Page {
     pub has_previous: bool,
 }
 
+/// The optional search stage of the pipeline: a match-filter applied between
+/// filtering and sorting (keep rows where any field matches `query`). It is a
+/// *filter*, not a re-rank — explicit `sort_specs` decide the order. Filtering
+/// before the sort gives the same page as pypaginate's old `filter → sort →
+/// search`, because a match-filter is order-preserving and the sort is stable,
+/// so the two orders commute. For the fuzzy/token-sort modes a resident `index`
+/// prunes candidates.
+pub struct SearchStage<'a> {
+    /// Raw query string (normalized internally).
+    pub query: &'a str,
+    /// Fields to match against (dotted paths).
+    pub fields: &'a [String],
+    /// Exact/prefix/contains matching mode.
+    pub mode: SearchFieldMode,
+    /// Fuzzy strategy (Exact disables trigram scoring).
+    pub fuzzy: FuzzyMode,
+    /// Minimum trigram similarity (0-100) for a fuzzy match.
+    pub threshold: i64,
+    /// Resident trigram index for fuzzy candidate pruning (optional).
+    pub index: Option<&'a TrigramIndex>,
+}
+
 /// Filter, then sort, then take one offset page — in a single pass.
 ///
 /// `filter` is skipped when `None`; `sort_specs` is skipped when empty. When
@@ -51,8 +75,40 @@ pub fn offset_page(
     page: u64,
     limit: u64,
 ) -> Result<Page> {
+    offset_page_searched(items, columns, filter, None, sort_specs, page, limit)
+}
+
+/// Like [`offset_page`], plus an optional [`SearchStage`] match-filter applied
+/// after filtering and before sorting (so `sort_specs` still decide the order).
+/// `filter → search → sort → paginate`, all in one pass returning page indices.
+///
+/// # Errors
+/// Propagates filter/sort/search errors from the underlying engines.
+#[allow(clippy::too_many_arguments)]
+pub fn offset_page_searched(
+    items: &[Value],
+    columns: Option<&Columns>,
+    filter: Option<&FilterInput>,
+    search: Option<&SearchStage>,
+    sort_specs: &[SortSpec],
+    page: u64,
+    limit: u64,
+) -> Result<Page> {
     let filtered = filter_stage(items, columns, filter)?;
-    let indices = sort_stage(items, columns, filtered, sort_specs)?;
+    let matched = match search {
+        Some(s) => search::retain_matching(
+            items,
+            &filtered,
+            s.query,
+            s.fields,
+            s.mode,
+            s.fuzzy,
+            s.threshold,
+            s.index,
+        )?,
+        None => filtered,
+    };
+    let indices = sort_stage(items, columns, matched, sort_specs)?;
     let total = indices.len() as u64;
     let meta = pagination::offset_meta(page, limit, total);
     let start = (pagination::offset(page, limit) as usize).min(indices.len());
@@ -165,6 +221,72 @@ mod tests {
         let mut map = BTreeMap::new();
         map.insert("n".to_owned(), Value::Int(n));
         Value::Map(map)
+    }
+
+    fn row(tag: &str, n: i64) -> Value {
+        let mut map = BTreeMap::new();
+        map.insert("tag".to_owned(), Value::Str(tag.to_owned()));
+        map.insert("n".to_owned(), Value::Int(n));
+        Value::Map(map)
+    }
+
+    fn contains_search<'a>(query: &'a str, fields: &'a [String]) -> super::SearchStage<'a> {
+        super::SearchStage {
+            query,
+            fields,
+            mode: SearchFieldMode::Contains,
+            fuzzy: FuzzyMode::Exact,
+            threshold: 30,
+            index: None,
+        }
+    }
+
+    #[test]
+    fn search_filters_then_sort_orders() {
+        // Search keeps tags containing "a"; the explicit sort (n desc) decides
+        // order -- search is a filter, not a re-rank.
+        let items = vec![
+            row("apple", 3),
+            row("banana", 1),
+            row("avocado", 2),
+            row("cherry", 4),
+        ];
+        let fields = ["tag".to_owned()];
+        let search = contains_search("a", &fields);
+        let sorts = [SortSpec {
+            field: "n".into(),
+            direction: SortDirection::Desc,
+            nulls: NullsPosition::Last,
+        }];
+        let page = offset_page_searched(&items, None, None, Some(&search), &sorts, 1, 10).unwrap();
+        assert_eq!(page.total, 3); // cherry excluded
+        assert_eq!(page.indices, vec![0, 2, 1]); // apple(3), avocado(2), banana(1)
+    }
+
+    #[test]
+    fn search_none_equals_plain_offset_page() {
+        let items: Vec<Value> = (0..12).map(item).collect();
+        let with = offset_page_searched(&items, None, None, None, &[], 1, 5).unwrap();
+        let plain = offset_page(&items, None, None, &[], 1, 5).unwrap();
+        assert_eq!(with, plain);
+    }
+
+    #[test]
+    fn fuzzy_search_uses_index_with_same_result() {
+        let items = vec![
+            row("alpha one", 1),
+            row("bravo two", 2),
+            row("alpine three", 3),
+        ];
+        let fields = ["tag".to_owned()];
+        let index = crate::search::TrigramIndex::build(&items);
+        let mut search = contains_search("alpha", &fields);
+        search.fuzzy = FuzzyMode::Fuzzy;
+        let no_index = offset_page_searched(&items, None, None, Some(&search), &[], 1, 10).unwrap();
+        search.index = Some(&index);
+        let indexed = offset_page_searched(&items, None, None, Some(&search), &[], 1, 10).unwrap();
+        assert_eq!(no_index, indexed);
+        assert!(!no_index.indices.contains(&1)); // "bravo two" shares no trigrams
     }
 
     #[test]
