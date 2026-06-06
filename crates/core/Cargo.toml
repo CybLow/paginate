@@ -35,6 +35,10 @@ unicode-normalization = { workspace = true }
 # JSON Schema (the single source of truth for the generated Python / TS types).
 schema = ["dep:schemars"]
 
+# docs.rs renders the full API including the `schema` module.
+[package.metadata.docs.rs]
+all-features = true
+
 [dev-dependencies]
 proptest = "1.8.0"
 criterion = "0.5"

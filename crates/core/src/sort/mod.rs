@@ -23,7 +23,9 @@ use crate::value::Value;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum SortDirection {
+    /// Ascending order.
     Asc,
+    /// Descending order.
     Desc,
 }
 
@@ -47,7 +49,9 @@ impl SortDirection {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum NullsPosition {
+    /// Nulls sort before non-null values.
     First,
+    /// Nulls sort after non-null values.
     Last,
 }
 

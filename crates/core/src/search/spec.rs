@@ -12,8 +12,11 @@ use crate::error::{CoreError, Result};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum SearchFieldMode {
+    /// Token is a prefix of the value.
     Prefix,
+    /// Token appears anywhere in the value.
     Contains,
+    /// Token equals the value.
     Exact,
 }
 
@@ -38,8 +41,11 @@ impl SearchFieldMode {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum FuzzyMode {
+    /// No fuzzing — mode-based matching only.
     Exact,
+    /// Trigram similarity scoring.
     Fuzzy,
+    /// Token-sorted trigram scoring (order-insensitive).
     TokenSort,
 }
 
