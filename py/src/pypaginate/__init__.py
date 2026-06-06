@@ -15,6 +15,8 @@ Input type determines output type (Elysia-style inference)::
 
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError, version
+
 from pypaginate._dispatch import paginate
 from pypaginate.dataset import Dataset
 from pypaginate.domain.enums import (
@@ -40,7 +42,10 @@ from pypaginate.domain.params import CursorParams, OffsetParams
 from pypaginate.domain.specs import And, FilterGroup, FilterSpec, Or, SearchSpec, SortSpec
 
 
-__version__ = "0.2.0"
+try:
+    __version__ = version("pypaginate")
+except PackageNotFoundError:  # pragma: no cover - source tree without dist metadata
+    __version__ = "0.0.0"
 
 __all__ = [
     "And",

@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
+from pypaginate._native import normalize_text
 from pypaginate.adapters.sqlalchemy.columns import resolve_column
 from pypaginate.domain.enums import SearchFieldMode
-from pypaginate.text.normalize import normalize_text
 
 
 if TYPE_CHECKING:

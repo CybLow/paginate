@@ -88,7 +88,7 @@ paginate-core/
                                      #   (e.g. Prisma / Drizzle / TypeORM)
 ```
 
-`crates/core`, `crates/py`, and `crates/node` are built and validated;
+`crates/core`, `crates/pyo3`, and `crates/node` are built and validated;
 `packages/` holds consumer scaffolding. The core engine is complete and the
 adapters layer on top without engine changes.
 
@@ -105,7 +105,7 @@ HTTP, or any host runtime. Responsibilities split cleanly:
 | DB transaction / session lifecycle | **adapter** |
 
 The core only ever sees plain DTOs — the `Value` model — and **never** talks to
-an ORM, a database, or the network. Each adapter (`crates/py`, `crates/node`)
+an ORM, a database, or the network. Each adapter (`crates/pyo3`, `crates/node`)
 maps host objects to/from `Value` and hands the core nothing else.
 
 ## The boundary: `Value`
@@ -165,31 +165,29 @@ never invalidates a client's existing cursors.
 | `coerce` | ✅ | ✅ used by filter/sort cross-checks |
 | `filter` (20 ops, groups) | ✅ | ✅ 9/9 cases |
 | `sort` (multi-key, nulls) | ✅ | ✅ 13/13 cases (with search) |
-| `search` (rank, weights) | ✅ | ✅ (fuzzy uses fallback; rapidfuzz parity tracked) |
-| **PyO3 adapter** (`crates/py`) | cursor, normalize, pagination, filter, sort, search ✅ | — |
+| `search` (rank, weights, fuzzy) | ✅ | ✅ (rapidfuzz `partial_ratio` / `token_sort_ratio`) |
+| **PyO3 adapter** (`crates/pyo3`) | cursor, normalize, pagination, filter, sort, search ✅ | — |
 | **napi-rs adapter** (`crates/node`) | full surface ✅ | validated from Node (cursor wire-identical) |
 
 > Plus 8 `proptest` properties (cursor round-trip, filter-never-adds,
 > sort-permutation/monotonic/idempotent, search-subset, max_results cap).
 
-### Native acceleration in pypaginate (benchmark-gated)
+### Native execution in pypaginate
 
-A full benchmark ([BENCHMARKS.md](BENCHMARKS.md)) settled which paths are worth
-the FFI in **Python**, where the pure engines are already 7-round-optimized:
+As of v0.3 the native `_core` engine is **mandatory** — there is no pure-Python
+fallback. Filtering, sorting, ranked search (incl. fuzzy / token-sort), the
+cursor codec, pagination math, and text normalization all run in the core; the
+Python package is a thin, typed adapter over it (see
+[MIGRATION.md](../MIGRATION.md)).
 
-| Path | Native in Python? |
-|------|-------------------|
-| cursor codec | ✅ integrated (both-path verified) |
-| ranked `SearchEngine` | ✅ integrated, gated (non-fuzzy, unweighted, ≥1000 items); native == pure verified |
-| filter · sort · match-filter | ❌ pure-Python wins (marshalling-bound) |
-
-The same boundary cost applies to **JS** — measured, naive V8 `Array` operations
-beat the native engines by **40–230×** (whole-object napi marshalling dwarfs the
-tiny per-item work). So the core's **primary payoff is cross-language behaviour
-consistency** — identical cursor wire format and identical filter/sort/search
-semantics across runtimes — *not* raw in-memory speed, which JIT'd hosts already
-do well. Native *speed* wins are targeted: the cursor codec, and Python's ranked
-search. See [BENCHMARKS.md](BENCHMARKS.md).
+Raw in-memory *speed* is not the headline, though: a full benchmark
+([BENCHMARKS.md](BENCHMARKS.md)) shows that for single-shot calls the FFI
+marshalling cost can dwarf the per-item work (in **JS**, naive V8 `Array`
+operations beat the native engines by **40–230×**), which is exactly why the
+resident `Dataset` — marshal once, query many — is the shape hosts should use for
+hot in-memory paths. The core's **primary payoff is cross-language behaviour
+consistency**: identical cursor wire format and identical filter/sort/search
+semantics across runtimes, which JIT'd hosts can't get from re-implementations.
 
 ## JS/TS adapter (native-first)
 
@@ -208,17 +206,16 @@ It is a future option, never the foundation.
 ## Known follow-ups
 
 - Flesh out the `packages/ts` npm package consuming the `.node` addon.
-- Fuzzy parity is blocked upstream — the `rapidfuzz` Rust crate (0.5) lacks
-  `partial_ratio` / `token_sort_ratio`, so fuzzy search stays pure-Python.
-- Publish the `paginate-core` wheel + npm addon so consumers get native
-  acceleration with automatic pure-language fallback.
+- Publish the `paginate-core` wheel + npm addon so consumers install native
+  builds directly (the native engine is required — there is no pure-language
+  fallback).
 
 ## Develop
 
 ```bash
 cargo test --workspace                      # unit + golden-vector tests
 cargo clippy --workspace --all-targets -- -D warnings
-maturin build -r -m crates/py/Cargo.toml    # Python module (paginate_core)
+maturin build -r -m crates/pyo3/Cargo.toml    # Python module (paginate_core)
 
 # Node/TS adapter:
 ( cd crates/node && npm install && npm run build )   # -> .node + index.js/.d.ts

@@ -11,11 +11,9 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from pypaginate.filtering.engine import FilterEngine
-from pypaginate.search.engine import SearchEngine
-from pypaginate.sorting.engine import SortEngine
 from tests.factories.data import make_users
 from tests.fixtures.backends import BACKEND_REGISTRY, BackendEnv
+from tests.support.engines import FilterEngine, SearchEngine, SortEngine
 
 
 if TYPE_CHECKING:

@@ -10,7 +10,7 @@ from __future__ import annotations
 from hypothesis import given, settings, strategies as st
 
 from pypaginate.domain.specs import SearchSpec
-from pypaginate.search.engine import SearchEngine
+from tests.support.engines import SearchEngine
 
 
 _engine = SearchEngine()

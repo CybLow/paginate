@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pypaginate.domain.enums import FuzzyMode, SearchFieldMode
 from pypaginate.domain.specs import SearchSpec
-from pypaginate.search.engine import SearchEngine
+from tests.support.engines import SearchEngine
 
 
 class TestSearchContains:

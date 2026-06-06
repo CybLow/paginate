@@ -84,7 +84,7 @@ def test_native_pipeline_matches_pure(
     filters: list[FilterSpec],
     sorting: list[SortSpec],
 ) -> None:
-    """Native one-call pipeline and pure fallback yield an identical page."""
+    """Resident one-call pipeline and per-stage path yield an identical page."""
     native_ds: Dataset[Any] = Dataset(items)
     assert native_ds._native is not None  # the native path must actually run
     native = native_ds.paginate(params, filters=filters, sorting=sorting)
