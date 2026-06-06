@@ -112,6 +112,7 @@ impl Dataset {
         threshold: Option<i64>,
         min_length: Option<u32>,
         max_results: Option<u32>,
+        weights: Option<std::collections::HashMap<String, f64>>,
     ) -> Result<Vec<u32>> {
         let spec = build_search_spec(
             query,
@@ -121,6 +122,7 @@ impl Dataset {
             threshold,
             min_length,
             max_results,
+            weights,
         )?;
         core::search::search_with_index(&self.rows, &spec, &self.trigram)
             .map(to_u32)

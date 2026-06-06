@@ -37,5 +37,6 @@ export function searchIndices(items: readonly object[], spec: SearchSpec): numbe
     spec.threshold,
     spec.minLength,
     spec.maxResults,
+    spec.weights as Record<string, number> | undefined,
   );
 }
