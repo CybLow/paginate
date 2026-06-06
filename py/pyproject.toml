@@ -246,7 +246,9 @@ features = ["pyo3/extension-module"]
 line-length = 100
 target-version = "py311"
 src = ["src", "tests"]
-extend-exclude = ["*.pyi"]
+# `*.pyi` is the (generated) native stub; `_generated/` is machine-generated from
+# the Rust JSON Schema (`just gen`) and is exempt from the project's style rules.
+extend-exclude = ["*.pyi", "**/_generated/**"]
 
 [tool.ruff.lint]
 select = [
