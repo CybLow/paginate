@@ -49,7 +49,7 @@ def _filter_tuple(spec: FilterSpec) -> FilterTuple:
 
 
 def _sort_tuple(spec: SortSpec) -> SortTuple:
-    return (spec.field, spec.direction or "asc", spec.nulls or "last")
+    return spec.field, spec.direction or "asc", spec.nulls or "last"
 
 
 def filter_tuples(filters: Sequence[FilterSpec]) -> list[FilterTuple]:
