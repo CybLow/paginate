@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **`pypaginate` rebuilt as a thin, generated, Pydantic-optional package (BREAKING).**
+  The Python package was rebuilt from scratch on a flat module layout. Its
+  filter/sort/search/params/page **types are now generated from the Rust core's
+  JSON Schema** (`schemars` → `datamodel-code-generator`) as plain **dataclasses**,
+  no longer Pydantic models. **Pydantic is now an optional dependency**
+  (`pypaginate[fastapi]`); the package core and the SQLAlchemy/Django adapters are
+  Pydantic-free. The public API (`paginate`, `filter`/`sort`/`search`, `Dataset`,
+  `OffsetParams`/`CursorParams`, `OffsetPage`/`CursorPage`, `FilterSpec`/`SortSpec`/
+  `SearchSpec`, `And`/`Or`) keeps the same shape; pages are generic `Page[T]`
+  containers that hold rows untouched. See MIGRATION (→ v0.4) for the breaks.
+
 ### Performance
 - **Fuzzy search skips re-normalizing already-clean text.** `normalize_text_cow`
   borrows its input unchanged when it is already normalized (lowercase ASCII,

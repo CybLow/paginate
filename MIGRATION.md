@@ -1,5 +1,26 @@
 # Migration guide
 
+## → v0.4 ("generated types, Pydantic-optional")
+
+The Python package (`pypaginate`) was rebuilt from scratch. Behaviour and the
+public-API shapes are unchanged, but the **types are now dataclasses generated
+from the Rust core** (not Pydantic), and **Pydantic is optional**.
+
+- **Construct specs/params the same way** — `FilterSpec(field=..., operator=...,
+  value=...)`, `OffsetParams(page=1, limit=20)`, `And(...)` / `Or(...)` are
+  unchanged. Operators / directions / modes are plain strings (`"gte"`, `"desc"`,
+  `"contains"`, …).
+- **Pages are generic containers** — `OffsetPage[T]` / `CursorPage[T]` support
+  `len()`, iteration, and indexing and hold your rows untouched (no per-row
+  coercion).
+- **Removed: the Pydantic model APIs.** `.model_dump()` / `.model_validate()` on
+  specs and pages are gone (Pydantic-only). Use the dataclass fields directly or
+  `dataclasses.asdict(...)`.
+- **Pydantic is no longer a core dependency.** SQLAlchemy / Django / in-memory
+  users no longer install it. Opt in for FastAPI: `pip install pypaginate[fastapi]`
+  (the FastAPI adapter still uses Pydantic for request/response models + OpenAPI).
+- **Enums are string literals** (since v0.3): pass `"asc"`, `"desc"`, `"eq"`, etc.
+
 ## → v0.3 ("fat core, thin adapters")
 
 v0.3 finishes the move of **all** computation into the shared Rust core
