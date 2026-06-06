@@ -16,6 +16,8 @@
 //! spacing/enclosing marks (Mc/Me) are also dropped, not just nonspacing (Mn).
 //! These affect a tiny fraction of inputs and never the ASCII fast path.
 
+use std::borrow::Cow;
+
 use unicode_normalization::char::is_combining_mark;
 use unicode_normalization::UnicodeNormalization;
 
@@ -27,6 +29,39 @@ pub fn normalize_text(value: &str) -> String {
     }
     let stripped: String = value.nfkd().filter(|c| !is_combining_mark(*c)).collect();
     collapse_whitespace(&stripped.to_lowercase())
+}
+
+/// Like [`normalize_text`], but **borrows** `value` unchanged when it is already
+/// normalized (the common case for search fields like emails, ids, and slugs),
+/// so the per-item search hot path allocates nothing for already-clean text.
+#[must_use]
+pub fn normalize_text_cow(value: &str) -> Cow<'_, str> {
+    if value.is_ascii() && is_ascii_normalized(value) {
+        return Cow::Borrowed(value);
+    }
+    Cow::Owned(normalize_text(value))
+}
+
+/// True iff [`normalize_ascii`] would return `s` unchanged: pure ASCII, no
+/// uppercase, and whitespace only as single `' '` separators (none leading,
+/// trailing, repeated, or non-space like `\t`/`\n`). When this holds,
+/// `normalize_text(s) == s`, so the caller can borrow instead of reallocate.
+fn is_ascii_normalized(s: &str) -> bool {
+    let mut prev_space = true; // start "after a space" so a leading space is rejected
+    for &b in s.as_bytes() {
+        if b.is_ascii_uppercase() {
+            return false;
+        }
+        if is_ascii_ws(b) {
+            if b != b' ' || prev_space {
+                return false; // non-space whitespace, or a leading/repeated space
+            }
+            prev_space = true;
+        } else {
+            prev_space = false;
+        }
+    }
+    !prev_space // reject a trailing space (and the empty string, which is cheap to own)
 }
 
 /// ASCII whitespace per `char::is_whitespace` (so `split_whitespace` parity is
@@ -94,6 +129,54 @@ mod tests {
     fn idempotent() {
         let once = normalize_text("Héllo   WÖRLD");
         assert_eq!(normalize_text(&once), once);
+    }
+
+    #[test]
+    fn cow_always_equals_owned_and_borrows_when_already_normalized() {
+        use std::borrow::Cow;
+        // The borrowing variant must produce byte-identical output to the owned
+        // one for every input — borrowing is only an allocation optimization.
+        let cases = [
+            "user42@test.com",
+            "hello world",
+            "abc",
+            "already_normalized-slug.v2",
+            "Hello",
+            "  lead",
+            "trail ",
+            "a  b",
+            "a\tb",
+            "Café",
+            "MiXeD Case",
+            "",
+            "x",
+            "a b c",
+            "UPPER",
+            "with\nnewline",
+        ];
+        for s in cases {
+            assert_eq!(
+                normalize_text_cow(s).as_ref(),
+                normalize_text(s),
+                "value={s:?}"
+            );
+        }
+        // Already-normalized text borrows (zero allocation)...
+        assert!(matches!(
+            normalize_text_cow("user42@test.com"),
+            Cow::Borrowed(_)
+        ));
+        assert!(matches!(
+            normalize_text_cow("hello world"),
+            Cow::Borrowed(_)
+        ));
+        // ...everything needing work (case, accents, whitespace) is owned.
+        assert!(matches!(normalize_text_cow("Hello"), Cow::Owned(_)));
+        assert!(matches!(normalize_text_cow("a  b"), Cow::Owned(_)));
+        assert!(matches!(normalize_text_cow(" x"), Cow::Owned(_)));
+        assert!(matches!(normalize_text_cow("x "), Cow::Owned(_)));
+        assert!(matches!(normalize_text_cow("a\tb"), Cow::Owned(_)));
+        assert!(matches!(normalize_text_cow("Café"), Cow::Owned(_)));
     }
 
     #[test]

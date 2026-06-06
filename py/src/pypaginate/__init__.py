@@ -40,6 +40,7 @@ from pypaginate.domain.exceptions import (
 from pypaginate.domain.pages import CursorPage, OffsetPage
 from pypaginate.domain.params import CursorParams, OffsetParams
 from pypaginate.domain.specs import And, FilterGroup, FilterSpec, Or, SearchSpec, SortSpec
+from pypaginate.query import filter, search, sort  # noqa: A004 — `filter` mirrors the TS API
 
 
 try:
@@ -74,5 +75,8 @@ __all__ = [
     "SortSpec",
     "ValidationError",
     "__version__",
+    "filter",
     "paginate",
+    "search",
+    "sort",
 ]

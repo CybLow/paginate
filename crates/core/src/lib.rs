@@ -22,12 +22,14 @@
 
 #![forbid(unsafe_code)]
 
+// Internal-only modules: shared helpers and the error type. `CoreError`/`Result`
+// reach the public API through the flat re-exports below, never `core::error::`.
 mod accessor;
+mod coerce;
+mod error;
 
-pub mod coerce;
 pub mod columnar;
 pub mod cursor;
-pub mod error;
 pub mod filter;
 pub mod keyset;
 pub mod normalize;
@@ -35,8 +37,20 @@ pub mod pagination;
 pub mod pipeline;
 pub mod search;
 pub mod sort;
+pub mod validate;
 pub mod value;
 
+// Flat re-export of the public surface: callers (and the PyO3 / napi bindings)
+// write `paginate_core::FilterSpec`, never `paginate_core::filter::types::...`,
+// so the module layout can change without breaking them. This is the single,
+// canonical home of the domain contract the language bindings wrap.
+pub use columnar::Columns;
+pub use cursor::{decode_cursor, encode_cursor};
 pub use error::{CoreError, Result};
+pub use filter::{FilterGroup, FilterInput, FilterLogic, FilterNode, FilterOp, FilterSpec};
 pub use normalize::normalize_text;
+pub use pipeline::{offset_page, offset_page_searched, Page, SearchStage};
+pub use search::{FuzzyMode, SearchFieldMode, SearchSpec, TrigramIndex};
+pub use sort::{NullsPosition, SortDirection, SortSpec};
+pub use validate::MAX_LIMIT;
 pub use value::Value;

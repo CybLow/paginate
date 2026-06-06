@@ -1,55 +1,42 @@
-//! Shared string -> core-enum parsing for the spec tuples crossing the FFI
-//! boundary. One place maps the Python-side names (`"or"`, `"desc"`, `"first"`,
-//! `"prefix"`, `"fuzzy"`, ...) onto the core enums so the one-shot engines
-//! ([`crate::engines`]) and the resident dataset ([`crate::dataset`]) cannot
-//! drift in how they interpret a spec.
+//! Adapt the core's string→enum parsers to Python errors at the FFI boundary.
+//!
+//! The canonical token↔enum mapping lives in `paginate-core` (each enum's
+//! `from_token`), so the one-shot engines ([`crate::engines`]) and the resident
+//! dataset ([`crate::dataset`]) share **one** parser with the napi binding and
+//! the core itself — they cannot drift, and an unknown token fails fast instead
+//! of silently defaulting. This module only maps the resulting [`core::CoreError`]
+//! onto the corresponding Python exception.
+
+use pyo3::PyResult;
 
 use ::paginate_core as core;
 use core::filter::FilterLogic;
 use core::search::{FuzzyMode, SearchFieldMode};
 use core::sort::{NullsPosition, SortDirection};
 
-/// `"or"` -> `Or`, anything else -> `And` (the spec default).
-pub(crate) fn logic(name: &str) -> FilterLogic {
-    if name == "or" {
-        FilterLogic::Or
-    } else {
-        FilterLogic::And
-    }
+use crate::conv::core_err;
+
+/// Parse a filter-logic token (`"and"` / `"or"`).
+pub(crate) fn logic(name: &str) -> PyResult<FilterLogic> {
+    FilterLogic::from_token(name).map_err(|e| core_err(&e))
 }
 
-/// `"desc"` -> `Desc`, anything else -> `Asc` (the spec default).
-pub(crate) fn direction(name: &str) -> SortDirection {
-    if name == "desc" {
-        SortDirection::Desc
-    } else {
-        SortDirection::Asc
-    }
+/// Parse a sort-direction token (`"asc"` / `"desc"`).
+pub(crate) fn direction(name: &str) -> PyResult<SortDirection> {
+    SortDirection::from_token(name).map_err(|e| core_err(&e))
 }
 
-/// `"first"` -> `First`, anything else -> `Last` (the spec default).
-pub(crate) fn nulls(name: &str) -> NullsPosition {
-    if name == "first" {
-        NullsPosition::First
-    } else {
-        NullsPosition::Last
-    }
+/// Parse a nulls-position token (`"first"` / `"last"`).
+pub(crate) fn nulls(name: &str) -> PyResult<NullsPosition> {
+    NullsPosition::from_token(name).map_err(|e| core_err(&e))
 }
 
-/// `"prefix"`/`"exact"` -> the matching mode, anything else -> `Contains`.
-pub(crate) fn mode(name: &str) -> SearchFieldMode {
-    match name {
-        "prefix" => SearchFieldMode::Prefix,
-        "exact" => SearchFieldMode::Exact,
-        _ => SearchFieldMode::Contains,
-    }
+/// Parse a search-mode token (`"prefix"` / `"contains"` / `"exact"`).
+pub(crate) fn mode(name: &str) -> PyResult<SearchFieldMode> {
+    SearchFieldMode::from_token(name).map_err(|e| core_err(&e))
 }
 
-/// `"fuzzy"`/`"token_sort"` -> the fuzzy strategy, anything else -> `Exact`.
-pub(crate) fn fuzzy(name: &str) -> FuzzyMode {
-    match name {
-        "fuzzy" => FuzzyMode::Fuzzy,
-        "token_sort" => FuzzyMode::TokenSort,
-        _ => FuzzyMode::Exact,
-    }
+/// Parse a fuzzy-mode token (`"exact"` / `"fuzzy"` / `"token_sort"`).
+pub(crate) fn fuzzy(name: &str) -> PyResult<FuzzyMode> {
+    FuzzyMode::from_token(name).map_err(|e| core_err(&e))
 }

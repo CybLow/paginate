@@ -10,6 +10,10 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
+from pypaginate._core import (
+    validate_filter_depth as _validate_filter_depth,
+    validate_search_query as _validate_search_query,
+)
 from pypaginate.domain.enums import (
     FilterLogic,
     FuzzyMode,
@@ -102,9 +106,9 @@ class SearchSpec(BaseModel):
     @field_validator("query")
     @classmethod
     def _check_query_length(cls, v: str) -> str:
-        if len(v) > 500:
-            msg = "Query must not exceed 500 characters"
-            raise ValueError(msg)
+        # Rule + limit live in the Rust core (shared with the TS package); the
+        # ValueError it raises is wrapped by Pydantic into a ValidationError.
+        _validate_search_query(v)
         return v
 
 
@@ -130,10 +134,9 @@ class FilterGroup(BaseModel):
 
     @model_validator(mode="after")
     def _check_depth(self) -> FilterGroup:
-        depth = _measure_depth(self)
-        if depth > 5:
-            msg = "FilterGroup nesting must not exceed 5 levels"
-            raise ValueError(msg)
+        # Depth limit lives in the Rust core; we measure the tree here (it is a
+        # Python object at construction) and let the core enforce the bound.
+        _validate_filter_depth(_measure_depth(self))
         return self
 
 

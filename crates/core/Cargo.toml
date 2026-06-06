@@ -11,6 +11,10 @@ rust-version.workspace = true
 description = "Pure, language-agnostic pagination / filter / sort / search engine shared by pypaginate (Python) and the future JS/TS port."
 keywords = ["pagination", "filter", "sort", "search", "cursor"]
 categories = ["algorithms", "data-structures"]
+# A single bench target (`benches/main.rs`) wires up the per-subsystem bench
+# files; disable auto-discovery so those `mod` files and `benches/common/` are
+# not each mistaken for a standalone bench target.
+autobenches = false
 
 [lib]
 name = "paginate_core"
@@ -29,7 +33,7 @@ proptest = "1.8.0"
 criterion = "0.5"
 
 [[bench]]
-name = "core"
+name = "main"
 harness = false
 
 [lints]

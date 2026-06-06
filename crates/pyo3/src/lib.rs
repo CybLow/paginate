@@ -88,9 +88,38 @@ fn keyset_terms(ascending: Vec<bool>) -> Vec<Vec<(usize, &'static str)>> {
         .collect()
 }
 
+// -- input validation --------------------------------------------------------
+
+/// Validate offset params (`page >= 1`, `1 <= limit <= MAX_LIMIT`).
+#[pyfunction]
+fn validate_offset(page: i64, limit: i64) -> PyResult<()> {
+    core::validate::validate_offset(page, limit).map_err(|e| conv::core_err(&e))
+}
+
+/// Validate cursor params (valid limit; `after`/`before` not both set).
+#[pyfunction]
+fn validate_cursor(limit: i64, has_after: bool, has_before: bool) -> PyResult<()> {
+    core::validate::validate_cursor(limit, has_after, has_before).map_err(|e| conv::core_err(&e))
+}
+
+/// Validate a search query length (`<= MAX_QUERY_LEN` characters).
+#[pyfunction]
+fn validate_search_query(query: &str) -> PyResult<()> {
+    core::validate::validate_search_query(query).map_err(|e| conv::core_err(&e))
+}
+
+/// Validate a precomputed filter-nesting depth (`<= MAX_FILTER_DEPTH`).
+#[pyfunction]
+fn validate_filter_depth(depth: usize) -> PyResult<()> {
+    core::validate::validate_filter_depth(depth).map_err(|e| conv::core_err(&e))
+}
+
 #[pymodule]
 fn _core(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add("__version__", env!("CARGO_PKG_VERSION"))?;
+    module.add("MAX_LIMIT", core::validate::MAX_LIMIT)?;
+    module.add("MAX_QUERY_LEN", core::validate::MAX_QUERY_LEN)?;
+    module.add("MAX_FILTER_DEPTH", core::validate::MAX_FILTER_DEPTH)?;
     let py = module.py();
     module.add("PaginateError", py.get_type::<conv::PaginateError>())?;
     module.add(
@@ -108,6 +137,10 @@ fn _core(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(offset_meta, module)?)?;
     module.add_function(wrap_pyfunction!(clamp_page, module)?)?;
     module.add_function(wrap_pyfunction!(keyset_terms, module)?)?;
+    module.add_function(wrap_pyfunction!(validate_offset, module)?)?;
+    module.add_function(wrap_pyfunction!(validate_cursor, module)?)?;
+    module.add_function(wrap_pyfunction!(validate_search_query, module)?)?;
+    module.add_function(wrap_pyfunction!(validate_filter_depth, module)?)?;
     module.add_function(wrap_pyfunction!(engines::filter_indices, module)?)?;
     module.add_function(wrap_pyfunction!(engines::filter_group_indices, module)?)?;
     module.add_function(wrap_pyfunction!(engines::search_indices, module)?)?;

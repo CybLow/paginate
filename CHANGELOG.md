@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Performance
+- **Fuzzy search skips re-normalizing already-clean text.** `normalize_text_cow`
+  borrows its input unchanged when it is already normalized (lowercase ASCII,
+  single-spaced — the common case for emails / ids / slugs / titles), so per-item
+  trigram scoring and the resident index build allocate nothing for such fields.
+  Clean A/B at 100k: `fuzzy_indexed/indexed` 16.3→15.7 ms (−3.6%), `fuzzy_multi`
+  −1.2% (p<0.05); behaviour identical (a `proptest` pins `cow == owned`).
+- **String filters allocate nothing per row.** The `contains` / `starts_with` /
+  `ends_with` / `like` / `ilike` / `regex` operators (and the `in` / `not_in`
+  string/dict path) now **borrow** each item's field value
+  (`coerce::to_py_str_cow` → `Cow::Borrowed`) instead of cloning it into a fresh
+  `String` for every row. The per-row heap allocation is gone; on a 100k
+  `contains` scan the string-operator-specific cost (the part above the
+  int-comparison baseline) drops ~65% (≈0.5 ms → ≈0.2 ms), behaviour identical.
 - **Row-engine sort is ~3× faster** via decorate-sort-undecorate — each item's
   sort key is resolved once instead of on every comparison (100k rows, release:
   `single_int` 25.4→7.7 ms, `multi_int` 28.7→9.7 ms, the row pipeline 21.3→9.0 ms).
@@ -27,10 +40,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   trigram index, so results are unchanged.
 
 ### Added
+- **Top-level `search` / `filter` / `sort` helpers** in both packages
+  (`pypaginate.search/filter/sort`, `@cyblow/paginate` `search/filter/sort`):
+  one-shot, item-returning query functions over an in-memory sequence — the
+  ergonomic complement to `paginate(...)`. They wrap the native engine and
+  return host items (search in ranked order, filter in original order, sort
+  stable); each accepts the existing spec objects.
 - **Cross-language parity harness.** A frozen golden (`tests/fixtures/parity.json`)
   asserts the Rust core, the Python binding, and the Node/TS binding produce
   byte-identical cursors and identical filter/sort/search indices — wired into
-  the CI `parity` job so the wire format and engine semantics cannot drift.
+  the CI `parity` job so the wire format and engine semantics cannot drift. The
+  fixture now exercises **all 20 filter operators**, the `or` combinator, both
+  null-placement branches, and the `prefix`/`contains`/`exact` search modes, so
+  every enum branch the core parses is pinned across all three languages.
 - **Portable keyset predicate in the core** (`core::keyset::keyset_terms`,
   exposed as `_core.keyset_terms` / `keysetTerms`): the lexicographic
   cursor comparison is built once in Rust and rendered by each adapter, so
@@ -43,6 +65,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `drizzle` adapters that render the core keyset predicate.
 
 ### Fixed
+- **`paginate()` could return the wrong page type under `pypaginate[fast]`.**
+  With msgspec installed, the page factories returned a msgspec `FastOffsetPage`/
+  `FastCursorPage` `cast` to the declared Pydantic `OffsetPage`/`CursorPage`, so
+  `isinstance(page, OffsetPage)` was `False` and FastAPI `response_model=OffsetPage`
+  received a non-Pydantic object it could not validate. The factories now always
+  return the real Pydantic page.
 - **In-memory fuzzy search divergence.** `MemorySearchBackend`'s
   `FuzzyMode.FUZZY` path used a character-overlap heuristic that disagreed with
   the core's rapidfuzz scoring, and `FuzzyMode.TOKEN_SORT` was silently treated
@@ -69,8 +97,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Dataset` builds a trigram inverted index once and prefilters candidates for
   fuzzy queries (exact — no match dropped). Boolean fields now take the columnar
   fast path (~8× on bool-inclusive filters).
+- **Input validation lives once in the Rust core.** The pagination-param rules
+  (`page >= 1`, `1 <= limit <= MAX_LIMIT`, `after`/`before` mutual exclusion) and
+  the `MAX_LIMIT` bound were hand-written and duplicated in both packages
+  (Python Pydantic validators + a hand-rolled TS constructor, with the `1000`
+  literal in each). They now live once in the core (`paginate_core::validate`,
+  returning `CoreError::Validation`), exposed as `validate_offset`/`validate_cursor`
+  + `MAX_LIMIT`; the Python and TS `OffsetParams`/`CursorParams` are thin holders
+  that delegate to it (re-raising as their native `ValidationError`). No validator
+  (Pydantic, zod, …) is load-bearing for the rules anymore — only the
+  language-specific integer guard stays in the JS binding. The **spec** limits
+  (`SearchSpec` query ≤ `MAX_QUERY_LEN`, `FilterGroup` depth ≤ `MAX_FILTER_DEPTH`)
+  moved too: Python's validators delegate, and the napi binding now enforces them
+  at the engine boundary — so the **TS package gains query-length and nesting-depth
+  validation it previously lacked**, identical to Python's.
+- **Core is the single source of truth for the domain contract.** The string ↔
+  enum parsing for filter logic, sort direction, null placement, and search
+  mode/fuzzy now lives once in the Rust core as `<Enum>::from_token` (returning
+  `Result`); the PyO3 and napi bindings delegate to it instead of each carrying
+  their own copy, so the wire vocabulary cannot drift between languages.
+- **Python enum values are now the wire tokens.** `domain/enums.py` members carry
+  their canonical token as the value (`SortDirection.ASC = "asc"`, was `auto()`),
+  so `_native.py` bridges with a plain `member.value` and its five enum→string
+  mapping dicts are gone (the last in-Python token duplication). Minor: an enum's
+  `.value` is now its string token rather than an opaque int. An
+  **unknown enum token now raises** (a `FilterError`/`SortError`/`SearchError`)
+  instead of silently falling back to the default — the canonical tokens the
+  packages emit are unchanged, so this only surfaces genuinely invalid input.
+  The domain enums/specs are re-exported flat from the crate root and `CoreError`
+  is `#[non_exhaustive]`.
+- **Engine reorganized into focused modules under the 250-line limit.** The Rust
+  core's `search`, `cursor`, `columnar`, `pipeline`, and `sort` modules are now
+  directories (`mod.rs` gateway + submodules + co-located `tests.rs`); the
+  benchmark file is split into one criterion target plus per-domain files and a
+  shared `common/`; the PyO3 `engines` binding is split into `project`/`filter`/
+  `mod`. Internal helpers (`accessor`, `coerce`, `error`) are now private modules
+  — `lib.rs`'s flat re-exports are the crate's public surface. Behavior is
+  unchanged (all parity/property suites pass).
 
 ### Removed
+- **The `fast` / msgspec page path** (`FastOffsetPage`, `FastCursorPage`, and the
+  `pypaginate[fast]` extra). It duplicated the page types for a page-construction
+  micro-optimization (never the bottleneck — the Rust core and the query are) at
+  the cost of returning a type that lied about being the declared Pydantic page.
+  The single Pydantic `OffsetPage` / `CursorPage` is now the only page type, so
+  it validates, serializes, and works as a FastAPI `response_model` everywhere.
 - **BREAKING:** the pure-Python filter/sort engine and its public API —
   `pypaginate.filtering.OperatorRegistry`, `create_default_registry`, and the
   individual operator classes — are removed; the 20 operators now live in the

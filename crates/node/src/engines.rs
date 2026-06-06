@@ -37,15 +37,21 @@ fn operator_name(obj: &Map<String, Json>) -> Result<String> {
         .ok_or_else(|| Error::new(Status::InvalidArg, "spec.operator must be a string"))
 }
 
+/// Parse the optional `logic` token (default AND) via the core's parser, so the
+/// flat-spec and nested-group paths share one source with the PyO3 binding.
+fn parse_logic(obj: &Map<String, Json>) -> Result<core::filter::FilterLogic> {
+    match obj.get("logic").and_then(Json::as_str) {
+        Some(token) => core::filter::FilterLogic::from_token(token).map_err(|e| core_err(&e)),
+        None => Ok(core::filter::FilterLogic::And),
+    }
+}
+
 /// Parse one `{field, operator, value, logic?}` object into a core filter spec.
 fn parse_one_spec(obj: &Map<String, Json>) -> Result<core::filter::FilterSpec> {
     let op_name = operator_name(obj)?;
     let op = core::filter::FilterOp::from_name(&op_name)
         .ok_or_else(|| Error::new(Status::InvalidArg, format!("unknown operator: {op_name}")))?;
-    let logic = match obj.get("logic").and_then(Json::as_str) {
-        Some("or") => core::filter::FilterLogic::Or,
-        _ => core::filter::FilterLogic::And,
-    };
+    let logic = parse_logic(obj)?;
     Ok(core::filter::FilterSpec {
         field: required_str(obj, "field")?,
         op,
@@ -75,10 +81,7 @@ fn parse_filter_node(node: &Json) -> Result<core::filter::FilterNode> {
     let array = conditions
         .as_array()
         .ok_or_else(|| Error::new(Status::InvalidArg, "group.conditions must be an array"))?;
-    let logic = match obj.get("logic").and_then(Json::as_str) {
-        Some("or") => core::filter::FilterLogic::Or,
-        _ => core::filter::FilterLogic::And,
-    };
+    let logic = parse_logic(obj)?;
     let conditions = array
         .iter()
         .map(parse_filter_node)
@@ -98,12 +101,16 @@ pub(crate) fn parse_sort_specs(specs: &Json) -> Result<Vec<core::sort::SortSpec>
     for spec in array {
         let obj = spec_object(spec)?;
         let direction = match obj.get("direction").and_then(Json::as_str) {
-            Some("desc") => core::sort::SortDirection::Desc,
-            _ => core::sort::SortDirection::Asc,
+            Some(token) => {
+                core::sort::SortDirection::from_token(token).map_err(|e| core_err(&e))?
+            }
+            None => core::sort::SortDirection::Asc,
         };
         let nulls = match obj.get("nulls").and_then(Json::as_str) {
-            Some("first") => core::sort::NullsPosition::First,
-            _ => core::sort::NullsPosition::Last,
+            Some(token) => {
+                core::sort::NullsPosition::from_token(token).map_err(|e| core_err(&e))?
+            }
+            None => core::sort::NullsPosition::Last,
         };
         out.push(core::sort::SortSpec {
             field: required_str(obj, "field")?,
@@ -114,21 +121,21 @@ pub(crate) fn parse_sort_specs(specs: &Json) -> Result<Vec<core::sort::SortSpec>
     Ok(out)
 }
 
-/// Map a mode string to the core enum (default `Contains`).
-fn search_mode(mode: Option<&str>) -> core::search::SearchFieldMode {
+/// Map an optional mode token to the core enum (default `Contains`) via the
+/// core's parser — shared with the PyO3 binding so the two cannot drift.
+fn search_mode(mode: Option<&str>) -> Result<core::search::SearchFieldMode> {
     match mode {
-        Some("prefix") => core::search::SearchFieldMode::Prefix,
-        Some("exact") => core::search::SearchFieldMode::Exact,
-        _ => core::search::SearchFieldMode::Contains,
+        Some(token) => core::search::SearchFieldMode::from_token(token).map_err(|e| core_err(&e)),
+        None => Ok(core::search::SearchFieldMode::Contains),
     }
 }
 
-/// Map a fuzzy string to the core enum (default `Exact`).
-fn search_fuzzy(fuzzy: Option<&str>) -> core::search::FuzzyMode {
+/// Map an optional fuzzy token to the core enum (default `Exact`) via the core's
+/// parser.
+fn search_fuzzy(fuzzy: Option<&str>) -> Result<core::search::FuzzyMode> {
     match fuzzy {
-        Some("fuzzy") => core::search::FuzzyMode::Fuzzy,
-        Some("token_sort") => core::search::FuzzyMode::TokenSort,
-        _ => core::search::FuzzyMode::Exact,
+        Some(token) => core::search::FuzzyMode::from_token(token).map_err(|e| core_err(&e)),
+        None => Ok(core::search::FuzzyMode::Exact),
     }
 }
 
@@ -142,17 +149,18 @@ pub(crate) fn build_search_spec(
     threshold: Option<i64>,
     min_length: Option<u32>,
     max_results: Option<u32>,
-) -> core::search::SearchSpec {
-    core::search::SearchSpec {
+) -> Result<core::search::SearchSpec> {
+    core::validate::validate_search_query(&query).map_err(|e| core_err(&e))?;
+    Ok(core::search::SearchSpec {
         query,
         fields,
         weights: None,
-        mode: search_mode(mode.as_deref()),
-        fuzzy: search_fuzzy(fuzzy.as_deref()),
+        mode: search_mode(mode.as_deref())?,
+        fuzzy: search_fuzzy(fuzzy.as_deref())?,
         threshold: threshold.unwrap_or(30),
         min_length: min_length.unwrap_or(1) as usize,
         max_results: max_results.map(|m| m as usize),
-    }
+    })
 }
 
 /// Owned parts of a search stage, parsed from a `{query, fields, mode?, fuzzy?,
@@ -177,11 +185,13 @@ pub(crate) fn parse_search_stage(spec: &Json) -> Result<SearchStageParts> {
                 .collect()
         })
         .unwrap_or_default();
+    let query = required_str(obj, "query")?;
+    core::validate::validate_search_query(&query).map_err(|e| core_err(&e))?;
     Ok((
-        required_str(obj, "query")?,
+        query,
         fields,
-        search_mode(obj.get("mode").and_then(Json::as_str)),
-        search_fuzzy(obj.get("fuzzy").and_then(Json::as_str)),
+        search_mode(obj.get("mode").and_then(Json::as_str))?,
+        search_fuzzy(obj.get("fuzzy").and_then(Json::as_str))?,
         obj.get("threshold").and_then(Json::as_i64).unwrap_or(30),
     ))
 }
@@ -206,6 +216,7 @@ pub fn filter_group_indices(items: Json, group: Json) -> Result<Vec<u32>> {
         core::filter::FilterNode::Group(group) => core::filter::FilterInput::Group(group),
         core::filter::FilterNode::Spec(spec) => core::filter::FilterInput::Flat(vec![spec]),
     };
+    core::validate::validate_filter_input(&input).map_err(|e| core_err(&e))?;
     core::filter::filter_indices(&values, &input)
         .map(to_u32)
         .map_err(|e| core_err(&e))
@@ -243,7 +254,7 @@ pub fn search_indices(
         threshold,
         min_length,
         max_results,
-    );
+    )?;
     core::search::search_indices(&values, &spec)
         .map(to_u32)
         .map_err(|e| core_err(&e))

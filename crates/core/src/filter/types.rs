@@ -2,17 +2,37 @@
 //! flat-list / nested-group input tree. Pure type definitions; the evaluation
 //! engine that consumes them lives in [`super`].
 
+use crate::error::{CoreError, Result};
 use crate::value::Value;
 
 /// Logical combinator for filter conditions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum FilterLogic {
     And,
     Or,
 }
 
+impl FilterLogic {
+    /// Parse the wire token (`"and"` / `"or"`) shared by every binding.
+    ///
+    /// # Errors
+    /// [`CoreError::Filter`] for any other token (fail fast on a typo at the
+    /// boundary rather than silently defaulting).
+    pub fn from_token(token: &str) -> Result<Self> {
+        match token {
+            "and" => Ok(Self::And),
+            "or" => Ok(Self::Or),
+            other => Err(CoreError::Filter {
+                message: format!("unknown filter logic: {other}"),
+            }),
+        }
+    }
+}
+
 /// One of the 20 supported filter operators.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum FilterOp {
     Eq,
     Ne,

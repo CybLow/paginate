@@ -1,7 +1,11 @@
 """Pagination input parameters — Elysia-style type inference.
 
-Each params class contains only the fields relevant to its mode.
-Illegal states are unrepresentable.
+Each params class contains only the fields relevant to its mode. The validation
+rules and the ``MAX_LIMIT`` bound live **once** in the Rust core
+(``pypaginate._core``) — shared with the TS package so they cannot drift, and so
+no validator (Pydantic, zod, …) is load-bearing for them. These models are thin
+holders that delegate to the core and re-raise its error as the public
+:class:`ValidationError`.
 """
 
 from __future__ import annotations
@@ -10,40 +14,24 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, computed_field, model_validator
 
-from pypaginate._core import clamp_page as _clamp_page
+from pypaginate._core import (
+    MAX_LIMIT,
+    clamp_page as _clamp_page,
+    validate_cursor as _validate_cursor,
+    validate_offset as _validate_offset,
+)
 from pypaginate.domain.exceptions import ValidationError
 
 
-MAX_LIMIT = 1000
-"""Maximum allowed page limit (DoS mitigation)."""
-
-
-def _validate_limit(value: int) -> None:
-    if value < 1:
-        raise ValidationError(
-            "limit must be >= 1",
-            field="limit",
-            details={"limit": value},
-        )
-    if value > MAX_LIMIT:
-        raise ValidationError(
-            f"limit must not exceed {MAX_LIMIT}",
-            field="limit",
-            details={"limit": value, "max": MAX_LIMIT},
-        )
+__all__ = ["MAX_LIMIT", "BaseParams", "CursorParams", "OffsetParams"]
 
 
 class BaseParams(BaseModel):
-    """Shared pagination input — just limit."""
+    """Shared pagination input — just limit (concrete subclasses validate)."""
 
     model_config = ConfigDict(frozen=True)
 
     limit: int = 20
-
-    @model_validator(mode="after")
-    def _check_limit(self) -> Self:
-        _validate_limit(self.limit)
-        return self
 
 
 class OffsetParams(BaseParams):
@@ -57,13 +45,11 @@ class OffsetParams(BaseParams):
     page: int = 1
 
     @model_validator(mode="after")
-    def _check_page(self) -> Self:
-        if self.page < 1:
-            raise ValidationError(
-                "page must be >= 1",
-                field="page",
-                details={"page": self.page},
-            )
+    def _validate(self) -> Self:
+        try:
+            _validate_offset(self.page, self.limit)
+        except ValueError as exc:  # the core raises a ValueError; surface it as ours
+            raise ValidationError(str(exc)) from exc
         return self
 
     @computed_field  # type: ignore[prop-decorator]
@@ -73,13 +59,13 @@ class OffsetParams(BaseParams):
         return (self.page - 1) * self.limit
 
     def clamp(self, total: int) -> Self:
-        """Clamp page number to valid bounds.
+        """Clamp the page number into valid bounds.
 
         Args:
             total: Total number of items available.
 
         Returns:
-            New params clamped to valid range, or self if valid.
+            New params clamped to the valid range, or ``self`` if already valid.
         """
         # Clamp math lives in the native engine (single source of truth). Guard
         # negative totals at 0 so the u64 boundary never rejects them.
@@ -102,12 +88,9 @@ class CursorParams(BaseParams):
     before: str | None = None
 
     @model_validator(mode="after")
-    def _check_exclusivity(self) -> Self:
-        if self.after is not None and self.before is not None:
-            raise ValidationError(
-                "after and before are mutually exclusive",
-            )
+    def _validate(self) -> Self:
+        try:
+            _validate_cursor(self.limit, self.after is not None, self.before is not None)
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
         return self
-
-
-__all__ = ["MAX_LIMIT", "BaseParams", "CursorParams", "OffsetParams"]

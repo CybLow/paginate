@@ -51,9 +51,9 @@ fn member(field: &Value, spec: &Value) -> Result<bool> {
     match spec {
         Value::List(items) => Ok(items.iter().any(|e| coerce::eq(field, e))),
         // `x in "string"` is a substring test in Python.
-        Value::Str(haystack) => Ok(haystack.contains(coerce::to_py_str(field).as_str())),
+        Value::Str(haystack) => Ok(haystack.contains(coerce::to_py_str_cow(field).as_ref())),
         // `key in dict` is key membership.
-        Value::Map(map) => Ok(map.contains_key(coerce::to_py_str(field).as_str())),
+        Value::Map(map) => Ok(map.contains_key(coerce::to_py_str_cow(field).as_ref())),
         other => Err(CoreError::Filter {
             message: format!("argument of type {other:?} is not iterable"),
         }),

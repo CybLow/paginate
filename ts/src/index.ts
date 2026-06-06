@@ -40,6 +40,10 @@ export type {
 // -- one-shot engines -------------------------------------------------------
 export { filterIndices, filterGroupIndices, sortIndices, searchIndices } from "./engines.js";
 
+// -- one-shot item-returning helpers (filter / sort / search) ----------------
+export { filter, sort, search } from "./query.js";
+export type { FilterWhere, SortBy } from "./query.js";
+
 // -- params + pages ---------------------------------------------------------
 export { OffsetParams, CursorParams, MAX_LIMIT } from "./params.js";
 export { offsetPage, cursorPage } from "./pages.js";
