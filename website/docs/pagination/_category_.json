@@ -1,0 +1,5 @@
+{
+  "label": "Pagination",
+  "position": 4,
+  "link": { "type": "generated-index", "description": "Offset and keyset (cursor) pagination, plus the resident in-memory Dataset." }
+}
