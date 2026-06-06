@@ -1,1 +1,0 @@
-"""pypaginate test suite."""

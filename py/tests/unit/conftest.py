@@ -1,43 +1,41 @@
-"""Unit-specific fixtures.
+"""Local fixtures for the in-memory core unit tests.
 
-Engine fixtures (filter_engine, sort_engine, search_engine) are inherited
-from root ``tests/conftest.py`` — do NOT redefine them here.
-
-This module provides:
-- ``sample_users``: 4 named users (Alice, Bob, Charlie, Diana)
-- ``search_items``: 4 items with name + email for search tests
+Self-contained sample data only — no shared/root conftest is defined here so
+that sibling test categories keep ownership of their own fixtures.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from dataclasses import dataclass
 
 import pytest
 
 
-# -- Data fixtures -----------------------------------------------------------
+@dataclass(frozen=True)
+class Person:
+    """A tiny attribute-access record (proves the engine reads objects too)."""
+
+    name: str
+    age: int
+    city: str | None
 
 
-@pytest.fixture()
-def sample_users() -> list[dict[str, Any]]:
-    """Four users with name, age, email for unit tests.
-
-    Overrides root conftest sample_users (8 users from make_users).
-    """
+@pytest.fixture
+def people() -> list[dict[str, object]]:
+    """A small list-of-dicts dataset used across the query/dataset tests."""
     return [
-        {"name": "Alice", "age": 30, "email": "alice@test.com"},
-        {"name": "Bob", "age": 25, "email": "bob@test.com"},
-        {"name": "Charlie", "age": 35, "email": "charlie@test.com"},
-        {"name": "Diana", "age": 28, "email": "diana@test.com"},
+        {"name": "Alice", "age": 30, "city": "Paris"},
+        {"name": "bob", "age": 25, "city": "Lyon"},
+        {"name": "Carol", "age": 40, "city": None},
+        {"name": "Dave", "age": 25, "city": "Paris"},
     ]
 
 
-@pytest.fixture()
-def search_items() -> list[dict[str, str]]:
-    """Four items with name and email for search tests."""
+@pytest.fixture
+def person_objects() -> list[Person]:
+    """The same dataset as attribute-access objects."""
     return [
-        {"name": "Alice Johnson", "email": "alice@example.com"},
-        {"name": "Bob Smith", "email": "bob@example.com"},
-        {"name": "Charlie Brown", "email": "charlie@test.com"},
-        {"name": "Diana Prince", "email": "diana@example.com"},
+        Person(name="Alice", age=30, city="Paris"),
+        Person(name="bob", age=25, city="Lyon"),
+        Person(name="Carol", age=40, city=None),
     ]
