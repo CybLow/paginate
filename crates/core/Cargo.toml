@@ -24,9 +24,16 @@ name = "paginate_core"
 [dependencies]
 base64 = { workspace = true }
 regex = { workspace = true }
+schemars = { version = "1.0", optional = true }
 serde_json = { workspace = true }
 shlex = { workspace = true }
 unicode-normalization = { workspace = true }
+
+[features]
+# Off by default: the published engine carries no schemars dependency. Enables
+# the `schema` module + its `export_schema` test, which emits the cross-language
+# JSON Schema (the single source of truth for the generated Python / TS types).
+schema = ["dep:schemars"]
 
 [dev-dependencies]
 proptest = "1.8.0"

@@ -40,6 +40,11 @@ pub mod sort;
 pub mod validate;
 pub mod value;
 
+// Wire-form DTOs + JSON Schema export — the cross-language type contract. Behind
+// the `schema` feature so the default build carries no schemars dependency.
+#[cfg(feature = "schema")]
+pub mod schema;
+
 // Flat re-export of the public surface: callers (and the PyO3 / napi bindings)
 // write `paginate_core::FilterSpec`, never `paginate_core::filter::types::...`,
 // so the module layout can change without breaking them. This is the single,
