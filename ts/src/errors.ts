@@ -1,12 +1,64 @@
-/** Error hierarchy mirroring pypaginate's domain exceptions. */
+/**
+ * Error hierarchy mirroring pypaginate's `domain/exceptions.py`.
+ *
+ * Every error carries a structured `details` payload (always an object) for
+ * programmatic handling, matching the Python side. `instanceof` works across
+ * transpile targets (the base restores the prototype chain).
+ */
 
-/** Base error for all paginate failures. */
-export class PaginateError extends Error {}
+/** Options accepted by the base error (and, with `field`, by some subclasses). */
+export interface PaginateErrorOptions {
+  details?: Record<string, unknown>;
+}
 
-/** Invalid pagination input (bad page/limit, malformed cursor, ...). */
-export class ValidationError extends PaginateError {
-  constructor(message: string) {
+/** Base error for all paginate failures (aliased as `PaginationError`). */
+export class PaginateError extends Error {
+  /** Structured, programmatic detail payload (mirrors pypaginate's `details`). */
+  readonly details: Readonly<Record<string, unknown>>;
+
+  constructor(message: string, options: PaginateErrorOptions = {}) {
     super(message);
-    this.name = "ValidationError";
+    this.name = new.target.name;
+    this.details = options.details ?? {};
+    // Restore the prototype chain so `instanceof` holds when down-levelled.
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+/** Cross-language alias: pypaginate's base is named `PaginationError`. */
+export const PaginationError = PaginateError;
+
+/** Raised when pagination configuration is invalid. */
+export class ConfigurationError extends PaginateError {}
+
+/** Raised when filtering operations fail (optionally naming the `field`). */
+export class FilterError extends PaginateError {
+  readonly field?: string;
+
+  constructor(message: string, options: PaginateErrorOptions & { field?: string } = {}) {
+    super(message, options);
+    this.field = options.field;
+  }
+}
+
+/** Raised when filter specification validation fails. */
+export class FilterValidationError extends FilterError {}
+
+/** Raised when search operations fail. */
+export class SearchError extends PaginateError {}
+
+/** Raised when search query processing fails. */
+export class SearchQueryError extends SearchError {}
+
+/** Raised when sort operations fail. */
+export class SortError extends PaginateError {}
+
+/** Raised when generic validation fails (bad page/limit, malformed cursor, ...). */
+export class ValidationError extends PaginateError {
+  readonly field?: string;
+
+  constructor(message: string, options: PaginateErrorOptions & { field?: string } = {}) {
+    super(message, options);
+    this.field = options.field;
   }
 }

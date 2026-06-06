@@ -71,11 +71,12 @@ test("top-level filter / sort / search return items (spec, list, and group)", ()
 test("core enforces query length + filter depth (shared rules with Python)", () => {
   // Query longer than MAX_QUERY_LEN is rejected at the engine boundary.
   assert.throws(() => p.searchIndices(PEOPLE, { query: "x".repeat(501), fields: ["name"] }));
-  // Filter nesting deeper than the allowed maximum (5) is rejected...
-  let deep = { field: "age", operator: "gte", value: 1 };
-  for (let i = 0; i < 6; i++) deep = p.And(deep); // depth 6
-  assert.throws(() => p.filterGroupIndices(PEOPLE, deep));
-  // ...but depth 5 is allowed.
+  // Filter nesting deeper than the maximum (5) is now rejected at construction.
+  assert.throws(() => {
+    let deep = { field: "age", operator: "gte", value: 1 };
+    for (let i = 0; i < 6; i++) deep = p.And(deep); // depth 6 throws at the 6th
+  });
+  // ...but depth 5 is allowed and filters fine.
   let ok = { field: "age", operator: "gte", value: 1 };
   for (let i = 0; i < 5; i++) ok = p.And(ok); // depth 5
   assert.doesNotThrow(() => p.filterGroupIndices(PEOPLE, ok));
@@ -209,4 +210,52 @@ test("offsetPage / cursorPage builders", () => {
   assert.equal(cp.nextCursor, "xyz");
   assert.equal(cp.hasPrevious, false);
   assert.equal(cp.previousCursor, null);
+});
+
+test("error hierarchy mirrors pypaginate (instanceof + structured details)", () => {
+  const e = new p.FilterValidationError("bad filter", { field: "age", details: { op: "eq" } });
+  assert.ok(e instanceof p.FilterValidationError);
+  assert.ok(e instanceof p.FilterError);
+  assert.ok(e instanceof p.PaginateError);
+  assert.ok(e instanceof Error);
+  assert.equal(e.field, "age");
+  assert.deepEqual(e.details, { op: "eq" });
+  assert.equal(e.name, "FilterValidationError");
+  assert.equal(p.PaginationError, p.PaginateError); // cross-language alias
+  assert.deepEqual(new p.SearchError("x").details, {}); // details always an object
+});
+
+test("search weights bias ranking toward the weighted field", () => {
+  const DOCS = [
+    { id: 1, title: "alpha", body: "zzz" },
+    { id: 2, title: "zzz", body: "alpha" },
+  ];
+  // Heavily weighting `title` ranks the title match (doc 0) first; weighting
+  // `body` flips it to the body match (doc 1) first.
+  assert.equal(
+    p.searchIndices(DOCS, { query: "alpha", fields: ["title", "body"], weights: { title: 100 } })[0],
+    0,
+  );
+  assert.equal(
+    p.searchIndices(DOCS, { query: "alpha", fields: ["title", "body"], weights: { body: 100 } })[0],
+    1,
+  );
+});
+
+test("And/Or validate nesting depth at construction (FilterValidationError)", () => {
+  let ok = { field: "age", operator: "gte", value: 1 };
+  for (let i = 0; i < 5; i++) ok = p.And(ok); // depth 5 is allowed
+  assert.ok(ok.logic === "and");
+  assert.throws(() => {
+    let deep = { field: "age", operator: "gte", value: 1 };
+    for (let i = 0; i < 6; i++) deep = p.And(deep); // depth 6 throws at the 6th
+  }, p.FilterValidationError);
+});
+
+test("searchSpec() validates query length at construction (SearchQueryError)", () => {
+  assert.doesNotThrow(() => p.searchSpec({ query: "ok", fields: ["name"] }));
+  assert.throws(
+    () => p.searchSpec({ query: "x".repeat(501), fields: ["name"] }),
+    p.SearchQueryError,
+  );
 });

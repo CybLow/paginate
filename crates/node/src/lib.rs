@@ -28,6 +28,14 @@ use ::paginate_core as core;
 #[napi]
 pub const MAX_LIMIT: u32 = core::validate::MAX_LIMIT as u32;
 
+/// Maximum search query length, in characters — shared with the Python package.
+#[napi]
+pub const MAX_QUERY_LEN: u32 = core::validate::MAX_QUERY_LEN as u32;
+
+/// Maximum `FilterGroup` nesting depth — shared with the Python package.
+#[napi]
+pub const MAX_FILTER_DEPTH: u32 = core::validate::MAX_FILTER_DEPTH as u32;
+
 // -- input validation --------------------------------------------------------
 
 /// Validate offset params (`page >= 1`, `1 <= limit <= MAX_LIMIT`). Throws on
@@ -41,6 +49,20 @@ pub fn validate_offset(page: i64, limit: i64) -> napi::Result<()> {
 #[napi]
 pub fn validate_cursor(limit: i64, has_after: bool, has_before: bool) -> napi::Result<()> {
     core::validate::validate_cursor(limit, has_after, has_before).map_err(|e| core_err(&e))
+}
+
+/// Validate a search query length (`<= MAX_QUERY_LEN` characters). Throws on
+/// failure; the TS layer rethrows as SearchQueryError.
+#[napi]
+pub fn validate_search_query(query: String) -> napi::Result<()> {
+    core::validate::validate_search_query(&query).map_err(|e| core_err(&e))
+}
+
+/// Validate a precomputed filter-nesting depth (`<= MAX_FILTER_DEPTH`). The TS
+/// layer measures group depth and rethrows failures as FilterValidationError.
+#[napi]
+pub fn validate_filter_depth(depth: u32) -> napi::Result<()> {
+    core::validate::validate_filter_depth(depth as usize).map_err(|e| core_err(&e))
 }
 
 // -- cursor codec ------------------------------------------------------------

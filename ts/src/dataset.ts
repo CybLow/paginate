@@ -46,6 +46,7 @@ export class Dataset<T extends object> {
         spec.threshold,
         spec.minLength,
         spec.maxResults,
+        spec.weights as Record<string, number> | undefined,
       ),
     );
   }

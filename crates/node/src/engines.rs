@@ -8,6 +8,8 @@
 //! across napi dwarfs the tiny per-item work. These exist for *behaviour parity*
 //! with pypaginate's exact semantics; for speed use the resident `Dataset`.
 
+use std::collections::HashMap;
+
 use napi::bindgen_prelude::{Error, Result, Status};
 use napi_derive::napi;
 use serde_json::{Map, Value as Json};
@@ -141,6 +143,7 @@ fn search_fuzzy(fuzzy: Option<&str>) -> Result<core::search::FuzzyMode> {
 
 /// Build a [`core::search::SearchSpec`] from the optional JS arguments (shared
 /// by `search_indices` and `Dataset::search`).
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn build_search_spec(
     query: String,
     fields: Vec<String>,
@@ -149,12 +152,15 @@ pub(crate) fn build_search_spec(
     threshold: Option<i64>,
     min_length: Option<u32>,
     max_results: Option<u32>,
+    weights: Option<HashMap<String, f64>>,
 ) -> Result<core::search::SearchSpec> {
     core::validate::validate_search_query(&query).map_err(|e| core_err(&e))?;
     Ok(core::search::SearchSpec {
         query,
         fields,
-        weights: None,
+        // Field names pass through directly (no synthetic re-keying), so weights
+        // key by the same names the caller supplied.
+        weights: weights.map(|w| w.into_iter().collect()),
         mode: search_mode(mode.as_deref())?,
         fuzzy: search_fuzzy(fuzzy.as_deref())?,
         threshold: threshold.unwrap_or(30),
@@ -244,6 +250,7 @@ pub fn search_indices(
     threshold: Option<i64>,
     min_length: Option<u32>,
     max_results: Option<u32>,
+    weights: Option<HashMap<String, f64>>,
 ) -> Result<Vec<u32>> {
     let values = json_array_to_values(&items)?;
     let spec = build_search_spec(
@@ -254,6 +261,7 @@ pub fn search_indices(
         threshold,
         min_length,
         max_results,
+        weights,
     )?;
     core::search::search_indices(&values, &spec)
         .map(to_u32)

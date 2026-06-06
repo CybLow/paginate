@@ -25,7 +25,7 @@ export { keysetTerms } from "./keyset.js";
 export type { KeysetOp, KeysetTerm } from "./keyset.js";
 
 // -- specs (filter / sort / search) -----------------------------------------
-export { And, Or } from "./specs.js";
+export { And, Or, searchSpec } from "./specs.js";
 export type {
   FilterOperator,
   FilterLogic,
@@ -50,7 +50,18 @@ export { offsetPage, cursorPage } from "./pages.js";
 export type { OffsetPage, CursorPage } from "./pages.js";
 
 // -- errors -----------------------------------------------------------------
-export { PaginateError, ValidationError } from "./errors.js";
+export {
+  PaginateError,
+  PaginationError,
+  ConfigurationError,
+  FilterError,
+  FilterValidationError,
+  SearchError,
+  SearchQueryError,
+  SortError,
+  ValidationError,
+} from "./errors.js";
+export type { PaginateErrorOptions } from "./errors.js";
 
 // -- resident dataset + top-level paginate ----------------------------------
 export { Dataset } from "./dataset.js";
