@@ -1,4 +1,5 @@
 use super::*;
+use std::collections::BTreeMap;
 
 fn item(pairs: &[(&str, &str)]) -> Value {
     let mut map = BTreeMap::new();
@@ -179,4 +180,28 @@ fn match_indices_token_sort_ignores_word_order() {
     )
     .unwrap();
     assert_eq!(idx, vec![0]);
+}
+
+#[test]
+fn mode_and_fuzzy_from_token_parse_and_reject() {
+    assert_eq!(
+        SearchFieldMode::from_token("prefix").unwrap(),
+        SearchFieldMode::Prefix
+    );
+    assert_eq!(
+        SearchFieldMode::from_token("contains").unwrap(),
+        SearchFieldMode::Contains
+    );
+    assert_eq!(
+        FuzzyMode::from_token("token_sort").unwrap(),
+        FuzzyMode::TokenSort
+    );
+    assert!(matches!(
+        SearchFieldMode::from_token("substr"),
+        Err(crate::CoreError::Search { .. })
+    ));
+    assert!(matches!(
+        FuzzyMode::from_token("levenshtein"),
+        Err(crate::CoreError::Search { .. })
+    ));
 }

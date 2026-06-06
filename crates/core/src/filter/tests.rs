@@ -217,3 +217,56 @@ fn op_names_round_trip() {
     );
     assert_eq!(FilterOp::from_name("nope"), None);
 }
+
+#[test]
+fn filter_logic_from_token_parses_and_rejects() {
+    assert_eq!(FilterLogic::from_token("and").unwrap(), FilterLogic::And);
+    assert_eq!(FilterLogic::from_token("or").unwrap(), FilterLogic::Or);
+    assert!(matches!(
+        FilterLogic::from_token("xor"),
+        Err(crate::CoreError::Filter { .. })
+    ));
+}
+
+#[test]
+fn remaining_operators_behavior() {
+    // Each item has all three fields present (the strict resolver errors on a
+    // missing field), with `x` null in items 0 and 2 and `s` empty in item 1.
+    let items = vec![
+        item(&[
+            ("n", Value::Int(10)),
+            ("s", Value::Str("apple".into())),
+            ("x", Value::Null),
+        ]),
+        item(&[
+            ("n", Value::Int(20)),
+            ("s", Value::Str("".into())),
+            ("x", Value::Int(1)),
+        ]),
+        item(&[
+            ("n", Value::Int(30)),
+            ("s", Value::Str("apricot".into())),
+            ("x", Value::Null),
+        ]),
+    ];
+    let run = |op: FilterOp, field: &str, value: Value| {
+        filter_indices(&items, &flat(vec![spec(field, op, value)])).unwrap()
+    };
+    assert_eq!(run(FilterOp::Ne, "n", Value::Int(20)), vec![0, 2]);
+    assert_eq!(run(FilterOp::Lt, "n", Value::Int(20)), vec![0]);
+    assert_eq!(run(FilterOp::Lte, "n", Value::Int(20)), vec![0, 1]);
+    assert_eq!(
+        run(FilterOp::StartsWith, "s", Value::Str("ap".into())),
+        vec![0, 2]
+    );
+    assert_eq!(
+        run(FilterOp::EndsWith, "s", Value::Str("cot".into())),
+        vec![2]
+    );
+    let not_in = Value::List(vec![Value::Int(10), Value::Int(20)]);
+    assert_eq!(run(FilterOp::NotIn, "n", not_in), vec![2]);
+    assert_eq!(run(FilterOp::IsNull, "x", Value::Null), vec![0, 2]);
+    assert_eq!(run(FilterOp::IsNotNull, "x", Value::Null), vec![1]);
+    assert_eq!(run(FilterOp::NotEmpty, "s", Value::Null), vec![0, 2]);
+    assert_eq!(run(FilterOp::Exists, "x", Value::Null), vec![0, 1, 2]);
+}

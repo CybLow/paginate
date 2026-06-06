@@ -1,20 +1,24 @@
 /**
  * Pagination input parameters — Elysia-style: the params type determines the
- * page type. Mirrors pypaginate's `domain/params.py` (illegal states are
- * unrepresentable; validation rules match, including `MAX_LIMIT`).
+ * page type. The range/exclusivity rules and `MAX_LIMIT` live **once** in the
+ * Rust core (shared with pypaginate, so they can't drift); these classes are
+ * thin holders that delegate to it and rethrow as `ValidationError`. Only the
+ * JS-specific integer guard stays here (JS has no integer type).
  */
+import * as core from "@cyblow/paginate-core";
+
 import { clampPage } from "./pagination.js";
 import { ValidationError } from "./errors.js";
 
-/** Maximum allowed page limit (DoS mitigation). Mirrors pypaginate.MAX_LIMIT. */
-export const MAX_LIMIT = 1000;
+/** Maximum allowed page limit (DoS mitigation). Single source: the Rust core. */
+export const MAX_LIMIT: number = core.MAX_LIMIT;
 
-function validateLimit(limit: number): void {
-  if (!Number.isInteger(limit) || limit < 1) {
-    throw new ValidationError("limit must be >= 1");
-  }
-  if (limit > MAX_LIMIT) {
-    throw new ValidationError(`limit must not exceed ${MAX_LIMIT}`);
+/** Run a core validator, rethrowing its native error as a `ValidationError`. */
+function check(validate: () => void): void {
+  try {
+    validate();
+  } catch (e) {
+    throw new ValidationError((e as Error).message);
   }
 }
 
@@ -24,10 +28,10 @@ export class OffsetParams {
   readonly limit: number;
 
   constructor({ page = 1, limit = 20 }: { page?: number; limit?: number } = {}) {
-    if (!Number.isInteger(page) || page < 1) {
-      throw new ValidationError("page must be >= 1");
+    if (!Number.isInteger(page) || !Number.isInteger(limit)) {
+      throw new ValidationError("page and limit must be integers");
     }
-    validateLimit(limit);
+    check(() => core.validateOffset(page, limit));
     this.page = page;
     this.limit = limit;
   }
@@ -55,10 +59,10 @@ export class CursorParams {
     after = null,
     before = null,
   }: { limit?: number; after?: string | null; before?: string | null } = {}) {
-    validateLimit(limit);
-    if (after !== null && before !== null) {
-      throw new ValidationError("after and before are mutually exclusive");
+    if (!Number.isInteger(limit)) {
+      throw new ValidationError("limit must be an integer");
     }
+    check(() => core.validateCursor(limit, after !== null, before !== null));
     this.limit = limit;
     this.after = after;
     this.before = before;

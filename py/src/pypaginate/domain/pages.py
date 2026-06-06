@@ -1,17 +1,15 @@
 """Pagination result pages.
 
-OffsetPage and CursorPage are separate types with clean schemas.
-No null leakage — each page has only the fields for its mode.
-
-When msgspec is installed (``pypaginate[fast]``), page construction
-uses msgspec.Struct for near-zero overhead. The returned object
-duck-types as a Pydantic model with ``.model_dump()`` support.
+OffsetPage and CursorPage are separate types with clean schemas: no null
+leakage — each page carries only the fields for its mode. They are Pydantic
+models so they validate, serialize (`.model_dump()` / `.model_dump_json()`), and
+plug directly into FastAPI `response_model=...`.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import Generic, TypeVar, cast
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict
 
@@ -20,13 +18,6 @@ from pypaginate.domain.params import CursorParams, OffsetParams
 
 
 ItemT = TypeVar("ItemT")
-
-try:
-    from pypaginate.domain.fast_pages import FastCursorPage, FastOffsetPage
-
-    _HAS_MSGSPEC = True
-except ImportError:
-    _HAS_MSGSPEC = False
 
 
 class BasePage(BaseModel, Generic[ItemT]):
@@ -77,26 +68,11 @@ class OffsetPage(BasePage[ItemT]):
             params: Offset parameters used.
 
         Returns:
-            An ``OffsetPage`` (a ``FastOffsetPage`` when msgspec is installed,
-            which duck-types it field-for-field with ``.model_dump()``).
+            The ``OffsetPage`` for these results.
         """
         # Page metadata comes from the native engine (single source of truth):
         # (page, pages, has_next, has_previous) — no Python recompute.
         page, pages, has_next, has_previous = _offset_meta(params.page, params.limit, total)
-        if _HAS_MSGSPEC:
-            # Cast at this single boundary so every caller gets a precise type.
-            return cast(
-                "OffsetPage[ItemT]",
-                FastOffsetPage(
-                    items=items,
-                    limit=params.limit,
-                    has_next=has_next,
-                    has_previous=has_previous,
-                    total=total,
-                    page=page,
-                    pages=pages,
-                ),
-            )
         return cls(
             items=items,
             limit=params.limit,
@@ -135,22 +111,8 @@ class CursorPage(BasePage[ItemT]):
             previous_cursor: Cursor for the previous page.
 
         Returns:
-            A ``CursorPage`` (a ``FastCursorPage`` when msgspec is installed,
-            which duck-types it field-for-field with ``.model_dump()``).
+            The ``CursorPage`` for these results.
         """
-        if _HAS_MSGSPEC:
-            # Cast at this single boundary so every caller gets a precise type.
-            return cast(
-                "CursorPage[ItemT]",
-                FastCursorPage(
-                    items=items,
-                    limit=params.limit,
-                    has_next=next_cursor is not None,
-                    has_previous=previous_cursor is not None,
-                    next_cursor=next_cursor,
-                    previous_cursor=previous_cursor,
-                ),
-            )
         return cls(
             items=items,
             limit=params.limit,

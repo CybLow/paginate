@@ -31,13 +31,6 @@ from pypaginate._core import (
     search_indices,
     sort_indices,
 )
-from pypaginate.domain.enums import (
-    FilterLogic,
-    FuzzyMode,
-    NullsPosition,
-    SearchFieldMode,
-    SortDirection,
-)
 from pypaginate.domain.exceptions import FilterError, SearchError, SortError
 from pypaginate.domain.specs import FilterGroup
 
@@ -47,19 +40,8 @@ if TYPE_CHECKING:
 
     from pypaginate.domain.specs import FilterSpec, SearchSpec, SortSpec
 
-_LOGIC = {FilterLogic.AND: "and", FilterLogic.OR: "or"}
-_DIRECTION = {SortDirection.ASC: "asc", SortDirection.DESC: "desc"}
-_NULLS = {NullsPosition.FIRST: "first", NullsPosition.LAST: "last"}
-_SEARCH_MODE = {
-    SearchFieldMode.PREFIX: "prefix",
-    SearchFieldMode.CONTAINS: "contains",
-    SearchFieldMode.EXACT: "exact",
-}
-_FUZZY = {
-    FuzzyMode.EXACT: "exact",
-    FuzzyMode.FUZZY: "fuzzy",
-    FuzzyMode.TOKEN_SORT: "token_sort",
-}
+# Each enum member's `.value` is its canonical wire token (see `domain/enums`),
+# so the bridge to the native engine is a plain `.value` — no mapping tables.
 
 _NORM_CACHE: dict[str, str] = {}
 _NORM_CACHE_MAX = 8192
@@ -95,7 +77,7 @@ def and_filter_tuples(
 
 def sort_tuples(sorting: Sequence[SortSpec]) -> list[tuple[str, str, str]]:
     """Sort spec tuples ``(field, direction, null placement)`` for the engine."""
-    return [(s.field, _DIRECTION[s.direction], _NULLS[s.nulls]) for s in sorting]
+    return [(s.field, s.direction.value, s.nulls.value) for s in sorting]
 
 
 def filter_and(items: Sequence[Any], filters: Sequence[FilterSpec]) -> list[Any]:
@@ -108,7 +90,7 @@ def filter_and(items: Sequence[Any], filters: Sequence[FilterSpec]) -> list[Any]
 def filter_logic(items: Sequence[Any], filters: Sequence[FilterSpec]) -> list[Any]:
     """Filter flat specs, honoring each spec's own AND/OR ``logic``."""
     rows = list(items)
-    specs = [(f.field, f.operator, f.value, _LOGIC[f.logic]) for f in filters]
+    specs = [(f.field, f.operator, f.value, f.logic.value) for f in filters]
     return _take(rows, lambda: filter_indices(rows, specs), FilterError)
 
 
@@ -139,8 +121,8 @@ def search(items: Sequence[Any], spec: SearchSpec) -> list[Any]:
             rows,
             spec.query,
             list(spec.fields),
-            mode=_SEARCH_MODE[spec.mode],
-            fuzzy=_FUZZY[spec.fuzzy],
+            mode=spec.mode.value,
+            fuzzy=spec.fuzzy.value,
             threshold=spec.threshold,
             min_length=spec.min_length,
             max_results=spec.max_results,
@@ -164,8 +146,8 @@ def match_filter(items: Sequence[Any], spec: SearchSpec) -> list[Any]:
             rows,
             spec.query,
             list(spec.fields),
-            mode=_SEARCH_MODE[spec.mode],
-            fuzzy=_FUZZY[spec.fuzzy],
+            mode=spec.mode.value,
+            fuzzy=spec.fuzzy.value,
             threshold=spec.threshold,
         ),
         SearchError,
@@ -179,8 +161,8 @@ def search_stage_tuple(spec: SearchSpec) -> tuple[str, list[str], str, str, int]
     return (
         spec.query,
         list(spec.fields),
-        _SEARCH_MODE[spec.mode],
-        _FUZZY[spec.fuzzy],
+        spec.mode.value,
+        spec.fuzzy.value,
         spec.threshold,
     )
 
@@ -200,8 +182,8 @@ def _take(
 def _to_node(node: FilterSpec | FilterGroup) -> Any:
     """Convert a FilterSpec/FilterGroup tree to the recursive ``_core`` form."""
     if isinstance(node, FilterGroup):
-        return (_LOGIC[node.logic], [_to_node(c) for c in node.conditions])
-    return (node.field, node.operator, node.value, _LOGIC[node.logic])
+        return (node.logic.value, [_to_node(c) for c in node.conditions])
+    return (node.field, node.operator, node.value, node.logic.value)
 
 
 __all__ = [

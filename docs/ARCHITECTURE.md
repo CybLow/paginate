@@ -64,21 +64,24 @@ paginate-core/
 ├── rust-toolchain.toml              # stable + clippy/rustfmt (wasm32 optional)
 ├── crates/
 │   ├── core/                        # PURE engine — NO bindings/ORM/DB/HTTP
-│   │   └── src/
-│   │       ├── value.rs             # Value: the JSON-like FFI data model
-│   │       ├── error.rs             # CoreError
-│   │       ├── accessor.rs          # dotted-path resolve (shared)
-│   │       ├── coerce.rs            # Python-semantics compare/eq/str(x)
-│   │       ├── cursor.rs            # keyset cursor codec (wire-compatible)
-│   │       ├── pagination.rs        # offset / pages / has_next math
-│   │       ├── normalize.rs         # text normalization
-│   │       ├── filter/              # 20 operators, groups, like, regex (+ types)
-│   │       ├── sort.rs              # stable multi-key sort, null placement
-│   │       ├── search/              # tokenizer + matching + ranking
-│   │       ├── columnar.rs          # typed-column fast path (filter + sort)
-│   │       └── pipeline.rs          # filter → sort → paginate in one pass
-│   ├── py/                          # PyO3 adapter -> `paginate_core` module
-│   │   └── src/{lib.rs, conv.rs, engines.rs, dataset.rs}
+│   │   ├── src/
+│   │   │   ├── lib.rs               # flat re-exports = the public API surface
+│   │   │   ├── value.rs             # Value: the JSON-like FFI data model
+│   │   │   ├── error.rs             # CoreError (#[non_exhaustive])
+│   │   │   ├── accessor.rs          # dotted-path resolve (shared, private)
+│   │   │   ├── coerce.rs            # Python-semantics compare/eq/str(x)
+│   │   │   ├── cursor/              # keyset cursor codec: mod + encode + decode
+│   │   │   ├── pagination.rs        # offset / pages / has_next math
+│   │   │   ├── keyset.rs            # keyset predicate terms
+│   │   │   ├── normalize.rs         # text normalization
+│   │   │   ├── filter/              # 20 operators, groups, like, regex (+ types)
+│   │   │   ├── sort/                # stable multi-key sort, null placement
+│   │   │   ├── search/              # spec + ranked + index + match_filter
+│   │   │   ├── columnar/            # typed-column fast path: mod + build + filter
+│   │   │   └── pipeline/            # filter → search → sort → paginate (mod + stages)
+│   │   └── benches/                 # one `main` criterion target + common/ + per-domain
+│   ├── pyo3/                        # PyO3 adapter -> `paginate_core` module
+│   │   └── src/{lib.rs, conv.rs, specs.rs, engines/, dataset.rs}
 │   └── node/                        # napi-rs adapter -> Node/TS .node addon
 │       └── src/{lib.rs, conv.rs, engines.rs, dataset.rs}
 └── packages/
@@ -88,9 +91,29 @@ paginate-core/
                                      #   (e.g. Prisma / Drizzle / TypeORM)
 ```
 
-`crates/core`, `crates/pyo3`, and `crates/node` are built and validated;
-`packages/` holds consumer scaffolding. The core engine is complete and the
-adapters layer on top without engine changes.
+Each multi-concern module is a **directory** (`mod.rs` gateway + focused
+submodules + co-located `tests.rs`); single-concern modules stay flat files.
+Every source file is kept under the 250-line limit. `crates/core`, `crates/pyo3`,
+and `crates/node` are built and validated; `packages/` holds consumer
+scaffolding. The core engine is complete and the adapters layer on top without
+engine changes.
+
+## Single source of truth — the domain contract
+
+The core owns the **canonical domain contract** so the bindings never redefine
+it and cannot drift:
+
+- **Enums / specs** (`FilterLogic`, `FilterOp`, `SortDirection`, `NullsPosition`,
+  `SearchFieldMode`, `FuzzyMode`, and the `*Spec` structs) live once in the core
+  and are **re-exported flat** from `lib.rs` (`paginate_core::FilterSpec`, never
+  `paginate_core::filter::types::FilterSpec`).
+- **String ↔ enum parsing** lives once, as `<Enum>::from_token(&str) -> Result`.
+  Both the PyO3 (`crates/pyo3/src/specs.rs`) and napi (`crates/node/src/engines.rs`)
+  bindings delegate to it, so the wire vocabulary has a single home and an
+  unknown token **fails fast** at the boundary instead of silently defaulting.
+- **Error taxonomy** is `CoreError` (`#[non_exhaustive]`). Each binding *maps* it
+  to a host exception (`crates/pyo3/src/conv.rs` → the `PaginateError` family;
+  `crates/node/src/conv.rs` → a napi error); neither defines a parallel set.
 
 ## Ports & adapters — the strict boundary rule
 

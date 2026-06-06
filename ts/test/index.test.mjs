@@ -41,6 +41,52 @@ test("one-shot filter / sort / search semantics", () => {
   assert.deepEqual(p.searchIndices(PEOPLE, { query: "a", fields: ["name"] }), [0, 2]);
 });
 
+test("top-level filter / sort / search return items (spec, list, and group)", () => {
+  // single spec, flat list, and nested group all route correctly
+  assert.deepEqual(p.filter(PEOPLE, { field: "age", operator: "gte", value: 18 }), [
+    PEOPLE[0],
+    PEOPLE[2],
+  ]);
+  assert.deepEqual(p.filter(PEOPLE, [{ field: "age", operator: "gte", value: 18 }]), [
+    PEOPLE[0],
+    PEOPLE[2],
+  ]);
+  const group = p.And(
+    p.Or(
+      { field: "name", operator: "eq", value: "Alice" },
+      { field: "name", operator: "eq", value: "Cara" },
+    ),
+    { field: "age", operator: "gte", value: 18 },
+  );
+  assert.deepEqual(p.filter(PEOPLE, group), [PEOPLE[0], PEOPLE[2]]);
+  // sort accepts a single key or a list; search returns items in ranked order
+  assert.deepEqual(p.sort(PEOPLE, { field: "age", direction: "desc" }), [
+    PEOPLE[2],
+    PEOPLE[0],
+    PEOPLE[1],
+  ]);
+  assert.deepEqual(p.search(PEOPLE, { query: "a", fields: ["name"] }), [PEOPLE[0], PEOPLE[2]]);
+});
+
+test("core enforces query length + filter depth (shared rules with Python)", () => {
+  // Query longer than MAX_QUERY_LEN is rejected at the engine boundary.
+  assert.throws(() => p.searchIndices(PEOPLE, { query: "x".repeat(501), fields: ["name"] }));
+  // Filter nesting deeper than the allowed maximum (5) is rejected...
+  let deep = { field: "age", operator: "gte", value: 1 };
+  for (let i = 0; i < 6; i++) deep = p.And(deep); // depth 6
+  assert.throws(() => p.filterGroupIndices(PEOPLE, deep));
+  // ...but depth 5 is allowed.
+  let ok = { field: "age", operator: "gte", value: 1 };
+  for (let i = 0; i < 5; i++) ok = p.And(ok); // depth 5
+  assert.doesNotThrow(() => p.filterGroupIndices(PEOPLE, ok));
+});
+
+test("invalid enum token fails fast at the boundary (strict from_token)", () => {
+  assert.throws(() => p.searchIndices(PEOPLE, { query: "a", fields: ["name"], mode: "bogus" }));
+  assert.throws(() => p.sortIndices(PEOPLE, [{ field: "age", direction: "upward" }]));
+  assert.throws(() => p.filterIndices(PEOPLE, [{ field: "age", operator: "gte", value: 1, logic: "nand" }]));
+});
+
 test("legacy `op` alias still accepted by the binding", () => {
   assert.deepEqual(p.filterIndices(PEOPLE, [{ field: "age", op: "gte", value: 18 }]), [0, 2]);
 });

@@ -76,23 +76,61 @@ _PEOPLE = [
     {"age": 20, "name": "alicia"},
 ]
 
+# A nullable field exercises the null/empty/exists operators (the field must be
+# present — the engine errors on a truly missing field).
+_NULLABLE = [
+    {"name": "a", "tag": None},
+    {"name": "b", "tag": ""},
+    {"name": "c", "tag": "x"},
+]
+
+# A null in the sort key exercises both null-placement branches.
+_SORTABLE_NULLS = [
+    {"n": 2},
+    {"n": None},
+    {"n": 1},
+]
+
+# Cover every filter operator and the OR combinator, so the three languages are
+# pinned to identical results across the whole operator surface.
 FILTER_CASES = [
-    {"items": _PEOPLE, "specs": [["age", "gte", 18, "and"]]},  # -> 1,2,3
-    {"items": _PEOPLE, "specs": [["name", "contains", "ali", "and"]]},  # -> 0,3
-    {
-        "items": _PEOPLE,
-        "specs": [["age", "eq", 20, "and"], ["name", "starts_with", "a", "and"]],
-    },  # -> 3
+    {"items": _PEOPLE, "specs": [["age", "gte", 18, "and"]]},
+    {"items": _PEOPLE, "specs": [["age", "gt", 20, "and"]]},
+    {"items": _PEOPLE, "specs": [["age", "lt", 20, "and"]]},
+    {"items": _PEOPLE, "specs": [["age", "lte", 20, "and"]]},
+    {"items": _PEOPLE, "specs": [["age", "ne", 20, "and"]]},
+    {"items": _PEOPLE, "specs": [["name", "contains", "ali", "and"]]},
+    {"items": _PEOPLE, "specs": [["name", "starts_with", "a", "and"]]},
+    {"items": _PEOPLE, "specs": [["name", "ends_with", "a", "and"]]},
+    {"items": _PEOPLE, "specs": [["name", "like", "ali%", "and"]]},
+    {"items": _PEOPLE, "specs": [["name", "ilike", "ALI%", "and"]]},
+    {"items": _PEOPLE, "specs": [["name", "regex", "^a", "and"]]},
+    {"items": _PEOPLE, "specs": [["age", "in", [15, 30], "and"]]},
+    {"items": _PEOPLE, "specs": [["age", "not_in", [20], "and"]]},
+    {"items": _PEOPLE, "specs": [["age", "between", [18, 25], "and"]]},
+    # OR across two flat specs (the only logic branch previously untested).
+    {"items": _PEOPLE, "specs": [["age", "eq", 15, "or"], ["name", "eq", "cyril", "or"]]},
+    # null / empty / exists on a present-but-nullable field.
+    {"items": _NULLABLE, "specs": [["tag", "is_null", None, "and"]]},
+    {"items": _NULLABLE, "specs": [["tag", "is_not_null", None, "and"]]},
+    {"items": _NULLABLE, "specs": [["tag", "empty", None, "and"]]},
+    {"items": _NULLABLE, "specs": [["tag", "not_empty", None, "and"]]},
+    {"items": _NULLABLE, "specs": [["tag", "exists", None, "and"]]},
 ]
 
 SORT_CASES = [
     {"items": _PEOPLE, "specs": [["age", "desc", "last"]]},
     {"items": _PEOPLE, "specs": [["age", "asc", "last"], ["name", "asc", "last"]]},
+    # Null placement: last vs first (previously only "last" was exercised).
+    {"items": _SORTABLE_NULLS, "specs": [["n", "asc", "last"]]},
+    {"items": _SORTABLE_NULLS, "specs": [["n", "asc", "first"]]},
+    {"items": _SORTABLE_NULLS, "specs": [["n", "desc", "first"]]},
 ]
 
 SEARCH_CASES = [
     {"items": _PEOPLE, "query": "ali", "fields": ["name"], "mode": "contains"},
     {"items": _PEOPLE, "query": "bob", "fields": ["name"], "mode": "exact"},
+    {"items": _PEOPLE, "query": "ali", "fields": ["name"], "mode": "prefix"},
 ]
 
 

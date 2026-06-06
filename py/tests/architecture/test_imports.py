@@ -78,6 +78,7 @@ def test_no_circular_imports():
         "pypaginate.domain.enums",
         "pypaginate.domain.protocols",
         "pypaginate._native",
+        "pypaginate.query",
         "pypaginate.adapters.memory.backend",
     ]
     for mod in modules:

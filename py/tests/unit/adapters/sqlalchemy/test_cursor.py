@@ -14,9 +14,8 @@ from sqlalchemy.orm import DeclarativeBase, Session
 from pypaginate.adapters.sqlalchemy.cursor import (
     SQLAlchemyCursorBackend,
     SyncSQLAlchemyCursorBackend,
-    _compute_cursors,
-    _prepare_query,
 )
+from pypaginate.adapters.sqlalchemy.cursor_page import _compute_cursors, prepare_query
 
 
 # -- ORM setup ---------------------------------------------------------------
@@ -196,7 +195,7 @@ class TestAsyncFetchPage:
 class TestPrepareQuery:
     def test_no_cursor(self) -> None:
         query = select(Item).order_by(Item.id.asc())
-        _stmt, cols, backwards = _prepare_query(
+        _stmt, cols, backwards = prepare_query(
             query,
             limit=5,
             after=None,
@@ -210,7 +209,7 @@ class TestPrepareQuery:
 
         query = select(Item).order_by(Item.id.asc())
         cursor = encode_cursor((3,))
-        _stmt, cols, backwards = _prepare_query(
+        _stmt, cols, backwards = prepare_query(
             query,
             limit=5,
             after=cursor,

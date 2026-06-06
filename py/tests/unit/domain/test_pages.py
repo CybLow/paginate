@@ -141,12 +141,7 @@ class TestEmptyPage:
 
 
 class TestPydanticBasePageProtocol:
-    """Test BasePage dunder methods on Pydantic instances directly.
-
-    The .create() factories return FastPage (msgspec) objects when
-    msgspec is installed. These tests cover the Pydantic fallback
-    by constructing pages via the Pydantic constructor.
-    """
+    """The BasePage dunder methods (iter/len/getitem) on page instances."""
 
     def test_iter_yields_items(self) -> None:
         page = OffsetPage(

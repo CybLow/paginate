@@ -71,17 +71,13 @@ fastapi = [
 django = [
     "Django>=4.2",
 ]
-
-fast = [
-    "msgspec>=0.18.0",
-]
 security = [
     "google-re2>=1.0",
 ]
 
 # Combo extras
 all = [
-    "pypaginate[sqlalchemy,search,fastapi,django,fast]",
+    "pypaginate[sqlalchemy,search,fastapi,django]",
 ]
 
 # ==========================

@@ -23,6 +23,26 @@ use serde_json::Value as Json;
 use crate::conv::{core_err, json_to_value, value_to_json};
 use ::paginate_core as core;
 
+/// Maximum page size (DoS mitigation) — the single source of truth, shared with
+/// the Python package; the TS `MAX_LIMIT` re-exports this.
+#[napi]
+pub const MAX_LIMIT: u32 = core::validate::MAX_LIMIT as u32;
+
+// -- input validation --------------------------------------------------------
+
+/// Validate offset params (`page >= 1`, `1 <= limit <= MAX_LIMIT`). Throws on
+/// failure with a host-facing message; the TS layer rethrows as ValidationError.
+#[napi]
+pub fn validate_offset(page: i64, limit: i64) -> napi::Result<()> {
+    core::validate::validate_offset(page, limit).map_err(|e| core_err(&e))
+}
+
+/// Validate cursor params (valid limit; `after`/`before` not both set).
+#[napi]
+pub fn validate_cursor(limit: i64, has_after: bool, has_before: bool) -> napi::Result<()> {
+    core::validate::validate_cursor(limit, has_after, has_before).map_err(|e| core_err(&e))
+}
+
 // -- cursor codec ------------------------------------------------------------
 
 /// Encode a list of ordering values into a URL-safe cursor string.

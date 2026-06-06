@@ -162,9 +162,7 @@ class TestSearchInPipeline:
         native, pure = _both(
             PEOPLE,
             OffsetParams(page=1, limit=10),
-            search=SearchSpec(
-                query="alce", fields=("name",), fuzzy=FuzzyMode.FUZZY, threshold=30
-            ),
+            search=SearchSpec(query="alce", fields=("name",), fuzzy=FuzzyMode.FUZZY, threshold=30),
         )
         assert _fields(native) == _fields(pure)
 

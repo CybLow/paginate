@@ -121,7 +121,7 @@ impl Dataset {
             threshold,
             min_length,
             max_results,
-        );
+        )?;
         core::search::search_with_index(&self.rows, &spec, &self.trigram)
             .map(to_u32)
             .map_err(|e| core_err(&e))

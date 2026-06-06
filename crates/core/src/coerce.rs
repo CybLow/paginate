@@ -12,6 +12,7 @@
 //! * **Mismatched kinds** are *not* comparable (Python raises `TypeError`); we
 //!   return `None`, and the caller turns that into an error.
 
+use std::borrow::Cow;
 use std::cmp::Ordering;
 
 use crate::value::Value;
@@ -90,25 +91,33 @@ pub fn eq(a: &Value, b: &Value) -> bool {
 }
 
 /// `str(value)` with Python semantics for the scalar cases that matter to the
-/// string operators (`contains`, `starts_with`, ...). Field values feeding
-/// those operators are virtually always strings, where this is exact.
+/// string operators (`contains`, `starts_with`, ...), **borrowing** the
+/// string-carrying variants so the per-item field side allocates nothing (the
+/// hot path — field values feeding those operators are virtually always strings).
 #[must_use]
-pub fn to_py_str(v: &Value) -> String {
+pub fn to_py_str_cow(v: &Value) -> Cow<'_, str> {
     match v {
         Value::Str(s)
         | Value::DateTime(s)
         | Value::Date(s)
         | Value::Decimal(s)
-        | Value::Uuid(s) => s.clone(),
-        Value::Int(i) => i.to_string(),
+        | Value::Uuid(s) => Cow::Borrowed(s),
+        Value::Int(i) => Cow::Owned(i.to_string()),
         // `{:?}` keeps the trailing `.0` on integral floats, like Python's repr.
-        Value::Float(f) => format!("{f:?}"),
-        Value::Bool(true) => "True".to_owned(),
-        Value::Bool(false) => "False".to_owned(),
-        Value::Null => "None".to_owned(),
-        Value::Bytes(b) => String::from_utf8_lossy(b).into_owned(),
-        Value::List(_) | Value::Map(_) => format!("{v:?}"),
+        Value::Float(f) => Cow::Owned(format!("{f:?}")),
+        Value::Bool(true) => Cow::Borrowed("True"),
+        Value::Bool(false) => Cow::Borrowed("False"),
+        Value::Null => Cow::Borrowed("None"),
+        Value::Bytes(b) => Cow::Owned(String::from_utf8_lossy(b).into_owned()),
+        Value::List(_) | Value::Map(_) => Cow::Owned(format!("{v:?}")),
     }
+}
+
+/// Owned `str(value)` — see [`to_py_str_cow`]. Used for the spec side, which is
+/// stringified once at compile time rather than per item.
+#[must_use]
+pub fn to_py_str(v: &Value) -> String {
+    to_py_str_cow(v).into_owned()
 }
 
 #[cfg(test)]

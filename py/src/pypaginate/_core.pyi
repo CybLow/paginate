@@ -1,13 +1,19 @@
 """Type stubs for the native ``paginate_core`` extension module.
 
-Hand-maintained to mirror the PyO3 bindings (`crates/py/src`). Shipped in the
-wheel alongside `py.typed` so consumers and mypy get full typing.
+Hand-maintained to mirror the PyO3 bindings (`crates/pyo3/src`). Shipped in the
+wheel alongside `py.typed` so consumers and type checkers get full typing.
 """
 
 from collections.abc import Sequence
 from typing import Any
 
 __version__: str
+
+# Validation limits (DoS mitigation) — the single source of truth for every
+# binding, mirrored by the TS package.
+MAX_LIMIT: int
+MAX_QUERY_LEN: int
+MAX_FILTER_DEPTH: int
 
 # -- typed exceptions --------------------------------------------------------
 
@@ -41,6 +47,13 @@ def offset(page: int, limit: int) -> int: ...
 def max_pages(total: int, limit: int) -> int: ...
 def offset_meta(page: int, limit: int, total: int) -> tuple[int, int, bool, bool]: ...
 def clamp_page(page: int, limit: int, total: int) -> int: ...
+
+# -- input validation (raises ValueError on failure) -------------------------
+
+def validate_offset(page: int, limit: int) -> None: ...
+def validate_cursor(limit: int, has_after: bool, has_before: bool) -> None: ...
+def validate_search_query(query: str) -> None: ...
+def validate_filter_depth(depth: int) -> None: ...
 
 # -- keyset (cursor) predicate -----------------------------------------------
 

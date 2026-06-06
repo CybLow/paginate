@@ -146,5 +146,10 @@ pub fn core_err(err: &CoreError) -> PyErr {
         CoreError::Filter { .. } => FilterError::new_err(message),
         CoreError::Sort { .. } => SortError::new_err(message),
         CoreError::Search { .. } => SearchError::new_err(message),
+        // Input validation surfaces as a plain ValueError; the Python params
+        // layer re-raises it as the public `ValidationError`.
+        CoreError::Validation { .. } => PyValueError::new_err(message),
+        // `CoreError` is `#[non_exhaustive]`; a future variant maps to the base.
+        _ => PaginateError::new_err(message),
     }
 }

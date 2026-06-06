@@ -106,8 +106,8 @@ impl Dataset {
             query,
             fields,
             weights: None,
-            mode: wire::mode(mode),
-            fuzzy: wire::fuzzy(fuzzy),
+            mode: wire::mode(mode)?,
+            fuzzy: wire::fuzzy(fuzzy)?,
             threshold,
             min_length,
             max_results,
@@ -189,7 +189,7 @@ fn parse_filters(specs: &Bound<'_, PyList>) -> PyResult<Vec<core::filter::Filter
             field: tuple.get_item(0)?.extract()?,
             op,
             value: py_to_value(&tuple.get_item(2)?)?,
-            logic: wire::logic(&tuple.get_item(3)?.extract::<String>()?),
+            logic: wire::logic(&tuple.get_item(3)?.extract::<String>()?)?,
         });
     }
     Ok(out)
@@ -201,8 +201,8 @@ fn parse_sorts(specs: &Bound<'_, PyList>) -> PyResult<Vec<core::sort::SortSpec>>
         let tuple = spec.cast::<PyTuple>()?;
         out.push(core::sort::SortSpec {
             field: tuple.get_item(0)?.extract()?,
-            direction: wire::direction(&tuple.get_item(1)?.extract::<String>()?),
-            nulls: wire::nulls(&tuple.get_item(2)?.extract::<String>()?),
+            direction: wire::direction(&tuple.get_item(1)?.extract::<String>()?)?,
+            nulls: wire::nulls(&tuple.get_item(2)?.extract::<String>()?)?,
         });
     }
     Ok(out)
@@ -222,8 +222,8 @@ fn parse_search_stage(spec: &Bound<'_, PyTuple>) -> PyResult<SearchStageParts> {
     Ok((
         spec.get_item(0)?.extract()?,
         spec.get_item(1)?.extract()?,
-        wire::mode(&spec.get_item(2)?.extract::<String>()?),
-        wire::fuzzy(&spec.get_item(3)?.extract::<String>()?),
+        wire::mode(&spec.get_item(2)?.extract::<String>()?)?,
+        wire::fuzzy(&spec.get_item(3)?.extract::<String>()?)?,
         spec.get_item(4)?.extract()?,
     ))
 }

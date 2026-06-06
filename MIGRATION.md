@@ -16,7 +16,30 @@ Most code needs **no change** — `paginate(...)`, `OffsetParams` / `CursorParam
 `FilterSpec` / `SortSpec` / `SearchSpec`, `OffsetPage` / `CursorPage`, and the
 FastAPI / SQLAlchemy adapters are unchanged.
 
+**New — one-shot `search` / `filter` / `sort`.** For querying an in-memory list
+directly (no backend), the package now exports three helpers alongside
+`paginate`:
+
+```python
+from pypaginate import search, filter, sort
+from pypaginate import FilterSpec, SortSpec, SearchSpec, SortDirection
+
+adults = filter(users, FilterSpec(field="age", operator="gte", value=18))
+ranked = search(users, SearchSpec(query="alice", fields=("name", "email")))
+ordered = sort(users, SortSpec(field="created_at", direction=SortDirection.DESC))
+```
+
+Each returns a new list of host items (search in ranked order). The TS package
+(`@cyblow/paginate`) exports the same `search` / `filter` / `sort` for symmetry.
+
 What changed under the hood (only relevant if you imported internals):
+
+- **Invalid enum tokens now raise instead of defaulting.** The canonical
+  string↔enum parsing moved into the Rust core (`<Enum>::from_token`), shared by
+  every binding. The tokens the package emits are unchanged, so this only affects
+  hand-built specs that passed an unrecognized value (e.g. a misspelled mode),
+  which now raise a `FilterError`/`SortError`/`SearchError` rather than silently
+  using the default.
 
 - **The native `_core` extension is mandatory** — there is no pure-Python
   fallback for the cursor codec, offset math, or fuzzy search. Install a wheel

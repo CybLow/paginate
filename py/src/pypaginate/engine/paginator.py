@@ -42,7 +42,7 @@ class Paginator(Generic[ItemT]):
             params: Offset pagination parameters.
 
         Returns:
-            OffsetPage (or FastOffsetPage if msgspec installed).
+            The OffsetPage for these results.
         """
         total = self._backend.count(query)
         effective = self._apply_overflow(params, total)
@@ -87,7 +87,7 @@ class AsyncPaginator(Generic[ItemT]):
             params: Offset pagination parameters.
 
         Returns:
-            OffsetPage (or FastOffsetPage if msgspec installed).
+            The OffsetPage for these results.
         """
         total = await self._backend.count(query)
         effective = self._apply_overflow(params, total)

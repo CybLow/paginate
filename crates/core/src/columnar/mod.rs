@@ -25,17 +25,21 @@
 //! Anything else — an unknown field, a string/regex operator, a value whose
 //! coercion can't be proven equal — returns `None`, and the caller falls back to
 //! the row engine. Silently correct beats cleverly wrong.
+//!
+//! [`coerce`]: crate::coerce
+
+mod build;
+mod filter;
 
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 
-use crate::coerce;
 use crate::filter::FilterOp;
 use crate::sort::SortDirection;
 use crate::value::Value;
 
 /// A dense, single-type column extracted from every row of a dataset.
-enum Column {
+pub(crate) enum Column {
     Int(Vec<i64>),
     Float(Vec<f64>),
     Str(Vec<String>),
@@ -58,7 +62,7 @@ impl Columns {
             return Self { columns };
         };
         for (field, seed) in first {
-            if let Some(column) = build_column(items, field, seed) {
+            if let Some(column) = build::build_column(items, field, seed) {
                 columns.insert(field.clone(), column);
             }
         }
@@ -73,10 +77,10 @@ impl Columns {
     #[must_use]
     pub fn filter(&self, field: &str, op: FilterOp, value: &Value) -> Option<Vec<usize>> {
         match self.columns.get(field)? {
-            Column::Int(col) => filter_int(col, op, value),
-            Column::Float(col) => filter_float(col, op, value),
-            Column::Str(col) => filter_str(col, op, value),
-            Column::Bool(col) => filter_bool(col, op, value),
+            Column::Int(col) => filter::filter_int(col, op, value),
+            Column::Float(col) => filter::filter_float(col, op, value),
+            Column::Str(col) => filter::filter_str(col, op, value),
+            Column::Bool(col) => filter::filter_bool(col, op, value),
         }
     }
 
@@ -134,124 +138,6 @@ fn oriented(ordering: Ordering, desc: bool) -> Ordering {
     } else {
         ordering
     }
-}
-
-fn build_column(items: &[Value], field: &str, seed: &Value) -> Option<Column> {
-    match seed {
-        Value::Int(_) => build_int(items, field),
-        Value::Float(f) if !f.is_nan() => build_float(items, field),
-        Value::Str(_) => build_str(items, field),
-        Value::Bool(_) => build_bool(items, field),
-        _ => None,
-    }
-}
-
-/// The value of `field` in `item`, or `None` if `item` is not a map or the
-/// field is absent (either disqualifies the column).
-fn field_value<'a>(item: &'a Value, field: &str) -> Option<&'a Value> {
-    match item {
-        Value::Map(map) => map.get(field),
-        _ => None,
-    }
-}
-
-fn build_int(items: &[Value], field: &str) -> Option<Column> {
-    let mut col = Vec::with_capacity(items.len());
-    for item in items {
-        match field_value(item, field)? {
-            Value::Int(n) => col.push(*n),
-            _ => return None, // missing / null / non-int -> disqualify
-        }
-    }
-    Some(Column::Int(col))
-}
-
-fn build_float(items: &[Value], field: &str) -> Option<Column> {
-    let mut col = Vec::with_capacity(items.len());
-    for item in items {
-        match field_value(item, field)? {
-            Value::Float(f) if !f.is_nan() => col.push(*f),
-            _ => return None, // non-float, NaN, or missing -> disqualify
-        }
-    }
-    Some(Column::Float(col))
-}
-
-fn build_str(items: &[Value], field: &str) -> Option<Column> {
-    let mut col = Vec::with_capacity(items.len());
-    for item in items {
-        match field_value(item, field)? {
-            Value::Str(s) => col.push(s.clone()),
-            _ => return None, // non-string / missing -> disqualify
-        }
-    }
-    Some(Column::Str(col))
-}
-
-fn build_bool(items: &[Value], field: &str) -> Option<Column> {
-    let mut col = Vec::with_capacity(items.len());
-    for item in items {
-        match field_value(item, field)? {
-            Value::Bool(b) => col.push(*b),
-            _ => return None, // non-bool / missing -> disqualify
-        }
-    }
-    Some(Column::Bool(col))
-}
-
-fn collect(len: usize, keep: impl Fn(usize) -> bool) -> Vec<usize> {
-    (0..len).filter(|&i| keep(i)).collect()
-}
-
-fn filter_int(col: &[i64], op: FilterOp, value: &Value) -> Option<Vec<usize>> {
-    let &Value::Int(needle) = value else {
-        return None; // non-int needle (e.g. `age > 2.5`) -> row engine via as_number
-    };
-    let keep: fn(&i64, &i64) -> bool = comparison(op)?;
-    Some(collect(col.len(), |i| keep(&col[i], &needle)))
-}
-
-fn filter_float(col: &[f64], op: FilterOp, value: &Value) -> Option<Vec<usize>> {
-    let needle = coerce::as_number(value)?; // Int/Float/Bool/Decimal -> f64, else fallback
-    if needle.is_nan() {
-        return None; // row engine errors (ordered) or all-false (eq); let it decide
-    }
-    let keep: fn(&f64, &f64) -> bool = comparison(op)?;
-    Some(collect(col.len(), |i| keep(&col[i], &needle)))
-}
-
-fn filter_str(col: &[String], op: FilterOp, value: &Value) -> Option<Vec<usize>> {
-    let Value::Str(needle) = value else {
-        return None; // non-string needle -> row engine (type-aware eq / as_text)
-    };
-    let keep: fn(&str, &str) -> bool = comparison(op)?;
-    Some(collect(col.len(), |i| {
-        keep(col[i].as_str(), needle.as_str())
-    }))
-}
-
-fn filter_bool(col: &[bool], op: FilterOp, value: &Value) -> Option<Vec<usize>> {
-    let &Value::Bool(needle) = value else {
-        return None; // non-bool needle (e.g. active == 1) -> row engine via as_number
-    };
-    // bool == bool matches coerce::eq (both fold to 0/1) and false < true matches
-    // coerce::compare's explicit (Bool, Bool) arm, so all six ops stay row-exact.
-    let keep: fn(&bool, &bool) -> bool = comparison(op)?;
-    Some(collect(col.len(), |i| keep(&col[i], &needle)))
-}
-
-/// The six order/equality operators as a comparison function, or `None` for any
-/// operator the columnar path does not handle (string ops, ranges, null/empty).
-fn comparison<T: PartialOrd + ?Sized>(op: FilterOp) -> Option<fn(&T, &T) -> bool> {
-    Some(match op {
-        FilterOp::Gt => |a, b| a > b,
-        FilterOp::Gte => |a, b| a >= b,
-        FilterOp::Lt => |a, b| a < b,
-        FilterOp::Lte => |a, b| a <= b,
-        FilterOp::Eq => |a, b| a == b,
-        FilterOp::Ne => |a, b| a != b,
-        _ => return None,
-    })
 }
 
 #[cfg(test)]

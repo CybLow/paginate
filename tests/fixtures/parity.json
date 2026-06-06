@@ -134,6 +134,133 @@
       ],
       "specs": [
         [
+          "age",
+          "gt",
+          20,
+          "and"
+        ]
+      ],
+      "expected": [
+        2
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "age",
+          "lt",
+          20,
+          "and"
+        ]
+      ],
+      "expected": [
+        0
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "age",
+          "lte",
+          20,
+          "and"
+        ]
+      ],
+      "expected": [
+        0,
+        1,
+        3
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "age",
+          "ne",
+          20,
+          "and"
+        ]
+      ],
+      "expected": [
+        0,
+        2
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
           "name",
           "contains",
           "ali",
@@ -166,12 +293,6 @@
       ],
       "specs": [
         [
-          "age",
-          "eq",
-          20,
-          "and"
-        ],
-        [
           "name",
           "starts_with",
           "a",
@@ -179,7 +300,416 @@
         ]
       ],
       "expected": [
+        0,
         3
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "name",
+          "ends_with",
+          "a",
+          "and"
+        ]
+      ],
+      "expected": [
+        3
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "name",
+          "like",
+          "ali%",
+          "and"
+        ]
+      ],
+      "expected": [
+        0,
+        3
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "name",
+          "ilike",
+          "ALI%",
+          "and"
+        ]
+      ],
+      "expected": [
+        0,
+        3
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "name",
+          "regex",
+          "^a",
+          "and"
+        ]
+      ],
+      "expected": [
+        0,
+        3
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "age",
+          "in",
+          [
+            15,
+            30
+          ],
+          "and"
+        ]
+      ],
+      "expected": [
+        0,
+        2
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "age",
+          "not_in",
+          [
+            20
+          ],
+          "and"
+        ]
+      ],
+      "expected": [
+        0,
+        2
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "age",
+          "between",
+          [
+            18,
+            25
+          ],
+          "and"
+        ]
+      ],
+      "expected": [
+        1,
+        3
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "specs": [
+        [
+          "age",
+          "eq",
+          15,
+          "or"
+        ],
+        [
+          "name",
+          "eq",
+          "cyril",
+          "or"
+        ]
+      ],
+      "expected": [
+        0,
+        2
+      ]
+    },
+    {
+      "items": [
+        {
+          "name": "a",
+          "tag": null
+        },
+        {
+          "name": "b",
+          "tag": ""
+        },
+        {
+          "name": "c",
+          "tag": "x"
+        }
+      ],
+      "specs": [
+        [
+          "tag",
+          "is_null",
+          null,
+          "and"
+        ]
+      ],
+      "expected": [
+        0
+      ]
+    },
+    {
+      "items": [
+        {
+          "name": "a",
+          "tag": null
+        },
+        {
+          "name": "b",
+          "tag": ""
+        },
+        {
+          "name": "c",
+          "tag": "x"
+        }
+      ],
+      "specs": [
+        [
+          "tag",
+          "is_not_null",
+          null,
+          "and"
+        ]
+      ],
+      "expected": [
+        1,
+        2
+      ]
+    },
+    {
+      "items": [
+        {
+          "name": "a",
+          "tag": null
+        },
+        {
+          "name": "b",
+          "tag": ""
+        },
+        {
+          "name": "c",
+          "tag": "x"
+        }
+      ],
+      "specs": [
+        [
+          "tag",
+          "empty",
+          null,
+          "and"
+        ]
+      ],
+      "expected": [
+        0,
+        1
+      ]
+    },
+    {
+      "items": [
+        {
+          "name": "a",
+          "tag": null
+        },
+        {
+          "name": "b",
+          "tag": ""
+        },
+        {
+          "name": "c",
+          "tag": "x"
+        }
+      ],
+      "specs": [
+        [
+          "tag",
+          "not_empty",
+          null,
+          "and"
+        ]
+      ],
+      "expected": [
+        2
+      ]
+    },
+    {
+      "items": [
+        {
+          "name": "a",
+          "tag": null
+        },
+        {
+          "name": "b",
+          "tag": ""
+        },
+        {
+          "name": "c",
+          "tag": "x"
+        }
+      ],
+      "specs": [
+        [
+          "tag",
+          "exists",
+          null,
+          "and"
+        ]
+      ],
+      "expected": [
+        0,
+        1,
+        2
       ]
     }
   ],
@@ -254,6 +784,81 @@
         1,
         2
       ]
+    },
+    {
+      "items": [
+        {
+          "n": 2
+        },
+        {
+          "n": null
+        },
+        {
+          "n": 1
+        }
+      ],
+      "specs": [
+        [
+          "n",
+          "asc",
+          "last"
+        ]
+      ],
+      "expected": [
+        2,
+        0,
+        1
+      ]
+    },
+    {
+      "items": [
+        {
+          "n": 2
+        },
+        {
+          "n": null
+        },
+        {
+          "n": 1
+        }
+      ],
+      "specs": [
+        [
+          "n",
+          "asc",
+          "first"
+        ]
+      ],
+      "expected": [
+        1,
+        2,
+        0
+      ]
+    },
+    {
+      "items": [
+        {
+          "n": 2
+        },
+        {
+          "n": null
+        },
+        {
+          "n": 1
+        }
+      ],
+      "specs": [
+        [
+          "n",
+          "desc",
+          "first"
+        ]
+      ],
+      "expected": [
+        1,
+        0,
+        2
+      ]
     }
   ],
   "search": [
@@ -312,6 +917,35 @@
       "mode": "exact",
       "expected": [
         1
+      ]
+    },
+    {
+      "items": [
+        {
+          "age": 15,
+          "name": "alice"
+        },
+        {
+          "age": 20,
+          "name": "bob"
+        },
+        {
+          "age": 30,
+          "name": "cyril"
+        },
+        {
+          "age": 20,
+          "name": "alicia"
+        }
+      ],
+      "query": "ali",
+      "fields": [
+        "name"
+      ],
+      "mode": "prefix",
+      "expected": [
+        0,
+        3
       ]
     }
   ]

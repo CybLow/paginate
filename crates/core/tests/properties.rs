@@ -7,6 +7,7 @@ use std::collections::BTreeMap;
 use proptest::prelude::*;
 
 use paginate_core::filter::{FilterInput, FilterLogic, FilterOp, FilterSpec};
+use paginate_core::normalize::{normalize_text, normalize_text_cow};
 use paginate_core::search::{FuzzyMode, SearchFieldMode, SearchSpec};
 use paginate_core::sort::{NullsPosition, SortDirection, SortSpec};
 use paginate_core::{cursor, filter, pagination, search, sort, Value};
@@ -159,5 +160,16 @@ proptest! {
         };
         let idx = search::search_indices(&items, &spec).unwrap();
         prop_assert!(idx.len() <= cap);
+    }
+
+    /// The borrowing normalizer must never disagree with the owned one — the
+    /// `is_ascii_normalized` fast path is correctness-critical (a wrong "already
+    /// normalized" verdict would silently corrupt search). Stress case +
+    /// whitespace, where the predicate logic lives.
+    #[test]
+    fn normalize_cow_equals_owned(s in "[a-zA-Z0-9 \t\n]{0,16}") {
+        let borrowed = normalize_text_cow(&s);
+        let owned = normalize_text(&s);
+        prop_assert_eq!(borrowed.as_ref(), owned.as_str());
     }
 }

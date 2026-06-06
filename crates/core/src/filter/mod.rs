@@ -122,37 +122,37 @@ fn compile_spec(spec: &FilterSpec) -> Result<Pred> {
         FilterOp::Regex => {
             let re = compile_regex(&coerce::to_py_str(&value))?;
             Ok(Box::new(move |item| {
-                Ok(re.is_match(&coerce::to_py_str(resolve(item, &path)?)))
+                Ok(re.is_match(&coerce::to_py_str_cow(resolve(item, &path)?)))
             }))
         }
         FilterOp::Like => {
             let matcher = like::LikeMatcher::compile(&coerce::to_py_str(&value), false);
             Ok(Box::new(move |item| {
-                Ok(matcher.matches(&coerce::to_py_str(resolve(item, &path)?)))
+                Ok(matcher.matches(&coerce::to_py_str_cow(resolve(item, &path)?)))
             }))
         }
         FilterOp::ILike => {
             let matcher = like::LikeMatcher::compile(&coerce::to_py_str(&value), true);
             Ok(Box::new(move |item| {
-                Ok(matcher.matches(&coerce::to_py_str(resolve(item, &path)?)))
+                Ok(matcher.matches(&coerce::to_py_str_cow(resolve(item, &path)?)))
             }))
         }
         FilterOp::Contains => {
             let needle = coerce::to_py_str(&value);
             Ok(Box::new(move |item| {
-                Ok(coerce::to_py_str(resolve(item, &path)?).contains(&needle))
+                Ok(coerce::to_py_str_cow(resolve(item, &path)?).contains(&needle))
             }))
         }
         FilterOp::StartsWith => {
             let prefix = coerce::to_py_str(&value);
             Ok(Box::new(move |item| {
-                Ok(coerce::to_py_str(resolve(item, &path)?).starts_with(&prefix))
+                Ok(coerce::to_py_str_cow(resolve(item, &path)?).starts_with(&prefix))
             }))
         }
         FilterOp::EndsWith => {
             let suffix = coerce::to_py_str(&value);
             Ok(Box::new(move |item| {
-                Ok(coerce::to_py_str(resolve(item, &path)?).ends_with(&suffix))
+                Ok(coerce::to_py_str_cow(resolve(item, &path)?).ends_with(&suffix))
             }))
         }
         _ => Ok(Box::new(move |item| {
