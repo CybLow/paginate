@@ -73,3 +73,31 @@ all: rust py ts
 # Regenerate the frozen cross-language parity golden (tests/fixtures/parity.json).
 parity-gen:
     cd py && uv run python ../tests/fixtures/generate_parity.py
+
+# -- Codegen: types from the Rust JSON Schema (the single source of truth) ---
+
+# Export the canonical wire-type JSON Schema from crates/core to schemas/.
+schema-gen:
+    cargo test -p paginate-core --features schema export_schema
+
+# Regenerate the Python types from that schema: lean dataclasses for the core +
+# Pydantic v2 models for the [fastapi] extra. (TS types via json-schema-to-typescript
+# --unreachableDefinitions, and the PyO3 _core.pyi stub via pyo3-stub-gen, are
+# wired as separate steps.) Shapes live once in Rust; this just renders them.
+gen: schema-gen
+    mkdir -p py/src/pypaginate/_generated
+    uvx --from datamodel-code-generator datamodel-codegen \
+        --input schemas/paginate.schema.json --input-file-type jsonschema \
+        --output-model-type dataclasses.dataclass --target-python-version 3.11 \
+        --use-standard-collections --use-union-operator \
+        --use-schema-description --use-field-description \
+        --enum-field-as-literal all --disable-timestamp \
+        --output py/src/pypaginate/_generated/types.py
+    uvx --from datamodel-code-generator datamodel-codegen \
+        --input schemas/paginate.schema.json --input-file-type jsonschema \
+        --output-model-type pydantic_v2.BaseModel --target-python-version 3.11 \
+        --use-standard-collections --use-union-operator \
+        --use-schema-description --use-field-description \
+        --enum-field-as-literal all --disable-timestamp \
+        --output py/src/pypaginate/adapters/fastapi/_models.py
+    cd py && uv run ruff format src/pypaginate/_generated/types.py src/pypaginate/adapters/fastapi/_models.py
