@@ -62,3 +62,22 @@ export class ValidationError extends PaginateError {
     this.field = options.field;
   }
 }
+
+/**
+ * Re-throw a caught core engine error as the matching typed error, mirroring
+ * pypaginate's exception taxonomy so JS consumers get `FilterError` /
+ * `SortError` / `SearchError` (not a bare `Error`). The core tags each category
+ * in its message; `fallback` covers field-not-found (no category) and anything
+ * unrecognized — pass the operation's own error class so context stays correct.
+ */
+export function rethrowEngineError(
+  err: unknown,
+  fallback: new (message: string) => PaginateError,
+): never {
+  const message = err instanceof Error ? err.message : String(err);
+  if (message.startsWith("filter error")) throw new FilterError(message);
+  if (message.startsWith("sort error")) throw new SortError(message);
+  if (message.startsWith("search error")) throw new SearchError(message);
+  if (message.startsWith("invalid cursor")) throw new ValidationError(message);
+  throw new fallback(message);
+}
