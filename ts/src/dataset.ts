@@ -4,9 +4,13 @@
  * wrapper maps them back to your own objects). This is the only in-memory shape
  * where crossing into Rust pays off for JS — the one-shot `*Indices` helpers
  * re-marshal the whole array on every call. Build once, query many times.
+ *
+ * Core engine failures are re-typed into the typed `FilterError` / `SortError` /
+ * `SearchError`, matching pypaginate's exception taxonomy.
  */
 import * as core from "@cyblow/paginate-core";
 
+import { FilterError, PaginateError, SearchError, SortError, rethrowEngineError } from "./errors.js";
 import type { OffsetParams } from "./params.js";
 import type { OffsetPage } from "./pages.js";
 import type { FilterSpec, SearchSpec, SortSpec } from "./specs.js";
@@ -27,28 +31,40 @@ export class Dataset<T extends object> {
 
   /** Rows matching the filter specs (pypaginate's exact semantics). */
   filter(specs: readonly FilterSpec[]): T[] {
-    return this.select(this.inner.filter(specs as unknown[]));
+    try {
+      return this.select(this.inner.filter(specs as unknown[]));
+    } catch (e) {
+      rethrowEngineError(e, FilterError);
+    }
   }
 
   /** Rows sorted by the specs (null-aware, stable). */
   sort(specs: readonly SortSpec[]): T[] {
-    return this.select(this.inner.sort(specs as unknown[]));
+    try {
+      return this.select(this.inner.sort(specs as unknown[]));
+    } catch (e) {
+      rethrowEngineError(e, SortError);
+    }
   }
 
   /** Rows ranked by relevance of the search spec's query over its fields. */
   search(spec: SearchSpec): T[] {
-    return this.select(
-      this.inner.search(
-        spec.query,
-        spec.fields as string[],
-        spec.mode,
-        spec.fuzzy,
-        spec.threshold,
-        spec.minLength,
-        spec.maxResults,
-        spec.weights as Record<string, number> | undefined,
-      ),
-    );
+    try {
+      return this.select(
+        this.inner.search(
+          spec.query,
+          spec.fields as string[],
+          spec.mode,
+          spec.fuzzy,
+          spec.threshold,
+          spec.minLength,
+          spec.maxResults,
+          spec.weights as Record<string, number> | undefined,
+        ),
+      );
+    } catch (e) {
+      rethrowEngineError(e, SearchError);
+    }
   }
 
   /**
@@ -64,22 +80,28 @@ export class Dataset<T extends object> {
       search?: SearchSpec;
     } = {},
   ): OffsetPage<T> {
-    const result = this.inner.page(
-      params.page,
-      params.limit,
-      opts.filters as unknown[] | undefined,
-      opts.sorting as unknown[] | undefined,
-      opts.search ? searchStageArg(opts.search) : undefined,
-    );
-    return {
-      items: this.select(result.indices),
-      total: Number(result.total),
-      page: Number(result.page),
-      pages: Number(result.pages),
-      limit: params.limit,
-      hasNext: result.hasNext,
-      hasPrevious: result.hasPrevious,
-    };
+    try {
+      const result = this.inner.page(
+        params.page,
+        params.limit,
+        opts.filters as unknown[] | undefined,
+        opts.sorting as unknown[] | undefined,
+        opts.search ? searchStageArg(opts.search) : undefined,
+      );
+      return {
+        items: this.select(result.indices),
+        total: Number(result.total),
+        page: Number(result.page),
+        pages: Number(result.pages),
+        limit: params.limit,
+        hasNext: result.hasNext,
+        hasPrevious: result.hasPrevious,
+      };
+    } catch (e) {
+      // Multi-op: the core's message prefix selects filter/sort/search; anything
+      // else (incl. field-not-found, which carries no op) → the base error.
+      rethrowEngineError(e, PaginateError);
+    }
   }
 
   private select(indices: number[]): T[] {
