@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1780821065452,
+  "lastUpdate": 1780855852702,
   "repoUrl": "https://github.com/CybLow/paginate",
   "entries": {
     "Benchmark": [
@@ -29141,6 +29141,288 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000007641880812217234",
             "extra": "mean: 165.64938800930184 usec\nrounds: 5621"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "git.owiwz@passinbox.com",
+            "name": "CybLow"
+          },
+          "committer": {
+            "email": "118811498+CybLow@users.noreply.github.com",
+            "name": "CybLow",
+            "username": "CybLow"
+          },
+          "distinct": true,
+          "id": "126e45965a9c0734b9a539babd81e4586408a64d",
+          "message": "perf: profiling-led resident-engine optimization, hardening, and cleanup\n\nThis branch's net contribution over main, collapsed into one commit: main\nindependently merged the overlapping ts-typed-errors and pyo3 GIL-release work\n(the ts-error commit was patch-identical), so the tangled per-commit history was\nflattened onto current main rather than rebased through duplicate conflicts.\n\nPerformance (resident Dataset, profiled to convergence):\n- ranked fuzzy search ~9x (per-field trigram memoization + bitset candidate union)\n- columnar filter coverage: contains/starts/ends (~4.8x), between (~27x),\n  in/not-in (~24x, HashSet vs per-row scan), like/ilike\n- Dataset.page top-k + per-type sort comparator (~3x: 554us -> 183us at 100K)\n- node marshalling: move strings/keys instead of cloning (~1.7x)\n\nCorrectness/parity/typing hardening across core and both bindings.\n\nCleanup: split node spec parsing into specs.rs, decompose compile_spec into a\nrouter + string-op table, hoist the resident filter/sort fast-path into\ncore::resident shared by both bindings.\n\ndocs/BENCHMARKS.md records the post-optimization numbers + the build-vs-query\ncost analysis behind calling the engine converged.\n\nRust 114 / Python 184 / TS 41 green; cross-language parity golden byte-identical.\n\nCo-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>",
+          "timestamp": "2026-06-07T20:05:47+02:00",
+          "tree_id": "b556189b26b342b2aa38f294f13814f3e63978c0",
+          "url": "https://github.com/CybLow/paginate/commit/126e45965a9c0734b9a539babd81e4586408a64d"
+        },
+        "date": 1780855850853,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/perf/test_pagination.py::test_paginate_10k_deep",
+            "value": 55019.99566772502,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000017401913830910233",
+            "extra": "mean: 18.1752104460198 usec\nrounds: 8520"
+          },
+          {
+            "name": "tests/perf/test_pagination.py::test_paginate_1k",
+            "value": 344737.2575633956,
+            "unit": "iter/sec",
+            "range": "stddev: 4.5388864142567915e-7",
+            "extra": "mean: 2.9007598629402698 usec\nrounds: 102733"
+          },
+          {
+            "name": "tests/perf/test_pagination.py::test_paginate_10k",
+            "value": 53129.7941860043,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000028364250100196697",
+            "extra": "mean: 18.821830863847477 usec\nrounds: 11541"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_sort_scaling[1k]",
+            "value": 4366.109176431257,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000018749311767548487",
+            "extra": "mean: 229.0368746155298 usec\nrounds: 2600"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_sort_scaling[10k]",
+            "value": 214.21971178643233,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00004063384788588649",
+            "extra": "mean: 4.668104497297411 msec\nrounds: 185"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_filter_scaling[10k]",
+            "value": 240.26977028062777,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00005104594617139277",
+            "extra": "mean: 4.161988413407274 msec\nrounds: 179"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_pipeline_scaling[10k]",
+            "value": 23917.66360082939,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000020002140037002777",
+            "extra": "mean: 41.81010389180836 usec\nrounds: 9250"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_paginate_scaling[100k]",
+            "value": 4487.801143388489,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000061450337494699576",
+            "extra": "mean: 222.82627238803087 usec\nrounds: 1340"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_filter_scaling[1k]",
+            "value": 5522.729299800488,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000005356093796414247",
+            "extra": "mean: 181.06989238746968 usec\nrounds: 2890"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_search_scaling[1k]",
+            "value": 3927.9345938660476,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000005991989903729457",
+            "extra": "mean: 254.5867239137899 usec\nrounds: 2923"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_search_scaling[100k]",
+            "value": 21.269355994115,
+            "unit": "iter/sec",
+            "range": "stddev: 0.007988439262085823",
+            "extra": "mean: 47.01599805262976 msec\nrounds: 19"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_paginate_scaling[10k]",
+            "value": 53755.56737319957,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000015491123719379209",
+            "extra": "mean: 18.602724310534597 usec\nrounds: 21575"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_filter_scaling[100k]",
+            "value": 38.59333763587249,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0009072214318003704",
+            "extra": "mean: 25.911208028571764 msec\nrounds: 35"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_pipeline_scaling[100k]",
+            "value": 2598.1488928944623,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00003306261734116666",
+            "extra": "mean: 384.88941212524276 usec\nrounds: 1468"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_pipeline_scaling[1k]",
+            "value": 148043.037464008,
+            "unit": "iter/sec",
+            "range": "stddev: 7.854616514637133e-7",
+            "extra": "mean: 6.7547925058152 usec\nrounds: 31331"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_paginate_scaling[1k]",
+            "value": 341739.5519634144,
+            "unit": "iter/sec",
+            "range": "stddev: 4.5180409428549773e-7",
+            "extra": "mean: 2.9262050419819623 usec\nrounds: 104998"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_search_scaling[10k]",
+            "value": 387.6613112724991,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00002858413181235907",
+            "extra": "mean: 2.579571318885286 msec\nrounds: 323"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_sort_scaling[100k]",
+            "value": 26.003648040949503,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0008033940935032793",
+            "extra": "mean: 38.45614270833231 msec\nrounds: 24"
+          },
+          {
+            "name": "tests/perf/test_overhead.py::test_paginate_single_call_1k",
+            "value": 335283.59410230245,
+            "unit": "iter/sec",
+            "range": "stddev: 5.189281518237091e-7",
+            "extra": "mean: 2.9825497506891967 usec\nrounds: 43718"
+          },
+          {
+            "name": "tests/perf/test_overhead.py::test_native_page_single_call",
+            "value": 343723.6878915286,
+            "unit": "iter/sec",
+            "range": "stddev: 4.815970684985168e-7",
+            "extra": "mean: 2.9093136005091895 usec\nrounds: 62755"
+          },
+          {
+            "name": "tests/perf/test_overhead.py::test_paginate_fixed_cost_tiny",
+            "value": 764947.3477301598,
+            "unit": "iter/sec",
+            "range": "stddev: 3.316353794041731e-7",
+            "extra": "mean: 1.3072795179528574 usec\nrounds: 126711"
+          },
+          {
+            "name": "tests/perf/test_overhead.py::test_dataset_marshal_1k",
+            "value": 392.6193044862763,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000017451215717357178",
+            "extra": "mean: 2.5469965143676583 msec\nrounds: 348"
+          },
+          {
+            "name": "tests/perf/test_filtering.py::test_filter_10k_multi",
+            "value": 373.03347337377414,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000018568216951499503",
+            "extra": "mean: 2.680724576687022 msec\nrounds: 326"
+          },
+          {
+            "name": "tests/perf/test_filtering.py::test_dataset_filter_10k",
+            "value": 4359.374208054312,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000006112209501562356",
+            "extra": "mean: 229.3907226758409 usec\nrounds: 3184"
+          },
+          {
+            "name": "tests/perf/test_filtering.py::test_filter_10k_single",
+            "value": 534.9885553398943,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00006489872710129973",
+            "extra": "mean: 1.8691988641975152 msec\nrounds: 324"
+          },
+          {
+            "name": "tests/perf/test_filtering.py::test_filter_1k_single",
+            "value": 5651.998978428959,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000056489750571153905",
+            "extra": "mean: 176.92855285652615 usec\nrounds: 5146"
+          },
+          {
+            "name": "tests/perf/test_search.py::test_search_10k",
+            "value": 402.52025424248745,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00007476401680697884",
+            "extra": "mean: 2.484347034615498 msec\nrounds: 260"
+          },
+          {
+            "name": "tests/perf/test_search.py::test_search_10k_multi_field",
+            "value": 228.1641732248276,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00006681936894315172",
+            "extra": "mean: 4.382809035556268 msec\nrounds: 225"
+          },
+          {
+            "name": "tests/perf/test_search.py::test_search_1k",
+            "value": 4024.5736189136064,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000006802501106896125",
+            "extra": "mean: 248.47352656203614 usec\nrounds: 3633"
+          },
+          {
+            "name": "tests/perf/test_search.py::test_dataset_search_10k",
+            "value": 1273.559570164443,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000012104459582497931",
+            "extra": "mean: 785.2008052288274 usec\nrounds: 765"
+          },
+          {
+            "name": "tests/perf/test_pipeline.py::test_pipeline_1k_filter_sort",
+            "value": 146717.77182306335,
+            "unit": "iter/sec",
+            "range": "stddev: 7.833440423702214e-7",
+            "extra": "mean: 6.815806889474616 usec\nrounds: 28072"
+          },
+          {
+            "name": "tests/perf/test_pipeline.py::test_pipeline_10k_full",
+            "value": 1521.3039787626196,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00001540036807389285",
+            "extra": "mean: 657.330825370856 usec\nrounds: 607"
+          },
+          {
+            "name": "tests/perf/test_pipeline.py::test_pipeline_10k_filter_sort",
+            "value": 24228.14109711733,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000002372709620908958",
+            "extra": "mean: 41.27431799210465 usec\nrounds: 18447"
+          },
+          {
+            "name": "tests/perf/test_sorting.py::test_sort_10k",
+            "value": 433.26598630901367,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000030754104719184825",
+            "extra": "mean: 2.3080510162336645 msec\nrounds: 308"
+          },
+          {
+            "name": "tests/perf/test_sorting.py::test_sort_10k_multi",
+            "value": 281.23257350299747,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000042644241944049715",
+            "extra": "mean: 3.5557758745515358 msec\nrounds: 279"
+          },
+          {
+            "name": "tests/perf/test_sorting.py::test_dataset_sort_10k",
+            "value": 1655.9494940836703,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00001914297760262275",
+            "extra": "mean: 603.8831519758131 usec\nrounds: 1316"
+          },
+          {
+            "name": "tests/perf/test_sorting.py::test_sort_1k",
+            "value": 4456.8682444900915,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000010483251675728317",
+            "extra": "mean: 224.3727983738971 usec\nrounds: 3075"
           }
         ]
       }
