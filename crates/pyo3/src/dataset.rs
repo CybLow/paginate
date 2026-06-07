@@ -123,7 +123,8 @@ impl Dataset {
             max_results,
         };
         let (rows, trigram) = (&self.rows, &self.trigram);
-        py.detach(|| core::search::search_with_index(rows, &spec, trigram)).map_err(|e| core_err(&e))
+        py.detach(|| core::search::search_with_index(rows, &spec, trigram))
+            .map_err(|e| core_err(&e))
     }
 
     /// Filter + search + sort + offset-paginate in ONE native call. Returns a dict
