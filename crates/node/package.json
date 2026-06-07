@@ -17,17 +17,17 @@
     "access": "public"
   },
   "napi": {
-    "name": "paginate-core",
-    "triples": {
-      "defaults": true,
-      "additional": [
-        "aarch64-apple-darwin",
-        "aarch64-unknown-linux-gnu",
-        "x86_64-unknown-linux-musl",
-        "aarch64-unknown-linux-musl",
-        "aarch64-pc-windows-msvc"
-      ]
-    }
+    "binaryName": "paginate-core",
+    "targets": [
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin",
+      "x86_64-pc-windows-msvc",
+      "aarch64-pc-windows-msvc",
+      "x86_64-unknown-linux-gnu",
+      "aarch64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl",
+      "aarch64-unknown-linux-musl"
+    ]
   },
   "engines": {
     "node": ">=12.22.0"
@@ -39,7 +39,7 @@
     "prepublishOnly": "napi prepublish -t npm"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^2.18.0"
+    "@napi-rs/cli": "^3.0.0"
   },
   "_note": "Scaffold. Generated bindings (index.js/index.d.ts/*.node) are produced by `@napi-rs/cli` (`npm run build`) and are not checked in. Consumed by packages/ts."
 }
