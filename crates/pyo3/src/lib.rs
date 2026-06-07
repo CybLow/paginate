@@ -25,7 +25,7 @@ fn encode_cursor(values: &Bound<'_, PyAny>) -> PyResult<String> {
     for value in values.try_iter()? {
         decoded.push(conv::py_to_value(&value?)?);
     }
-    Ok(core::cursor::encode_cursor(&decoded))
+    core::cursor::encode_cursor(&decoded).map_err(|e| conv::core_err(&e))
 }
 
 /// Decode a cursor string back into a tuple of ordering values.
@@ -51,27 +51,31 @@ fn normalize_text(value: &str) -> String {
 
 /// Zero-based row offset for `(page, limit)`.
 #[pyfunction]
-fn offset(page: u64, limit: u64) -> u64 {
-    core::pagination::offset(page, limit)
+fn offset(page: u64, limit: u64) -> PyResult<u64> {
+    let limit = core::pagination::Limit::new(limit).map_err(|e| conv::core_err(&e))?;
+    Ok(core::pagination::offset(page, limit))
 }
 
 /// Total page count for `total` rows at `limit` per page.
 #[pyfunction]
-fn max_pages(total: u64, limit: u64) -> u64 {
-    core::pagination::max_pages(total, limit)
+fn max_pages(total: u64, limit: u64) -> PyResult<u64> {
+    let limit = core::pagination::Limit::new(limit).map_err(|e| conv::core_err(&e))?;
+    Ok(core::pagination::max_pages(total, limit))
 }
 
 /// Page metadata as `(page, pages, has_next, has_previous)`.
 #[pyfunction]
-fn offset_meta(page: u64, limit: u64, total: u64) -> (u64, u64, bool, bool) {
+fn offset_meta(page: u64, limit: u64, total: u64) -> PyResult<(u64, u64, bool, bool)> {
+    let limit = core::pagination::Limit::new(limit).map_err(|e| conv::core_err(&e))?;
     let meta = core::pagination::offset_meta(page, limit, total);
-    (meta.page, meta.pages, meta.has_next, meta.has_previous)
+    Ok((meta.page, meta.pages, meta.has_next, meta.has_previous))
 }
 
 /// Clamp `page` into the valid `[1, max_page]` range.
 #[pyfunction]
-fn clamp_page(page: u64, limit: u64, total: u64) -> u64 {
-    core::pagination::clamp_page(page, limit, total)
+fn clamp_page(page: u64, limit: u64, total: u64) -> PyResult<u64> {
+    let limit = core::pagination::Limit::new(limit).map_err(|e| conv::core_err(&e))?;
+    Ok(core::pagination::clamp_page(page, limit, total))
 }
 
 // -- keyset (cursor) predicate ----------------------------------------------

@@ -18,25 +18,44 @@
 //! share no trigram — which is what makes an inverted-index candidate prefilter
 //! *exact* (an item with no shared query trigram cannot clear any threshold).
 
-/// One trigram (three chars from a space-padded word).
-pub type Trigram = [char; 3];
+/// One trigram: three Unicode scalar values from a space-padded word, packed
+/// into a `u64` (21 bits each, most-significant char first).
+///
+/// The packing is **order-preserving** — comparing the `u64`s is exactly the
+/// lexicographic comparison of the three chars — so sorted-set intersection and
+/// dedup are unchanged, while the footprint halves versus a `[char; 3]` (8 bytes
+/// vs 12) for tighter posting lists and cheaper compares. A real newtype (not a
+/// type alias) so the domain type can't be confused with a raw char array.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct Trigram(u64);
+
+impl Trigram {
+    /// Pack three chars into the order-preserving `u64` representation. Every
+    /// Unicode scalar fits in 21 bits (max `U+10FFFF`), so the three never overlap.
+    #[must_use]
+    fn new(a: char, b: char, c: char) -> Self {
+        Self((a as u64) << 42 | (b as u64) << 21 | c as u64)
+    }
+}
 
 /// The sorted, de-duplicated trigram set of `text` (pg_trgm padding/boundaries).
 #[must_use]
 pub fn trigrams(text: &str) -> Vec<Trigram> {
-    let mut out: Vec<Trigram> = Vec::new();
+    // Byte length is an over-estimate of the trigram count (≥ char count), so
+    // one up-front allocation avoids regrowth on the hot path.
+    let mut out: Vec<Trigram> = Vec::with_capacity(text.len() + 2);
     for word in text.split(|c: char| !c.is_alphanumeric()) {
         if word.is_empty() {
             continue;
         }
-        // Padded word: two leading spaces + word + one trailing space.
-        let padded: Vec<char> = std::iter::repeat(' ')
-            .take(2)
-            .chain(word.chars())
-            .chain(std::iter::once(' '))
-            .collect();
-        for w in padded.windows(3) {
-            out.push([w[0], w[1], w[2]]);
+        // Slide a rolling 3-char window over `"  <word> "` without allocating a
+        // padded buffer: `(a, b)` start as the two leading spaces, then each new
+        // char `c` (the word's chars, then one trailing space) emits `[a, b, c]`.
+        let (mut a, mut b) = (' ', ' ');
+        for c in word.chars().chain(std::iter::once(' ')) {
+            out.push(Trigram::new(a, b, c));
+            a = b;
+            b = c;
         }
     }
     out.sort_unstable();
@@ -93,13 +112,14 @@ mod tests {
 
     #[test]
     fn cat_trigram_set_matches_pg_trgm() {
+        // Sorted, deduped: `{"  c", " ca", "at ", "cat"}` (space < 'a' < 'c').
         assert_eq!(
             trigrams("cat"),
             vec![
-                [' ', ' ', 'c'],
-                [' ', 'c', 'a'],
-                ['a', 't', ' '],
-                ['c', 'a', 't']
+                Trigram::new(' ', ' ', 'c'),
+                Trigram::new(' ', 'c', 'a'),
+                Trigram::new('a', 't', ' '),
+                Trigram::new('c', 'a', 't'),
             ]
         );
     }

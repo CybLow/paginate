@@ -16,6 +16,7 @@
 pub mod conv;
 pub mod dataset;
 pub mod engines;
+pub mod specs;
 
 use napi_derive::napi;
 use serde_json::Value as Json;
@@ -75,7 +76,7 @@ pub fn encode_cursor(values: Json) -> napi::Result<String> {
         // A non-array is treated as a single-element ordering tuple.
         other => vec![json_to_value(&other)],
     };
-    Ok(core::cursor::encode_cursor(&decoded))
+    core::cursor::encode_cursor(&decoded).map_err(|e| core_err(&e))
 }
 
 /// Decode a cursor string back into its array of ordering values.
@@ -111,32 +112,36 @@ pub struct OffsetMeta {
 
 /// Zero-based row offset for `(page, limit)`.
 #[napi]
-pub fn offset(page: u32, limit: u32) -> i64 {
-    core::pagination::offset(page.into(), limit.into()) as i64
+pub fn offset(page: u32, limit: u32) -> napi::Result<i64> {
+    let limit = core::pagination::Limit::new(limit.into()).map_err(|e| core_err(&e))?;
+    Ok(core::pagination::offset(page.into(), limit) as i64)
 }
 
 /// Total page count for `total` rows at `limit` per page.
 #[napi]
-pub fn max_pages(total: u32, limit: u32) -> i64 {
-    core::pagination::max_pages(total.into(), limit.into()) as i64
+pub fn max_pages(total: u32, limit: u32) -> napi::Result<i64> {
+    let limit = core::pagination::Limit::new(limit.into()).map_err(|e| core_err(&e))?;
+    Ok(core::pagination::max_pages(total.into(), limit) as i64)
 }
 
 /// Page metadata as an [`OffsetMeta`] object for `(page, limit, total)`.
 #[napi]
-pub fn offset_meta(page: u32, limit: u32, total: u32) -> OffsetMeta {
-    let meta = core::pagination::offset_meta(page.into(), limit.into(), total.into());
-    OffsetMeta {
+pub fn offset_meta(page: u32, limit: u32, total: u32) -> napi::Result<OffsetMeta> {
+    let limit = core::pagination::Limit::new(limit.into()).map_err(|e| core_err(&e))?;
+    let meta = core::pagination::offset_meta(page.into(), limit, total.into());
+    Ok(OffsetMeta {
         page: meta.page as i64,
         pages: meta.pages as i64,
         has_next: meta.has_next,
         has_previous: meta.has_previous,
-    }
+    })
 }
 
 /// Clamp `page` into the valid `[1, max_page]` range.
 #[napi]
-pub fn clamp_page(page: u32, limit: u32, total: u32) -> i64 {
-    core::pagination::clamp_page(page.into(), limit.into(), total.into()) as i64
+pub fn clamp_page(page: u32, limit: u32, total: u32) -> napi::Result<i64> {
+    let limit = core::pagination::Limit::new(limit.into()).map_err(|e| core_err(&e))?;
+    Ok(core::pagination::clamp_page(page.into(), limit, total.into()) as i64)
 }
 
 // -- keyset (cursor) predicate ----------------------------------------------

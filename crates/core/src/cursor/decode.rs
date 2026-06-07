@@ -47,6 +47,11 @@ pub(super) fn json_to_value(v: &serde_json::Value) -> Result<Value> {
 fn number_to_value(n: &serde_json::Number) -> Result<Value> {
     if let Some(i) = n.as_i64() {
         Ok(Value::Int(i))
+    } else if n.as_u64().is_some() {
+        // A u64 above i64::MAX cannot be an exact `Value::Int`. Reject rather
+        // than silently narrowing to a lossy f64 — that would shift a keyset
+        // boundary, since the engine compares integers exactly (`coerce::compare`).
+        Err(invalid("integer out of range"))
     } else if let Some(f) = n.as_f64() {
         Ok(Value::Float(f))
     } else {

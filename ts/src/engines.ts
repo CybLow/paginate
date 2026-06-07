@@ -18,7 +18,7 @@ import type { FilterGroup, FilterSpec, SearchSpec, SortSpec } from "./specs.js";
 /** Indices of `items` matching flat filter `specs` (combined per each `logic`). */
 export function filterIndices(items: readonly object[], specs: readonly FilterSpec[]): number[] {
   try {
-    return core.filterIndices(items as unknown[], specs as unknown[]);
+    return core.filterIndices(items as unknown[], specs as unknown as core.FilterSpecInput[]);
   } catch (e) {
     rethrowEngineError(e, FilterError);
   }
@@ -36,7 +36,7 @@ export function filterGroupIndices(items: readonly object[], group: FilterGroup)
 /** Index permutation sorting `items` by `specs` (null-aware, stable). */
 export function sortIndices(items: readonly object[], specs: readonly SortSpec[]): number[] {
   try {
-    return core.sortIndices(items as unknown[], specs as unknown[]);
+    return core.sortIndices(items as unknown[], specs as unknown as core.SortSpecInput[]);
   } catch (e) {
     rethrowEngineError(e, SortError);
   }

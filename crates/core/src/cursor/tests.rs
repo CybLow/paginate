@@ -1,7 +1,7 @@
 use super::*;
 
 fn round_trip(values: Vec<Value>) {
-    let encoded = encode_cursor(&values);
+    let encoded = encode_cursor(&values).expect("encode");
     let decoded = decode_cursor(&encoded).expect("decode");
     assert_eq!(decoded, values, "round-trip mismatch for {encoded}");
 }
@@ -43,7 +43,11 @@ fn golden_vectors_match_python_codec() {
             (vec![Value::Int(-7), Value::Float(1.5)], "Wy03LDEuNV0"),
         ];
     for (values, expected) in cases {
-        assert_eq!(&encode_cursor(values), expected, "encode {values:?}");
+        assert_eq!(
+            &encode_cursor(values).expect("encode"),
+            expected,
+            "encode {values:?}"
+        );
         assert_eq!(
             &decode_cursor(expected).unwrap(),
             values,
@@ -73,7 +77,7 @@ fn round_trips_typed_scalars() {
 fn non_ascii_is_escaped_like_ensure_ascii() {
     // json.dumps(ensure_ascii=True) escapes non-ASCII, so the encoded
     // payload stays pure ASCII (é becomes a \uXXXX escape, never raw UTF-8).
-    let encoded = encode_cursor(&[Value::Str("é".into())]);
+    let encoded = encode_cursor(&[Value::Str("é".into())]).expect("encode");
     let bytes = URL_SAFE_NO_PAD.decode(encoded.as_bytes()).unwrap();
     assert!(bytes.is_ascii(), "payload must be pure ASCII");
     // The raw UTF-8 of 'é' (0xC3 0xA9) must be absent — it was escaped.
@@ -85,7 +89,7 @@ fn non_ascii_is_escaped_like_ensure_ascii() {
 
 #[test]
 fn typed_tag_wire_shape() {
-    let encoded = encode_cursor(&[Value::Decimal("9.99".into())]);
+    let encoded = encode_cursor(&[Value::Decimal("9.99".into())]).expect("encode");
     let bytes = URL_SAFE_NO_PAD.decode(encoded.as_bytes()).unwrap();
     assert_eq!(
         std::str::from_utf8(&bytes).unwrap(),
@@ -114,9 +118,33 @@ fn rejects_malformed_cursors() {
 }
 
 #[test]
+fn encode_rejects_non_finite_floats() {
+    assert!(matches!(
+        encode_cursor(&[Value::Float(f64::NAN)]),
+        Err(CoreError::InvalidCursor { .. })
+    ));
+    assert!(encode_cursor(&[Value::Float(f64::INFINITY)]).is_err());
+    // A finite float still encodes fine.
+    assert!(encode_cursor(&[Value::Float(1.5)]).is_ok());
+}
+
+#[test]
+fn decode_rejects_integer_above_i64() {
+    // i64::MAX + 1 — a u64 that can't be an exact `Value::Int`.
+    let payload = URL_SAFE_NO_PAD.encode(b"[9223372036854775808]");
+    assert!(matches!(
+        decode_cursor(&payload),
+        Err(CoreError::InvalidCursor { .. })
+    ));
+    // i64::MAX itself still decodes exactly.
+    let ok = URL_SAFE_NO_PAD.encode(b"[9223372036854775807]");
+    assert_eq!(decode_cursor(&ok).unwrap(), vec![Value::Int(i64::MAX)]);
+}
+
+#[test]
 fn decodes_padded_and_unpadded() {
     // The Python decoder re-pads; ensure both forms work.
-    let unpadded = encode_cursor(&[Value::Str("ab".into())]);
+    let unpadded = encode_cursor(&[Value::Str("ab".into())]).expect("encode");
     let padded = format!("{unpadded}{}", "=".repeat((4 - unpadded.len() % 4) % 4));
     assert_eq!(
         decode_cursor(&unpadded).unwrap(),

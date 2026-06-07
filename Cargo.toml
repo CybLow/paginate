@@ -39,3 +39,6 @@ manual_let_else = "warn"
 lto = true
 codegen-units = 1
 opt-level = 3
+# Strip symbols from the shipped artifacts (the napi addon + engine rlib), for
+# parity with the pyo3 wheel's profile and a smaller published binary.
+strip = true

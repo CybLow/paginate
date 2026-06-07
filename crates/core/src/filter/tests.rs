@@ -270,3 +270,18 @@ fn remaining_operators_behavior() {
     assert_eq!(run(FilterOp::NotEmpty, "s", Value::Null), vec![0, 2]);
     assert_eq!(run(FilterOp::Exists, "x", Value::Null), vec![0, 1, 2]);
 }
+
+#[test]
+fn exists_is_false_for_absent_field_not_an_error() {
+    let items = vec![
+        item(&[("a", Value::Int(1))]),
+        item(&[("b", Value::Int(2))]), // "a" absent -> false, not an error
+        item(&[("a", Value::Null)]),   // present but null still exists
+    ];
+    let idx = filter_indices(
+        &items,
+        &flat(vec![spec("a", FilterOp::Exists, Value::Null)]),
+    )
+    .unwrap();
+    assert_eq!(idx, vec![0, 2]);
+}

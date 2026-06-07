@@ -63,3 +63,19 @@ pub(crate) fn resolve_opt<'a>(item: &'a Value, path: &[String]) -> Option<&'a Va
         Some(current)
     }
 }
+
+/// Presence resolution used by the `exists` operator: walks maps like
+/// [`resolve_opt`] but, unlike it, returns `Some` even when the final value is an
+/// explicit null — `exists` asks whether the key is present, not whether it is
+/// non-null. `None` means the key (or an intermediate map) is absent.
+#[must_use]
+pub(crate) fn resolve_present<'a>(item: &'a Value, path: &[String]) -> Option<&'a Value> {
+    let mut current = item;
+    for segment in path {
+        match current {
+            Value::Map(map) => current = map.get(segment)?,
+            _ => return None,
+        }
+    }
+    Some(current)
+}

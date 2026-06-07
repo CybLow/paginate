@@ -26,11 +26,29 @@ const URL_SAFE_NO_PAD: base64::engine::GeneralPurpose =
 const URL_SAFE: base64::engine::GeneralPurpose = base64::engine::general_purpose::URL_SAFE;
 
 /// Encode ordering values into a URL-safe cursor string.
-#[must_use]
-pub fn encode_cursor(values: &[Value]) -> String {
+///
+/// # Errors
+/// Returns [`CoreError::InvalidCursor`] if any value is a non-finite float
+/// (`NaN`/`±Inf`): those are neither valid JSON nor valid ordering keys, and
+/// encoding a placeholder would silently corrupt the seek position.
+pub fn encode_cursor(values: &[Value]) -> Result<String> {
+    for value in values {
+        check_finite(value)?;
+    }
     let mut payload = String::new();
     encode::write_array(&mut payload, values);
-    URL_SAFE_NO_PAD.encode(payload.as_bytes())
+    Ok(URL_SAFE_NO_PAD.encode(payload.as_bytes()))
+}
+
+/// Reject non-finite floats anywhere in an ordering value, recursing into
+/// nested lists/maps so no `NaN`/`±Inf` ever reaches the writer.
+fn check_finite(value: &Value) -> Result<()> {
+    match value {
+        Value::Float(f) if !f.is_finite() => Err(invalid("non-finite ordering key")),
+        Value::List(items) => items.iter().try_for_each(check_finite),
+        Value::Map(map) => map.values().try_for_each(check_finite),
+        _ => Ok(()),
+    }
 }
 
 /// Decode a cursor string back into its ordering values.

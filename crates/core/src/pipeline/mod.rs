@@ -114,11 +114,16 @@ pub fn offset_page_searched(
         )?,
         None => filtered,
     };
-    let indices = sort_stage(items, columns, matched, sort_specs)?;
-    let total = indices.len() as u64;
+    let limit = pagination::Limit::new(limit)?;
+    let total = matched.len() as u64; // filtered count, before the (top-k) sort
     let meta = pagination::offset_meta(page, limit, total);
-    let start = (pagination::offset(page, limit) as usize).min(indices.len());
-    let end = start.saturating_add(limit as usize).min(indices.len());
+    let start = (pagination::offset(page, limit) as usize).min(matched.len());
+    let end = start
+        .saturating_add(limit.get() as usize)
+        .min(matched.len());
+    // Sort only enough to fill the page window `[start, end)` — a top-k on the
+    // columnar path (the row fallback sorts fully); the slice is identical.
+    let indices = sort_stage(items, columns, matched, sort_specs, Some(end))?;
     Ok(Page {
         indices: indices[start..end].to_vec(),
         total,

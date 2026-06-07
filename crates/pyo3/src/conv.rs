@@ -12,10 +12,11 @@ use std::collections::BTreeMap;
 use pyo3::create_exception;
 use pyo3::exceptions::{PyKeyError, PyValueError};
 use pyo3::prelude::*;
+use pyo3::sync::PyOnceLock;
 use pyo3::types::{PyBool, PyBytes, PyDict, PyFloat, PyInt, PyList, PyString, PyTuple};
 use pyo3::IntoPyObjectExt;
 
-use paginate_core::{CoreError, Value};
+use paginate_core::{CoreError, ErrorKind, Value};
 
 // Typed exceptions exposed to Python. `PaginateError` subclasses `ValueError`,
 // so existing `except ValueError` handlers keep working while callers gain
@@ -26,8 +27,27 @@ create_exception!(paginate_core, FilterError, PaginateError);
 create_exception!(paginate_core, SortError, PaginateError);
 create_exception!(paginate_core, SearchError, PaginateError);
 
-fn py_type<'py>(py: Python<'py>, module: &str, name: &str) -> PyResult<Bound<'py, PyAny>> {
-    py.import(module)?.getattr(name)
+// Cache the imported host type objects (datetime/date/Decimal/UUID) so a dataset
+// of typed values doesn't re-run `import + getattr` per element — the dominant
+// marshalling cost. `PyOnceLock` initializes once under the GIL, then reads.
+static DATETIME: PyOnceLock<Py<PyAny>> = PyOnceLock::new();
+static DATE: PyOnceLock<Py<PyAny>> = PyOnceLock::new();
+static DECIMAL: PyOnceLock<Py<PyAny>> = PyOnceLock::new();
+static UUID: PyOnceLock<Py<PyAny>> = PyOnceLock::new();
+
+/// The cached host type object `module.name`, imported once and reused.
+fn cached_type<'py>(
+    py: Python<'py>,
+    cell: &PyOnceLock<Py<PyAny>>,
+    module: &str,
+    name: &str,
+) -> PyResult<Bound<'py, PyAny>> {
+    let cached = cell.get_or_try_init(py, || {
+        py.import(module)
+            .and_then(|m| m.getattr(name))
+            .map(|obj| obj.unbind())
+    })?;
+    Ok(cached.bind(py).clone())
 }
 
 /// Convert a Python object into a core [`Value`].
@@ -58,16 +78,16 @@ pub fn py_to_value(obj: &Bound<'_, PyAny>) -> PyResult<Value> {
 
     let py = obj.py();
     // datetime before date — datetime is a subclass of date.
-    if obj.is_instance(&py_type(py, "datetime", "datetime")?)? {
+    if obj.is_instance(&cached_type(py, &DATETIME, "datetime", "datetime")?)? {
         return Ok(Value::DateTime(obj.call_method0("isoformat")?.extract()?));
     }
-    if obj.is_instance(&py_type(py, "datetime", "date")?)? {
+    if obj.is_instance(&cached_type(py, &DATE, "datetime", "date")?)? {
         return Ok(Value::Date(obj.call_method0("isoformat")?.extract()?));
     }
-    if obj.is_instance(&py_type(py, "decimal", "Decimal")?)? {
+    if obj.is_instance(&cached_type(py, &DECIMAL, "decimal", "Decimal")?)? {
         return Ok(Value::Decimal(obj.str()?.extract()?));
     }
-    if obj.is_instance(&py_type(py, "uuid", "UUID")?)? {
+    if obj.is_instance(&cached_type(py, &UUID, "uuid", "UUID")?)? {
         return Ok(Value::Uuid(obj.str()?.extract()?));
     }
 
@@ -124,14 +144,20 @@ pub fn value_to_py(py: Python<'_>, value: &Value) -> PyResult<Py<PyAny>> {
             }
             dict.into_py_any(py)?
         }
-        Value::DateTime(s) => py_type(py, "datetime", "datetime")?
+        Value::DateTime(s) => cached_type(py, &DATETIME, "datetime", "datetime")?
             .call_method1("fromisoformat", (s,))?
             .unbind(),
-        Value::Date(s) => py_type(py, "datetime", "date")?
+        Value::Date(s) => cached_type(py, &DATE, "datetime", "date")?
             .call_method1("fromisoformat", (s,))?
             .unbind(),
-        Value::Decimal(s) => py_type(py, "decimal", "Decimal")?.call1((s,))?.unbind(),
-        Value::Uuid(s) => py_type(py, "uuid", "UUID")?.call1((s,))?.unbind(),
+        Value::Decimal(s) => cached_type(py, &DECIMAL, "decimal", "Decimal")?
+            .call1((s,))?
+            .unbind(),
+        Value::Uuid(s) => cached_type(py, &UUID, "uuid", "UUID")?
+            .call1((s,))?
+            .unbind(),
+        // `Value` is `#[non_exhaustive]`; a future variant has no host mapping yet.
+        _ => return Err(PyValueError::new_err("unsupported core value variant")),
     })
 }
 
@@ -140,16 +166,18 @@ pub fn value_to_py(py: Python<'_>, value: &Value) -> PyResult<Py<PyAny>> {
 /// `ValueError`s, so existing handlers keep catching them).
 pub fn core_err(err: &CoreError) -> PyErr {
     let message = err.to_string();
-    match err {
-        CoreError::FieldNotFound { .. } => PyKeyError::new_err(message),
-        CoreError::InvalidCursor { .. } => InvalidCursorError::new_err(message),
-        CoreError::Filter { .. } => FilterError::new_err(message),
-        CoreError::Sort { .. } => SortError::new_err(message),
-        CoreError::Search { .. } => SearchError::new_err(message),
+    // Dispatch on the stable `ErrorKind`, the same taxonomy the Node binding maps
+    // from — so the two host error surfaces cannot drift.
+    match err.kind() {
+        ErrorKind::FieldNotFound => PyKeyError::new_err(message),
+        ErrorKind::InvalidCursor => InvalidCursorError::new_err(message),
+        ErrorKind::Filter => FilterError::new_err(message),
+        ErrorKind::Sort => SortError::new_err(message),
+        ErrorKind::Search => SearchError::new_err(message),
         // Input validation surfaces as a plain ValueError; the Python params
         // layer re-raises it as the public `ValidationError`.
-        CoreError::Validation { .. } => PyValueError::new_err(message),
-        // `CoreError` is `#[non_exhaustive]`; a future variant maps to the base.
+        ErrorKind::Validation => PyValueError::new_err(message),
+        // `ErrorKind` is `#[non_exhaustive]`; a future kind maps to the base.
         _ => PaginateError::new_err(message),
     }
 }

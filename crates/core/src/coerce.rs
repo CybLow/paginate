@@ -14,6 +14,9 @@
 
 use std::borrow::Cow;
 use std::cmp::Ordering;
+use std::str::FromStr;
+
+use bigdecimal::BigDecimal;
 
 use crate::value::Value;
 
@@ -37,6 +40,20 @@ fn as_text(v: &Value) -> Option<&str> {
     }
 }
 
+/// Exact ordering of two canonical decimal strings.
+///
+/// Both parse losslessly via `bigdecimal`, so decimals differing only beyond
+/// f64's 2^53 mantissa still order correctly and `1.0`/`1.00` compare equal
+/// (value, not representation — matching Python's `Decimal`). Values outside
+/// bigdecimal's domain (`NaN`, `Infinity`) fall back to the f64 path, so this is
+/// never worse than the previous behaviour.
+fn decimal_cmp(x: &str, y: &str) -> Option<Ordering> {
+    match (BigDecimal::from_str(x), BigDecimal::from_str(y)) {
+        (Ok(a), Ok(b)) => Some(a.cmp(&b)),
+        _ => x.parse::<f64>().ok()?.partial_cmp(&y.parse::<f64>().ok()?),
+    }
+}
+
 /// Compare two values with Python ordering semantics.
 ///
 /// Returns `None` when the values are not order-comparable (mismatched kinds,
@@ -48,6 +65,8 @@ pub fn compare(a: &Value, b: &Value) -> Option<Ordering> {
         // would bite very large integers.
         (Value::Int(x), Value::Int(y)) => Some(x.cmp(y)),
         (Value::Bool(x), Value::Bool(y)) => Some(x.cmp(y)),
+        // Exact decimal ordering; mixed Decimal-vs-number stays on the f64 path.
+        (Value::Decimal(x), Value::Decimal(y)) => decimal_cmp(x, y),
         _ => {
             if let (Some(x), Some(y)) = (as_number(a), as_number(b)) {
                 return x.partial_cmp(&y);
@@ -83,6 +102,8 @@ pub fn eq(a: &Value, b: &Value) -> bool {
         // Exact integer equality (matches `compare` and Python's arbitrary-
         // precision `==`); the f64 fallback below collapses ints past 2^53.
         (Value::Int(x), Value::Int(y)) => x == y,
+        // Exact decimal equality (ignores trailing-zero representation).
+        (Value::Decimal(x), Value::Decimal(y)) => decimal_cmp(x, y) == Some(Ordering::Equal),
         _ => match (as_number(a), as_number(b)) {
             (Some(x), Some(y)) => x == y,
             _ => false,
@@ -173,6 +194,20 @@ mod tests {
         let b = Value::Int(9_007_199_254_740_993);
         assert!(!eq(&a, &b));
         assert_eq!(compare(&a, &b), Some(Less));
+    }
+
+    #[test]
+    fn large_decimals_compare_exactly() {
+        // Differ only beyond 2^53 — would collapse to one f64.
+        let a = Value::Decimal("9007199254740993".into());
+        let b = Value::Decimal("9007199254740992".into());
+        assert_eq!(compare(&a, &b), Some(Greater));
+        assert!(!eq(&a, &b));
+        // Numeric equality ignores trailing-zero representation, like Python.
+        assert!(eq(
+            &Value::Decimal("1.0".into()),
+            &Value::Decimal("1.00".into())
+        ));
     }
 
     #[test]

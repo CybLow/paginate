@@ -53,6 +53,8 @@ pub fn filter_group_indices(
         FilterNode::Group(group) => FilterInput::Group(group),
         FilterNode::Spec(spec) => FilterInput::Flat(vec![spec]),
     };
+    // Enforce the nesting-depth guard, matching the Node binding (symmetry).
+    core::validate::validate_filter_input(&input).map_err(|e| core_err(&e))?;
     let values = project::project_all(items, &plan)?;
     core::filter::filter_indices(&values, &input).map_err(|e| core_err(&e))
 }

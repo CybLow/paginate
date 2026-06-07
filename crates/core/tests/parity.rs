@@ -137,7 +137,11 @@ fn cursors_encode_and_round_trip() {
         for case in data[group].as_array().expect("cursor cases") {
             let vals = values(case, "values");
             let golden = case["encoded"].as_str().expect("encoded");
-            assert_eq!(encode_cursor(&vals), golden, "encode {group}");
+            assert_eq!(
+                encode_cursor(&vals).expect("encode"),
+                golden,
+                "encode {group}"
+            );
             assert_eq!(
                 decode_cursor(golden).expect("decode"),
                 vals,

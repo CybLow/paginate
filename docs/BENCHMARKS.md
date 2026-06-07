@@ -161,6 +161,88 @@ all of it. So in JS, reach for `Dataset.page` (the fused pipeline), not the
 single-op helpers; behaviour parity + the cursor codec remain the cross-language
 anchors.
 
+## Update — resident-engine optimization pass (2026-06)
+
+A profiling-led pass made the resident path far faster than the numbers above
+(which it supersedes). Every win is bench-gated, keeps the cross-language parity
+golden byte-identical, and was found/confirmed with a sampling profiler
+(`samply`) rather than guesswork. Rejected along the way — each measured, not
+assumed: an FxHash on the postings (below noise), a k-way merge of posting lists
+(heap slower than `pdqsort`), and a decorate-subset sort (regressed the full
+sort).
+
+### Ranked fuzzy search — ~9× (memoize + bitset)
+
+Fuzzy/trigram search over a resident `Dataset` re-trigrammed the whole corpus on
+every query and built candidate sets by concatenate-then-sort. Memoizing the
+per-field trigram sets and unioning candidates through a bitset cut it to the
+irreducible scoring work:
+
+| resident fuzzy search | 1K | 10K | 100K |
+|-----------------------|----|-----|------|
+| before | 45 µs | 511 µs | 6.06 ms |
+| after  | **6.5 µs** | **63 µs** | **0.68 ms** |
+
+### Columnar filter coverage — strings, ranges, membership
+
+The columnar fast path (a typed dense `Vec` per field) previously handled only
+the six comparison operators; everything else fell back to the row engine. It now
+also serves the operators below — each removing the per-row accessor walk +
+boxed-predicate dispatch, byte-identical to the row engine (100K rows, row →
+columnar):
+
+| filter operator | speedup |
+|-----------------|---------|
+| `contains` / `starts_with` / `ends_with` | ~**4.8×** |
+| `between` (single inlined range check)   | ~**27×** |
+| `in` / `not_in` (one HashSet vs per-row list scan) | ~**24×** |
+| `like` / `ilike`                         | ~1.2× (and keeps a multi-`AND` filter fully columnar) |
+
+### One-call `page()` — top-k, ~3×
+
+The pipeline fully sorted the filtered set then sliced one page. It now pushes the
+page window down as a **top-k** (`select_nth` instead of a full sort) over a
+comparator **monomorphised per column type** (no per-comparison enum match):
+
+| `Dataset.page` (100K, columnar) | time |
+|---------------------------------|------|
+| before this pass            | 554 µs |
+| + top-k                     | 341 µs |
+| + monomorphised comparator  | **183 µs** (3.0×) |
+
+A re-profile confirms convergence: 94% of what remains is two irreducible O(n)
+scans (the filter scan + the top-k partition), 6% allocation, no dispatch left.
+
+### Node marshalling — move, don't clone (~1.7×)
+
+The JSON→`Value` bridge cloned every row's strings and object keys. Consuming the
+owned JSON and **moving** them cut the one-time build's marshalling ~1.7×
+(1527 → 889 µs per 10K objects). PyO3 is unaffected (it marshals `PyAny`
+directly).
+
+### Where the time now goes — and why we stopped
+
+Measured 100K resident-`Dataset` lifecycle:
+
+| phase | cost | when paid |
+|-------|------|-----------|
+| marshalling (node) | ~9 ms | build (once) |
+| `Columns::build` | 9.3 ms | build (once) |
+| `TrigramIndex::build` | 27.6 ms | build (once) |
+| `page` query | 0.18 ms | per query |
+| `search` query | 0.06 ms | per query |
+
+The per-query path is at its floor (Amdahl ceiling ~1.06×) and is well under 1%
+of a typical `Dataset`'s lifetime cost — `build ≈ 46 ms` dominates until roughly
+**N ≈ 255 queries**. The only sizeable remaining cost is the one-time index build
+(`TrigramIndex::build`, 60% of it), but profiling shows it is bound by posting-list
+**allocation**, not hashing: a faster `u64` hasher for the trigram keys was tried
+and *regressed* it ~11% in a same-session A/B (28 → 31 ms). The trigram alphabet
+is tiny — few distinct keys, huge posting lists — so a weaker hash only collides
+more, and the real cost is the `Vec<u32>` growth that no hash change touches. That
+lever is spent; the build is near its floor too. The engine is **converged** for
+the intended use.
+
 ### Decision & status (Python package)
 
 | Path | Native in Python? | Status |
