@@ -41,7 +41,7 @@ all-features = true
 
 [dev-dependencies]
 proptest = "1.8.0"
-criterion = "0.5"
+criterion = "0.8"
 
 [[bench]]
 name = "main"
