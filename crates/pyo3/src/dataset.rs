@@ -58,34 +58,43 @@ impl Dataset {
     }
 
     /// Indices matching flat filter specs `[(field, op, value, logic)]`.
-    fn filter(&self, specs: &Bound<'_, PyList>) -> PyResult<Vec<usize>> {
+    fn filter(&self, py: Python<'_>, specs: &Bound<'_, PyList>) -> PyResult<Vec<usize>> {
         let core_specs = parse_filters(specs)?;
-        // Columnar fast path: a single comparison on a typed (int/float/str)
-        // column; falls back to the row engine for anything else.
-        if let [spec] = core_specs.as_slice() {
-            if let Some(indices) = self.columns.filter(&spec.field, spec.op, &spec.value) {
-                return Ok(indices);
+        let (rows, columns) = (&self.rows, &self.columns);
+        // Release the GIL for the pure-Rust compute: frees other Python threads
+        // and lets the free-threaded interpreter run queries in parallel.
+        py.detach(|| {
+            // Columnar fast path: a single comparison on a typed (int/float/str)
+            // column; falls back to the row engine for anything else.
+            if let [spec] = core_specs.as_slice() {
+                if let Some(indices) = columns.filter(&spec.field, spec.op, &spec.value) {
+                    return Ok(indices);
+                }
             }
-        }
-        core::filter::filter_indices(&self.rows, &core::filter::FilterInput::Flat(core_specs))
-            .map_err(|e| core_err(&e))
+            core::filter::filter_indices(rows, &core::filter::FilterInput::Flat(core_specs))
+        })
+        .map_err(|e| core_err(&e))
     }
 
     /// Index permutation for sort specs `[(field, direction, nulls)]`.
-    fn sort(&self, specs: &Bound<'_, PyList>) -> PyResult<Vec<usize>> {
+    fn sort(&self, py: Python<'_>, specs: &Bound<'_, PyList>) -> PyResult<Vec<usize>> {
         let core_specs = parse_sorts(specs)?;
-        // Columnar fast path: every sort key on a typed column.
-        if !core_specs.is_empty() {
-            let order: Vec<usize> = (0..self.rows.len()).collect();
-            let keys: Vec<(&str, core::sort::SortDirection)> = core_specs
-                .iter()
-                .map(|spec| (spec.field.as_str(), spec.direction))
-                .collect();
-            if let Some(sorted) = self.columns.sort_subset(&order, &keys) {
-                return Ok(sorted);
+        let (rows, columns) = (&self.rows, &self.columns);
+        py.detach(|| {
+            // Columnar fast path: every sort key on a typed column.
+            if !core_specs.is_empty() {
+                let order: Vec<usize> = (0..rows.len()).collect();
+                let keys: Vec<(&str, core::sort::SortDirection)> = core_specs
+                    .iter()
+                    .map(|spec| (spec.field.as_str(), spec.direction))
+                    .collect();
+                if let Some(sorted) = columns.sort_subset(&order, &keys) {
+                    return Ok(sorted);
+                }
             }
-        }
-        core::sort::sort_indices(&self.rows, &core_specs).map_err(|e| core_err(&e))
+            core::sort::sort_indices(rows, &core_specs)
+        })
+        .map_err(|e| core_err(&e))
     }
 
     /// Ranked-search indices over `fields`. Fuzzy/token-sort use the resident
@@ -94,6 +103,7 @@ impl Dataset {
     #[allow(clippy::too_many_arguments)]
     fn search(
         &self,
+        py: Python<'_>,
         query: String,
         fields: Vec<String>,
         mode: &str,
@@ -112,7 +122,8 @@ impl Dataset {
             min_length,
             max_results,
         };
-        core::search::search_with_index(&self.rows, &spec, &self.trigram).map_err(|e| core_err(&e))
+        let (rows, trigram) = (&self.rows, &self.trigram);
+        py.detach(|| core::search::search_with_index(rows, &spec, trigram)).map_err(|e| core_err(&e))
     }
 
     /// Filter + search + sort + offset-paginate in ONE native call. Returns a dict
@@ -156,16 +167,19 @@ impl Dataset {
                     index: Some(&self.trigram),
                 },
             );
-        let result = core::pipeline::offset_page_searched(
-            &self.rows,
-            Some(&self.columns),
-            filter_input.as_ref(),
-            stage.as_ref(),
-            &sort_specs,
-            page,
-            limit,
-        )
-        .map_err(|e| core_err(&e))?;
+        let result = py
+            .detach(|| {
+                core::pipeline::offset_page_searched(
+                    &self.rows,
+                    Some(&self.columns),
+                    filter_input.as_ref(),
+                    stage.as_ref(),
+                    &sort_specs,
+                    page,
+                    limit,
+                )
+            })
+            .map_err(|e| core_err(&e))?;
 
         let dict = PyDict::new(py);
         dict.set_item("indices", result.indices)?;

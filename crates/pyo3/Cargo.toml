@@ -2,7 +2,8 @@
 name = "pypaginate"
 version = "0.2.1"
 edition = "2021"
-rust-version = "1.74"
+# PyO3 0.28's MSRV is Rust 1.83.
+rust-version = "1.83"
 publish = false
 
 [lib]
