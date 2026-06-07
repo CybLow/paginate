@@ -60,41 +60,18 @@ impl Dataset {
     /// Indices matching flat filter specs `[(field, op, value, logic)]`.
     fn filter(&self, py: Python<'_>, specs: &Bound<'_, PyList>) -> PyResult<Vec<usize>> {
         let core_specs = parse_filters(specs)?;
-        let (rows, columns) = (&self.rows, &self.columns);
-        // Release the GIL for the pure-Rust compute: frees other Python threads
-        // and lets the free-threaded interpreter run queries in parallel.
-        py.detach(|| {
-            // Columnar fast path: a single comparison on a typed (int/float/str)
-            // column; falls back to the row engine for anything else.
-            if let [spec] = core_specs.as_slice() {
-                if let Some(indices) = columns.filter(&spec.field, spec.op, &spec.value) {
-                    return Ok(indices);
-                }
-            }
-            core::filter::filter_indices(rows, &core::filter::FilterInput::Flat(core_specs))
-        })
-        .map_err(|e| core_err(&e))
+        // Release the GIL: the columnar/row query is pure CPU work over resident
+        // `Value`s (no Python access), so other threads run while it executes.
+        py.detach(|| core::resident::filter_indices(&self.rows, &self.columns, core_specs))
+            .map_err(|e| core_err(&e))
     }
 
     /// Index permutation for sort specs `[(field, direction, nulls)]`.
     fn sort(&self, py: Python<'_>, specs: &Bound<'_, PyList>) -> PyResult<Vec<usize>> {
         let core_specs = parse_sorts(specs)?;
-        let (rows, columns) = (&self.rows, &self.columns);
-        py.detach(|| {
-            // Columnar fast path: every sort key on a typed column.
-            if !core_specs.is_empty() {
-                let order: Vec<usize> = (0..rows.len()).collect();
-                let keys: Vec<(&str, core::sort::SortDirection)> = core_specs
-                    .iter()
-                    .map(|spec| (spec.field.as_str(), spec.direction))
-                    .collect();
-                if let Some(sorted) = columns.sort_subset(&order, &keys) {
-                    return Ok(sorted);
-                }
-            }
-            core::sort::sort_indices(rows, &core_specs)
-        })
-        .map_err(|e| core_err(&e))
+        // Release the GIL around the pure-Rust columnar/row sort.
+        py.detach(|| core::resident::sort_indices(&self.rows, &self.columns, &core_specs))
+            .map_err(|e| core_err(&e))
     }
 
     /// Ranked-search indices over `fields`. Fuzzy/token-sort use the resident
@@ -122,8 +99,8 @@ impl Dataset {
             min_length,
             max_results,
         };
-        let (rows, trigram) = (&self.rows, &self.trigram);
-        py.detach(|| core::search::search_with_index(rows, &spec, trigram))
+        // Release the GIL around the trigram search (pure CPU over resident rows).
+        py.detach(|| core::search::search_with_index(&self.rows, &spec, &self.trigram))
             .map_err(|e| core_err(&e))
     }
 
@@ -168,6 +145,7 @@ impl Dataset {
                     index: Some(&self.trigram),
                 },
             );
+        // Release the GIL around the whole filter→search→sort→paginate pass.
         let result = py
             .detach(|| {
                 core::pipeline::offset_page_searched(

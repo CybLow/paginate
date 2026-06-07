@@ -15,10 +15,7 @@ pub(super) fn eval_op(op: FilterOp, field: &Value, spec: &Value) -> Result<bool>
     match op {
         FilterOp::Eq => Ok(coerce::eq(field, spec)),
         FilterOp::Ne => Ok(!coerce::eq(field, spec)),
-        FilterOp::Gt => cmp(field, spec, |o| o == Ordering::Greater),
-        FilterOp::Gte => cmp(field, spec, |o| o != Ordering::Less),
-        FilterOp::Lt => cmp(field, spec, |o| o == Ordering::Less),
-        FilterOp::Lte => cmp(field, spec, |o| o != Ordering::Greater),
+        FilterOp::Gt | FilterOp::Gte | FilterOp::Lt | FilterOp::Lte => cmp(op, field, spec),
         FilterOp::In => member(field, spec),
         FilterOp::NotIn => member(field, spec).map(|m| !m),
         FilterOp::Between => between(field, spec),
@@ -26,21 +23,25 @@ pub(super) fn eval_op(op: FilterOp, field: &Value, spec: &Value) -> Result<bool>
         FilterOp::IsNotNull => Ok(!field.is_null()),
         FilterOp::Empty => Ok(is_empty(field)),
         FilterOp::NotEmpty => Ok(!is_empty(field)),
-        FilterOp::Exists => Ok(true),
+        // `exists` resolves presence leniently in `compile_spec`; the string and
+        // regex operators are compiled with precomputed state there too.
         FilterOp::Contains
         | FilterOp::StartsWith
         | FilterOp::EndsWith
         | FilterOp::Like
         | FilterOp::ILike
-        | FilterOp::Regex => {
-            unreachable!("string/regex operators are compiled separately")
+        | FilterOp::Regex
+        | FilterOp::Exists => {
+            unreachable!("string/regex/exists operators are compiled separately")
         }
     }
 }
 
-fn cmp(field: &Value, spec: &Value, pred: impl Fn(Ordering) -> bool) -> Result<bool> {
+fn cmp(op: FilterOp, field: &Value, spec: &Value) -> Result<bool> {
     match coerce::compare(field, spec) {
-        Some(ordering) => Ok(pred(ordering)),
+        // `op` is one of the four ordering operators here, so `holds_for`
+        // never returns `None`.
+        Some(ordering) => Ok(op.holds_for(ordering).unwrap_or(false)),
         None => Err(CoreError::Filter {
             message: format!("{field:?} and {spec:?} are not order-comparable"),
         }),

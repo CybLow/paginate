@@ -10,12 +10,29 @@ use super::Column;
 /// Build a typed column for `field`, seeded by its value in the first row.
 pub(super) fn build_column(items: &[Value], field: &str, seed: &Value) -> Option<Column> {
     match seed {
-        Value::Int(_) => build_int(items, field),
-        Value::Float(f) if !f.is_nan() => build_float(items, field),
-        Value::Str(_) => build_str(items, field),
-        Value::Bool(_) => build_bool(items, field),
+        Value::Int(_) => build_col(items, field, value_as_int).map(Column::Int),
+        Value::Float(f) if !f.is_nan() => {
+            build_col(items, field, value_as_float).map(Column::Float)
+        }
+        Value::Str(_) => build_col(items, field, value_as_str).map(Column::Str),
+        Value::Bool(_) => build_col(items, field, value_as_bool).map(Column::Bool),
         _ => None,
     }
+}
+
+/// Extract a dense `Vec<T>` for `field` across every row, or `None` if any row
+/// is missing the field or `extract` rejects its value (wrong variant / `NaN`) —
+/// which disqualifies the whole column and sends the query to the row engine.
+fn build_col<T>(
+    items: &[Value],
+    field: &str,
+    extract: impl Fn(&Value) -> Option<T>,
+) -> Option<Vec<T>> {
+    let mut col = Vec::with_capacity(items.len());
+    for item in items {
+        col.push(extract(field_value(item, field)?)?);
+    }
+    Some(col)
 }
 
 /// The value of `field` in `item`, or `None` if `item` is not a map or the
@@ -27,46 +44,31 @@ fn field_value<'a>(item: &'a Value, field: &str) -> Option<&'a Value> {
     }
 }
 
-fn build_int(items: &[Value], field: &str) -> Option<Column> {
-    let mut col = Vec::with_capacity(items.len());
-    for item in items {
-        match field_value(item, field)? {
-            Value::Int(n) => col.push(*n),
-            _ => return None, // missing / null / non-int -> disqualify
-        }
+pub(super) fn value_as_int(value: &Value) -> Option<i64> {
+    match value {
+        Value::Int(n) => Some(*n),
+        _ => None,
     }
-    Some(Column::Int(col))
 }
 
-fn build_float(items: &[Value], field: &str) -> Option<Column> {
-    let mut col = Vec::with_capacity(items.len());
-    for item in items {
-        match field_value(item, field)? {
-            Value::Float(f) if !f.is_nan() => col.push(*f),
-            _ => return None, // non-float, NaN, or missing -> disqualify
-        }
+/// A `NaN` float disqualifies the column (the row engine would error/short-circuit).
+fn value_as_float(value: &Value) -> Option<f64> {
+    match value {
+        Value::Float(f) if !f.is_nan() => Some(*f),
+        _ => None,
     }
-    Some(Column::Float(col))
 }
 
-fn build_str(items: &[Value], field: &str) -> Option<Column> {
-    let mut col = Vec::with_capacity(items.len());
-    for item in items {
-        match field_value(item, field)? {
-            Value::Str(s) => col.push(s.clone()),
-            _ => return None, // non-string / missing -> disqualify
-        }
+pub(super) fn value_as_str(value: &Value) -> Option<String> {
+    match value {
+        Value::Str(s) => Some(s.clone()),
+        _ => None,
     }
-    Some(Column::Str(col))
 }
 
-fn build_bool(items: &[Value], field: &str) -> Option<Column> {
-    let mut col = Vec::with_capacity(items.len());
-    for item in items {
-        match field_value(item, field)? {
-            Value::Bool(b) => col.push(*b),
-            _ => return None, // non-bool / missing -> disqualify
-        }
+pub(super) fn value_as_bool(value: &Value) -> Option<bool> {
+    match value {
+        Value::Bool(b) => Some(*b),
+        _ => None,
     }
-    Some(Column::Bool(col))
 }

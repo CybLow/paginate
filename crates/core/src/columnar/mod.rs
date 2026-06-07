@@ -22,9 +22,13 @@
 //!   `(Bool, Bool)` arm) and equality (bool `==` equals `coerce::eq`'s 0/1
 //!   fold); only a `Bool` needle qualifies, so `active == 1` still falls back.
 //!
-//! Anything else — an unknown field, a string/regex operator, a value whose
-//! coercion can't be proven equal — returns `None`, and the caller falls back to
-//! the row engine. Silently correct beats cleverly wrong.
+//! A `Str` column also serves the substring operators (`contains`/`starts_with`/
+//! `ends_with`) via a direct scan — byte-identical to the row engine's `str`
+//! methods, but without the per-row accessor walk and boxed-predicate dispatch.
+//!
+//! Anything else — an unknown field, `like`/`ilike`/`regex`, a range, a value
+//! whose coercion can't be proven equal — returns `None`, and the caller falls
+//! back to the row engine. Silently correct beats cleverly wrong.
 //!
 //! [`coerce`]: crate::coerce
 
@@ -89,11 +93,14 @@ impl Columns {
     /// key is a typed column. Keys are applied highest-priority first (matching
     /// [`crate::sort::sort_indices`]); typed columns have no nulls, so null
     /// placement is irrelevant.
+    /// `limit` keeps only the first `k` rows (a top-k partial sort) — the page
+    /// window — instead of fully ordering the whole subset; `None` sorts all.
     #[must_use]
     pub fn sort_subset(
         &self,
         order: &[usize],
         keys: &[(&str, SortDirection)],
+        limit: Option<usize>,
     ) -> Option<Vec<usize>> {
         if keys.is_empty() {
             return None;
@@ -109,29 +116,84 @@ impl Columns {
             })
             .collect::<Option<Vec<_>>>()?;
         let mut order = order.to_vec();
-        // Apply keys in reverse so the first key wins under a stable sort —
-        // exactly how the row engine layers its `sort_by` calls.
-        for (column, desc) in resolved.iter().rev() {
-            sort_one(&mut order, column, *desc);
+        // A single-key sort (the common case) gets a comparator specialised to the
+        // column type — no per-comparison `Column` enum match, which profiling
+        // showed dominates once the full sort became a top-k. Multi-key uses one
+        // total comparator (keys in priority order). Both break ties by ascending
+        // item index (stable, since `order` is ascending) and honour `limit`.
+        if let [(column, desc)] = resolved.as_slice() {
+            sort_one_key(&mut order, column, *desc, limit);
+        } else {
+            partial_sort(&mut order, limit, |&a, &b| {
+                for (column, desc) in &resolved {
+                    let ord = oriented(column.compare(a, b), *desc);
+                    if ord != Ordering::Equal {
+                        return ord;
+                    }
+                }
+                a.cmp(&b)
+            });
         }
         Some(order)
     }
 }
 
-/// Stable-sort `order` in place by one typed column, oriented for descending.
-fn sort_one(order: &mut [usize], column: &Column, desc: bool) {
-    match column {
-        Column::Int(col) => order.sort_by(|&a, &b| oriented(col[a].cmp(&col[b]), desc)),
-        // A built float column has no NaN, so `partial_cmp` is total.
-        Column::Float(col) => order.sort_by(|&a, &b| {
-            oriented(col[a].partial_cmp(&col[b]).unwrap_or(Ordering::Equal), desc)
-        }),
-        Column::Str(col) => order.sort_by(|&a, &b| oriented(col[a].cmp(&col[b]), desc)),
-        Column::Bool(col) => order.sort_by(|&a, &b| oriented(col[a].cmp(&col[b]), desc)),
+impl Column {
+    /// Compare two rows by this column's natural (ascending) order. A built float
+    /// column has no `NaN`, so `partial_cmp` is total.
+    fn compare(&self, a: usize, b: usize) -> Ordering {
+        match self {
+            Column::Int(col) => col[a].cmp(&col[b]),
+            Column::Float(col) => col[a].partial_cmp(&col[b]).unwrap_or(Ordering::Equal),
+            Column::Str(col) => col[a].cmp(&col[b]),
+            Column::Bool(col) => col[a].cmp(&col[b]),
+        }
     }
 }
 
-/// Reverse an ordering for descending sorts (keeps stability via `sort_by`).
+/// Single-key sort with a comparator specialised to the column's element type
+/// (ties broken by ascending item index for stability). The `Ord` columns share
+/// one generic body — the compiler still monomorphises it per type, so each gets
+/// an enum-match-free comparator; `Float` is separate (`f64` is only `PartialOrd`).
+fn sort_one_key(order: &mut Vec<usize>, column: &Column, desc: bool, limit: Option<usize>) {
+    match column {
+        Column::Int(c) => sort_by_key(order, c, desc, limit),
+        Column::Str(c) => sort_by_key(order, c, desc, limit),
+        Column::Bool(c) => sort_by_key(order, c, desc, limit),
+        Column::Float(c) => partial_sort(order, limit, |&a, &b| {
+            oriented(c[a].partial_cmp(&c[b]).unwrap_or(Ordering::Equal), desc)
+                .then_with(|| a.cmp(&b))
+        }),
+    }
+}
+
+/// Top-k/full sort of `order` by one totally-ordered column, descending-aware,
+/// ties by ascending item index.
+fn sort_by_key<T: Ord>(order: &mut Vec<usize>, col: &[T], desc: bool, limit: Option<usize>) {
+    partial_sort(order, limit, |&a, &b| {
+        oriented(col[a].cmp(&col[b]), desc).then_with(|| a.cmp(&b))
+    });
+}
+
+/// Sort `order` by `cmp`, keeping only the first `k` rows when `limit` is `Some(k)`
+/// (a top-k partial sort for a bounded page); a `None`/large limit sorts all.
+fn partial_sort(
+    order: &mut Vec<usize>,
+    limit: Option<usize>,
+    mut cmp: impl FnMut(&usize, &usize) -> Ordering,
+) {
+    match limit {
+        Some(0) => order.clear(),
+        Some(k) if k < order.len() => {
+            order.select_nth_unstable_by(k - 1, &mut cmp);
+            order.truncate(k);
+            order.sort_unstable_by(&mut cmp);
+        }
+        _ => order.sort_unstable_by(&mut cmp),
+    }
+}
+
+/// Reverse an ordering for descending sorts.
 fn oriented(ordering: Ordering, desc: bool) -> Ordering {
     if desc {
         ordering.reverse()

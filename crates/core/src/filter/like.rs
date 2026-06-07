@@ -1,12 +1,14 @@
 //! SQL `LIKE` / `ILIKE` matching, ported from pypaginate's `filtering/like.py`.
 //!
 //! Patterns are classified once into a fast string-method path (`%x%`, `x%`,
-//! `%x`) or a `*`/`?` glob for everything else (interior `%`, or `_`).
+//! `%x`) or a token glob for everything else (interior `%`, or `_`).
 //!
-//! The glob handles `%` -> `*` and `_` -> `?` with full-string semantics, like
-//! `fnmatch` on POSIX. It deliberately treats `[` as a literal (SQL `LIKE` has
-//! no character classes), which is the only intentional divergence from
-//! Python's `fnmatch`.
+//! Only the SQL wildcards `%` (any run) and `_` (single character) are special;
+//! every other character — including `*`, `?`, and `[` — matches **literally**.
+//! (Python's `fnmatch` treats `*`/`?`/`[` as wildcards; mirroring SQL `LIKE`
+//! here, where they are ordinary text, is deliberate.)
+
+use std::borrow::Cow;
 
 /// A LIKE pattern compiled once for repeated matching.
 pub struct LikeMatcher {
@@ -18,12 +20,25 @@ enum Kind {
     Contains(String),
     StartsWith(String),
     EndsWith(String),
-    Glob(Vec<char>),
+    Glob(Vec<GlobToken>),
+}
+
+/// One unit of a compiled glob: a wildcard or a single literal character.
+#[derive(Clone, Copy)]
+enum GlobToken {
+    /// `%` — matches any run of characters (including empty).
+    Star,
+    /// `_` — matches exactly one character.
+    AnyOne,
+    /// Any other character, matched literally (case-folded when insensitive).
+    Lit(char),
 }
 
 impl LikeMatcher {
-    /// Compile a SQL LIKE pattern. When `case_insensitive`, literal parts are
-    /// lowercased now and the field is lowercased at match time.
+    /// Compile a SQL LIKE pattern. When `case_insensitive`, the fast-path
+    /// literals are lowercased now and the field is lowercased at match time;
+    /// the glob path folds per character so a length-changing fold (e.g. `İ`)
+    /// can't desync `_`'s single-character semantics.
     #[must_use]
     pub fn compile(pattern: &str, case_insensitive: bool) -> Self {
         Self {
@@ -35,18 +50,20 @@ impl LikeMatcher {
     /// Test whether `field` matches the pattern.
     #[must_use]
     pub fn matches(&self, field: &str) -> bool {
-        let lowered;
-        let f: &str = if self.case_insensitive {
-            lowered = field.to_lowercase();
-            &lowered
-        } else {
-            field
-        };
         match &self.kind {
-            Kind::Contains(inner) => f.contains(inner.as_str()),
-            Kind::StartsWith(inner) => f.starts_with(inner.as_str()),
-            Kind::EndsWith(inner) => f.ends_with(inner.as_str()),
-            Kind::Glob(glob) => glob_match(f, glob),
+            Kind::Contains(inner) => self.casefold(field).contains(inner.as_str()),
+            Kind::StartsWith(inner) => self.casefold(field).starts_with(inner.as_str()),
+            Kind::EndsWith(inner) => self.casefold(field).ends_with(inner.as_str()),
+            Kind::Glob(glob) => glob_match(field, glob, self.case_insensitive),
+        }
+    }
+
+    /// Lowercase the field for the fast paths only when matching insensitively.
+    fn casefold<'a>(&self, field: &'a str) -> Cow<'a, str> {
+        if self.case_insensitive {
+            Cow::Owned(field.to_lowercase())
+        } else {
+            Cow::Borrowed(field)
         }
     }
 }
@@ -54,13 +71,13 @@ impl LikeMatcher {
 fn classify(pattern: &str, ci: bool) -> Kind {
     let lower = |s: &str| if ci { s.to_lowercase() } else { s.to_owned() };
     if pattern.contains('_') {
-        return Kind::Glob(glob_chars(pattern, ci));
+        return Kind::Glob(glob_tokens(pattern));
     }
     let starts = pattern.starts_with('%');
     let ends = pattern.ends_with('%');
     let inner = pattern.trim_matches('%');
     if inner.contains('%') {
-        return Kind::Glob(glob_chars(pattern, ci));
+        return Kind::Glob(glob_tokens(pattern));
     }
     if starts && ends {
         Kind::Contains(lower(inner))
@@ -69,38 +86,35 @@ fn classify(pattern: &str, ci: bool) -> Kind {
     } else if starts {
         Kind::EndsWith(lower(inner))
     } else {
-        Kind::Glob(glob_chars(pattern, ci))
+        Kind::Glob(glob_tokens(pattern))
     }
 }
 
-/// Translate a LIKE pattern to a `*`/`?` glob (`%` -> `*`, `_` -> `?`).
-fn glob_chars(pattern: &str, ci: bool) -> Vec<char> {
-    let translated: String = pattern
+/// Translate a LIKE pattern to glob tokens (`%` -> `Star`, `_` -> `AnyOne`,
+/// every other character a literal). Case folding is applied per character at
+/// match time, never here, so token counts stay aligned with the input.
+fn glob_tokens(pattern: &str) -> Vec<GlobToken> {
+    pattern
         .chars()
         .map(|c| match c {
-            '%' => '*',
-            '_' => '?',
-            other => other,
+            '%' => GlobToken::Star,
+            '_' => GlobToken::AnyOne,
+            other => GlobToken::Lit(other),
         })
-        .collect();
-    let final_str = if ci {
-        translated.to_lowercase()
-    } else {
-        translated
-    };
-    final_str.chars().collect()
+        .collect()
 }
 
-/// Full-string glob match supporting `*` (any run) and `?` (single char).
-fn glob_match(text: &str, pat: &[char]) -> bool {
+/// Full-string glob match supporting `Star` (any run) and `AnyOne` (single
+/// char), with literals compared case-insensitively when `ci`.
+fn glob_match(text: &str, pat: &[GlobToken], ci: bool) -> bool {
     let t: Vec<char> = text.chars().collect();
     let (mut ti, mut pi) = (0usize, 0usize);
     let (mut star_pi, mut star_ti): (Option<usize>, usize) = (None, 0);
     while ti < t.len() {
-        if pi < pat.len() && (pat[pi] == '?' || pat[pi] == t[ti]) {
+        if matches_here(pat.get(pi), t[ti], ci) {
             ti += 1;
             pi += 1;
-        } else if pi < pat.len() && pat[pi] == '*' {
+        } else if matches!(pat.get(pi), Some(GlobToken::Star)) {
             star_pi = Some(pi);
             star_ti = ti;
             pi += 1;
@@ -112,10 +126,25 @@ fn glob_match(text: &str, pat: &[char]) -> bool {
             return false;
         }
     }
-    while pi < pat.len() && pat[pi] == '*' {
+    while matches!(pat.get(pi), Some(GlobToken::Star)) {
         pi += 1;
     }
     pi == pat.len()
+}
+
+/// Whether `token` consumes the single character `c` (an `AnyOne`, or a literal
+/// equal to `c`, case-folded when `ci`).
+fn matches_here(token: Option<&GlobToken>, c: char, ci: bool) -> bool {
+    match token {
+        Some(GlobToken::AnyOne) => true,
+        Some(GlobToken::Lit(lit)) => char_eq(c, *lit, ci),
+        _ => false,
+    }
+}
+
+/// Single-character equality, case-insensitive (Unicode simple fold) when `ci`.
+fn char_eq(a: char, b: char, ci: bool) -> bool {
+    a == b || (ci && a.to_lowercase().eq(b.to_lowercase()))
 }
 
 #[cfg(test)]
@@ -150,5 +179,25 @@ mod tests {
     fn empty_pattern_matches_only_empty() {
         assert!(LikeMatcher::compile("", false).matches(""));
         assert!(!LikeMatcher::compile("", false).matches("x"));
+    }
+
+    #[test]
+    fn star_and_question_are_literals_not_wildcards() {
+        // SQL LIKE: only `%` and `_` are special; `*`/`?` match literally.
+        assert!(LikeMatcher::compile("a*b", false).matches("a*b"));
+        assert!(!LikeMatcher::compile("a*b", false).matches("axyzb"));
+        assert!(LikeMatcher::compile("h?llo", false).matches("h?llo"));
+        assert!(!LikeMatcher::compile("h?llo", false).matches("hello"));
+        // `[` is a literal too (no character classes in SQL LIKE).
+        assert!(LikeMatcher::compile("a[b", false).matches("a[b"));
+    }
+
+    #[test]
+    fn ci_glob_handles_length_changing_fold() {
+        // `İ`.to_lowercase() expands to two chars; `_` must still match it as a
+        // single character (the bug a pre-folded field re-introduced).
+        assert!(LikeMatcher::compile("a_", true).matches("aİ"));
+        // `%` still spans it, and a case-insensitive literal still matches.
+        assert!(LikeMatcher::compile("A%", true).matches("aİx"));
     }
 }

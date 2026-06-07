@@ -61,6 +61,67 @@ pub fn bench_pipeline(c: &mut Criterion) {
                 .unwrap()
             });
         });
+
+        // String filter (`name contains "3"`): row-only before the Str-column
+        // substring fast path, now columnar. The standalone filter/contains bench
+        // calls the row engine directly, so this pair is what measures the win.
+        let contains = FilterInput::Flat(vec![leaf(
+            "name",
+            "contains",
+            Value::Str("3".into()),
+            FilterLogic::And,
+        )]);
+        group.bench_with_input(BenchmarkId::new("contains_row", n), &n, |b, _| {
+            b.iter(|| offset_page(black_box(&items), None, Some(&contains), &[], 1, 20).unwrap());
+        });
+        group.bench_with_input(BenchmarkId::new("contains_columnar", n), &n, |b, _| {
+            b.iter(|| {
+                offset_page(
+                    black_box(&items),
+                    Some(&columns),
+                    Some(&contains),
+                    &[],
+                    1,
+                    20,
+                )
+                .unwrap()
+            });
+        });
+
+        // Range + membership filters: row-only before, now columnar.
+        let between = FilterInput::Flat(vec![leaf(
+            "age",
+            "between",
+            Value::List(vec![Value::Int(25), Value::Int(60)]),
+            FilterLogic::And,
+        )]);
+        let in_ids = FilterInput::Flat(vec![leaf(
+            "id",
+            "in",
+            Value::List((0..64).map(|k| Value::Int(k * 101 % 100_000)).collect()),
+            FilterLogic::And,
+        )]);
+        let like = FilterInput::Flat(vec![leaf(
+            "name",
+            "like",
+            Value::Str("User_3%".into()),
+            FilterLogic::And,
+        )]);
+        for (name, filter) in [("between", &between), ("in", &in_ids), ("like", &like)] {
+            group.bench_with_input(BenchmarkId::new(format!("{name}_row"), n), &n, |b, _| {
+                b.iter(|| offset_page(black_box(&items), None, Some(filter), &[], 1, 20).unwrap());
+            });
+            group.bench_with_input(
+                BenchmarkId::new(format!("{name}_columnar"), n),
+                &n,
+                |b, _| {
+                    b.iter(|| {
+                        offset_page(black_box(&items), Some(&columns), Some(filter), &[], 1, 20)
+                            .unwrap()
+                    });
+                },
+            );
+        }
     }
     group.finish();
 }

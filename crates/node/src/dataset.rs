@@ -12,7 +12,10 @@ use napi_derive::napi;
 use serde_json::Value as Json;
 
 use crate::conv::{core_err, json_array_to_values, to_u32};
-use crate::engines::{build_search_spec, parse_filter_specs, parse_search_stage, parse_sort_specs};
+use crate::specs::{
+    build_search_spec, parse_search_stage, to_filter_specs, to_sort_specs, FilterSpecInput,
+    SortSpecInput,
+};
 use ::paginate_core as core;
 
 /// One page of results returned by [`Dataset::page`]. Numeric fields export as
@@ -49,7 +52,7 @@ impl Dataset {
     /// columnar fast-path data and the trigram search index.
     #[napi(constructor)]
     pub fn new(items: Json) -> Result<Self> {
-        let rows = json_array_to_values(&items)?;
+        let rows = json_array_to_values(items)?;
         let columns = core::columnar::Columns::build(&rows);
         let trigram = core::search::TrigramIndex::build(&rows);
         Ok(Self {
@@ -65,36 +68,20 @@ impl Dataset {
         self.rows.len() as u32
     }
 
-    /// Indices matching flat filter specs `[{field, op, value, logic?}]`.
+    /// Indices matching flat filter specs `[{field, operator, value?, logic?}]`.
     #[napi]
-    pub fn filter(&self, specs: Json) -> Result<Vec<u32>> {
-        let core_specs = parse_filter_specs(&specs)?;
-        if let [spec] = core_specs.as_slice() {
-            if let Some(indices) = self.columns.filter(&spec.field, spec.op, &spec.value) {
-                return Ok(to_u32(indices));
-            }
-        }
-        let input = core::filter::FilterInput::Flat(core_specs);
-        core::filter::filter_indices(&self.rows, &input)
+    pub fn filter(&self, specs: Vec<FilterSpecInput>) -> Result<Vec<u32>> {
+        let core_specs = to_filter_specs(specs)?;
+        core::resident::filter_indices(&self.rows, &self.columns, core_specs)
             .map(to_u32)
             .map_err(|e| core_err(&e))
     }
 
     /// A permutation of row indices for sort specs `[{field, direction?, nulls?}]`.
     #[napi]
-    pub fn sort(&self, specs: Json) -> Result<Vec<u32>> {
-        let core_specs = parse_sort_specs(&specs)?;
-        if !core_specs.is_empty() {
-            let order: Vec<usize> = (0..self.rows.len()).collect();
-            let keys: Vec<(&str, core::sort::SortDirection)> = core_specs
-                .iter()
-                .map(|spec| (spec.field.as_str(), spec.direction))
-                .collect();
-            if let Some(sorted) = self.columns.sort_subset(&order, &keys) {
-                return Ok(to_u32(sorted));
-            }
-        }
-        core::sort::sort_indices(&self.rows, &core_specs)
+    pub fn sort(&self, specs: Vec<SortSpecInput>) -> Result<Vec<u32>> {
+        let core_specs = to_sort_specs(specs)?;
+        core::resident::sort_indices(&self.rows, &self.columns, &core_specs)
             .map(to_u32)
             .map_err(|e| core_err(&e))
     }
@@ -136,19 +123,18 @@ impl Dataset {
         &self,
         page: u32,
         limit: u32,
-        filters: Option<Json>,
-        sorts: Option<Json>,
+        filters: Option<Vec<FilterSpecInput>>,
+        sorts: Option<Vec<SortSpecInput>>,
         search: Option<Json>,
     ) -> Result<DatasetPage> {
-        let filter_input = match &filters {
-            Some(specs) => {
-                let parsed = parse_filter_specs(specs)?;
-                (!parsed.is_empty()).then_some(core::filter::FilterInput::Flat(parsed))
+        let filter_input = match filters {
+            Some(specs) if !specs.is_empty() => {
+                Some(core::filter::FilterInput::Flat(to_filter_specs(specs)?))
             }
-            None => None,
+            _ => None,
         };
-        let sort_specs = match &sorts {
-            Some(specs) => parse_sort_specs(specs)?,
+        let sort_specs = match sorts {
+            Some(specs) => to_sort_specs(specs)?,
             None => Vec::new(),
         };
         // Owned search parts (the SearchStage borrows them across the call).

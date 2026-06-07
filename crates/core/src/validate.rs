@@ -30,13 +30,10 @@ fn invalid(message: impl Into<String>) -> CoreError {
 /// # Errors
 /// [`CoreError::Validation`] if the limit is below 1 or above [`MAX_LIMIT`].
 pub fn validate_limit(limit: i64) -> Result<()> {
-    if limit < 1 {
-        return Err(invalid("limit must be >= 1"));
-    }
-    if limit as u64 > MAX_LIMIT {
-        return Err(invalid(format!("limit must not exceed {MAX_LIMIT}")));
-    }
-    Ok(())
+    // Parse-don't-validate: the single source of truth is `Limit::new`; a
+    // negative host value can't fit `u64`, so it fails the same `>= 1` check.
+    let value = u64::try_from(limit).map_err(|_| invalid("limit must be >= 1"))?;
+    crate::pagination::Limit::new(value).map(|_| ())
 }
 
 /// Validate offset params: a 1-based `page` and a valid `limit`.
@@ -67,7 +64,9 @@ pub fn validate_cursor(limit: i64, has_after: bool, has_before: bool) -> Result<
 /// # Errors
 /// [`CoreError::Validation`] if the query is too long.
 pub fn validate_search_query(query: &str) -> Result<()> {
-    if query.chars().count() > MAX_QUERY_LEN {
+    // Stop counting once the limit is exceeded — a multi-megabyte hostile query
+    // is rejected after MAX_QUERY_LEN+1 chars, not after a full O(n) walk.
+    if query.chars().take(MAX_QUERY_LEN + 1).count() > MAX_QUERY_LEN {
         return Err(invalid(format!(
             "Query must not exceed {MAX_QUERY_LEN} characters"
         )));

@@ -32,7 +32,7 @@ export class Dataset<T extends object> {
   /** Rows matching the filter specs (pypaginate's exact semantics). */
   filter(specs: readonly FilterSpec[]): T[] {
     try {
-      return this.select(this.inner.filter(specs as unknown[]));
+      return this.select(this.inner.filter(specs as unknown as core.FilterSpecInput[]));
     } catch (e) {
       rethrowEngineError(e, FilterError);
     }
@@ -41,7 +41,7 @@ export class Dataset<T extends object> {
   /** Rows sorted by the specs (null-aware, stable). */
   sort(specs: readonly SortSpec[]): T[] {
     try {
-      return this.select(this.inner.sort(specs as unknown[]));
+      return this.select(this.inner.sort(specs as unknown as core.SortSpecInput[]));
     } catch (e) {
       rethrowEngineError(e, SortError);
     }
@@ -84,8 +84,8 @@ export class Dataset<T extends object> {
       const result = this.inner.page(
         params.page,
         params.limit,
-        opts.filters as unknown[] | undefined,
-        opts.sorting as unknown[] | undefined,
+        opts.filters as unknown as core.FilterSpecInput[] | undefined,
+        opts.sorting as unknown as core.SortSpecInput[] | undefined,
         opts.search ? searchStageArg(opts.search) : undefined,
       );
       return {

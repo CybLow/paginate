@@ -64,8 +64,8 @@ fn write_tagged(out: &mut String, tag: &str, raw: &str) {
 fn write_float(out: &mut String, f: f64) {
     match serde_json::Number::from_f64(f) {
         Some(n) => out.push_str(&n.to_string()),
-        // NaN / ±Inf are not representable in standard JSON and are invalid
-        // ordering keys; emit `null` defensively rather than producing garbage.
+        // Unreachable via `encode_cursor`, which rejects non-finite keys before
+        // serialising; kept as a defensive fallback so this writer never panics.
         None => out.push_str("null"),
     }
 }

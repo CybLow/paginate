@@ -2,6 +2,8 @@
 //! flat-list / nested-group input tree. Pure type definitions; the evaluation
 //! engine that consumes them lives in [`super`].
 
+use std::cmp::Ordering;
+
 use crate::error::{CoreError, Result};
 use crate::value::Value;
 
@@ -103,6 +105,24 @@ impl FilterOp {
             "empty" => Self::Empty,
             "not_empty" => Self::NotEmpty,
             "exists" => Self::Exists,
+            _ => return None,
+        })
+    }
+
+    /// Whether this operator holds given the `Ordering` of `field` vs the spec
+    /// value.
+    ///
+    /// The single source of truth shared by the row engine (`operators::eval_op`)
+    /// and the columnar fast path, so the two cannot drift. Returns `None` for
+    /// any operator that is not a pure ordering test — `Eq`/`Ne` use type-aware
+    /// equality, not an `Ordering`.
+    #[must_use]
+    pub(crate) fn holds_for(self, ordering: Ordering) -> Option<bool> {
+        Some(match self {
+            Self::Gt => ordering == Ordering::Greater,
+            Self::Gte => ordering != Ordering::Less,
+            Self::Lt => ordering == Ordering::Less,
+            Self::Lte => ordering != Ordering::Greater,
             _ => return None,
         })
     }

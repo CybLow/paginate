@@ -13,7 +13,13 @@ use std::collections::BTreeMap;
 /// (`DateTime`, `Date`, `Decimal`, `Uuid`) exist so the cursor codec can
 /// round-trip ordering keys with full fidelity — they carry the value's
 /// canonical string form and the binding layer rebuilds the rich host type.
+///
+/// `#[non_exhaustive]`: this crate is published independently (`core-v*`) and
+/// `Value` is its central vocabulary type, so a future variant (e.g. a native
+/// big-integer) must not be a breaking change for downstream crates — like the
+/// sibling public enums (`CoreError`, `FilterOp`, ...), it requires a `_` arm.
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 pub enum Value {
     /// Absence of a value (`None` / `null`).
     Null,

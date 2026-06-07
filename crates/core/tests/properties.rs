@@ -40,7 +40,7 @@ proptest! {
     /// Cursor codec round-trips: decode(encode(v)) == v.
     #[test]
     fn cursor_round_trips(values in prop::collection::vec(scalar(), 0..8)) {
-        let encoded = cursor::encode_cursor(&values);
+        let encoded = cursor::encode_cursor(&values).expect("encode");
         let decoded = cursor::decode_cursor(&encoded).expect("valid cursor");
         prop_assert_eq!(decoded, values);
     }
@@ -48,10 +48,11 @@ proptest! {
     /// Pagination metadata is internally consistent.
     #[test]
     fn pagination_meta_is_consistent(page in 1u64..1000, limit in 1u64..1000, total in 0u64..1_000_000) {
-        let meta = pagination::offset_meta(page, limit, total);
+        let lim = pagination::Limit::new(limit).unwrap();
+        let meta = pagination::offset_meta(page, lim, total);
         prop_assert_eq!(meta.has_next, page < meta.pages);
         prop_assert_eq!(meta.has_previous, page > 1);
-        prop_assert_eq!(pagination::offset(page, limit), (page - 1) * limit);
+        prop_assert_eq!(pagination::offset(page, lim), (page - 1) * limit);
     }
 
     /// Filtering never adds items, and every match satisfies the predicate.

@@ -75,25 +75,30 @@ pub(super) fn sort_stage(
     columns: Option<&Columns>,
     indices: Vec<usize>,
     sort_specs: &[SortSpec],
+    limit: Option<usize>,
 ) -> Result<Vec<usize>> {
     if sort_specs.is_empty() {
         return Ok(indices);
     }
-    if let Some(sorted) = columnar_sort(columns, &indices, sort_specs) {
+    if let Some(sorted) = columnar_sort(columns, &indices, sort_specs, limit) {
         return Ok(sorted);
     }
+    // Row fallback sorts the whole subset (its multi-pass stable sort can't take
+    // a partial top-k without changing tie semantics); the caller still slices.
     sort::sort_indices_of(items, indices, sort_specs)
 }
 
-/// Multi-key columnar sort when every key is a typed column, else `None`.
+/// Multi-key columnar sort when every key is a typed column, else `None`. `limit`
+/// keeps only the first k rows (top-k) — the page window.
 fn columnar_sort(
     columns: Option<&Columns>,
     indices: &[usize],
     sort_specs: &[SortSpec],
+    limit: Option<usize>,
 ) -> Option<Vec<usize>> {
     let keys: Vec<(&str, SortDirection)> = sort_specs
         .iter()
         .map(|spec| (spec.field.as_str(), spec.direction))
         .collect();
-    columns?.sort_subset(indices, &keys)
+    columns?.sort_subset(indices, &keys, limit)
 }

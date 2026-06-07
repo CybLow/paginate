@@ -25,6 +25,8 @@ mod parser;
 mod spec;
 mod trigram;
 
+use std::sync::Arc;
+
 use crate::accessor::{compile_path, resolve_opt};
 use crate::error::Result;
 use crate::normalize::{normalize_text, normalize_text_cow};
@@ -145,7 +147,8 @@ fn trigram_metric(query: &[Trigram], value: &[Trigram], fuzzy: FuzzyMode) -> i64
 }
 
 /// Best weighted trigram score over `item`'s fields (0 if no field meets the
-/// threshold). `query` is the precomputed query trigram set.
+/// threshold). `query` is the precomputed query trigram set. Used by the
+/// stateless full scan, which has no resident cache to reuse.
 fn trigram_score(item: &Value, paths: &[Vec<String>], query: &[Trigram], spec: &SearchSpec) -> i64 {
     let mut best = 0;
     for (field_index, path) in paths.iter().enumerate() {
@@ -154,6 +157,38 @@ fn trigram_score(item: &Value, paths: &[Vec<String>], query: &[Trigram], spec: &
         };
         let value = trigram::trigrams(&normalize_text_cow(raw));
         let score = trigram_metric(query, &value, spec.fuzzy);
+        if score >= spec.threshold {
+            best = best.max((score as f64 * weight_for(spec, field_index)) as i64);
+        }
+    }
+    best
+}
+
+/// Score item `i` against the query for the resident index path, reusing a
+/// prebuilt per-field trigram set where present (top-level fields), else
+/// re-trigramming a nested field. Produces the identical score to
+/// [`trigram_score`] — the cache stores exactly `trigrams(normalize(field))`.
+pub(super) fn score_item(
+    items: &[Value],
+    i: usize,
+    paths: &[Vec<String>],
+    caches: &[Option<Arc<Vec<Vec<Trigram>>>>],
+    query: &[Trigram],
+    spec: &SearchSpec,
+) -> i64 {
+    let mut best = 0;
+    for (field_index, path) in paths.iter().enumerate() {
+        let score = match &caches[field_index] {
+            Some(cache) => trigram_metric(query, &cache[i], spec.fuzzy),
+            None => match resolve_opt(&items[i], path) {
+                Some(Value::Str(raw)) => trigram_metric(
+                    query,
+                    &trigram::trigrams(&normalize_text_cow(raw)),
+                    spec.fuzzy,
+                ),
+                _ => 0,
+            },
+        };
         if score >= spec.threshold {
             best = best.max((score as f64 * weight_for(spec, field_index)) as i64);
         }

@@ -78,6 +78,54 @@ fn str_columnar_matches_row_engine() {
 }
 
 #[test]
+fn str_substring_ops_columnar_match_row_engine() {
+    let names = ["alice", "bob", "carol", "bobby", "dave"];
+    let items: Vec<Value> = names
+        .iter()
+        .map(|n| item(&[("name", Value::Str((*n).into()))]))
+        .collect();
+    let cols = Columns::build(&items);
+    let cases = [
+        (FilterOp::Contains, "o"),
+        (FilterOp::StartsWith, "bob"),
+        (FilterOp::EndsWith, "e"),
+        (FilterOp::Like, "bob%"),
+        (FilterOp::ILike, "BOB%"),
+    ];
+    for (op, needle_str) in cases {
+        let needle = Value::Str(needle_str.into());
+        let columnar = cols
+            .filter("name", op, &needle)
+            .expect("columnar handles substring op");
+        assert_eq!(
+            columnar,
+            row_filter(&items, "name", op, needle),
+            "{op:?} {needle_str}"
+        );
+    }
+}
+
+#[test]
+fn between_and_in_columnar_match_row_engine() {
+    let items: Vec<Value> = (0..20).map(|i| item(&[("age", Value::Int(i))])).collect();
+    let cols = Columns::build(&items);
+    let between = Value::List(vec![Value::Int(5), Value::Int(12)]);
+    assert_eq!(
+        cols.filter("age", FilterOp::Between, &between)
+            .expect("columnar between"),
+        row_filter(&items, "age", FilterOp::Between, between),
+    );
+    let list = Value::List(vec![Value::Int(3), Value::Int(7), Value::Int(15)]);
+    for op in [FilterOp::In, FilterOp::NotIn] {
+        assert_eq!(
+            cols.filter("age", op, &list).expect("columnar membership"),
+            row_filter(&items, "age", op, list.clone()),
+            "{op:?}"
+        );
+    }
+}
+
+#[test]
 fn columnar_sort_matches_row_engine() {
     let items = vec![
         item(&[("n", Value::Int(3)), ("s", Value::Str("c".into()))]),
@@ -92,7 +140,7 @@ fn columnar_sort_matches_row_engine() {
         ("s", SortDirection::Desc),
     ] {
         let order: Vec<usize> = (0..items.len()).collect();
-        let columnar = cols.sort_subset(&order, &[(field, dir)]).unwrap();
+        let columnar = cols.sort_subset(&order, &[(field, dir)], None).unwrap();
         let row = sort_indices(
             &items,
             &[SortSpec {
@@ -117,7 +165,7 @@ fn float_sort_is_stable_and_matches_row_engine() {
     let cols = Columns::build(&items);
     let order: Vec<usize> = (0..items.len()).collect();
     let columnar = cols
-        .sort_subset(&order, &[("p", SortDirection::Asc)])
+        .sort_subset(&order, &[("p", SortDirection::Asc)], None)
         .unwrap();
     let row = sort_indices(
         &items,
@@ -145,6 +193,7 @@ fn multi_key_sort_matches_row_engine() {
         .sort_subset(
             &order,
             &[("g", SortDirection::Asc), ("id", SortDirection::Desc)],
+            None,
         )
         .unwrap();
     let row = sort_indices(
@@ -167,6 +216,22 @@ fn multi_key_sort_matches_row_engine() {
 }
 
 #[test]
+fn top_k_matches_full_sort_prefix() {
+    // Many ties on the primary key, so tie ordering at the page boundary matters.
+    let items: Vec<Value> = (0..60)
+        .map(|i| item(&[("age", Value::Int(i % 5)), ("id", Value::Int(i))]))
+        .collect();
+    let cols = Columns::build(&items);
+    let order: Vec<usize> = (0..items.len()).collect();
+    let keys = [("age", SortDirection::Desc), ("id", SortDirection::Asc)];
+    let full = cols.sort_subset(&order, &keys, None).unwrap();
+    for k in [0usize, 1, 7, 30, 60, 100] {
+        let top_k = cols.sort_subset(&order, &keys, Some(k)).unwrap();
+        assert_eq!(top_k, full[..k.min(full.len())], "k={k}");
+    }
+}
+
+#[test]
 fn multi_key_sort_falls_back_when_a_key_is_not_a_column() {
     // `x` is null in every row -> not a typed column -> the whole sort falls back.
     let items = vec![
@@ -177,7 +242,8 @@ fn multi_key_sort_falls_back_when_a_key_is_not_a_column() {
     assert!(cols
         .sort_subset(
             &[0, 1],
-            &[("g", SortDirection::Asc), ("x", SortDirection::Asc)]
+            &[("g", SortDirection::Asc), ("x", SortDirection::Asc)],
+            None,
         )
         .is_none());
 }
@@ -223,7 +289,7 @@ fn unsupported_ops_and_fields_fall_back() {
         .filter("age", FilterOp::Eq, &Value::Float(1.5))
         .is_none());
     assert!(cols
-        .sort_subset(&[0], &[("missing", SortDirection::Asc)])
+        .sort_subset(&[0], &[("missing", SortDirection::Asc)], None)
         .is_none());
 }
 
