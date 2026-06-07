@@ -92,7 +92,7 @@ jobs:
           # Place the napi-generated JS bindings so the MAIN paginate-core package
           # (published below) ships its loader (index.js/index.d.ts).
           cp artifacts/*/index.js artifacts/*/index.d.ts . 2>/dev/null || true
-          npx napi create-npm-dir -t .
+          npx napi create-npm-dirs -t .
           npx napi artifacts -d artifacts
       - name: 🚀 Publish paginate-core (+ platform sub-packages)
         env:
