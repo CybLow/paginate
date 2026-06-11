@@ -1,6 +1,7 @@
 ---
 sidebar_position: 1
 title: Overview
+description: paginate-core is the pure, language-agnostic Rust engine the Python and TypeScript packages wrap — embed it directly or read how it works.
 ---
 
 # Rust core — `paginate-core`

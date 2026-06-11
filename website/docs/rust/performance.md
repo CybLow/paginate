@@ -1,6 +1,7 @@
 ---
 sidebar_position: 4
 title: Performance
+description: Where the native FFI boundary pays off — measured. The cursor codec and the resident Dataset pipeline win; one-shot in-memory ops are for parity.
 ---
 
 # Performance

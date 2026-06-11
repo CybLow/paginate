@@ -1,6 +1,7 @@
 ---
 sidebar_position: 1
 title: Installation
+description: Install @cyblow/paginate with npm, bun, or pnpm. The native addon installs automatically as a platform-specific dependency — no build step.
 ---
 
 # Installation

@@ -1,6 +1,7 @@
 ---
 sidebar_position: 1
 title: Why paginate?
+description: What paginate solves — consistent filtering, sorting, search, and portable cursors across a polyglot Python and TypeScript stack, on one Rust core.
 ---
 
 # Why paginate?
