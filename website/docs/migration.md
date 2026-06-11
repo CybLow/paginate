@@ -1,5 +1,5 @@
 ---
-sidebar_position: 10
+sidebar_position: 7
 title: Migration
 ---
 
@@ -30,14 +30,14 @@ from the Rust core** (not Pydantic), and **Pydantic is optional**.
 v0.3 moves **all** computation into the shared Rust core (`paginate-core`): the
 cursor codec, offset math, page assembly, filter / sort / search, and the keyset
 predicate now have a single implementation that the Python and TypeScript packages
-wrap. The headline guarantee is [cross-language parity](./concepts/parity).
+wrap. The headline guarantee is [cross-language parity](./general/parity).
 
 ### Python (`pypaginate`)
 
 Most code needs **no change**. Notable points:
 
 - **New one-shot `filter` / `sort` / `search`** for in-memory lists, alongside
-  `paginate` — see the [guides](./getting-started/quickstart).
+  `paginate` — see the [Python quickstart](./python/quickstart).
 - **Invalid enum tokens now raise** instead of silently defaulting (canonical
   string↔enum parsing moved into the core): a misspelled operator / direction / mode
   raises `FilterError` / `SortError` / `SearchError`.

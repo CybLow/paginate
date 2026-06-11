@@ -1,0 +1,10 @@
+{
+  "label": "Python",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "title": "Python — pypaginate",
+    "description": "Install and use pypaginate: paginate, filter, sort, and search in memory, the resident Dataset, and the SQLAlchemy, Django, and FastAPI integrations. The native Rust engine ships inside the wheel — no toolchain required.",
+    "slug": "/python"
+  }
+}
