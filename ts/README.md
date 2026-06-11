@@ -1,7 +1,9 @@
 # @cyblow/paginate
 
-Idiomatic TypeScript over the native [`paginate-core`](../../crates/node) engine —
-the JS/TS adapter in the polyglot [paginate-core](../../) workspace. The Rust core
+Idiomatic TypeScript over the native
+[`@cyblow/paginate-core`](https://www.npmjs.com/package/@cyblow/paginate-core)
+engine — the JS/TS adapter in the polyglot
+[paginate](https://github.com/CybLow/paginate) workspace. The Rust core
 owns all computation and speaks only plain data; this package maps your ORM models
 (Prisma / Drizzle / TypeORM / …) to the DTO _port_ the engine understands. The ORM
 lives **here**, never in the core:
@@ -21,7 +23,8 @@ ORM model ─▶ plain DTO ─▶ native core call ─▶ result ─▶ apply to
   (filter → sort → paginate, returning only the page) is the one shape where crossing
   into Rust pays off for JS; the per-op helpers and one-shot `filterIndices` /
   `sortIndices` / `searchIndices` exist for _behaviour parity_ — for raw single-op
-  speed, prefer native `Array` methods (see [`BENCHMARKS.md`](../../BENCHMARKS.md)).
+  speed, prefer native `Array` methods (see
+  [BENCHMARKS.md](https://github.com/CybLow/paginate/blob/main/docs/BENCHMARKS.md)).
 
 ## Usage
 
@@ -79,16 +82,17 @@ For a stable in-memory array, build a resident `Dataset` once and call
 `filter` / `sort` / `search` / `page` many times — that fused path is the one
 shape where crossing into Rust pays off for JS.
 
-## Development & publishing
+## Development
 
 ```bash
-npm run build   # tsc -> dist/
-npm test        # build + node --test
-npm run lint    # eslint
-npm run format  # prettier --write
+bun run build   # tsc -> dist/
+bun run test    # build native addon + tsc + bun test test/
+bun run lint    # eslint
+bun run format  # prettier --write
 ```
 
-During development this package depends on the addon via a workspace path
-(`"paginate-core": "file:../../crates/node"`). **Before publishing**, that must point
-at the published native addon (and the addon ships per-platform binaries via napi-rs
-`optionalDependencies`). Publishing is not yet wired up.
+This package depends on the native addon
+[`@cyblow/paginate-core`](https://www.npmjs.com/package/@cyblow/paginate-core),
+which ships per-platform binaries via napi-rs `optionalDependencies`. In the
+monorepo the addon is built from `crates/node` (`bun run build:native`); the
+published package pulls the prebuilt addon from npm.
