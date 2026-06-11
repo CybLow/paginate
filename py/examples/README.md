@@ -1,56 +1,52 @@
-# pypaginate Examples
+# pypaginate examples
 
-This directory contains example scripts demonstrating various pypaginate features.
+Runnable scripts demonstrating pypaginate features. Each is self-contained; run
+it with `uv run python examples/<name>.py` from the `py/` directory.
 
 ## Examples
 
 ### [basic_pagination.py](./basic_pagination.py)
-Simple offset-based pagination with in-memory data.
+Offset pagination over an in-memory list with `paginate()` and `OffsetParams` —
+page metadata, indexing, and out-of-range behaviour.
 
 ```bash
-python examples/basic_pagination.py
+uv run python examples/basic_pagination.py
 ```
 
 ### [filtering.py](./filtering.py)
-JSON Logic filtering with various operators (eq, gt, gte, in, and, or).
+Filtering with `filter()` and `FilterSpec`: equality, comparisons, membership
+(`in`), and nested `And()` / `Or()` boolean groups.
 
 ```bash
-python examples/filtering.py
-```
-
-### [fastapi_integration.py](./fastapi_integration.py)
-Complete FastAPI application with SQLAlchemy integration.
-
-```bash
-# Install dependencies
-pip install pypaginate[fastapi,sqlalchemy] uvicorn aiosqlite
-
-# Run the server
-uvicorn examples.fastapi_integration:app --reload
-
-# Visit http://localhost:8000/docs for API documentation
+uv run python examples/filtering.py
 ```
 
 ### [keyset_pagination.py](./keyset_pagination.py)
-Cursor-based pagination for efficient navigation of large datasets.
+Cursor (keyset) pagination with the SQLAlchemy adapter over in-memory SQLite —
+portable, byte-compatible cursors and forward/backward navigation.
 
 ```bash
-python examples/keyset_pagination.py
+pip install "pypaginate[sqlalchemy]"
+uv run python examples/keyset_pagination.py
 ```
 
-## Requirements
-
-Install pypaginate with all optional dependencies:
+### [fastapi_integration.py](./fastapi_integration.py)
+A FastAPI app using the `OffsetDep` / `SortDep` dependencies and the async
+SQLAlchemy backend, with an optional `?name=` filter.
 
 ```bash
-pip install pypaginate[all]
+pip install "pypaginate[fastapi,sqlalchemy]" uvicorn aiosqlite
+uvicorn examples.fastapi_integration:app --reload
+# then open http://localhost:8000/docs
 ```
 
-Or install specific features:
+## Installing extras
 
 ```bash
-pip install pypaginate[sqlalchemy]  # SQLAlchemy support
-pip install pypaginate[fastapi]     # FastAPI integration
-pip install pypaginate[filters]     # JSON Logic filtering
-pip install pypaginate[search]      # Text search with fuzzy matching
+pip install "pypaginate[sqlalchemy]"   # SQLAlchemy offset + keyset adapter
+pip install "pypaginate[fastapi]"      # FastAPI dependencies (+ Pydantic)
+pip install "pypaginate[django]"       # Django Q-object builders
+pip install "pypaginate[all]"          # everything
 ```
+
+See the full documentation at <https://cyblow.github.io/paginate/>.
