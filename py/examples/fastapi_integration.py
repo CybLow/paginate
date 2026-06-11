@@ -1,15 +1,21 @@
-"""FastAPI Integration Example.
+"""FastAPI integration example.
 
-This example demonstrates how to integrate pypaginate
-with a FastAPI application using SQLAlchemy.
+Turn a request's query string into pypaginate specs with the FastAPI adapter's
+``Annotated`` dependencies, then paginate a SQLAlchemy query with the async
+backend. Invalid page/limit values are reported as HTTP 422 automatically.
 
 Requirements:
-    pip install pypaginate[fastapi,sqlalchemy] uvicorn
+    pip install "pypaginate[fastapi,sqlalchemy]" uvicorn aiosqlite
 
 Run:
     uvicorn examples.fastapi_integration:app --reload
+    # then open http://localhost:8000/docs
 """
 
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends, FastAPI
@@ -18,12 +24,12 @@ from sqlalchemy import String, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from pypaginate import PagedResponse, PageParams, get_pagination_params, paginate_entities
+from pypaginate import FilterSpec, OffsetPage
+from pypaginate.adapters.fastapi import OffsetDep, SortDep
+from pypaginate.adapters.sqlalchemy import SQLAlchemyBackend, build_filter, build_order_by
 
 
-# =============================================================================
-# Database Setup
-# =============================================================================
+# --- Database -----------------------------------------------------------------
 class Base(DeclarativeBase):
     pass
 
@@ -36,78 +42,84 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255))
 
 
-# In-memory SQLite for demo
 engine = create_async_engine("sqlite+aiosqlite:///:memory:")
 async_session = async_sessionmaker(engine, expire_on_commit=False)
 
 
-async def get_session() -> AsyncSession:  # type: ignore[misc]
+async def get_session() -> AsyncIterator[AsyncSession]:
     async with async_session() as session:
         yield session
 
 
-# =============================================================================
-# Pydantic Schemas
-# =============================================================================
+# --- Schemas ------------------------------------------------------------------
 class UserOut(BaseModel):
     id: int
     name: str
     email: str
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
-# =============================================================================
-# FastAPI App
-# =============================================================================
-app = FastAPI(title="pypaginate FastAPI Example")
+class UserPage(BaseModel):
+    items: list[UserOut]
+    total: int
+    page: int
+    pages: int
+    has_next: bool
+    has_previous: bool
 
 
-@app.on_event("startup")
-async def startup() -> None:
-    """Create tables and seed data."""
+def to_response(page: OffsetPage[User]) -> UserPage:
+    """Map an OffsetPage of ORM rows onto the Pydantic response model."""
+    return UserPage(
+        items=[UserOut.model_validate(u) for u in page],
+        total=page.total,
+        page=page.page,
+        pages=page.pages,
+        has_next=page.has_next,
+        has_previous=page.has_previous,
+    )
+
+
+# --- App ----------------------------------------------------------------------
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-
     async with async_session() as session:
-        # Seed 100 users
-        for i in range(1, 101):
-            session.add(User(name=f"User {i}", email=f"user{i}@example.com"))
+        session.add_all(User(name=f"User {i}", email=f"user{i}@example.com") for i in range(1, 101))
         await session.commit()
+    yield
 
 
-@app.get("/users", response_model=PagedResponse[UserOut])
+app = FastAPI(title="pypaginate FastAPI example", lifespan=lifespan)
+
+
+@app.get("/users")
 async def list_users(
+    params: OffsetDep,
+    sort: SortDep,
     session: Annotated[AsyncSession, Depends(get_session)],
-    params: Annotated[PageParams, Depends(get_pagination_params)],
-) -> PagedResponse[UserOut]:
-    """List users with pagination.
-
-    Query params:
-        - page: Page number (default: 1)
-        - limit: Items per page (default: 20, max: 100)
-    """
-    stmt = select(User).order_by(User.id)
-    return await paginate_entities(session, stmt, params)
-
-
-@app.get("/users/search", response_model=PagedResponse[UserOut])
-async def search_users(
-    session: Annotated[AsyncSession, Depends(get_session)],
-    params: Annotated[PageParams, Depends(get_pagination_params)],
     name: str | None = None,
-) -> PagedResponse[UserOut]:
-    """Search users by name with pagination."""
-    stmt = select(User).order_by(User.id)
+) -> UserPage:
+    """List users with pagination, optional `?name=` filter, and `?sort=`.
 
+    Examples:
+        /users?page=1&limit=20
+        /users?name=User 1&sort=-name
+    """
+    stmt = select(User)
     if name:
-        stmt = stmt.where(User.name.ilike(f"%{name}%"))
+        where = build_filter(User, [FilterSpec(field="name", operator="contains", value=name)])
+        if where is not None:
+            stmt = stmt.where(where)
+    stmt = stmt.order_by(*build_order_by(User, sort)) if sort else stmt.order_by(User.id)
 
-    return await paginate_entities(session, stmt, params)
+    page = await SQLAlchemyBackend(session).paginate(stmt, params)
+    return to_response(page)
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)  # noqa: S104 - demo server
+    uvicorn.run(app, host="127.0.0.1", port=8000)

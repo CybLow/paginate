@@ -1,98 +1,84 @@
-"""Keyset (Cursor) Pagination Example.
+"""Keyset (cursor) pagination example.
 
-This example demonstrates cursor-based pagination which is more
-efficient for large datasets compared to offset-based pagination.
+Cursor pagination pages by the *ordering values of the last row seen* instead of
+an offset, so it stays correct and fast as rows change. It is database-backed:
+this example uses the SQLAlchemy adapter over an in-memory SQLite database.
 
-Keyset pagination uses a cursor (typically based on the last item's
-sort key) to fetch the next page, avoiding the performance issues
-of OFFSET for deep pages.
+The cursor is an opaque, URL-safe string produced by the shared Rust codec, so it
+is byte-compatible with the Django and TypeScript adapters.
+
+Requirements:
+    pip install "pypaginate[sqlalchemy]"
+
+Run:
+    uv run python examples/keyset_pagination.py
 """
 
+from __future__ import annotations
+
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
-from pypaginate.core import KeysetPageParams
+from sqlalchemy import String, create_engine, select
+from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
+
+from pypaginate import CursorParams
+from pypaginate.adapters.sqlalchemy import SyncSQLAlchemyCursorBackend
 
 
-def generate_sample_data(count: int = 100) -> list[dict[str, Any]]:
-    """Generate sample data with timestamps."""
-    base_time = datetime.now(tz=UTC)
-    return [
-        {
-            "id": i,
-            "title": f"Article {i}",
-            "created_at": (base_time - timedelta(hours=i)).isoformat(),
-            "views": (count - i) * 10,
-        }
+class Base(DeclarativeBase):
+    pass
+
+
+class Article(Base):
+    __tablename__ = "articles"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column()
+
+
+def seed(session: Session, count: int = 50) -> None:
+    """Insert sample articles with descending timestamps."""
+    base = datetime.now(tz=UTC)
+    session.add_all(
+        Article(id=i, title=f"Article {i}", created_at=base - timedelta(hours=i))
         for i in range(1, count + 1)
-    ]
-
-
-def simulate_keyset_pagination(
-    data: list[dict[str, Any]],
-    cursor: str | None,
-    limit: int,
-    sort_key: str = "id",
-) -> tuple[list[dict[str, Any]], str | None]:
-    """Simulate keyset pagination on in-memory data.
-
-    In production, this would be done at the database level using
-    WHERE id > cursor_value ORDER BY id LIMIT n.
-    """
-    if cursor is None:
-        # First page
-        items = data[:limit]
-    else:
-        # Find starting point
-        cursor_value = int(cursor)
-        start_idx = next(
-            (i for i, item in enumerate(data) if item[sort_key] > cursor_value),
-            len(data),
-        )
-        items = data[start_idx : start_idx + limit]
-
-    # Generate next cursor
-    next_cursor = str(items[-1][sort_key]) if len(items) == limit else None
-
-    return items, next_cursor
+    )
+    session.commit()
 
 
 def main() -> None:
-    """Demonstrate keyset pagination."""
-    data = generate_sample_data(50)
-    limit = 10
+    """Page forward through every article, then step back one page."""
+    engine = create_engine("sqlite://")  # in-memory
+    Base.metadata.create_all(engine)
 
-    print("=== Keyset Pagination Demo ===\n")
+    with Session(engine) as session:
+        seed(session, 50)
 
-    # Create keyset params
-    params = KeysetPageParams(limit=limit, cursor=None)
-    print(f"Initial params: limit={params.limit}, cursor={params.cursor}")
+        # A unique ORDER BY is required — append the primary key as a tiebreaker.
+        stmt = select(Article).order_by(Article.created_at.desc(), Article.id.desc())
+        backend = SyncSQLAlchemyCursorBackend(session)
 
-    # Fetch pages
-    cursor: str | None = None
-    page_num = 1
+        print("=== Paging forward (limit 10) ===")
+        cursor: str | None = None
+        page_num = 1
+        while True:
+            page = backend.fetch_page(stmt, CursorParams(limit=10, after=cursor))
+            print(f"\n--- Page {page_num} ---")
+            print(f"Items: {len(page)}  (first id={page[0].id}, last id={page[-1].id})")
+            print(f"has_next={page.has_next}  next_cursor={page.next_cursor!r}")
 
-    while True:
-        items, next_cursor = simulate_keyset_pagination(data, cursor=cursor, limit=limit)
+            if not page.has_next or page.next_cursor is None:
+                print("\n\N{CHECK MARK} Reached the last page")
+                break
+            cursor = page.next_cursor
+            page_num += 1
 
-        print(f"\n--- Page {page_num} ---")
-        print(f"Cursor used: {cursor or 'None (first page)'}")
-        print(f"Items: {len(items)}")
-        print(f"First: id={items[0]['id']}, title={items[0]['title']}")
-        print(f"Last: id={items[-1]['id']}, title={items[-1]['title']}")
-        print(f"Next cursor: {next_cursor}")
-
-        if next_cursor is None:
-            print("\n✓ No more pages")
-            break
-
-        cursor = next_cursor
-        page_num += 1
-
-        # Safety limit for demo
-        if page_num > 10:
-            print("\n(Stopping demo after 10 pages)")
-            break
+        # Step back one page from the last page using its `previous_cursor`.
+        if page.previous_cursor is not None:
+            back = backend.fetch_page(stmt, CursorParams(limit=10, before=page.previous_cursor))
+            print(f"\n=== Stepping back (before={page.previous_cursor!r}) ===")
+            print(f"Items: {len(back)}  (first id={back[0].id}, last id={back[-1].id})")
 
 
 if __name__ == "__main__":
