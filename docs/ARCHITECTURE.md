@@ -3,7 +3,8 @@
 This repository is the **language-agnostic engine** behind
 [pypaginate](https://github.com/CybLow/paginate). It exists so the
 computational heart of the library lives once, in Rust, and is shared by every
-host language through a thin **native adapter** — Python today, Node/TS next.
+host language through a thin **native adapter** — Python (PyO3) and Node/TypeScript
+(napi-rs) today, with WebAssembly an optional future target.
 
 ## Why this exists
 
@@ -84,19 +85,18 @@ paginate-core/
 │   │   └── src/{lib.rs, conv.rs, specs.rs, engines/, dataset.rs}
 │   └── node/                        # napi-rs adapter -> Node/TS .node addon
 │       └── src/{lib.rs, conv.rs, engines.rs, dataset.rs}
-└── packages/
-    ├── python/                      # consumed by the pypaginate package + its
-    │                                #   ORMs (e.g. SQLAlchemy)
-    └── ts/                          # npm package skeleton + its ORMs
-                                     #   (e.g. Prisma / Drizzle / TypeORM)
+├── py/                              # pypaginate — the Python package + its
+│                                    #   adapters (SQLAlchemy / Django / FastAPI)
+└── ts/                              # @cyblow/paginate — the TypeScript package
+                                     #   + its adapters (Express / Prisma / Drizzle)
 ```
 
 Each multi-concern module is a **directory** (`mod.rs` gateway + focused
 submodules + co-located `tests.rs`); single-concern modules stay flat files.
 Every source file is kept under the 250-line limit. `crates/core`, `crates/pyo3`,
-and `crates/node` are built and validated; `packages/` holds consumer
-scaffolding. The core engine is complete and the adapters layer on top without
-engine changes.
+and `crates/node` are built and validated; `py/` and `ts/` hold the published
+language packages. The core engine is complete and the adapters layer on top
+without engine changes.
 
 ## Single source of truth — the domain contract
 
@@ -216,9 +216,9 @@ semantics across runtimes, which JIT'd hosts can't get from re-implementations.
 
 The Node/TS adapter is a **napi-rs** crate (`crates/node`) that wraps the *same*
 core — no engine reimplementation, the same index-based returns and `Value`
-boundary as the Python adapter. It produces a native `.node` addon consumed by
-the future `packages/ts` npm package and its ORM integrations (Prisma, Drizzle,
-TypeORM).
+boundary as the Python adapter. It produces a native `.node` addon
+(`@cyblow/paginate-core`) consumed by the `@cyblow/paginate` npm package (`ts/`)
+and its ORM integrations (Express, Prisma, Drizzle).
 
 **WASM stays optional.** Because `crates/core` carries zero binding
 dependencies and already builds for `wasm32-unknown-unknown` (CI runs this as a
@@ -226,19 +226,23 @@ portability check, not a release artifact), a `crates/wasm` (wasm-bindgen)
 adapter can be added later for browser/edge runtimes without touching the core.
 It is a future option, never the foundation.
 
-## Known follow-ups
+## Status
 
-- Flesh out the `packages/ts` npm package consuming the `.node` addon.
-- Publish the `paginate-core` wheel + npm addon so consumers install native
-  builds directly (the native engine is required — there is no pure-language
-  fallback).
+The packages are published and install prebuilt native binaries directly (the
+native engine is required — there is no pure-language fallback):
+
+- `pypaginate` on [PyPI](https://pypi.org/project/pypaginate/) — wheels bundle the
+  PyO3 extension.
+- `@cyblow/paginate` on [npm](https://www.npmjs.com/package/@cyblow/paginate) — wraps
+  the `@cyblow/paginate-core` napi addon (per-platform binaries).
+- `paginate-core` on [crates.io](https://crates.io/crates/paginate-core).
 
 ## Develop
 
 ```bash
 cargo test --workspace                      # unit + golden-vector tests
 cargo clippy --workspace --all-targets -- -D warnings
-maturin build -r -m crates/pyo3/Cargo.toml    # Python module (paginate_core)
+maturin build -r -m crates/pyo3/Cargo.toml    # Python module (pypaginate._core)
 
 # Node/TS adapter:
 ( cd crates/node && npm install && npm run build )   # -> .node + index.js/.d.ts
