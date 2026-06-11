@@ -8,7 +8,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 rust-version.workspace = true
-description = "Pure, language-agnostic pagination / filter / sort / search engine shared by pypaginate (Python) and the future JS/TS port."
+description = "Pure, language-agnostic pagination / filter / sort / search engine shared by the pypaginate (Python) and @cyblow/paginate (TypeScript) packages."
 keywords = ["pagination", "filter", "sort", "search", "cursor"]
 categories = ["algorithms", "data-structures"]
 # A single bench target (`benches/main.rs`) wires up the per-subsystem bench
