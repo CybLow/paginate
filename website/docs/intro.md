@@ -2,6 +2,7 @@
 slug: /
 title: Overview
 sidebar_position: 1
+description: Fast pagination, filtering, sorting, and search with one Rust core and native Python & TypeScript packages that return byte-for-byte identical results.
 ---
 
 # paginate

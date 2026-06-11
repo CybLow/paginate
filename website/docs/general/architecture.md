@@ -1,6 +1,7 @@
 ---
 sidebar_position: 3
 title: Architecture
+description: How paginate is designed — a fat Rust core and thin native adapters, the plain-data Value boundary, index-based returns, and the resident Dataset.
 ---
 
 # Architecture — fat core, thin adapters

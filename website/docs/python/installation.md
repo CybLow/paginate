@@ -1,6 +1,7 @@
 ---
 sidebar_position: 1
 title: Installation
+description: Install pypaginate with pip or uv. The native Rust engine ships inside the wheel — no toolchain needed. Optional extras for SQLAlchemy, FastAPI, and Django.
 ---
 
 # Installation

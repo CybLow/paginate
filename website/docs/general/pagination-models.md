@@ -1,6 +1,7 @@
 ---
 sidebar_position: 5
 title: Pagination models
+description: Offset (page/limit) vs. keyset (cursor) pagination — how each works, their trade-offs, and which to choose.
 ---
 
 # Pagination models
