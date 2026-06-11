@@ -1,0 +1,10 @@
+{
+  "label": "General",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "slug": "/general",
+    "title": "General",
+    "description": "Language-agnostic concepts and the shared spec vocabulary: why paginate exists, how it is designed, how cross-language parity works, the pagination models, and the filter / sort / search reference that every package shares."
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "label": "Rust Core",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "title": "Rust Core — paginate-core",
+    "description": "The pure, language-agnostic engine the Python and TypeScript packages wrap. Embed it directly in a Rust service, or read how it is designed and how it performs.",
+    "slug": "/rust"
+  }
+}
