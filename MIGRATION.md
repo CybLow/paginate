@@ -43,11 +43,11 @@ directly (no backend), the package now exports three helpers alongside
 
 ```python
 from pypaginate import search, filter, sort
-from pypaginate import FilterSpec, SortSpec, SearchSpec, SortDirection
+from pypaginate import FilterSpec, SortSpec, SearchSpec
 
 adults = filter(users, FilterSpec(field="age", operator="gte", value=18))
 ranked = search(users, SearchSpec(query="alice", fields=("name", "email")))
-ordered = sort(users, SortSpec(field="created_at", direction=SortDirection.DESC))
+ordered = sort(users, SortSpec(field="created_at", direction="desc"))
 ```
 
 Each returns a new list of host items (search in ranked order). The TS package
@@ -66,8 +66,8 @@ What changed under the hood (only relevant if you imported internals):
   fallback for the cursor codec, offset math, or fuzzy search. Install a wheel
   (or build from source with a Rust toolchain); PyPy is unsupported.
 - **Fuzzy / token-sort search now uses trigram similarity (pg_trgm model), not
-  rapidfuzz.** `FuzzyMode.FUZZY` scores trigram *containment* (the query's
-  trigrams found in the field) and `FuzzyMode.TOKEN_SORT` scores trigram
+  rapidfuzz.** `fuzzy="fuzzy"` scores trigram *containment* (the query's
+  trigrams found in the field) and `fuzzy="token_sort"` scores trigram
   *Jaccard* (word-order agnostic). This is O(len) set-overlap (no edit-distance
   DP), much faster, length-normalized, and transposition-tolerant — and it lets a
   resident `Dataset` prefilter candidates with an exact inverted index. **Scores
@@ -90,16 +90,15 @@ Removed (breaking, but **dev/internal only** — no public API affected):
   `FilterEngine` / `SortEngine` / `SearchEngine` classes), `pypaginate.filtering.accessor`,
   and `pypaginate.text.normalize`. These were thin facades over the native
   `_core` engine. In-memory filtering, sorting, and ranked search are available
-  through the public `Dataset`, the `pypaginate.adapters.memory.*` backends, or
-  the internal `pypaginate._native` functions; `normalize_text` is now
-  `pypaginate._native.normalize_text` (field-path resolution lives in the core).
+  through the public `Dataset` and the one-shot `filter` / `sort` / `search`
+  helpers; `normalize_text` is now `pypaginate._native.normalize_text`
+  (field-path resolution lives in the core).
 - `pypaginate.__version__` is now read from the installed package metadata
   instead of a hard-coded literal, so it always matches the released version.
 
-New: **`pypaginate.adapters.django`** — `DjangoBackend`,
-`DjangoFilterBackend`, `DjangoSortBackend`, `DjangoSearchBackend`, and
-`DjangoCursorBackend` for Django QuerySets (offset + keyset). Install with
-`pip install pypaginate[django]`.
+New: **`pypaginate.adapters.django`** — `apply_filters`, `apply_sorting`,
+`apply_search`, and `paginate_offset` / `paginate_keyset` for Django QuerySets
+(offset + keyset). Install with `pip install pypaginate[django]`.
 
 ### JavaScript / TypeScript (`@cyblow/paginate`)
 
