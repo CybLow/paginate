@@ -22,6 +22,7 @@ const config: Config = {
 
   onBrokenLinks: 'throw',
   markdown: {
+    mermaid: true,
     hooks: {
       onBrokenMarkdownLinks: 'warn',
     },
@@ -69,7 +70,9 @@ const config: Config = {
   ],
 
   // Offline full-text search (Docusaurus ships none) — no Algolia account needed.
+  // Mermaid renders the architecture / data-flow / pagination diagrams.
   themes: [
+    '@docusaurus/theme-mermaid',
     [
       '@easyops-cn/docusaurus-search-local',
       {
