@@ -19,12 +19,12 @@ The language packages are **thin adapters**:
 - validation rules, wire tokens, and limits live in the core too, so the packages
   delegate rather than re-implement.
 
-```text
-            paginate-core (Rust) — algorithms + validation + wire contract
-                 │  plain data  ↔  indices
-        ┌────────┴────────┐
-   pypaginate (PyO3)   @cyblow/paginate (napi)
-   thin typed adapter   thin typed adapter
+```mermaid
+flowchart TB
+    PYAPP["Python objects / ORM rows"] --> PY["pypaginate (PyO3 adapter)"]
+    TSAPP["TypeScript objects / ORM rows"] --> TS["@cyblow/paginate (napi adapter)"]
+    PY <--> CORE["paginate-core (Rust): filter, sort, search, cursor codec, pagination"]
+    TS <--> CORE
 ```
 
 The boundary is **native** by design: Python via [PyO3](https://pyo3.rs) +
@@ -59,6 +59,18 @@ Crossing the FFI boundary has a cost, and the engine's design respects it:
 - **Large-payload work returns indices, not rows.** `filter`, `sort`, and `search`
   return a list of **indices**; the adapter selects from your original objects, so an
   ORM model never round-trips through Rust as data.
+
+```mermaid
+sequenceDiagram
+    participant H as Host app
+    participant A as Language adapter
+    participant C as paginate-core
+    H->>A: rows + spec
+    A->>C: referenced fields, as plain data
+    C->>C: filter, search, sort, paginate
+    C-->>A: indices
+    A-->>H: your original rows, selected by index
+```
 - **The resident [`Dataset`](../python/pagination#the-resident-dataset) is the big win.** One-shot
   calls re-marshal the whole collection every time. A `Dataset` marshals the rows into
   the core **once**, then answers many filter / sort / search / page queries

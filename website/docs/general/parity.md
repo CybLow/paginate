@@ -9,6 +9,15 @@ Because the engine has a single implementation, the Python and TypeScript packag
 return **identical results** — the same filtered / sorted / ranked order — and
 **byte-identical cursors**.
 
+```mermaid
+flowchart LR
+    PY["Python service (pypaginate)"] -->|"encodes"| CUR(["opaque cursor — identical bytes"])
+    CUR -->|"decodes"| TS["TypeScript client (@cyblow/paginate)"]
+```
+
+A cursor minted in either language decodes byte-for-byte in the other — the same is
+true for filter, sort, and search results.
+
 A frozen golden fixture (`tests/fixtures/parity.json`) is asserted by all three
 languages in CI: the Rust core, `pypaginate`, and `@cyblow/paginate` must each
 reproduce it exactly. It covers:

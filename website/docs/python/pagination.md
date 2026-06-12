@@ -149,6 +149,12 @@ hits   = ds.search(SearchSpec(query="alice", fields=["name", "email"]))
 `page` runs filter → search → sort → offset-paginate in a single native call, returning
 an `OffsetPage`. Each stage is optional:
 
+```mermaid
+flowchart LR
+    F["filter"] --> S["search (match-filter)"] --> O["sort"] --> P["paginate"] --> R(["page of rows"])
+```
+
+
 ```python
 page = ds.page(
     OffsetParams(page=1, limit=20),

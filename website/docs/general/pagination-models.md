@@ -49,6 +49,13 @@ boundary*".
 ?after=<cursor for row 40>  →  the next 20 rows after that boundary
 ```
 
+```mermaid
+flowchart LR
+    P1["Page 1: first rows"] -->|"next_cursor"| P2["Page 2: after = cursor"]
+    P2 -->|"next_cursor"| P3["Page 3: after = cursor"]
+    P3 -->|"next_cursor"| P4["..."]
+```
+
 The result page carries the rows plus a `next_cursor` and `previous_cursor` (opaque,
 URL-safe strings) and `has_next` / `has_previous` — but **no** `total` or page number,
 since counting rows is exactly the offset model keyset avoids.
