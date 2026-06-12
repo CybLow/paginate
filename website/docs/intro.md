@@ -43,3 +43,9 @@ The spec vocabulary is defined once in the core and is identical in every langua
 - **[Filtering & operators](./general/filtering)** — the 20 operators and boolean groups.
 - **[Sorting semantics](./general/sorting)** — stability, direction, and null placement.
 - **[Search & ranking](./general/search)** — match modes, trigram fuzzy scoring, weights.
+
+## Recipes & help
+
+- 🍳 **[Sharing cursors across Python & TypeScript](./recipes/polyglot-cursors)** — the headline feature, end to end.
+- 🍳 **[Building a paginated API](./recipes/paginated-api)** — query params → filtered, sorted page.
+- ❓ **[FAQ](./general/faq)** · 📖 **[Glossary](./general/glossary)** — common questions and the vocabulary.
