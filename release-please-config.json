@@ -17,8 +17,7 @@
   "packages": {
     "crates/core": {
       "release-type": "rust",
-      "component": "core",
-      "release-as": "1.0.0"
+      "component": "core"
     },
     "py": {
       "release-type": "python",
@@ -35,7 +34,6 @@
     "ts": {
       "release-type": "node",
       "component": "ts",
-      "release-as": "1.0.0",
       "extra-files": [
         {
           "type": "json",
