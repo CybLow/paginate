@@ -104,6 +104,7 @@ const config: Config = {
         { to: '/docs/python/installation', label: 'Python', position: 'left' },
         { to: '/docs/typescript/installation', label: 'TypeScript', position: 'left' },
         { to: '/docs/rust/overview', label: 'Rust', position: 'left' },
+        { to: '/playground', label: 'Playground', position: 'left' },
         { to: '/docs/reference', label: 'API', position: 'right' },
         {
           href: 'https://docs.rs/paginate-core',
