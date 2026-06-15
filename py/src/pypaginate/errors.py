@@ -66,3 +66,11 @@ class ValidationError(PaginateError):
     ) -> None:
         self.field = field
         super().__init__(message, details=details)
+
+
+class InvalidCursorError(ValidationError):
+    """A keyset cursor was malformed, truncated, or tampered with.
+
+    A subclass of :class:`ValidationError`, so it is caught by ``except
+    ValidationError`` / ``except PaginateError`` (mirrors the TS package).
+    """

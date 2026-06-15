@@ -36,7 +36,7 @@ if not settings.configured:
 
 from django.db import connection, models
 
-from pypaginate import CursorParams, OffsetParams
+from pypaginate import CursorParams, InvalidCursorError, OffsetParams
 from pypaginate.adapters.django import (
     apply_filters,
     apply_sorting,
@@ -209,6 +209,13 @@ def test_paginate_offset_last_page() -> None:
     assert [w.name for w in page.items] == ["Gamma", "Delta"]
     assert page.has_next is False
     assert page.has_previous is True
+
+
+def test_paginate_keyset_malformed_cursor_raises() -> None:
+    queryset = Widget.objects.all().order_by("id")
+
+    with pytest.raises(InvalidCursorError):
+        paginate_keyset(queryset, CursorParams(limit=2, after="not-a-cursor!!"))
 
 
 def test_paginate_keyset_round_trip() -> None:

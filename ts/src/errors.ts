@@ -53,7 +53,7 @@ export class SearchQueryError extends SearchError {}
 /** Raised when sort operations fail. */
 export class SortError extends PaginateError {}
 
-/** Raised when generic validation fails (bad page/limit, malformed cursor, ...). */
+/** Raised when generic validation fails (bad page/limit, mutually exclusive cursors, ...). */
 export class ValidationError extends PaginateError {
   readonly field?: string;
 
@@ -62,6 +62,9 @@ export class ValidationError extends PaginateError {
     this.field = options.field;
   }
 }
+
+/** Raised when a keyset cursor is malformed, truncated, or tampered with. */
+export class InvalidCursorError extends ValidationError {}
 
 /**
  * Re-throw a caught core engine error as the matching typed error, mirroring
@@ -78,6 +81,6 @@ export function rethrowEngineError(
   if (message.startsWith("filter error")) throw new FilterError(message);
   if (message.startsWith("sort error")) throw new SortError(message);
   if (message.startsWith("search error")) throw new SearchError(message);
-  if (message.startsWith("invalid cursor")) throw new ValidationError(message);
+  if (message.startsWith("invalid cursor")) throw new InvalidCursorError(message);
   throw new fallback(message);
 }

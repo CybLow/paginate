@@ -248,10 +248,10 @@ for nested `And()` / `Or()` trees.
 ## Errors
 
 All failures derive from `PaginateError` (aliased `PaginationError`):
-`ValidationError` (bad page/limit/cursor), `FilterError` /
-`FilterValidationError`, `SortError`, `SearchError` / `SearchQueryError`, and
-`ConfigurationError` (unknown ORM field). Each carries a structured `details`
-mapping, mirrored byte-for-byte by the TypeScript package.
+`ValidationError` (bad page/limit) and its subclass `InvalidCursorError` (a
+malformed cursor), `FilterError` / `FilterValidationError`, `SortError`,
+`SearchError` / `SearchQueryError`, and `ConfigurationError` (unknown ORM field).
+Each carries a structured `details` mapping, mirrored by the TypeScript package.
 
 ## Cross-language parity
 

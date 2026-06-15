@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from pypaginate import _core
 from pypaginate._native import build_offset_page
-from pypaginate.errors import ConfigurationError
+from pypaginate.errors import ConfigurationError, InvalidCursorError
 from pypaginate.pages import CursorPage, OffsetPage
 
 
@@ -134,7 +134,10 @@ def _apply_cursor(queryset: Any, paging: _Paging, cursor: str | None) -> Any:
     """Filter the QuerySet by the decoded cursor's keyset predicate."""
     if not cursor:
         return queryset
-    values = _core.decode_cursor(cursor)
+    try:
+        values = _core.decode_cursor(cursor)
+    except ValueError as exc:
+        raise InvalidCursorError(str(exc)) from exc
     ascending = [asc != paging.backwards for _, asc in paging.order]
     return queryset.filter(_keyset_q(paging.order, values, ascending))
 
