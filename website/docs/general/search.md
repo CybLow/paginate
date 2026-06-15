@@ -96,3 +96,4 @@ unmodified. Raise `min_length` to suppress searching until the user has typed en
 
 - [Python search](../python/search) · [TypeScript search](../typescript/search)
 - [Filtering & operators](./filtering) · [Sorting semantics](./sorting)
+- [Errors & limits](./errors) — the query-length limit and `SearchError`.

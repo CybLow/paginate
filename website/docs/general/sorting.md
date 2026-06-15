@@ -65,3 +65,4 @@ producing an arbitrary order.
 
 - [Python sorting](../python/sorting) · [TypeScript sorting](../typescript/sorting)
 - [Filtering & operators](./filtering) · [Search & ranking](./search)
+- [Errors & limits](./errors) — when a sort raises `SortError`.

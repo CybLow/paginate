@@ -48,4 +48,5 @@ The spec vocabulary is defined once in the core and is identical in every langua
 
 - 🍳 **[Sharing cursors across Python & TypeScript](./recipes/polyglot-cursors)** — the headline feature, end to end.
 - 🍳 **[Building a paginated API](./recipes/paginated-api)** — query params → filtered, sorted page.
+- ⚠️ **[Errors & limits](./general/errors)** — the shared exception hierarchy and built-in limits.
 - ❓ **[FAQ](./general/faq)** · 📖 **[Glossary](./general/glossary)** — common questions and the vocabulary.

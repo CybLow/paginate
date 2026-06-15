@@ -1,5 +1,5 @@
 ---
-sidebar_position: 10
+sidebar_position: 11
 title: FAQ
 description: Common questions about paginate — native builds, performance, cursors, async, Pydantic, and choosing between offset and keyset pagination.
 ---

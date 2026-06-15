@@ -23,7 +23,7 @@ import { OffsetParams, MAX_LIMIT } from "@cyblow/paginate";
 
 const params = new OffsetParams({ page: 2, limit: 20 });
 params.offset;  // 20
-MAX_LIMIT;      // the shared maximum page size (DoS guard)
+MAX_LIMIT;      // the shared maximum page size (1000) — a DoS guard
 ```
 
 ### Paginating an array
