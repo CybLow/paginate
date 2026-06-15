@@ -1,5 +1,5 @@
 ---
-sidebar_position: 11
+sidebar_position: 12
 title: Glossary
 description: Definitions of the core terms used across paginate — offset, keyset, cursor, spec, operator, marshalling, columnar, Dataset, and more.
 ---

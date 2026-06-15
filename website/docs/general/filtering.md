@@ -111,3 +111,4 @@ operands; constructing an over-deep group raises a validation error
 
 - [Python filtering](../python/filtering) · [TypeScript filtering](../typescript/filtering)
 - [Sorting semantics](./sorting) · [Search & ranking](./search)
+- [Errors & limits](./errors) — what raises a `FilterError`, plus the nesting-depth and regex limits.
