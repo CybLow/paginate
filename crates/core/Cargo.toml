@@ -2,7 +2,7 @@
 name = "paginate-core"
 # Concrete (not workspace-inherited) so release-please can bump it independently
 # for `core-v*` crates.io releases. Other metadata stays workspace-inherited.
-version = "0.1.0"
+version = "1.0.0"
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
