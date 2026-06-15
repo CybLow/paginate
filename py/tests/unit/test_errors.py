@@ -8,6 +8,7 @@ from pypaginate import (
     ConfigurationError,
     FilterError,
     FilterValidationError,
+    InvalidCursorError,
     PaginateError,
     PaginationError,
     SearchError,
@@ -39,6 +40,11 @@ class TestHierarchy:
 
     def test_search_query_error_subclasses_search_error(self) -> None:
         assert issubclass(SearchQueryError, SearchError)
+
+    def test_invalid_cursor_error_subclasses_validation_error(self) -> None:
+        # Catchable via ValidationError / PaginateError (mirrors the TS package).
+        assert issubclass(InvalidCursorError, ValidationError)
+        assert issubclass(InvalidCursorError, PaginateError)
 
     def test_base_is_an_exception(self) -> None:
         assert issubclass(PaginateError, Exception)

@@ -7,6 +7,8 @@
  */
 import * as core from "@cyblow/paginate-core";
 
+import { InvalidCursorError, rethrowEngineError } from "./errors.js";
+
 /** A plain ordering value — no host objects cross the boundary. */
 export type Scalar = string | number | boolean | null;
 
@@ -18,7 +20,14 @@ export function encodeCursor(values: CursorValues): string {
   return core.encodeCursor(values as unknown[]);
 }
 
-/** Decode a cursor string back into its ordering values. */
+/** Decode a cursor string back into its ordering values.
+ *
+ * Throws {@link InvalidCursorError} if the cursor is malformed, truncated, or
+ * tampered with. */
 export function decodeCursor(cursor: string): Scalar[] {
-  return core.decodeCursor(cursor) as Scalar[];
+  try {
+    return core.decodeCursor(cursor) as Scalar[];
+  } catch (err) {
+    rethrowEngineError(err, InvalidCursorError);
+  }
 }

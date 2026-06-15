@@ -1,0 +1,9 @@
+{
+  "label": "Integrations",
+  "position": 7,
+  "link": {
+    "type": "generated-index",
+    "title": "Python integrations",
+    "description": "Paginate database queries and parse request params: SQLAlchemy 2.0 (sync + async, offset + keyset), Django QuerySets, and FastAPI dependencies."
+  }
+}

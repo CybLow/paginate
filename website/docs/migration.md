@@ -1,5 +1,5 @@
 ---
-sidebar_position: 10
+sidebar_position: 8
 title: Migration
 ---
 
@@ -7,6 +7,17 @@ title: Migration
 
 Upgrade notes between versions. Most upgrades need **no code change** — the spec /
 param shapes and the public helpers are stable.
+
+## → v1.0.0 — first stable release
+
+`paginate` reaches **1.0.0** across all three packages — `paginate-core`, `pypaginate`,
+and `@cyblow/paginate` — released together with a **stable** public API. The
+`paginate` / `filter` / `sort` / `search` / `Dataset` surface, the spec/param shapes,
+and the cursor wire format are unchanged, so existing code keeps working.
+
+- **Malformed cursors now raise [`InvalidCursorError`](./general/errors#malformed-cursors)**
+  (a subclass of `ValidationError`) in both languages, instead of leaking the native
+  engine error — catch it as `InvalidCursorError` / `ValidationError` / `PaginateError`.
 
 ## → v0.4 — generated types, Pydantic-optional (Python)
 
@@ -30,14 +41,14 @@ from the Rust core** (not Pydantic), and **Pydantic is optional**.
 v0.3 moves **all** computation into the shared Rust core (`paginate-core`): the
 cursor codec, offset math, page assembly, filter / sort / search, and the keyset
 predicate now have a single implementation that the Python and TypeScript packages
-wrap. The headline guarantee is [cross-language parity](./concepts/parity).
+wrap. The headline guarantee is [cross-language parity](./general/parity).
 
 ### Python (`pypaginate`)
 
 Most code needs **no change**. Notable points:
 
 - **New one-shot `filter` / `sort` / `search`** for in-memory lists, alongside
-  `paginate` — see the [guides](./getting-started/quickstart).
+  `paginate` — see the [Python quickstart](./python/quickstart).
 - **Invalid enum tokens now raise** instead of silently defaulting (canonical
   string↔enum parsing moved into the core): a misspelled operator / direction / mode
   raises `FilterError` / `SortError` / `SearchError`.

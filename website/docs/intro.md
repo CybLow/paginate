@@ -2,6 +2,7 @@
 slug: /
 title: Overview
 sidebar_position: 1
+description: Fast pagination, filtering, sorting, and search with one Rust core and native Python & TypeScript packages that return byte-for-byte identical results.
 ---
 
 # paginate
@@ -9,27 +10,48 @@ sidebar_position: 1
 Fast pagination, filtering, sorting, and search with **one Rust core** and **native
 Python & TypeScript packages** that return byte-for-byte identical results.
 
+:::tip Try it live
+The **[Playground](/playground)** runs the real Rust engine in your browser (compiled to
+WebAssembly) — filter, sort, search, and the cursor codec, with no install.
+:::
+
 ## Packages
 
-| Language | Package | Install |
-|---|---|---|
-| Python | `pypaginate` | `pip install pypaginate` |
-| TypeScript / Node | `@cyblow/paginate` | `npm i @cyblow/paginate` |
-| Rust | `paginate-core` | `cargo add paginate-core` ([docs.rs](https://docs.rs/paginate-core)) |
+| Language | Package | Install | Reference |
+|---|---|---|---|
+| Python | [`pypaginate`](https://pypi.org/project/pypaginate/) | `pip install pypaginate` | [Python guide](./python/installation) |
+| TypeScript / Node | [`@cyblow/paginate`](https://www.npmjs.com/package/@cyblow/paginate) | `npm i @cyblow/paginate` | [TypeScript guide](./typescript/installation) |
+| Rust | [`paginate-core`](https://crates.io/crates/paginate-core) | `cargo add paginate-core` | [Rust core](./rust/overview) · [docs.rs](https://docs.rs/paginate-core) |
 
-## Why
+## Choose your path
 
-- **One implementation.** Filtering (20 operators + nested And/Or), stable multi-key
-  sorting with null placement, ranked + fuzzy (trigram) search, the cursor codec, the
-  keyset predicate, and pagination math all live once in the Rust core. The Python and
-  TS packages are thin, typed adapters over it.
-- **Cross-language parity.** A frozen golden fixture asserts the Rust, Python, and TS
-  engines produce identical results and **byte-identical cursors**.
-- **Typed & fast.** Native speed; full type hints (Python) and types (TS) — generated
-  from one schema, so they can't drift.
+- 🐍 **[Python](./python/installation)** — `paginate()`, one-shot `filter`/`sort`/`search`,
+  the resident `Dataset`, and SQLAlchemy / Django / FastAPI integrations.
+- 🟦 **[JavaScript / TypeScript](./typescript/installation)** — the same surface, plus
+  Express / Prisma / Drizzle adapters and the portable cursor codec.
+- 🦀 **[Rust core](./rust/overview)** — embed the engine directly, or read how it works.
 
-## Next
+## Core ideas
 
-- [Install](./getting-started/installation)
-- [Quickstart](./getting-started/quickstart)
-- [Architecture](./concepts/architecture)
+These apply to every language — read them once:
+
+- **[Why paginate?](./general/why)** — what problem it solves and when to reach for it.
+- **[Choosing a package](./general/choosing-a-package)** — which install fits your stack.
+- **[Architecture](./general/architecture)** — the fat-core / thin-adapter design.
+- **[Cross-language parity](./general/parity)** — why results and cursors match exactly.
+- **[Pagination models](./general/pagination-models)** — offset vs. keyset (cursor).
+
+## Shared reference
+
+The spec vocabulary is defined once in the core and is identical in every language:
+
+- **[Filtering & operators](./general/filtering)** — the 20 operators and boolean groups.
+- **[Sorting semantics](./general/sorting)** — stability, direction, and null placement.
+- **[Search & ranking](./general/search)** — match modes, trigram fuzzy scoring, weights.
+
+## Recipes & help
+
+- 🍳 **[Sharing cursors across Python & TypeScript](./recipes/polyglot-cursors)** — the headline feature, end to end.
+- 🍳 **[Building a paginated API](./recipes/paginated-api)** — query params → filtered, sorted page.
+- ⚠️ **[Errors & limits](./general/errors)** — the shared exception hierarchy and built-in limits.
+- ❓ **[FAQ](./general/faq)** · 📖 **[Glossary](./general/glossary)** — common questions and the vocabulary.

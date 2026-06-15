@@ -1,8 +1,9 @@
 {
   "label": "API Reference",
-  "position": 9,
+  "position": 7,
   "link": {
     "type": "generated-index",
+    "slug": "/reference",
     "title": "API Reference",
     "description": "The formal API surface, one section per language. These are generated from the source — distinct from the usage Guides. You use the ergonomic packages (`pypaginate`, `@cyblow/paginate`); each wraps the shared `paginate-core` Rust engine."
   }

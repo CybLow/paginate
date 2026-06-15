@@ -5,7 +5,10 @@ members = ["crates/core", "crates/node"]
 # never as a workspace member. Excluding it keeps `cargo test --workspace` from
 # linking libpython on a Python-less runner; its `{ path = "../core" }` dep
 # still resolves (path deps do not require workspace membership).
-exclude = ["crates/pyo3"]
+# crates/wasm (the wasm-bindgen binding for the docs playground) is likewise
+# excluded — it builds only for wasm32 and would otherwise pull wasm-bindgen into
+# native `cargo --workspace` runs.
+exclude = ["crates/pyo3", "crates/wasm"]
 
 [workspace.package]
 version = "0.1.0"

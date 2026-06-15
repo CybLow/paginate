@@ -1,24 +1,26 @@
 //! # paginate-core
 //!
-//! Pure, language-agnostic engine behind [`pypaginate`]. It owns the
-//! computational heart of the library — cursor encoding, offset math, text
-//! normalization, filtering, sorting and search — with **zero binding
-//! dependencies** so the exact same crate links natively into Python (via
-//! PyO3) today and compiles unchanged to WebAssembly / N-API for the planned
-//! JS/TS port.
+//! Pure, language-agnostic engine behind the [`pypaginate`] (Python) and
+//! [`@cyblow/paginate`] (TypeScript) packages. It owns the computational heart
+//! of the library — cursor encoding, offset math, text normalization,
+//! filtering, sorting and search — with **zero binding dependencies** so the
+//! exact same crate links natively into Python (via PyO3) and Node/TypeScript
+//! (via napi-rs), and compiles unchanged to WebAssembly for an optional
+//! browser/edge target.
 //!
 //! ## Design rules
 //!
 //! * **Plain data only.** Everything crosses the boundary as [`value::Value`],
 //!   a small JSON-like enum. No host objects, no framework types.
 //! * **Deterministic & side-effect free.** Same input, same output — which is
-//!   what lets the Python property-based invariants double as the port's
+//!   what lets the shared property-based invariants double as every binding's
 //!   conformance suite.
-//! * **Behaviour parity.** Each module mirrors the semantics of its Python
-//!   counterpart (e.g. the cursor wire format is byte-identical, so cursors
-//!   minted by either implementation decode in the other).
+//! * **Behaviour parity.** Each binding wraps this one engine, so results match
+//!   across languages (e.g. the cursor wire format is byte-identical, so cursors
+//!   minted by any implementation decode in the others).
 //!
 //! [`pypaginate`]: https://github.com/CybLow/paginate
+//! [`@cyblow/paginate`]: https://www.npmjs.com/package/@cyblow/paginate
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
