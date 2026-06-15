@@ -32,6 +32,11 @@ const cursor = encodeCursor([42, "2025-06-01T00:00:00"]);
 decodeCursor(cursor); // → [42, "2025-06-01T00:00:00"]
 ```
 
+:::tip
+Try `encodeCursor` / `decodeCursor` live in the **[Playground](/playground)** — it runs
+the same Rust codec in your browser.
+:::
+
 In Python the same codec powers the SQLAlchemy and Django keyset adapters rather than
 being called directly: the adapters over-fetch `limit + 1`, trim, and emit a
 `CursorPage` with `next_cursor` / `previous_cursor`. See the
