@@ -39,7 +39,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@cyblow/paginate-core": "^0.1.5"
+    "@cyblow/paginate-core": "^1.0.0"
   },
   "devDependencies": {
     "eslint": "^10",
