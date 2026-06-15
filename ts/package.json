@@ -1,6 +1,6 @@
 {
   "name": "@cyblow/paginate",
-  "version": "0.1.5",
+  "version": "1.0.0",
   "description": "Idiomatic TypeScript consumer of paginate-core: maps ORM models (Prisma/Drizzle/TypeORM) to DTOs and runs them through the native engine.",
   "type": "module",
   "license": "MIT",
