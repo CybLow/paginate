@@ -1,0 +1,67 @@
+# paginate
+
+> Fast pagination, filtering, sorting, and search with one Rust core (`paginate-core`) and native Python (`pypaginate`) and TypeScript (`@cyblow/paginate`) packages that return byte-for-byte identical results, including byte-identical keyset cursors. The packages are thin, typed adapters over the engine; algorithms (20 filter operators, stable null-aware multi-key sort, ranked trigram-fuzzy search, the cursor codec, pagination math) live once in Rust.
+
+Key facts:
+- The native engine ships inside the Python wheel and the npm package — no Rust toolchain needed.
+- Operators, sort directions, and search modes are plain strings ("gte", "desc", "contains", "fuzzy").
+- Two pagination models: offset (page/limit) and keyset (cursor); cursors are portable across languages.
+- Integrations: SQLAlchemy, Django, FastAPI (Python); Express, Prisma, Drizzle (TypeScript).
+
+## General
+
+- [Overview](https://cyblow.github.io/paginate/docs/): the documentation hub.
+- [Why paginate?](https://cyblow.github.io/paginate/docs/general/why): the problem it solves and when to use it.
+- [Choosing a package](https://cyblow.github.io/paginate/docs/general/choosing-a-package): which install fits your stack.
+- [Architecture](https://cyblow.github.io/paginate/docs/general/architecture): fat core, thin adapters; the Value boundary; marshalling.
+- [Cross-language parity](https://cyblow.github.io/paginate/docs/general/parity): why results and cursors match exactly.
+- [Pagination models](https://cyblow.github.io/paginate/docs/general/pagination-models): offset vs. keyset (cursor).
+- [Cursors](https://cyblow.github.io/paginate/docs/general/cursors): the portable, typed wire format.
+- [Filtering & operators](https://cyblow.github.io/paginate/docs/general/filtering): the 20 operators and boolean groups.
+- [Sorting semantics](https://cyblow.github.io/paginate/docs/general/sorting): stability, direction, null placement.
+- [Search & ranking](https://cyblow.github.io/paginate/docs/general/search): match modes, trigram fuzzy scoring, weights.
+- [FAQ](https://cyblow.github.io/paginate/docs/general/faq): common questions.
+
+## Python (pypaginate)
+
+- [Installation](https://cyblow.github.io/paginate/docs/python/installation): `pip install pypaginate` and extras.
+- [Quickstart](https://cyblow.github.io/paginate/docs/python/quickstart): paginate, filter, sort, search, Dataset.
+- [Filtering](https://cyblow.github.io/paginate/docs/python/filtering): `filter`, `FilterSpec`, `And`/`Or`.
+- [Sorting](https://cyblow.github.io/paginate/docs/python/sorting): `sort`, `SortSpec`, multi-key, nulls.
+- [Search](https://cyblow.github.io/paginate/docs/python/search): `search`, `SearchSpec`, fuzzy, weights.
+- [Pagination](https://cyblow.github.io/paginate/docs/python/pagination): offset, keyset, the resident Dataset.
+- [SQLAlchemy](https://cyblow.github.io/paginate/docs/python/integrations/sqlalchemy): sync + async, offset + keyset.
+- [Django](https://cyblow.github.io/paginate/docs/python/integrations/django): QuerySet pagination.
+- [FastAPI](https://cyblow.github.io/paginate/docs/python/integrations/fastapi): Annotated dependencies.
+
+## JavaScript / TypeScript (@cyblow/paginate)
+
+- [Installation](https://cyblow.github.io/paginate/docs/typescript/installation): `npm i @cyblow/paginate`.
+- [Quickstart](https://cyblow.github.io/paginate/docs/typescript/quickstart): paginate, filter, sort, search, Dataset.
+- [Filtering](https://cyblow.github.io/paginate/docs/typescript/filtering): `filter`, plain-object specs, `And`/`Or`.
+- [Sorting](https://cyblow.github.io/paginate/docs/typescript/sorting): `sort`, multi-key, nulls.
+- [Search](https://cyblow.github.io/paginate/docs/typescript/search): `search`, fuzzy, weights.
+- [Pagination](https://cyblow.github.io/paginate/docs/typescript/pagination): offset, keyset, the cursor codec, Dataset.
+- [Express](https://cyblow.github.io/paginate/docs/typescript/integrations/express): parse request params.
+- [Prisma](https://cyblow.github.io/paginate/docs/typescript/integrations/prisma): offset + keyset where-fragments.
+- [Drizzle](https://cyblow.github.io/paginate/docs/typescript/integrations/drizzle): keyset conditions with injected operators.
+
+## Rust Core (paginate-core)
+
+- [Overview](https://cyblow.github.io/paginate/docs/rust/overview): what the crate owns.
+- [Using the core](https://cyblow.github.io/paginate/docs/rust/usage): the Value model, feature flags, cursor codec.
+- [Design](https://cyblow.github.io/paginate/docs/rust/design): the Value boundary, index returns, columnar fast path, parity verification.
+- [Performance](https://cyblow.github.io/paginate/docs/rust/performance): where the native boundary pays off (measured).
+
+## Reference
+
+- [API Reference](https://cyblow.github.io/paginate/docs/reference): Rust (docs.rs), TypeScript (TypeDoc), Python (pydoc-markdown).
+- [Migration](https://cyblow.github.io/paginate/docs/migration): upgrade notes.
+
+## Packages
+
+- pypaginate (PyPI): https://pypi.org/project/pypaginate/
+- @cyblow/paginate (npm): https://www.npmjs.com/package/@cyblow/paginate
+- paginate-core (crates.io): https://crates.io/crates/paginate-core
+- Rust API (docs.rs): https://docs.rs/paginate-core
+- Source: https://github.com/CybLow/paginate

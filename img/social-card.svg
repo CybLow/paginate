@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" font-family="DejaVu Sans, Liberation Sans, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#312a8f"/>
+      <stop offset="1" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="none"/>
+
+  <!-- title -->
+  <text x="80" y="210" fill="#ffffff" font-size="120" font-weight="700" letter-spacing="-2">paginate</text>
+  <rect x="84" y="240" width="150" height="8" rx="4" fill="#ffe39a"/>
+
+  <!-- accent line -->
+  <text x="248" y="248" fill="#ffe39a" font-size="30" font-weight="700">one core · every language</text>
+
+  <!-- tagline -->
+  <text x="80" y="330" fill="#ffffff" font-size="42" font-weight="700">Fast pagination, filtering, sorting &amp; search</text>
+  <text x="80" y="384" fill="#dcddf7" font-size="30">One Rust core · native Python &amp; TypeScript · byte-identical cursors</text>
+
+  <!-- install chips -->
+  <g font-family="DejaVu Sans Mono, Liberation Mono, monospace" font-size="26" fill="#ffffff">
+    <rect x="80" y="470" width="360" height="64" rx="12" fill="#00000033" stroke="#ffffff30"/>
+    <text x="104" y="510">pip install pypaginate</text>
+
+    <rect x="464" y="470" width="392" height="64" rx="12" fill="#00000033" stroke="#ffffff30"/>
+    <text x="488" y="510">npm i @cyblow/paginate</text>
+
+    <rect x="880" y="470" width="240" height="64" rx="12" fill="#00000033" stroke="#ffffff30"/>
+    <text x="904" y="510">cargo add …</text>
+  </g>
+
+  <text x="80" y="590" fill="#c4c6f0" font-size="22">cyblow.github.io/paginate</text>
+</svg>
