@@ -10,6 +10,11 @@ description: Fast pagination, filtering, sorting, and search with one Rust core 
 Fast pagination, filtering, sorting, and search with **one Rust core** and **native
 Python & TypeScript packages** that return byte-for-byte identical results.
 
+:::tip Try it live
+The **[Playground](/playground)** runs the real Rust engine in your browser (compiled to
+WebAssembly) — filter, sort, search, and the cursor codec, with no install.
+:::
+
 ## Packages
 
 | Language | Package | Install | Reference |
