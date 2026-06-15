@@ -17,6 +17,7 @@ classifies the error; each language binding maps it to a host-native exception w
 PaginateError                 (TypeScript & Python; aliased PaginationError)
 ├── ConfigurationError        invalid adapter / ORM configuration
 ├── ValidationError           bad page / limit / cursor input
+│   └── InvalidCursorError    a cursor was malformed, truncated, or tampered with
 ├── FilterError               a filter could not be evaluated
 │   └── FilterValidationError a filter spec failed validation (e.g. nesting depth)
 ├── SortError                 values are not order-comparable
@@ -34,6 +35,7 @@ structured `details` mapping for programmatic handling.
 | Error | Raised when… | Example message |
 |---|---|---|
 | `ValidationError` | `page < 1`, `limit < 1`, `limit > MAX_LIMIT`, or both `after` and `before` set | `limit must not exceed 1000` · `after and before are mutually exclusive` |
+| `InvalidCursorError` | a keyset cursor is malformed, truncated, or tampered with (subclass of `ValidationError`) | `invalid cursor: base64` |
 | `FilterError` | unknown operator, an unresolved field path, a `_`-prefixed segment, an operand of the wrong type, `between` without exactly 2 elements, or a regex over 200 chars | `unknown operator: zzz` · `Between requires exactly 2 elements` |
 | `FilterValidationError` | a filter group is nested beyond `MAX_FILTER_DEPTH` (checked at construction) | `FilterGroup nesting must not exceed 5 levels` |
 | `SortError` | a sort key compares values that aren't order-comparable (e.g. number vs string) | `field values are not order-comparable` |
@@ -42,29 +44,35 @@ structured `details` mapping for programmatic handling.
 
 ## Malformed cursors
 
-Decoding a keyset cursor is separate from the validation above. When the ORM keyset
-adapters decode a client-supplied `after` / `before`, a malformed, truncated, or
-tampered cursor raises **`InvalidCursorError`** (`invalid cursor: …`) from the native
-core — **not** a `ValidationError`.
-
-:::caution Catch it as `ValueError`
-In Python, `InvalidCursorError` is a subclass of `ValueError` (via the native
-`pypaginate._core.PaginateError`) but is **not** part of the `pypaginate.errors`
-hierarchy — so `except PaginateError` will **not** catch it. Catch `ValueError` (or
-`pypaginate._core.InvalidCursorError`). In TypeScript, `decodeCursor` likewise throws on
-a malformed cursor.
-:::
+When the keyset adapters decode a client-supplied `after` / `before`, a malformed,
+truncated, or tampered cursor raises **`InvalidCursorError`** (`invalid cursor: …`). It
+is a subclass of `ValidationError`, so `except ValidationError` / `except PaginateError`
+(and `instanceof` in TypeScript) catch it — and you can catch `InvalidCursorError`
+specifically to distinguish a bad cursor from other validation failures. The same type
+is thrown by `decodeCursor` in TypeScript, so the behaviour matches across languages.
 
 Because cursors arrive from clients, treat a decode failure as a bad request:
 
 ```python
-from pypaginate import CursorParams
+from pypaginate import CursorParams, InvalidCursorError
 from pypaginate.adapters.sqlalchemy import SyncSQLAlchemyCursorBackend
 
 try:
     page = SyncSQLAlchemyCursorBackend(session).fetch_page(stmt, CursorParams(limit=20, after=token))
-except ValueError:           # malformed / tampered cursor
+except InvalidCursorError:
     raise HTTPException(status_code=400, detail="invalid cursor")
+```
+
+```ts
+import { decodeCursor, InvalidCursorError } from "@cyblow/paginate";
+
+try {
+  const values = decodeCursor(token);
+} catch (err) {
+  if (err instanceof InvalidCursorError) {
+    res.status(400).json({ error: "invalid cursor" });
+  } else throw err;
+}
 ```
 
 ## Handling errors

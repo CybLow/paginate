@@ -56,6 +56,7 @@ export {
   ConfigurationError,
   FilterError,
   FilterValidationError,
+  InvalidCursorError,
   SearchError,
   SearchQueryError,
   SortError,

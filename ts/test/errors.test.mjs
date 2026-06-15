@@ -30,3 +30,13 @@ test("Dataset.page re-types a filter-stage error via the message prefix", () => 
     (e) => e instanceof p.FilterError,
   );
 });
+
+test("decodeCursor re-types a malformed cursor as InvalidCursorError", () => {
+  assert.throws(
+    () => p.decodeCursor("not-a-cursor!!"),
+    (e) =>
+      e instanceof p.InvalidCursorError &&
+      e instanceof p.ValidationError &&
+      e instanceof p.PaginateError,
+  );
+});

@@ -20,7 +20,7 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.pool import StaticPool
 
-from pypaginate import CursorParams, OffsetParams
+from pypaginate import CursorParams, InvalidCursorError, OffsetParams
 from pypaginate.adapters.sqlalchemy import (
     SyncSQLAlchemyBackend,
     SyncSQLAlchemyCursorBackend,
@@ -226,6 +226,14 @@ def test_offset_backend_last_page(session: Session) -> None:
     assert [u.id for u in page.items] == [5]
     assert page.has_next is False
     assert page.has_previous is True
+
+
+def test_keyset_malformed_cursor_raises_invalid_cursor(session: Session) -> None:
+    backend: SyncSQLAlchemyCursorBackend[User] = SyncSQLAlchemyCursorBackend(session)
+    query = select(User).order_by(User.id)
+
+    with pytest.raises(InvalidCursorError):
+        backend.fetch_page(query, CursorParams(limit=2, after="not-a-cursor!!"))
 
 
 def test_keyset_forward_round_trip(session: Session) -> None:

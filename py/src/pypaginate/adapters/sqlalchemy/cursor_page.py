@@ -16,6 +16,7 @@ from pypaginate.adapters.sqlalchemy.keyset import (
     build_keyset_condition,
     extract_order_columns,
 )
+from pypaginate.errors import InvalidCursorError
 from pypaginate.pages import CursorPage
 from pypaginate.params import CursorParams
 
@@ -83,12 +84,20 @@ def finalize_page(
     )
 
 
+def _decode(token: str) -> tuple[Any, ...]:
+    """Decode a cursor, re-raising a malformed one as the public InvalidCursorError."""
+    try:
+        return decode_cursor(token)
+    except ValueError as exc:
+        raise InvalidCursorError(str(exc)) from exc
+
+
 def _apply_keyset(
     stmt: Select[Any], order_cols: list[OrderColumn], token: str, *, backwards: bool
 ) -> tuple[Select[Any], list[OrderColumn]]:
     """Decode the cursor, flip direction if backward, and apply the WHERE."""
     nav_cols = [c.reversed for c in order_cols] if backwards else order_cols
-    condition = build_keyset_condition(nav_cols, decode_cursor(token))
+    condition = build_keyset_condition(nav_cols, _decode(token))
     return stmt.where(condition), nav_cols
 
 
