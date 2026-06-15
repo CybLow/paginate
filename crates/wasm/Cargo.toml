@@ -1,0 +1,22 @@
+[package]
+name = "paginate-wasm"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+publish = false
+description = "WebAssembly bindings for paginate-core, powering the documentation playground."
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# Path dep on the pure engine (no binding deps); compiles to wasm32 unchanged.
+paginate-core = { path = "../core" }
+# Pinned to match the installed `wasm-bindgen` CLI exactly (the JS glue generator
+# requires the crate and CLI versions to agree).
+wasm-bindgen = "=0.2.125"
+serde_json = "1"
+
+[profile.release]
+opt-level = "s"
+lto = true
