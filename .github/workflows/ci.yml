@@ -554,6 +554,15 @@ jobs:
           uv run pytest tests/perf \
             --run-benchmark --run-slow --benchmark-enable \
             --benchmark-json=benchmark-results.json --benchmark-autosave -v
+      - name: Restore tracked files before storing results
+        # `maturin develop --release` can rewrite crates/pyo3/Cargo.lock (a
+        # transitive-dependency refresh), leaving the working tree dirty — which
+        # makes the benchmark action's `git switch gh-pages` abort. The results
+        # JSON is untracked, so restoring tracked files is safe and keeps the
+        # gh-pages store/compare working.
+        if: always()
+        working-directory: .
+        run: git checkout -- .
       - name: Continuous benchmark
         uses: benchmark-action/github-action-benchmark@v1
         with:
