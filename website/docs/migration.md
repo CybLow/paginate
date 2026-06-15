@@ -8,6 +8,17 @@ title: Migration
 Upgrade notes between versions. Most upgrades need **no code change** — the spec /
 param shapes and the public helpers are stable.
 
+## → v1.0.0 — first stable release
+
+`paginate` reaches **1.0.0** across all three packages — `paginate-core`, `pypaginate`,
+and `@cyblow/paginate` — released together with a **stable** public API. The
+`paginate` / `filter` / `sort` / `search` / `Dataset` surface, the spec/param shapes,
+and the cursor wire format are unchanged, so existing code keeps working.
+
+- **Malformed cursors now raise [`InvalidCursorError`](./general/errors#malformed-cursors)**
+  (a subclass of `ValidationError`) in both languages, instead of leaking the native
+  engine error — catch it as `InvalidCursorError` / `ValidationError` / `PaginateError`.
+
 ## → v0.4 — generated types, Pydantic-optional (Python)
 
 The Python package (`pypaginate`) was rebuilt from scratch. Behaviour and the

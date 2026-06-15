@@ -77,7 +77,7 @@ should use its own array operations — and the README/ARCHITECTURE say so plain
 ## Making Rust actually win — the resident `Dataset`
 
 The one-shot bindings re-marshal every item on every call, so the FFI tax is
-paid per query. The fix is **marshal once, query many**: `paginate_core.Dataset`
+paid per query. The fix is **marshal once, query many**: `pypaginate.Dataset`
 holds the rows as `Value` in Rust, built once, then answers filter/sort/search
 queries natively (returning indices) with **no re-marshalling**.
 

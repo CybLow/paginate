@@ -1,5 +1,19 @@
 # Migration guide
 
+## → v1.0.0 — first stable release
+
+`paginate` reaches **1.0.0** across all three packages — `paginate-core` (crates.io),
+`pypaginate` (PyPI), and `@cyblow/paginate` (npm) — released together. The public API
+is **stable**: the `paginate` / `filter` / `sort` / `search` / `Dataset` surface, the
+spec/param shapes, and the cursor wire format are unchanged, so existing code keeps
+working.
+
+- **Malformed cursors now raise a public `InvalidCursorError`** (a subclass of
+  `ValidationError`) instead of leaking the native engine error. Catch it as
+  `InvalidCursorError`, `ValidationError`, or `PaginateError` — identical in Python and
+  TypeScript. No change is needed unless you were relying on the previous (native)
+  error type.
+
 ## → v0.4 ("generated types, Pydantic-optional")
 
 The Python package (`pypaginate`) was rebuilt from scratch. Behaviour and the
