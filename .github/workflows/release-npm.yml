@@ -4,6 +4,11 @@
 # Trigger: tag `ts-v*` (cut by release-please). Dry-run via workflow_dispatch.
 # Builds the napi addon for every target, then `napi prepublish` publishes
 # `paginate-core` + its platform sub-packages, and finally `@cyblow/paginate`.
+#
+# Auth: npm OIDC trusted publishing (no token). Requires npm >= 11.5.1 and
+# `id-token: write`, plus a Trusted Publisher configured on npmjs.com for EACH
+# published package (the addon, the 8 platform sub-packages, and the wrapper)
+# pointing at this repo + `release-npm.yml`.
 # =============================================================================
 
 name: Release npm
@@ -80,13 +85,16 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write
+      id-token: write   # OIDC trusted publishing to npm (no token)
+      contents: read    # napi reads repo/release metadata
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
           registry-url: https://registry.npmjs.org
+      - name: ⬆️ npm >= 11.5.1 (required for OIDC trusted publishing)
+        run: npm install -g npm@latest
       - name: 📥 Collect built addons
         uses: actions/download-artifact@v8
         with:
@@ -104,7 +112,9 @@ jobs:
           npx napi artifacts -d artifacts
       - name: 🚀 Publish paginate-core (+ platform sub-packages)
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # OIDC (id-token) authenticates npm; GITHUB_TOKEN only lets napi read
+          # repo/release metadata without hitting an unauthenticated 401.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # napi prepublish ships the platform sub-packages and adds their
           # optionalDependencies to package.json; then publish the MAIN wrapper
@@ -119,8 +129,6 @@ jobs:
             npm publish --access public --ignore-scripts
           fi
       - name: 🚀 Publish @cyblow/paginate
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           # Resolve paginate-core from the local workspace, not the registry: in a
           # dry-run it isn't published yet, and even on a real release the registry
