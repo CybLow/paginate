@@ -37,8 +37,8 @@ jobs:
           - { host: macos-latest,   target: aarch64-apple-darwin }
           - { host: ubuntu-latest,  target: x86_64-unknown-linux-gnu }
           - { host: ubuntu-latest,  target: aarch64-unknown-linux-gnu }
-          - { host: ubuntu-latest,  target: x86_64-unknown-linux-musl }
-          - { host: ubuntu-latest,  target: aarch64-unknown-linux-musl, zig: true }
+          - { host: ubuntu-latest,  target: x86_64-unknown-linux-musl,  cross: true }
+          - { host: ubuntu-latest,  target: aarch64-unknown-linux-musl, cross: true }
           - { host: windows-latest, target: x86_64-pc-windows-msvc }
           - { host: windows-latest, target: aarch64-pc-windows-msvc }
     steps:
@@ -54,13 +54,19 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
           echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> "$GITHUB_ENV"
-      - name: ⚡ Zig (musl-arm64 cross-link)
-        if: matrix.zig
-        uses: goto-bus-stop/setup-zig@v2
+      - name: ⚡ Zig (musl cross-link)
+        if: matrix.cross
+        uses: mlugg/setup-zig@v2
         with:
-          version: 0.13.0
+          version: 0.14.1
+      - name: 🔧 cargo-zigbuild
+        if: matrix.cross
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild
       - name: 🛠 napi build
-        run: npx napi build --platform --release --target ${{ matrix.target }} ${{ matrix.zig && '--zig' || '' }}
+        # napi v3 dropped `--zig`; musl targets cross-compile via cargo-zigbuild (`-x`).
+        run: npx napi build --platform --release --target ${{ matrix.target }} ${{ matrix.cross && '-x' || '' }}
       - uses: actions/upload-artifact@v7
         with:
           name: addon-${{ matrix.target }}
