@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1781600624742,
+  "lastUpdate": 1781601175810,
   "repoUrl": "https://github.com/CybLow/paginate",
   "entries": {
     "Benchmark": [
@@ -31121,6 +31121,289 @@ window.BENCHMARK_DATA = {
             "unit": "iter/sec",
             "range": "stddev: 0.000008033483746190382",
             "extra": "mean: 305.50955810905725 usec\nrounds: 2263"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "118811498+CybLow@users.noreply.github.com",
+            "name": "CybLow",
+            "username": "CybLow"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "272be0f01c2caf3f0f9ceea0dde5f63a3854e246",
+          "message": "ci(release): drive PyPI/npm publishes via dispatch; fix napi v3 musl build (#68)\n\nAdd a non-dry-run workflow_dispatch path to real PyPI (dry_run=true stays TestPyPI), and cross-compile both Linux musl napi targets with cargo-zigbuild (-x) after napi v3 dropped --zig.",
+          "timestamp": "2026-06-16T11:07:55+02:00",
+          "tree_id": "0bc6f64613d0b9ee2151c8fda7a66cd57235c1de",
+          "url": "https://github.com/CybLow/paginate/commit/272be0f01c2caf3f0f9ceea0dde5f63a3854e246"
+        },
+        "date": 1781601174308,
+        "tool": "pytest",
+        "benches": [
+          {
+            "name": "tests/perf/test_overhead.py::test_dataset_marshal_1k",
+            "value": 311.689691550277,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000026263599762717778",
+            "extra": "mean: 3.2083191299212257 msec\nrounds: 254"
+          },
+          {
+            "name": "tests/perf/test_overhead.py::test_paginate_single_call_1k",
+            "value": 263425.72253242525,
+            "unit": "iter/sec",
+            "range": "stddev: 4.0046184153053817e-7",
+            "extra": "mean: 3.7961364986933246 usec\nrounds: 55854"
+          },
+          {
+            "name": "tests/perf/test_overhead.py::test_native_page_single_call",
+            "value": 283322.4178898488,
+            "unit": "iter/sec",
+            "range": "stddev: 4.1086701428085537e-7",
+            "extra": "mean: 3.5295477408666756 usec\nrounds: 47119"
+          },
+          {
+            "name": "tests/perf/test_overhead.py::test_paginate_fixed_cost_tiny",
+            "value": 630536.7811323701,
+            "unit": "iter/sec",
+            "range": "stddev: 2.0879374706627884e-7",
+            "extra": "mean: 1.5859503044439647 usec\nrounds: 118723"
+          },
+          {
+            "name": "tests/perf/test_search.py::test_search_1k",
+            "value": 2984.3881686356312,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000007184650919344039",
+            "extra": "mean: 335.0770554948181 usec\nrounds: 1820"
+          },
+          {
+            "name": "tests/perf/test_search.py::test_search_10k",
+            "value": 173.00093578780528,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00017855231956877168",
+            "extra": "mean: 5.780315554053144 msec\nrounds: 148"
+          },
+          {
+            "name": "tests/perf/test_search.py::test_search_10k_multi_field",
+            "value": 163.83040757326276,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00008020572623976857",
+            "extra": "mean: 6.103872991665564 msec\nrounds: 120"
+          },
+          {
+            "name": "tests/perf/test_search.py::test_dataset_search_10k",
+            "value": 913.1280132944543,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00010781340981392468",
+            "extra": "mean: 1.0951367009233703 msec\nrounds: 866"
+          },
+          {
+            "name": "tests/perf/test_sorting.py::test_dataset_sort_10k",
+            "value": 1275.6330146399118,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000012711741354525804",
+            "extra": "mean: 783.924521020869 usec\nrounds: 666"
+          },
+          {
+            "name": "tests/perf/test_sorting.py::test_sort_10k_multi",
+            "value": 175.0285602853145,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0006991896665238614",
+            "extra": "mean: 5.713353285714613 msec\nrounds: 133"
+          },
+          {
+            "name": "tests/perf/test_sorting.py::test_sort_1k",
+            "value": 3221.5270865406246,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000026928308291548994",
+            "extra": "mean: 310.41179326970394 usec\nrounds: 1664"
+          },
+          {
+            "name": "tests/perf/test_sorting.py::test_sort_10k",
+            "value": 252.3834778462691,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0006065868692722564",
+            "extra": "mean: 3.962224502703447 msec\nrounds: 185"
+          },
+          {
+            "name": "tests/perf/test_pipeline.py::test_pipeline_1k_filter_sort",
+            "value": 118333.65006540745,
+            "unit": "iter/sec",
+            "range": "stddev: 5.87685913367797e-7",
+            "extra": "mean: 8.450681606181018 usec\nrounds: 27020"
+          },
+          {
+            "name": "tests/perf/test_pipeline.py::test_pipeline_10k_filter_sort",
+            "value": 20729.98180164284,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000002636817713172789",
+            "extra": "mean: 48.23930911124826 usec\nrounds: 3523"
+          },
+          {
+            "name": "tests/perf/test_pipeline.py::test_pipeline_10k_full",
+            "value": 1035.9012727970119,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00003568185363022729",
+            "extra": "mean: 965.3429590832767 usec\nrounds: 611"
+          },
+          {
+            "name": "tests/perf/test_filtering.py::test_filter_10k_single",
+            "value": 282.1326410679043,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0007394824429712779",
+            "extra": "mean: 3.5444321373623615 msec\nrounds: 182"
+          },
+          {
+            "name": "tests/perf/test_filtering.py::test_dataset_filter_10k",
+            "value": 3533.9668342158852,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00000616639844170968",
+            "extra": "mean: 282.96813380306645 usec\nrounds: 3266"
+          },
+          {
+            "name": "tests/perf/test_filtering.py::test_filter_1k_single",
+            "value": 3996.4168571349874,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000023797799646437756",
+            "extra": "mean: 250.22414721693858 usec\nrounds: 1671"
+          },
+          {
+            "name": "tests/perf/test_filtering.py::test_filter_10k_multi",
+            "value": 219.9146058176908,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0006840392383660929",
+            "extra": "mean: 4.547219573169232 msec\nrounds: 164"
+          },
+          {
+            "name": "tests/perf/test_pagination.py::test_paginate_1k",
+            "value": 270317.02417186764,
+            "unit": "iter/sec",
+            "range": "stddev: 3.6214826490604663e-7",
+            "extra": "mean: 3.699360049791758 usec\nrounds: 51404"
+          },
+          {
+            "name": "tests/perf/test_pagination.py::test_paginate_10k_deep",
+            "value": 33234.34212831621,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000012201943697780976",
+            "extra": "mean: 30.08935745257264 usec\nrounds: 9688"
+          },
+          {
+            "name": "tests/perf/test_pagination.py::test_paginate_10k",
+            "value": 33687.90327279641,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000012865245301281196",
+            "extra": "mean: 29.68424576330098 usec\nrounds: 14103"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_paginate_scaling[100k]",
+            "value": 1352.3195984393494,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000008150219990493341",
+            "extra": "mean: 739.4701675210908 usec\nrounds: 585"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_sort_scaling[100k]",
+            "value": 16.357694945470488,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0056686181922939",
+            "extra": "mean: 61.13330780000297 msec\nrounds: 15"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_pipeline_scaling[100k]",
+            "value": 2167.433842026697,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000022195310217704562",
+            "extra": "mean: 461.3750974124001 usec\nrounds: 1314"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_search_scaling[10k]",
+            "value": 282.4710205454673,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00002344855284042515",
+            "extra": "mean: 3.540186168722527 msec\nrounds: 243"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_sort_scaling[10k]",
+            "value": 316.71586313432874,
+            "unit": "iter/sec",
+            "range": "stddev: 0.000023407069418313313",
+            "extra": "mean: 3.157404211155252 msec\nrounds: 251"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_paginate_scaling[1k]",
+            "value": 264725.0310092594,
+            "unit": "iter/sec",
+            "range": "stddev: 3.842280652734905e-7",
+            "extra": "mean: 3.777504515487327 usec\nrounds: 68654"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_sort_scaling[1k]",
+            "value": 3583.067025362857,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00001416049216975315",
+            "extra": "mean: 279.0905090308017 usec\nrounds: 2713"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_pipeline_scaling[10k]",
+            "value": 20782.49861888533,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000018879853031547018",
+            "extra": "mean: 48.1174096694652 usec\nrounds: 12493"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_search_scaling[1k]",
+            "value": 3070.526952785156,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00000526123017557989",
+            "extra": "mean: 325.6769979149471 usec\nrounds: 2398"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_filter_scaling[1k]",
+            "value": 4448.564629457455,
+            "unit": "iter/sec",
+            "range": "stddev: 0.00000518821600806315",
+            "extra": "mean: 224.7916088210141 usec\nrounds: 3106"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_pipeline_scaling[1k]",
+            "value": 121482.53461662213,
+            "unit": "iter/sec",
+            "range": "stddev: 4.815229962191373e-7",
+            "extra": "mean: 8.2316359561959 usec\nrounds: 28123"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_search_scaling[100k]",
+            "value": 21.051125293374913,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0013281084462397382",
+            "extra": "mean: 47.50339880000212 msec\nrounds: 20"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_paginate_scaling[10k]",
+            "value": 35874.44854561837,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000016467354198739918",
+            "extra": "mean: 27.874992941797792 usec\nrounds: 13743"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_filter_scaling[10k]",
+            "value": 381.2774472101834,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0000504308630652402",
+            "extra": "mean: 2.622762000000327 msec\nrounds: 280"
+          },
+          {
+            "name": "tests/perf/test_scaling.py::test_filter_scaling[100k]",
+            "value": 25.441265715181313,
+            "unit": "iter/sec",
+            "range": "stddev: 0.0010686918367135256",
+            "extra": "mean: 39.30622049999973 msec\nrounds: 24"
           }
         ]
       }
