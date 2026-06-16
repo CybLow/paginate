@@ -98,7 +98,9 @@ jobs:
           # Place the napi-generated JS bindings so the MAIN paginate-core package
           # (published below) ships its loader (index.js/index.d.ts).
           cp artifacts/*/index.js artifacts/*/index.d.ts . 2>/dev/null || true
-          npx napi create-npm-dirs -t .
+          # napi v3: create-npm-dirs dropped `-t` (defaults to ./npm); `napi
+          # artifacts -d` (output dir of the built .node files) is unchanged.
+          npx napi create-npm-dirs
           npx napi artifacts -d artifacts
       - name: 🚀 Publish paginate-core (+ platform sub-packages)
         env:
@@ -107,11 +109,13 @@ jobs:
           # napi prepublish ships the platform sub-packages and adds their
           # optionalDependencies to package.json; then publish the MAIN wrapper
           # package itself (--ignore-scripts so prepublishOnly doesn't re-run).
+          # napi v3: `--skip-gh-release` is gone (GitHub release is opt-in via
+          # `--gh-release`), so omitting it means no release is created.
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
-            npx napi prepublish -t npm --dry-run --skip-gh-release
+            npx napi prepublish -t npm --dry-run
             npm publish --access public --dry-run --ignore-scripts
           else
-            npx napi prepublish -t npm --skip-gh-release
+            npx napi prepublish -t npm
             npm publish --access public --ignore-scripts
           fi
       - name: 🚀 Publish @cyblow/paginate
