@@ -1,10 +1,11 @@
 # =============================================================================
 # Release: Python wheel (pypaginate) → PyPI
 # =============================================================================
-# Trigger: tag `py-v*` (cut by release-please). Dry-run via workflow_dispatch.
+# Trigger: tag `py-v*` (cut by release-please), or workflow_dispatch.
 # Builds multi-platform abi3 wheels (CPython 3.11+) with maturin, plus an sdist,
 # then publishes via PyPI Trusted Publishing (OIDC, no tokens). Prerelease tags
-# (py-v*-rc*) go to TestPyPI. Attaches a CycloneDX SBOM + SLSA provenance.
+# (py-v*-rc*) and `dry_run=true` dispatches go to TestPyPI; a `dry_run=false`
+# dispatch publishes to real PyPI. Attaches a CycloneDX SBOM + SLSA provenance.
 #
 # maturin reads py/pyproject.toml ([tool.maturin] manifest-path = crates/pyo3),
 # so all steps run with working-directory: py.
@@ -18,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Build only; publish to TestPyPI instead of PyPI'
+        description: 'true → publish to TestPyPI · false → publish to real PyPI'
         type: boolean
         default: true
 
@@ -129,5 +130,7 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
           skip-existing: true
       - name: 🚀 Publish to PyPI
-        if: github.event_name == 'push' && !contains(github.ref_name, '-rc')
+        # Real PyPI on a `py-v*` tag push, or an explicit non-dry-run dispatch
+        # (the only path available when a tag push isn't possible).
+        if: (github.event_name == 'push' && !contains(github.ref_name, '-rc')) || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
         uses: pypa/gh-action-pypi-publish@release/v1
