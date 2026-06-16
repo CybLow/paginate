@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/CybLow/paginate/compare/ts-v1.0.0...ts-v1.0.1) (2026-06-16)
+
+
+### Bug Fixes
+
+* **ts:** align the native addon version and dependency for a coherent release ([72225a1](https://github.com/CybLow/paginate/commit/72225a1067d2e860fe1455b07baca19c6f071eba))
+
 ## [1.0.0](https://github.com/CybLow/paginate/compare/ts-v0.1.5...ts-v1.0.0) (2026-06-15)
 
 
