@@ -47,7 +47,7 @@ jobs:
           - { host: windows-latest, target: x86_64-pc-windows-msvc }
           - { host: windows-latest, target: aarch64-pc-windows-msvc }
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: 20
@@ -88,7 +88,7 @@ jobs:
       id-token: write   # OIDC trusted publishing to npm (no token)
       contents: read    # napi reads repo/release metadata
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: 22
