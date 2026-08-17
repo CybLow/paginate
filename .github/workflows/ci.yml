@@ -53,7 +53,7 @@ jobs:
       node: ${{ steps.f.outputs.node == 'true' || steps.force.outputs.all == 'true' }}
       bench: ${{ steps.f.outputs.bench == 'true' || steps.force.outputs.all == 'true' || (github.event_name == 'workflow_dispatch' && inputs.run_benchmarks) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - id: force
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.run_all_tests }}" == "true" ]] \
@@ -96,7 +96,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.rust == 'true' && github.event.pull_request.draft != true
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -132,7 +132,7 @@ jobs:
       run:
         working-directory: py
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@v7
@@ -162,7 +162,7 @@ jobs:
       run:
         working-directory: py
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -202,7 +202,7 @@ jobs:
         python: ['3.11', '3.12', '3.13', '3.14']
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -259,7 +259,7 @@ jobs:
         python: ['3.11', '3.12', '3.13', '3.14']
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -301,7 +301,7 @@ jobs:
       run:
         working-directory: py
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -343,7 +343,7 @@ jobs:
       run:
         working-directory: py
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -371,7 +371,7 @@ jobs:
       run:
         working-directory: py
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -396,7 +396,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.node == 'true' && github.event.pull_request.draft != true
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -419,7 +419,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.core == 'true' && github.event.pull_request.draft != true
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -457,7 +457,7 @@ jobs:
     needs: [changes, test-unit]
     if: needs.changes.outputs.py == 'true'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -497,7 +497,7 @@ jobs:
       run:
         working-directory: py
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
@@ -535,7 +535,7 @@ jobs:
       run:
         working-directory: py
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
