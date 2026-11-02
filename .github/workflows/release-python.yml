@@ -43,7 +43,7 @@ jobs:
           - { runner: windows-latest, target: x64,     manylinux: '' }
           - { runner: windows-latest, target: aarch64, manylinux: '' }  # Windows on ARM64
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: 🛠 Build wheel (maturin)
         uses: PyO3/maturin-action@v1
         with:
@@ -60,7 +60,7 @@ jobs:
     name: 📦 sdist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: 🛠 Build sdist (vendors crates/* path deps)
         uses: PyO3/maturin-action@v1
         with:
@@ -81,7 +81,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
